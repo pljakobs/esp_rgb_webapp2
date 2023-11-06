@@ -45,7 +45,9 @@ In the last major rewrite, VeryBadSoldier has changed the internals such that ev
 Add to that the fact that the larger ESP32 SoCs support up to 16 PWM channels and hardware for that can easily be built, I believe there's a few cool things to be done with this.
 
 My idea is this:
-** provide a way to define "virtual" lights **
+
+**provide a way to define "virtual" lights**
+
 What I'm imagining is a way to tell the controller 
 - Pins 4,7 and 9 make up an RGB light
 - Pins 11,13,14,15 and 17 make up an RGBWWCW light
