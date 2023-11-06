@@ -40,7 +40,7 @@ It has always bugged me that, with all it's flexibility, the controllers are lim
 - RGBWWCW (uses all five outputs combined)
 - RAW (can use all five outputs independently, but does not get many of the features that the firmware provides)
 
-In the last major rewrite, VeryBadSoldier has changed the internals such that every color channel has it's own "pipeline" that runs fades etc. This way, the firmware, as far as I uderstand, has more capabilities that is exposed through the API. 
+In the last major rewrite, [VeryBadSoldier](https://github.com/verybadsoldier/) has changed the internals such that every color channel has it's own "pipeline" that runs fades etc. This way, the firmware, as far as I uderstand, has more capabilities that is exposed through the API. 
 
 Add to that the fact that the larger ESP32 SoCs support up to 16 PWM channels and hardware for that can easily be built, I believe there's a few cool things to be done with this.
 
