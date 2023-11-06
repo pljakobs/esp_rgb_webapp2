@@ -15,7 +15,7 @@ So my current plan of action is to re-implement and re-build the UI using Quasar
 
 ### Project phases
 #### Phase 1: reimplement the currently existing
-*The biggest driver to reimplement the US is the fact that I have changed the underlying structure such that an OTA now only uses a single image rather than a separate app and spiffs image (the webapp is 
+*The biggest driver to reimplement the UI is the fact that I have changed the underlying structure such that an OTA now only uses a single image rather than a separate app and spiffs image (the webapp is 
 embedded in the firmware as flash strings, making the update a monolith and the resulting system less reliable to SPIFFS health). On the controller side, I will have to change the OTA API such that it only pulls
 that one image rather than two. I could probably get away with the current frontend, but ... there is more I want to change, so why not start here. So in future, the frontend will call the API with just a single
 image url. That has to be coded.*
