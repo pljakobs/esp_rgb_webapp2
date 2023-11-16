@@ -1,12 +1,21 @@
 <template>
   <div>
-    <h6 :style="{ backgroundColor: 'transparent', color: color }">
-      {{ label }}
+    <h6>
+      <span
+        :style="{
+          backgroundColor: color,
+          width: '15px',
+          height: '15px',
+          borderRadius: '50%',
+          display: 'inline-block',
+          marginRight: '5px',
+        }"
+      ></span>
+      <span style="color: black">{{ label }}</span>
     </h6>
     <q-slider
       :min="-30"
       :max="30"
-      :color="color"
       :track-size="trackSize"
       :display-value="displayValue"
       :label-always="labelAlways"
@@ -42,9 +51,4 @@ export default {
   },
 };
 </script>
-<style scoped>
-.slider-value {
-  position: absolute;
-  margin-top: -1.5rem;
-}
-</style>
+<style scoped></style>
