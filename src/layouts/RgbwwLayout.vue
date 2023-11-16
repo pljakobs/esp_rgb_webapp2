@@ -11,7 +11,7 @@
           @click="toggleLeftDrawer"
         >
           <q-avatar>
-            <img src="src/assets/favicon.ico" />
+            <img src="public/icons/favicon.ico" />
           </q-avatar>
         </q-btn>
         <q-toolbar-title> Lightinator Mini </q-toolbar-title>
