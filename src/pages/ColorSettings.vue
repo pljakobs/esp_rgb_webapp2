@@ -1,5 +1,5 @@
 <template>
-  <q-card class="my-card col-auto fit q-gutter-lg">
+  <q-card elevated class="my-card col-auto fit q-gutter-lg">
     <q-card-section>
       <div class="text-h6">
         <q-icon name="tune" />

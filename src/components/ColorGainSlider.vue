@@ -30,7 +30,7 @@ import { ref, defineProps } from "vue";
 
 export default {
   props: {
-    value: Number, // Change this to 'value'
+    value: Number,
     color: String,
     label: String,
     trackSize: String,

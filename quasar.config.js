@@ -42,7 +42,7 @@ module.exports = configure(function (/* ctx */) {
       // 'line-awesome',
       // 'roboto-font-latin-ext', // this or either 'roboto-font', NEVER both!
 
-      "roboto-font", // optional, you are not bound to it
+      // "roboto-font", // optional, you are not bound to it
       "material-icons", // optional, you are not bound to it
     ],
 
@@ -65,8 +65,8 @@ module.exports = configure(function (/* ctx */) {
       // env: {},
       // rawDefine: {}
       // ignorePublicFolder: true,
-      // minify: false,
-      // polyfillModulePreload: true,
+      minify: true,
+      polyfillModulePreload: true,
       // distDir
 
       // extendViteConf (viteConf) {},
@@ -85,7 +85,11 @@ module.exports = configure(function (/* ctx */) {
 
     // https://v2.quasar.dev/quasar-cli-vite/quasar-config-js#framework
     framework: {
-      config: {},
+      config: {
+        brand: {
+          font: "sans-serif", // Use a generic sans-serif font
+        },
+      },
 
       // iconSet: 'material-icons', // Quasar icon set
       // lang: 'en-US', // Quasar language pack

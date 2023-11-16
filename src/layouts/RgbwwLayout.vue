@@ -30,7 +30,7 @@
     </q-drawer>
 
     <q-page-container>
-      <div id="q-app" style="min-height: 100vh">
+      <div id="q-app" class="bg-blue-grey-2" style="min-height: 100vh">
         <div class="flex flex-center column">
           <div class="row" style="min-height: 400px; width: 80%; padding: 24px">
             <div
