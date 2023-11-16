@@ -32,7 +32,6 @@
     <q-page-container>
       <div id="q-app" style="min-height: 100vh">
         <div class="flex flex-center column">
-          <div class="text-h6">Flex playground example</div>
           <div class="row" style="min-height: 400px; width: 80%; padding: 24px">
             <div
               id="parent"

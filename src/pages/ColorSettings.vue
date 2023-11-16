@@ -1,5 +1,5 @@
 <template>
-  <q-card bordered class="my-card col-auto fit q-gutter-lg">
+  <q-card class="my-card col-auto fit q-gutter-lg">
     <q-card-section>
       <div class="text-h6">
         <q-icon name="tune" />
@@ -13,74 +13,63 @@
           v-model="transitionModel"
           :options="options"
           label="Standard"
+          style="width: 200px"
         />
       </div>
     </q-card-section>
 
-    <q-card-section>
-      <div bordered class="my-card shadow-1 col-auto fit">
-        <div class="q-pa-md">
-          <q-badge color="red"> red gain: {{ rvalue }} (0 to 100) </q-badge>
-
-          <q-slider
-            v-model="rvalue"
-            :min="0"
-            :max="100"
-            label
-            color="red"
-            display-value="always"
-            label-always
-            track-size="10px"
-            thumb-color="black"
-          />
-          <!--<div class="slider-value">{{ rvalue }}</div>-->
-        </div>
-      </div>
-      <div class="q-pa-md">
-        <q-badge color="light-green">
-          green gain: {{ gvalue }} (0 to 1023)
-        </q-badge>
-
-        <q-slider
-          v-model="gvalue"
-          :min="0"
-          :max="1023"
-          label
-          color="green"
-          display-value="always"
-          label-always
-          track-size="10px"
-          thumb-color="black"
+    <q-card-section style="width: 80%">
+      <q-card-section style="width: 80%">
+        <ColorGainSlider
+          v-for="colorGain in colorGains"
+          :key="colorGain.label"
+          v-model="colorGain.model"
+          :color="colorGain.color"
+          :label="colorGain.label"
+          @update:value="updateColorGain(colorGain)"
         />
-      </div>
-      <div class="q-pa-md">
-        <q-badge color="light-blue">
-          blue gain: {{ bvalue }} (0 to 1023)
-        </q-badge>
-
-        <q-slider
-          v-model="bvalue"
-          :min="0"
-          :max="1023"
-          color="green"
-          display-value="always"
-          label-always
-          track-size="10px"
-          thumb-color="black"
-        />
-      </div>
+      </q-card-section>
     </q-card-section>
   </q-card>
 </template>
+
 <script>
 import { ref } from "vue";
+import ColorGainSlider from "components/ColorGainSlider.vue";
 
 export default {
   setup() {
-    return {
-      transitionModel: ref("Normal"),
-      options: ["Normal", "Spektrum", "Rainbow"],
+    const updateColorGain = (colorGain) => {
+      console.log("color gain update");
+      colorGain.model = colorGain.internalValue;
     };
+
+    const transitionModel = ref("Normal");
+    const options = ["Normal", "Spektrum", "Rainbow"];
+
+    const colorGains = [
+      { label: "Red", model: ref(0), color: "red" },
+      { label: "Yellow", model: ref(0), color: "yellow" },
+      { label: "Green", model: ref(0), color: "green" },
+      { label: "Cyan", model: ref(0), color: "cyan" },
+      { label: "Blue", model: ref(0), color: "blue" },
+      { label: "Magenta", model: ref(0), color: "#ff0090" },
+    ];
+
+    //pre-load the sliders
+    colorGains.forEach((colorGain) => {
+      updateColorGain(colorGain);
+    });
+
+    return {
+      transitionModel,
+      options,
+      colorGains,
+      updateColorGain,
+    };
+  },
+  components: {
+    ColorGainSlider,
   },
 };
 </script>
