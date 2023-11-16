@@ -18,30 +18,31 @@
       </div>
     </q-card-section>
 
-    <q-card-section style="width: 80%">
-      <q-card-section style="width: 80%">
-        <ColorGainSlider
-          v-for="colorGain in colorGains"
-          :key="colorGain.label"
-          v-model="colorGain.model"
-          :color="colorGain.color"
-          :label="colorGain.label"
-          @update:value="updateColorGain(colorGain)"
-        />
-      </q-card-section>
+    <q-card-section v-if="transitionModel !== 'Rainbow'" style="width: 80%">
+      <ColorGainSlider
+        v-for="colorGain in colorGains"
+        :key="colorGain.label"
+        :label="colorGain.label"
+        :value="Number(colorGain.model)"
+        :color="colorGain.color"
+        trackSize="5px"
+        displayValue="always"
+        labelAlways
+        @update:model="updateColorGain(colorGain)"
+      />
     </q-card-section>
   </q-card>
 </template>
 
 <script>
-import { ref } from "vue";
+import { ref, watchEffect } from "vue";
 import ColorGainSlider from "components/ColorGainSlider.vue";
 
 export default {
   setup() {
-    const updateColorGain = (colorGain) => {
+    const updateColorGain = (colorGain, value) => {
       console.log("color gain update");
-      colorGain.model = colorGain.internalValue;
+      colorGain.model = value;
     };
 
     const transitionModel = ref("Normal");
@@ -56,16 +57,18 @@ export default {
       { label: "Magenta", model: ref(0), color: "#ff0090" },
     ];
 
-    //pre-load the sliders
-    colorGains.forEach((colorGain) => {
-      updateColorGain(colorGain);
+    // Watch for changes in colorGains and initialize sliders
+    watchEffect(() => {
+      colorGains.forEach((colorGain) => {
+        updateColorGain(colorGain, colorGain.model.value);
+      });
     });
 
     return {
-      transitionModel,
-      options,
       colorGains,
       updateColorGain,
+      transitionModel,
+      options,
     };
   },
   components: {

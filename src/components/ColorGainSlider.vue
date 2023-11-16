@@ -1,60 +1,47 @@
 <template>
   <div>
-    <q-badge>{{ label }}</q-badge>
+    <h6 :style="{ backgroundColor: 'transparent', color: color }">
+      {{ label }}
+    </h6>
     <q-slider
       :min="-30"
       :max="30"
       :color="color"
-      track-size="5px"
-      display-value="always"
-      label-always
+      :track-size="trackSize"
+      :display-value="displayValue"
+      :label-always="labelAlways"
       v-model="internalValue"
+      @input="updateModel"
     />
   </div>
 </template>
 
 <script>
-import { ref, watch } from "vue";
+import { ref, defineProps } from "vue";
 
 export default {
   props: {
-    value: {
-      type: Number,
-      required: true,
-    },
-    color: {
-      type: String,
-      required: true,
-    },
-    label: {
-      type: String,
-      required: true,
-    },
+    value: Number, // Change this to 'value'
+    color: String,
+    label: String,
+    trackSize: String,
+    displayValue: String,
+    labelAlways: Boolean,
   },
   setup(props, { emit }) {
     const internalValue = ref(props.value);
 
-    watch(
-      () => props.value,
-      (newValue) => {
-        internalValue.value = newValue;
-      }
-    );
-
-    watch(
-      () => internalValue.value,
-      (newValue) => {
-        emit("update:value", newValue);
-      }
-    );
+    const updateModel = () => {
+      emit("update:model", internalValue.value);
+    };
 
     return {
       internalValue,
+      updateModel,
     };
   },
 };
 </script>
-
 <style scoped>
 .slider-value {
   position: absolute;
