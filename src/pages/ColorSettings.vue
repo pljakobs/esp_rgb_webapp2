@@ -32,6 +32,9 @@
       />
     </q-card-section>
   </q-card>
+  <q-card>
+    another card here
+  </q-card>
 </template>
 
 <script>

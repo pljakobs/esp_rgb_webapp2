@@ -1,6 +1,6 @@
 <template>
   <div>
-    <h6>
+
       <span
         :style="{
           backgroundColor: color,
@@ -12,14 +12,12 @@
         }"
       ></span>
       <span style="color: black">{{ label }}</span>
-    </h6>
     <q-slider
       :min="-30"
       :max="30"
       :track-size="trackSize"
       :display-value="displayValue"
-      :label-always="labelAlways"
-      v-model="internalValue"
+    v-model="internalValue"
       @input="updateModel"
     />
   </div>
