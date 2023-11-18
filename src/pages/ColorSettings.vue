@@ -1,5 +1,5 @@
 <template>
-  <q-card elevated class="my-card col-auto fit q-gutter-lg">
+  <q-card bordered class="my-card shadow-4 col-auto fit q-gutter-md">
     <q-card-section>
       <div class="text-h6">
         <q-icon name="tune" />
@@ -32,9 +32,7 @@
       />
     </q-card-section>
   </q-card>
-  <q-card>
-    another card here
-  </q-card>
+  <q-card> another card here </q-card>
 </template>
 
 <script>

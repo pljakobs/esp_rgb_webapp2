@@ -1,5 +1,8 @@
 import Color from "pages/Color.vue";
 import ColorSettings from "pages/ColorSettings.vue";
+import NetworkSettings from "pages/NetworkSettings.vue";
+import SystemSettings from "pages/SystemSettings.vue";
+
 import gridTest from "pages/gridtest.vue";
 
 console.log("Color component:", Color);
@@ -14,6 +17,14 @@ const routes = [
       {
         path: "/ColorSettings",
         component: ColorSettings,
+      },
+      {
+        path: "/NetworkSettings",
+        component: NetworkSettings,
+      },
+      {
+        path: "/SystemSettings",
+        component: SystemSettings,
       },
       { path: "/gridtest", component: gridTest },
     ],
