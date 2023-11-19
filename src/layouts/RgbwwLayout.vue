@@ -17,7 +17,13 @@
         <q-toolbar-title> Lightinator Mini </q-toolbar-title>
       </q-toolbar>
     </q-header>
-    <q-drawer v-model="leftDrawerOpen" mini overlay show-if-above bordered>
+    <q-drawer
+      v-model="leftDrawerOpen"
+      :overlay="$q.screen.width < 1024"
+      :persistent="!$q.screen.width < 1024"
+      show-if-above
+      bordered
+    >
       <q-list>
         <q-item-label header>main menu</q-item-label>
 
@@ -28,18 +34,21 @@
         />
       </q-list>
     </q-drawer>
-
     <q-page-container>
+      screen width: {{ $q.screen.width }}
       <div id="q-app" class="bg-blue-grey-2" style="min-height: 100vh">
         <div class="flex flex-center column">
-          <div class="row" style="min-height: 400px; width: 80%; padding: 24px">
+          <div
+            class="row"
+            style="min-height: 400px; width: 100%; padding: 24px"
+          >
             <div
               id="parent"
               class="fit row wrap justify-center items-start content-start"
               style="overflow: hidden"
             >
               <div
-                class="col-4 col-xs-12 col-sm-8 col-md-6 col-lg-6 q-gutter-md"
+                class="col-xs-12 col-sm-8 col-md-6 col-lg-4 q-gutter-md"
                 style="overflow: auto"
               >
                 <RouterView></RouterView>
@@ -69,10 +78,16 @@ const linksList = [
     link: "/ColorSettings",
   },
   {
-    title: "Grid Test",
+    title: "Network Settings",
     caption: "",
-    icon: "code",
-    link: "/gridTest",
+    icon: "wifi",
+    link: "/NetworkSettings",
+  },
+  {
+    title: "System Settings",
+    caption: "",
+    icon: "memory",
+    link: "/SystemSettings",
   },
 ];
 export default defineComponent({

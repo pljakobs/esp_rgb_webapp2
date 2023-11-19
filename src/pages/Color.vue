@@ -6,14 +6,16 @@
       </div>
     </q-card-section>
     <q-card-section>
-      <div class="q-pa-md row items-start q-gutter-md">
+      <div class="q-pa-md q-gutter-md" style="width: 100%">
         <Verte
           v-model="hslValue"
+          hslSliders="false"
           display="widget"
-          width="100%"
-          style="width: 100%"
-        />
-        <div>select {{ hslValue }}</div>
+          model="hsl"
+          :enableAlpha="false"
+        >
+        </Verte>
+        <div class="q-pa-md q-gutter-md">selected {{ hslValue }}</div>
       </div>
       <q-btn @click="showValue">show color</q-btn>
     </q-card-section>
@@ -23,12 +25,8 @@
 <script>
 import { defineComponent, ref } from "vue";
 
-import { Verte, useVerteStore } from "verte-vue3";
+import { Verte } from "verte-vue3";
 import "verte-vue3/dist/verte.css";
-
-const { recentColors } = useVerteStore({
-  recentColors: ["#000000", "#ffffff", "#aaaaaa"],
-});
 
 export default defineComponent({
   name: "ColorPage",
