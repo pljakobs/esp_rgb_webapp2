@@ -19,8 +19,8 @@
     </q-header>
     <q-drawer
       v-model="leftDrawerOpen"
-      mini-to-overlay
       :overlay="$q.screen.width < 1024"
+      :persistent="!$q.screen.width < 1024"
       show-if-above
       bordered
     >
