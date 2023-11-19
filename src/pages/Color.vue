@@ -9,11 +9,13 @@
       <div class="q-pa-md q-gutter-md" style="width: 100%">
         <Verte
           v-model="hslValue"
-          hslSliders="true"
+          hslSliders="false"
           display="widget"
-          class="d-flex"
-        />
-        <div>select {{ hslValue }}</div>
+          model="hsl"
+          :enableAlpha="false"
+        >
+        </Verte>
+        <div class="q-pa-md q-gutter-md">selected {{ hslValue }}</div>
       </div>
       <q-btn @click="showValue">show color</q-btn>
     </q-card-section>

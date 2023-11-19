@@ -15,6 +15,7 @@
   "dependencies": {
     "@quasar/extras": "^1.16.8",
     "quasar": "^2.6.0",
+    "undici-types": "^5.27.2",
     "verte-vue3": "^1.0.1",
     "vue": "^3.0.0",
     "vue-router": "^4.0.0"

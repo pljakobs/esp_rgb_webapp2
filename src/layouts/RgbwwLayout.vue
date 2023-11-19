@@ -20,7 +20,7 @@
     <q-drawer
       v-model="leftDrawerOpen"
       mini-to-overlay
-      overlay
+      :overlay="$q.screen.width < 1024"
       show-if-above
       bordered
     >
@@ -34,7 +34,6 @@
         />
       </q-list>
     </q-drawer>
-
     <q-page-container>
       screen width: {{ $q.screen.width }}
       <div id="q-app" class="bg-blue-grey-2" style="min-height: 100vh">
@@ -88,7 +87,7 @@ const linksList = [
     title: "System Settings",
     caption: "",
     icon: "memory",
-    link: "/NetworkSettings",
+    link: "/SystemSettings",
   },
 ];
 export default defineComponent({

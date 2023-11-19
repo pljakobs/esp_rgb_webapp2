@@ -14,9 +14,9 @@
     <q-slider
       :min="min"
       :max="max"
-      trackSize="5px"
-      displayValue="always"
-      label="always"
+      track-size="5px"
+      display-value="always"
+      label
       v-model="internalValue"
       @input="updateModel"
     />
@@ -28,11 +28,20 @@ import { ref, defineProps } from "vue";
 
 export default {
   props: {
-    value: Number,
+    value: {
+      type: Number,
+      default: 0,
+    },
     color: String,
     label: String,
-    min: Number,
-    max: Number,
+    min: {
+      type: Number,
+      default: -30,
+    },
+    max: {
+      type: Number,
+      default: 30,
+    },
   },
   setup(props, { emit }) {
     const internalValue = ref(props.value);
@@ -48,4 +57,5 @@ export default {
   },
 };
 </script>
+
 <style scoped></style>
