@@ -19,8 +19,8 @@
     </q-header>
     <q-drawer
       v-model="leftDrawerOpen"
-      :overlay="$q.screen.width < 1024"
-      :persistent="!$q.screen.width < 1024"
+      :overlay="$q.screen.lt.sm"
+      :persistent="$q.screen.gt.sm"
       show-if-above
       bordered
     >
@@ -47,10 +47,7 @@
               class="fit row wrap justify-center items-start content-start"
               style="overflow: hidden"
             >
-              <div
-                class="col-xs-12 col-sm-8 col-md-6 col-lg-4 q-gutter-md"
-                style="overflow: auto"
-              >
+              <div class="col-xs-12 col-sm-8 col-md-10 col-lg-6 q-gutter-md">
                 <RouterView></RouterView>
               </div>
             </div>
