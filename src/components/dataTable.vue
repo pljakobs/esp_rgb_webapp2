@@ -25,7 +25,7 @@ export default {
 </script>
 <style scoped>
 .field-label {
-  width: 100px;
+  width: 120px;
   display: flex;
   align-items: center;
 }
