@@ -6,7 +6,7 @@
         HSV
       </div>
     </q-card-section>
-
+    <q-separator />
     <q-card-section>
       <div class="text-h6 col-auto self-center q-gutter-md">
         <q-select
@@ -38,12 +38,13 @@
         Color
       </div>
     </q-card-section>
+    <q-separator />
     <q-card-section>
       <div class="text-h6 col-auto self-center q-gutter-md">
         <q-select
           v-model="colorModel"
           :options="colorOptions"
-          label="RGB"
+          label="Color Model"
           style="width: 200px"
         />
       </div>
@@ -65,23 +66,25 @@
     bordered
     class="my-card shadow-4 col-auto fit q-gutter-md"
     v-if="colorModel === 'RGBWWCW'"
-  >
-    <q-card-section>
+    ><q-card-section>
       <div class="text-h6">
         <q-icon name="exposure" />
         White balance
       </div>
     </q-card-section>
-    <ColorSlider
-      v-for="colorTemperature in colorTemperatures"
-      :key="colorTemperature.label"
-      :min="colorTemperature.min"
-      :max="colorTemperature.max"
-      :label="colorTemperature.label"
-      :value="colorTemperature.model.value"
-      :color="colorTemperature.color"
-      @update:model="($event) => updateColorSlider(colorTemperature)"
-    />
+    <q-separator />
+    <q-card-section>
+      <ColorSlider
+        v-for="colorTemperature in colorTemperatures"
+        :key="colorTemperature.label"
+        :min="colorTemperature.min"
+        :max="colorTemperature.max"
+        :label="colorTemperature.label"
+        :value="colorTemperature.model.value"
+        :color="colorTemperature.color"
+        @update:model="($event) => updateColorSlider(colorTemperature)"
+      />
+    </q-card-section>
   </q-card>
 </template>
 <script>

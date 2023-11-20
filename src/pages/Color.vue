@@ -1,10 +1,12 @@
 <template>
   <q-card bordered class="my-card shadow-4 col-auto fit q-gutter-md">
     <q-card-section>
-      <div class="text-h6 col-auto self-center q-gutter-md">
-        choose your color
+      <div class="text-h6">
+        <q-icon name="palette" />
+        Color
       </div>
     </q-card-section>
+    <q-separator />>
     <q-card-section>
       <div class="q-pa-md q-gutter-md" style="width: 100%">
         <Verte
