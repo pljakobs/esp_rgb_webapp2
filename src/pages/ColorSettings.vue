@@ -90,8 +90,15 @@
 <script>
 import { ref, watch, computed } from "vue";
 import ColorSlider from "src/components/ColorSlider.vue";
+import { mapState, mapActions } from "vuex";
 
 export default {
+  computed: {
+    ...mapState("config", ["configData"]),
+  },
+  methods: {
+    ...mapActions("config", ["configData"]),
+  },
   setup() {
     const transitionModel = ref("Normal");
     const gainOptions = ["Normal", "Spektrum", "Rainbow"];
