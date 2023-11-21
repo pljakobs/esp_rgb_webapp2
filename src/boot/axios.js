@@ -1,5 +1,11 @@
-import axios from 'axios'
+import axios from 'axios';
+
 const axiosInstance = axios.create({
-  baseURL: 'http://192.168.29.38'
-})export default ({ Vue }) => {  Vue.prototype.$axios = axiosInstance
-}export { axiosInstance }
+  baseURL: 'http://192.168.29.38',
+});
+
+export default ({ app }) => {
+  app.config.globalProperties.$axios = axiosInstance;
+};
+
+export { axiosInstance };
