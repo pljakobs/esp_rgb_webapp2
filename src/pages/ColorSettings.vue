@@ -90,18 +90,18 @@
 <script>
 import { ref, watch, computed } from "vue";
 import ColorSlider from "src/components/ColorSlider.vue";
-import { mapState, mapActions } from "vuex";
+import { useStore } from 'vuex';
 
 export default {
-  computed: {
-    ...mapState("config", ["configData"]),
-  },
-  methods: {
-    ...mapActions("config", ["configData"]),
-  },
+
   setup() {
-    const transitionModel = ref("Normal");
+    const store=useStore();
+
+      const configData=computed(()=>store.state.config.configData);
+
     const gainOptions = ["Normal", "Spektrum", "Rainbow"];
+    const transitionModel=gainOptions[configData.value.color.hsv.model];
+
     const colorGains = [
       { label: "Red", model: ref(0), min: -30, max: 30, color: "red" },
       { label: "Yellow", model: ref(0), min: -30, max: 30, color: "yellow" },
@@ -187,6 +187,7 @@ export default {
       }
     );
     return {
+      configData,
       transitionModel,
       colorModel,
       gainOptions,

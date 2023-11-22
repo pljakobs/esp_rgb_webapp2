@@ -84,12 +84,16 @@
 
 <script>
 import dataTable from "components/dataTable.vue";
-import { ref } from "vue";
+import { ref, onMounted, watch } from "vue";
+import { useStore } from "vuex";  // Import useStore from vuex
+
 export default {
   components: {
     dataTable,
   },
   setup() {
+    const store = useStore();  // Access the store using useStore
+
     const useManualIPConfig = ref(false);
     const useMQTT = ref(false);
     const useMQTTAuth = ref(false);
@@ -106,6 +110,44 @@ export default {
       { label: "IP Gateway:", value: "192.168.29.1" },
       { label: "MAC Address:", value: "11:22:33:AA:BB:CC" },
     ];
+
+    watch(
+      () => useMQTT.value,
+      (newValue, oldValue) => {
+        // Fetch data when the useMQTT variable changes
+        if (newValue) {
+          fetchData();
+        }
+      }
+    );
+
+    async function fetchData() {
+      try {
+        // Dispatch the fetchConfigData action from the 'config' module
+        await store.dispatch("config/fetchConfigData");
+        console.log("Fetched Config Data:", store.state.config.configData);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      }
+    }
+
+    onMounted(() => {
+      // Fetch data when the component is mounted
+      fetchData();
+    });
+
+    async function updateData() {
+      try {
+        // Example of updating partial data
+        const partialData = { /* your partial data */ };
+        // Dispatch the updateConfigData action from the 'config' module
+        await store.dispatch("config/updateConfigData", partialData);
+        // Fetch updated data after a successful update
+        await fetchData();
+      } catch (error) {
+        console.error("Error updating data:", error);
+      }
+    }
 
     return {
       connectionItems,
