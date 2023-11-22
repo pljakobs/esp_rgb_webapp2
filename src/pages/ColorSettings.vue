@@ -11,9 +11,10 @@
       <div class="text-h6 col-auto self-center q-gutter-md">
         <q-select
           v-model="transitionModel"
-          :options="gainOptions"
-          label="Normal"
+          :options="transitionOptions"
+          label="Transition Mode"
           style="width: 200px"
+          @update:model-value="updateTransitionMode"
         />
       </div>
     </q-card-section>
@@ -90,17 +91,18 @@
 <script>
 import { ref, watch, computed } from "vue";
 import ColorSlider from "src/components/ColorSlider.vue";
-import { useStore } from 'vuex';
+import { useStore } from "vuex";
 
 export default {
-
   setup() {
-    const store=useStore();
+    const store = useStore();
 
-      const configData=computed(()=>store.state.config.configData);
+    const configData = computed(() => store.state.config.configData);
 
-    const gainOptions = ["Normal", "Spektrum", "Rainbow"];
-    const transitionModel=gainOptions[configData.value.color.hsv.model];
+    const transitionOptions = ["Normal", "Spektrum", "Rainbow"];
+    const transitionModel = ref(
+      transitionOptions[configData.value.color.hsv.model]
+    );
 
     const colorGains = [
       { label: "Red", model: ref(0), min: -30, max: 30, color: "red" },
@@ -166,6 +168,23 @@ export default {
       slider.model = value;
     };
 
+    const updateTransitionMode = (newTransitionModel) => {
+      console.log(
+        `from update trigger: \nTransition model changed to ${newTransitionModel}`
+      );
+      configData.value.color.hsv.model =
+        transitionOptions.indexOf(newTransitionModel);
+      // Add more logic if needed
+    };
+
+    watch(
+      () => transitionModel.value,
+      (newTransitionMode, oldTransitionMode) => {
+        console.log(
+          `from watcher: \nupdated transition model from ${oldTransitionMode} to ${newTransitionMode}`
+        );
+      }
+    );
     watch(
       () => colorModel.value,
       (oldColorModel, newColorModel) => {
@@ -176,26 +195,18 @@ export default {
         );
       }
     );
-    watch(
-      () => transitionModel.value,
-      (newTransitionModel, oldTransitionModel) => {
-        // Perform actions or updates when transitionModel changes
-        console.log(
-          `Transition model changed from ${oldTransitionModel} to ${newTransitionModel}`
-        );
-        // Add more logic if needed
-      }
-    );
+
     return {
       configData,
       transitionModel,
       colorModel,
-      gainOptions,
+      transitionOptions,
       colorGains,
       colorSliders,
       colorOptions,
       colorTemperatures,
       updateColorSlider,
+      updateTransitionMode,
     };
   },
   components: {
