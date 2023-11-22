@@ -174,17 +174,11 @@ export default {
       );
       configData.value.color.hsv.model =
         transitionOptions.indexOf(newTransitionModel);
-      // Add more logic if needed
+        store.dispatch('config/updateConfigData', 'color.hsv');
+           // Add more logic if needed
     };
 
-    watch(
-      () => transitionModel.value,
-      (newTransitionMode, oldTransitionMode) => {
-        console.log(
-          `from watcher: \nupdated transition model from ${oldTransitionMode} to ${newTransitionMode}`
-        );
-      }
-    );
+
     watch(
       () => colorModel.value,
       (oldColorModel, newColorModel) => {
