@@ -28,7 +28,7 @@
         :label="colorGain.label"
         :value="colorGain.model.value"
         :color="colorGain.color"
-        @update:model="updateColorSlider(colorGain)"
+        @update:model-value="updateColorSlider(colorGain)"
       />
     </q-card-section>
   </q-card>
@@ -105,12 +105,12 @@ export default {
     );
 
     const colorGains = [
-      { label: "Red", model: ref(0), min: -30, max: 30, color: "red" },
-      { label: "Yellow", model: ref(0), min: -30, max: 30, color: "yellow" },
-      { label: "Green", model: ref(0), min: -30, max: 30, color: "green" },
-      { label: "Cyan", model: ref(0), min: -30, max: 30, color: "cyan" },
-      { label: "Blue", model: ref(0), min: -30, max: 30, color: "blue" },
-      { label: "Magenta", model: ref(0), min: -30, max: 30, color: "#ff0090" },
+      { label: "Red", model: ref(configData.value.color.hsv.red), min: -30, max: 30, color: "red" },
+      { label: "Yellow", model: ref(configData.value.color.hsv.yellow), min: -30, max: 30, color: "yellow" },
+      { label: "Green", model: ref(configData.value.color.hsv.green), min: -30, max: 30, color: "green" },
+      { label: "Cyan", model: ref(configData.value.color.hsv.cyan), min: -30, max: 30, color: "cyan" },
+      { label: "Blue", model: ref(configData.value.color.hsv.blue), min: -30, max: 30, color: "blue" },
+      { label: "Magenta", model: ref(configData.value.color.hsv.magenta), min: -30, max: 30, color: "#ff0090" },
     ];
 
     const colorModel = ref("RGB");
@@ -164,8 +164,10 @@ export default {
     ];
 
     const updateColorSlider = (slider, value) => {
-      console.log("update for $slider");
+      console.log('update for',slider);
+      console.log('new value', value);
       slider.model = value;
+      //store.dispatch('config/updateConfigData',''
     };
 
     const updateTransitionMode = (newTransitionModel) => {

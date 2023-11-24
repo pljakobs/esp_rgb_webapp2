@@ -46,13 +46,28 @@ const actions = {
     try {
       const partialData = generatePartialData(state.configData, path);
       console.log(`trying to update the API with partial data`,JSON.stringify(partialData));
-      await axios.put(`${API_BASE_URL}/config`, JSON.stringify(partialData));
-      await this.dispatch('fetchConfigData');
+      await axios.post(`${API_BASE_URL}/config`, JSON.stringify(partialData),{
+        headers: {
+            // 'application/json' is the modern content-type for JSON, but some
+            // older servers may use 'text/json'.
+            // See: http://bit.ly/text-json
+            'content-type': 'text/json'
+      }
+    });
+      //await this.dispatch('fetchConfigData');
     } catch (error) {
       console.error('Error updating config data:', error);
     }
   },
 };
+
+const watch = {
+    configData(newConfigData, oldConfigData) {
+      // Perform actions when configData changes
+      console.log('configData changed:', newConfigData);
+      // Derive the path of the changed property and take necessary actions
+    },
+  };
 
 
 export default {

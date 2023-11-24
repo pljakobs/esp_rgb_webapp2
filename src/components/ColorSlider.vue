@@ -18,7 +18,7 @@
       display-value="always"
       label
       v-model="internalValue"
-      @input="updateModel"
+      @update:model-value="updateModel"
     />
   </div>
 </template>
@@ -47,6 +47,7 @@ export default {
     const internalValue = ref(props.value);
 
     const updateModel = () => {
+      console.log("slider emitting update:model");
       emit("update:model", internalValue.value);
     };
 
