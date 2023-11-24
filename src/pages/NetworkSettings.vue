@@ -18,7 +18,7 @@
       </div>
       <div class="text-h7">
         <q-toggle
-          v-model="useManualIPConfig"
+          v-model="!configData.value.network.connection.dhcp"
           label="Manual IP configuration"
           left-label
         />
@@ -85,37 +85,61 @@
         },"events":{"color_interval_ms":500,"color_mininterval_ms":500,"server_enabled":true,"transfin_interval_ms":1000}
       -->
       <div>Controller is primary for</div>
-      <q-toggle v-model="configData.value.sync.clock_master_enabled" label="Clock" left-label />
-      <q-toggle v-model="configData.value.sync.cmd_master_enabled" label="CMD" left-label />
-      <q-toggle v-model="configData.value.sync.color_master_enabled" label="Color" left-label />
+      <q-toggle
+        v-model="configData.value.sync.clock_master_enabled"
+        label="Clock"
+        left-label
+      />
+      <q-toggle
+        v-model="configData.value.sync.cmd_master_enabled"
+        label="CMD"
+        left-label
+      />
+      <q-toggle
+        v-model="configData.value.sync.color_master_enabled"
+        label="Color"
+        left-label
+      />
       <q-separator />
       <div>Controller is secondary for</div>
-      <q-toggle v-model="configData.value.sync.clock_slave_enabled" label="Clock" left-label />
-      <q-toggle v-model="configData.value.sync.cmd_slave_enabled" label="CMD" left-label />
-      <q-toggle v-model="configData.value.sync.color_slave_enabled" label="Color" left-label />
+      <q-toggle
+        v-model="configData.value.sync.clock_slave_enabled"
+        label="Clock"
+        left-label
+      />
+      <q-toggle
+        v-model="configData.value.sync.cmd_slave_enabled"
+        label="CMD"
+        left-label
+      />
+      <q-toggle
+        v-model="configData.value.sync.color_slave_enabled"
+        label="Color"
+        left-label
+      />
     </q-card-section>
   </q-card>
 </template>
 
 <script>
 import dataTable from "components/dataTable.vue";
-import { ref, watch, computed, onMounted, watchEffect} from "vue";
-import { useStore } from "vuex";  // Import useStore from vuex
+import { ref, watch, computed, onMounted, watchEffect } from "vue";
+import { useStore } from "vuex"; // Import useStore from vuex
 
 export default {
   components: {
     dataTable,
   },
   setup() {
-    const store = useStore();  // Access the store using useStore
+    const store = useStore(); // Access the store using useStore
 
     const configData = ref(store.state.config.configData);
 
     const useManualIPConfig = ref(false);
     const useMQTT = ref(false);
     const useMQTTAuth = ref(false);
-    const MQTTServer=ref("");
-    const MQTTPort=ref("8181");
+    const MQTTServer = ref("");
+    const MQTTPort = ref("8181");
     const MQTTClockMaster = ref(false);
     const MQTTClockSlave = ref(false);
     const MQTTCmdMaster = ref(false);
@@ -130,8 +154,9 @@ export default {
       { label: "MAC Address:", value: "11:22:33:AA:BB:CC" },
     ];
 
-    watchEffect(()=>{
-      configData.value=store.state.config.configData;
+    console.log("sync setting:", JSON.stringify(configData.value.sync));
+    watchEffect(() => {
+      configData.value = store.state.config.configData;
       console.log("configData changed:", configData.value);
     });
 
@@ -140,11 +165,11 @@ export default {
       (newValue, oldValue) => {
         // Fetch data when the useMQTT variable changes
         if (newValue) {
-          // fetchData();
+          //fetchData();
         }
       }
     );
-/*
+    /*
     async function fetchData() {
       try {
         // Dispatch the fetchConfigData action from the 'config' module
