@@ -85,6 +85,12 @@ const linksList = [
     icon: "memory",
     link: "/SystemSettings",
   },
+  {
+    title: "test",
+    caption: "",
+    icon: "lightbulb",
+    link: "/test",
+  },
 ];
 export default defineComponent({
   name: "MainLayout",

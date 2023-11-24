@@ -18,7 +18,7 @@
       </div>
       <div class="text-h7">
         <q-toggle
-          v-model="!configData.value.network.connection.dhcp"
+          v-model="useManualIPConfig"
           label="Manual IP configuration"
           left-label
         />
