@@ -1,6 +1,6 @@
 // store/modules/config.js
 import axios from "axios";
-import { mapFields } from "vuex-map-fields";
+
 const API_BASE_URL = "http://192.168.29.38";
 
 function generatePartialData(currentState, path) {
@@ -20,6 +20,7 @@ function generatePartialData(currentState, path) {
   }
   return result;
 }
+
 function generateFieldMappings(state, path = "") {
   const mappings = {};
   for (const key in state) {
@@ -31,14 +32,20 @@ function generateFieldMappings(state, path = "") {
   }
   return mappings;
 }
-export { generateFieldMappings };
+
 const state = {
   configData: null,
+  mappedFields: null,
 };
 
 const mutations = {
   setConfigData(state, data) {
     state.configData = data;
+    state.mappedFields = generateFieldMappings(data);
+  },
+  updateMappedFields(state, { field, value }) {
+    // Update the mappedFields when a field is updated
+    state.mappedFields[field] = value;
   },
 };
 
@@ -49,41 +56,33 @@ const actions = {
       commit("setConfigData", response.data);
     } catch (error) {
       console.error("Error fetching config data:", error);
+      throw error;
     }
   },
 
-  async updateConfigData({ commit, state }, path) {
+  async updateConfigData({ commit, state }, { field, value }) {
     try {
-      const partialData = generatePartialData(state.configData, path);
-      console.log(
-        `trying to update the API with partial data`,
-        JSON.stringify(partialData)
-      );
+      const partialData = generatePartialData(state.configData, field);
+      partialData[field] = value;
+
       await axios.post(`${API_BASE_URL}/config`, JSON.stringify(partialData), {
         headers: {
-          // 'application/json' is the modern content-type for JSON, but some
-          // older servers may use 'text/json'.
-          // See: http://bit.ly/text-json
           "content-type": "text/json",
         },
       });
-      //await this.dispatch('fetchConfigData');
+
+      // Update the mapped fields in the store
+      commit("updateMappedFields", { field, value });
     } catch (error) {
       console.error("Error updating config data:", error);
+      throw error;
     }
   },
 };
 
 const getters = {
-  fieldMappings: (state) => generateFieldMappings(state.configData),
-};
-
-const watch = {
-  configData(newConfigData, oldConfigData) {
-    // Perform actions when configData changes
-    console.log("configData changed:", newConfigData);
-    // Derive the path of the changed property and take necessary actions
-  },
+  configData: (state) => state.configData,
+  mappedFields: (state) => state.mappedFields,
 };
 
 export default {

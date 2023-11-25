@@ -30,6 +30,9 @@ export default {
     const sync_color_master_enabled = ref(
       getField("sync.color_master_enabled")
     );
+
+    console.log("sync_color_master_enabled", sync_color_master_enabled);
+
     return {
       getField,
       sync_color_master_enabled,
