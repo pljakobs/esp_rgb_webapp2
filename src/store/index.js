@@ -100,7 +100,7 @@ export const configDataStore = defineStore("configData", {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(this.data),
       })
         .then((response) => {
           if (!response.ok) {

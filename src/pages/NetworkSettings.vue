@@ -18,16 +18,16 @@
       </div>
       <div class="text-h7">
         <q-toggle
-          v-model="useManualIPConfig"
-          label="Manual IP configuration"
+          v-model="network.connection.dhcp.value"
+          label="use dhcp"
           left-label
         />
       </div>
     </q-card-section>
-    <q-card-section v-if="useManualIPConfig === true">
-      <q-input v-model="IPAddress" label="IP Address" />
-      <q-input v-model="IPNetmask" label="IP Netmask" />
-      <q-input v-model="IPGateway" label="IP Gateway" />
+    <q-card-section v-if="!network.connection.dhcp.value">
+      <q-input v-model="network.connection.ip.value" label="IP Address" />
+      <q-input v-model="network.connection.netmask.value" label="IP Netmask" />
+      <q-input v-model="network.connection.gateway.value" label="IP Gateway" />
     </q-card-section>
   </q-card>
   <q-card bordered class="my-card shadow-4 col-auto fit q-gutter-md">
@@ -38,82 +38,63 @@
         will restart automatically
       </div>
       <div class="text-h7">
-        <q-toggle v-model="useMQTT" label="enable MQTT" left-label />
+        <q-toggle
+          v-model="network.mqtt.enabled.value"
+          label="enable MQTT"
+          left-label
+        />
+        {{ network.mqtt.enabled.value }}
       </div>
     </q-card-section>
 
-    <q-card-section v-if="useMQTT === true">
+    <q-card-section v-if="network.mqtt.enabled.value">
       <q-separator />
-      <q-input v-model="MQTTServer" label="MQTT Server" />
-      <q-input v-model="MQTTPort" label="MQTT Port" />
-      <q-toggle
-        v-model="useMQTTAuth"
-        label="Server requires Authentication"
-        label-left
-      />
-      <div v-if="useMQTTAuth === true">
-        <q-input v-model="MQTTUser" label="MQTT Username" />
-        <q-input
-          v-model="MQTTpassword"
-          filled
-          :type="isPwd ? 'password' : 'text'"
-          hint="Password with toggle"
-        >
-          <template v-slot:append>
-            <q-icon
-              :name="isPwd ? 'visibility_off' : 'visibility'"
-              class="cursor-pointer"
-              @click="isPwd = !isPwd"
-            />
-          </template>
-        </q-input>
-      </div>
+      <q-input v-model="network.mqtt.server.value" label="MQTT Server" />
+      <q-input v-model="network.mqtt.port.value" label="MQTT Port" />
+
+      <q-input v-model="network.mqtt.username.value" label="MQTT Username" />
+      <q-input
+        v-model="network.mqtt.password.value"
+        filled
+        :type="isPwd ? 'password' : 'text'"
+        hint="Password with toggle"
+      >
+        <template v-slot:append>
+          <q-icon
+            :name="isPwd ? 'visibility_off' : 'visibility'"
+            class="cursor-pointer"
+            @click="isPwd = !isPwd"
+          />
+        </template>
+      </q-input>
       <q-separator />
-      <!--
-        "sync":{
-          "clock_master_enabled":false,
-          "clock_master_interval":30,
-          "clock_slave_enabled":false,
-          "clock_slave_topic":"home/led1/clock",
-          "cmd_master_enabled":false,
-          "cmd_slave_enabled":false,
-          "cmd_slave_topic":"home/led1/command",
-          "color_master_enabled":false,
-          "color_master_interval_ms":0,
-          "color_slave_enabled":false,
-          "color_slave_topic":"home/led1/color"
-        },"events":{"color_interval_ms":500,"color_mininterval_ms":500,"server_enabled":true,"transfin_interval_ms":1000}
-      -->
+
       <div>Controller is primary for</div>
       <q-toggle
-        v-model="configData.value.sync.clock_master_enabled"
+        v-model="sync.clock_master_enabled.value"
         label="Clock"
         left-label
       />
       <q-toggle
-        v-model="configData.value.sync.cmd_master_enabled"
+        v-model="sync.cmd_master_enabled.value"
         label="CMD"
         left-label
       />
       <q-toggle
-        v-model="configData.value.sync.color_master_enabled"
+        v-model="sync.color_master_enabled.value"
         label="Color"
         left-label
       />
       <q-separator />
       <div>Controller is secondary for</div>
       <q-toggle
-        v-model="configData.value.sync.clock_slave_enabled"
+        v-model="sync.clock_slave_enabled.value"
         label="Clock"
         left-label
       />
+      <q-toggle v-model="sync.cmd_slave_enabled.value" label="CMD" left-label />
       <q-toggle
-        v-model="configData.value.sync.cmd_slave_enabled"
-        label="CMD"
-        left-label
-      />
-      <q-toggle
-        v-model="configData.value.sync.color_slave_enabled"
+        v-model="sync.color_slave_enabled.value"
         label="Color"
         left-label
       />
@@ -124,75 +105,62 @@
 <script>
 import dataTable from "components/dataTable.vue";
 import { ref, watch, computed, onMounted, watchEffect } from "vue";
+import { configDataStore, createComputedProperties } from "src/store";
 
 export default {
   components: {
     dataTable,
   },
   setup() {
-    const store = useStore(); // Access the store using useStore
-
-    const configData = ref(store.state.config.configData);
-
-    const useManualIPConfig = ref(false);
-    const useMQTT = ref(false);
-    const useMQTTAuth = ref(false);
-    const MQTTServer = ref("");
-    const MQTTPort = ref("8181");
-    const MQTTClockMaster = ref(false);
-    const MQTTClockSlave = ref(false);
-    const MQTTCmdMaster = ref(false);
-    const MQTTCmdSlave = ref(false);
-    const MQTTColorMaster = ref(false);
-    const MQTTColorSlave = ref(false);
-    const connectionItems = [
-      { label: "SSID:", value: "IoT" },
-      { label: "IP-Address:", value: "192.168.29.186" },
-      { label: "IP Netmask:", value: "255.255.255.0" },
-      { label: "IP Gateway:", value: "192.168.29.1" },
-      { label: "MAC Address:", value: "11:22:33:AA:BB:CC" },
+    const store = configDataStore();
+    const isPwd = ref(true);
+    const fields = [
+      "network.connection.dhcp",
+      "network.connection.ip",
+      "network.connection.netmask",
+      "network.connection.gateway",
+      "ap.secured",
+      "ap.password",
+      "ap.ssid",
+      "network.mqtt.enabled",
+      "network.mqtt.server",
+      "network.mqtt.port",
+      "network.mqtt.username",
+      "network.mqtt.password",
+      "network.mqtt.topic_base",
+      "security.api_secured",
+      "sync.clock_master_enabled",
+      "sync.clock_master_interval",
+      "sync.clock_slave_enabled",
+      "sync.clock_slave_topic",
+      "sync.cmd_master_enabled",
+      "sync.cmd_slave_enabled",
+      "sync.cmd_slave_topic",
+      "sync.color_master_enabled",
+      "sync.color_master_interval_ms",
+      "sync.color_slave_enabled",
+      "sync.color_slave_topic",
     ];
 
-    console.log("sync setting:", JSON.stringify(configData.value.sync));
-    watchEffect(() => {
-      configData.value = store.state.config.configData;
-      console.log("configData changed:", configData.value);
-    });
+    const computedProperties = createComputedProperties(store, fields);
 
-    watch(
-      () => useMQTT.value,
-      (newValue, oldValue) => {
-        // Fetch data when the useMQTT variable changes
-        if (newValue) {
-          //fetchData();
-        }
-      }
-    );
-    /*
-    async function fetchData() {
-      try {
-        // Dispatch the fetchConfigData action from the 'config' module
-        await store.dispatch("config/fetchConfigData");
-        console.log("Fetched Config Data:", store.state.config.configData);
-      } catch (error) {
-        console.error("Error fetching data:", error);
-      }
-    }
-
-    onMounted(() => {
-      // Fetch data when the component is mounted
-      fetchData();
-    });
-*/
+    const connectionItems = [
+      { label: "SSID:", value: "IoT" },
+      { label: "IP-Address:", value: computedProperties.network.connection.ip },
+      {
+        label: "IP Netmask:",
+        value: computedProperties.network.connection.netmask,
+      },
+      {
+        label: "IP Gateway:",
+        value: computedProperties.network.connection.gateway,
+      },
+    ];
 
     return {
       connectionItems,
-      useManualIPConfig,
-      useMQTT,
-      useMQTTAuth,
-      MQTTServer,
-      MQTTPort,
-      configData,
+      isPwd,
+      ...computedProperties,
     };
   },
 };
