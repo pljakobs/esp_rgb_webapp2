@@ -1,16 +1,25 @@
 <template>
-  <div>
-    <span
-      :style="{
-        backgroundColor: color,
-        width: '15px',
-        height: '15px',
-        borderRadius: '50%',
-        display: 'inline-block',
-        marginRight: '5px',
-      }"
-    ></span>
-    <span style="color: black">{{ label }}</span>
+  <div style="display: flex; align-items: center">
+    <div
+      style="
+        display: flex;
+        align-items: center;
+        width: 130px;
+        margin-right: 30px;
+      "
+    >
+      <span
+        :style="{
+          backgroundColor: color,
+          width: '15px',
+          height: '15px',
+          borderRadius: '50%',
+          display: 'inline-block',
+          marginRight: '5px',
+        }"
+      ></span>
+      <span style="color: black">{{ label }}</span>
+    </div>
     <q-slider
       :min="min"
       :max="max"
@@ -24,7 +33,7 @@
 </template>
 
 <script>
-import { ref, defineProps } from "vue";
+import { ref, defineProps, watch } from "vue";
 
 export default {
   props: {
@@ -47,9 +56,11 @@ export default {
     const internalValue = ref(props.value);
 
     const updateModel = () => {
-      console.log("slider emitting update:model");
+      console.log("slider emitting update:model. value:", internalValue.value);
       emit("update:model", internalValue.value);
     };
+
+    watch(internalValue, updateModel);
 
     return {
       internalValue,

@@ -6,8 +6,13 @@
     </div>
     <div v-else>
       <q-toggle
-        v-model="sync_color_master_enabled"
+        v-model="sync.color_master_enabled.value"
         label="Color Master"
+        left-label
+      />
+      <q-toggle
+        v-model="network.connection.dhcp.value"
+        label="dhcp"
         left-label
       />
     </div>
@@ -16,29 +21,17 @@
 
 <script>
 import { computed } from "vue";
-import { configDataStore } from "src/store";
+import { configDataStore, createComputedProperties } from "src/store";
 
 export default {
   setup() {
     const store = configDataStore();
 
-    const sync_color_master_enabled = computed({
-      get: () => store.data.sync.color_master_enabled,
-      set: (value) =>
-        store.updateConfigData("sync.color_master_enabled", value),
-    });
-
-    const network_connection_dhcp = computed({
-      get: () => store.data.network.connection.dhcp,
-      set: (value) => store.updateConfigData("network.connection.dhcp", value),
-    });
-
-    // Create more computed properties as needed...
+    const fields = ["sync.color_master_enabled", "network.connection.dhcp"];
+    const computedProperties = createComputedProperties(store, fields);
 
     return {
-      sync_color_master_enabled,
-      network_connection_dhcp,
-      // Include other computed properties...
+      ...computedProperties, // Spread the computed properties into the returned object
       isLoading: computed(() => store.isLoading),
     };
   },

@@ -1,12 +1,55 @@
 import { defineStore } from "pinia";
+import { computed } from "vue";
 
 // Define controllerIpAddress as a constant
 const controllerIpAddress = "192.168.29.38";
 
+// Helper function to get a nested property by a dot-separated path
+function getNestedProperty(obj, path) {
+  const keys = path.split(".");
+  let current = obj;
+
+  for (let i = 0; i < keys.length; i++) {
+    if (!current) {
+      return undefined;
+    }
+    console.log("current: ", current, "keys[i]=" + keys[i]);
+    current = current[keys[i]];
+  }
+
+  return current;
+}
+
+export function createComputedProperties(store, fields) {
+  console.log("createComputedProperties called for ", fields);
+  const computedProperties = {};
+  let current = computedProperties;
+
+  fields.forEach((field) => {
+    console.log("creating computed propery for field: ", field);
+    const keys = field.split(".");
+    const lastKey = keys.pop();
+
+    keys.forEach((key) => {
+      current[key] = current[key] || {};
+      current = current[key];
+    });
+
+    current[lastKey] = computed({
+      get: () => getNestedProperty(store.data, field),
+      set: (value) => store.updateConfigData(field, value),
+    });
+
+    // Reset current to the root object for the next field
+    current = computedProperties;
+  });
+
+  return computedProperties;
+}
+
 export const configDataStore = defineStore("configData", {
   state: () => ({
-    data: {},
-    isLoading: false,
+    isLoading: true,
   }),
   actions: {
     async fetchData() {
@@ -24,6 +67,12 @@ export const configDataStore = defineStore("configData", {
       }
     },
     updateConfigData(field, value) {
+      console.log(
+        "updateConfigData called for field: ",
+        field,
+        "value: ",
+        value
+      );
       const path = field.split(".");
       let current = this.data;
 
@@ -43,7 +92,7 @@ export const configDataStore = defineStore("configData", {
       }
 
       payloadCurrent[path[path.length - 1]] = value;
-
+      console.log("calling api with payload: ", JSON.stringify(payload));
       // Make a PUT request to the API endpoint
       fetch(`http://${controllerIpAddress}/config`, {
         // Use controllerIpAddress here
@@ -51,7 +100,7 @@ export const configDataStore = defineStore("configData", {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(this.data),
+        body: JSON.stringify(payload),
       })
         .then((response) => {
           if (!response.ok) {
