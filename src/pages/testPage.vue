@@ -1,41 +1,45 @@
 <template>
   <div>
-    <q-toggle
-      :v-model="sync_color_master_enabled.value"
-      label="Color Master"
-      left-label
-    />
+    <div v-if="isLoading">
+      <q-spinner> </q-spinner>
+      -&gt;{{ isLoading }}&lt;-
+    </div>
+    <div v-else>
+      <q-toggle
+        v-model="sync_color_master_enabled"
+        label="Color Master"
+        left-label
+      />
+    </div>
   </div>
 </template>
 
 <script>
-import { ref } from "vue";
-import { useStore } from "vuex";
-import { generateFieldMappings } from "src/store/modules/config.js";
+import { computed } from "vue";
+import { configDataStore } from "src/store";
 
 export default {
   setup() {
-    const store = useStore();
-    const fieldMappings = generateFieldMappings(store.state.config.configData);
+    const store = configDataStore();
 
-    const getField = (field) => {
-      return {
-        get: () => store.state.config.configData[field],
-        set: (value) => {
-          store.dispatch("config/updateConfigData", field);
-        },
-      };
-    };
+    const sync_color_master_enabled = computed({
+      get: () => store.data.sync.color_master_enabled,
+      set: (value) =>
+        store.updateConfigData("sync.color_master_enabled", value),
+    });
 
-    const sync_color_master_enabled = ref(
-      getField("sync.color_master_enabled")
-    );
+    const network_connection_dhcp = computed({
+      get: () => store.data.network.connection.dhcp,
+      set: (value) => store.updateConfigData("network.connection.dhcp", value),
+    });
 
-    console.log("sync_color_master_enabled", sync_color_master_enabled);
+    // Create more computed properties as needed...
 
     return {
-      getField,
       sync_color_master_enabled,
+      network_connection_dhcp,
+      // Include other computed properties...
+      isLoading: computed(() => store.isLoading),
     };
   },
 };

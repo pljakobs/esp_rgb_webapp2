@@ -3,40 +3,18 @@
 </template>
 
 <script>
-import { onMounted, ref } from 'vue';
-import { useStore } from 'vuex';
+import { onMounted } from "vue";
+import { defineStore } from "pinia";
+import { configDataStore } from "src/store";
 
 export default {
-  name: 'App',
+  name: "App",
   setup() {
-    const store = useStore();
-
-    const fetchData = async () => {
-      try {
-        await store.dispatch('config/fetchConfigData');
-      } catch (error) {
-        console.error('Error fetching data:', error);
-      }
-    };
-
-    const updateData = async (partialData) => {
-      try {
-        await store.dispatch('config/updateConfigData', partialData);
-        await fetchData(); // Fetch updated data after a successful update
-      } catch (error) {
-        console.error('Error updating data:', error);
-      }
-    };
+    const store = configDataStore();
 
     onMounted(() => {
-      fetchData();
+      store.fetchData();
     });
-
-    return {
-      fetchData,
-      updateData,
-    };
   },
 };
 </script>
-

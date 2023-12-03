@@ -91,7 +91,7 @@
 <script>
 import { ref, watch, computed } from "vue";
 import ColorSlider from "src/components/ColorSlider.vue";
-import { useStore } from "vuex";
+
 
 export default {
   setup() {

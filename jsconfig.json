@@ -5,6 +5,9 @@
       "src/*": [
         "src/*"
       ],
+      "@/*":[
+        "src/*"
+      ],
       "app/*": [
         "*"
       ],
@@ -23,8 +26,8 @@
       "boot/*": [
         "src/boot/*"
       ],
-      "stores/*": [
-        "src/stores/*"
+      "store/*": [
+        "src/store/*"
       ],
       "vue$": [
         "node_modules/vue/dist/vue.runtime.esm-bundler.js"

@@ -124,7 +124,6 @@
 <script>
 import dataTable from "components/dataTable.vue";
 import { ref, watch, computed, onMounted, watchEffect } from "vue";
-import { useStore } from "vuex"; // Import useStore from vuex
 
 export default {
   components: {
