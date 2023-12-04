@@ -2,11 +2,8 @@ import Color from "pages/Color.vue";
 import ColorSettings from "pages/ColorSettings.vue";
 import NetworkSettings from "pages/NetworkSettings.vue";
 import SystemSettings from "pages/SystemSettings.vue";
+import testPage from "src/pages/testPage.vue";
 
-import gridTest from "pages/gridtest.vue";
-
-console.log("Color component:", Color);
-console.log("ColorSettings component:", ColorSettings);
 const routes = [
   {
     path: "/",
@@ -26,7 +23,7 @@ const routes = [
         path: "/SystemSettings",
         component: SystemSettings,
       },
-      { path: "/gridtest", component: gridTest },
+      { path: "/test", component: testPage },
     ],
   },
   // Always leave this as last one,

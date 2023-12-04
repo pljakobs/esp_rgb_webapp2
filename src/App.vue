@@ -3,9 +3,18 @@
 </template>
 
 <script>
-import { defineComponent } from 'vue'
+import { onMounted } from "vue";
+import { defineStore } from "pinia";
+import { configDataStore } from "src/store";
 
-export default defineComponent({
-  name: 'App'
-})
+export default {
+  name: "App",
+  setup() {
+    const store = configDataStore();
+
+    onMounted(() => {
+      store.fetchData();
+    });
+  },
+};
 </script>
