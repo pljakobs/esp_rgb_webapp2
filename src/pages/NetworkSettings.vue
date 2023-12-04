@@ -49,9 +49,17 @@
 
     <q-card-section v-if="network.mqtt.enabled.value">
       <q-separator />
-      <q-input v-model="network.mqtt.server.value" label="MQTT Server" />
-      <q-input v-model="network.mqtt.port.value" label="MQTT Port" />
-
+      <q-row>
+        <q-col cols="4">
+          <q-input v-model="network.mqtt.server.value" label="MQTT Server" />
+        </q-col>
+        <q-col cols="3">
+          <q-input v-model="network.mqtt.port.value" label="Port" />
+        </q-col>
+        <q-col cols="5">
+          <q-input v-model="network.mqtt.topic_base.value" label="Topic" />
+        </q-col>
+      </q-row>
       <q-input v-model="network.mqtt.username.value" label="MQTT Username" />
       <q-input
         v-model="network.mqtt.password.value"
