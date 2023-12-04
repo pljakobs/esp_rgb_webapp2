@@ -17,9 +17,9 @@
     "axios": "^1.6.2",
     "pinia": "^2.1.7",
     "quasar": "^2.6.0",
-    "undici-types": "^5.27.2",
+    "undici-types": "^5.28.1",
     "verte-vue3": "^1.0.1",
-    "vue": "^3.0.0",
+    "vue": "^3.3.9",
     "vue-router": "^4.0.0"
   },
   "devDependencies": {
@@ -29,13 +29,13 @@
     "@mdi/svg": "^7.3.67",
     "@quasar/app-vite": "^1.3.0",
     "autoprefixer": "^10.4.2",
-    "bootstrap-icons": "^1.11.1",
+    "bootstrap-icons": "^1.11.2",
     "eslint": "^8.10.0",
-    "eslint-config-prettier": "^8.1.0",
+    "eslint-config-prettier": "^9.0.0",
     "eslint-plugin-vue": "^9.0.0",
     "material-icons": "^1.13.12",
     "postcss": "^8.4.14",
-    "prettier": "^2.5.1",
+    "prettier": "^3.1.0",
     "subset-iconfont": "^1.0.3"
   },
   "engines": {
