@@ -47,6 +47,22 @@ export function createComputedProperties(store, fields) {
   return computedProperties;
 }
 
+export const colorStore=defineStore("color",{
+  actions:{
+    async fetchData(){
+      try{
+        const response=await fetch(`http://${controllerIpAddress}/color`);
+        const jsonData=await response.json();
+        this.data=jsonData;
+        console.log("data fetched: ",jsonData);
+    }catch(error){
+      console.error("Error fetching color data:",error);
+    }
+  },
+  updateColor(field, value){
+    console.log("color updat for field: ",field,"value: ",value);
+  }
+})
 export const configDataStore = defineStore("configData", {
   state: () => ({
     isLoading: true,

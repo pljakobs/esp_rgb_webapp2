@@ -10,7 +10,7 @@ const routes = [
     component: () => import("layouts/RgbwwLayout.vue"),
     children: [
       { path: "", component: Color },
-      { path: "/Color", component: Color },
+      { path: "/ColorPage", component: ColorPage },
       {
         path: "/ColorSettings",
         component: ColorSettings,
