@@ -20,6 +20,7 @@
     "undici-types": "^5.28.1",
     "verte-vue3": "^1.0.1",
     "vue": "^3.3.9",
+    "vue-color": "^2.8.1",
     "vue-router": "^4.0.0"
   },
   "devDependencies": {

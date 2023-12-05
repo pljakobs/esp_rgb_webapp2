@@ -6,52 +6,48 @@
         Color
       </div>
     </q-card-section>
-    <q-separator />>
+    <q-separator />
     <q-card-section>
-      <div class="q-pa-md q-gutter-md" style="width: 100%">
-        <Verte
-          v-model="hslValue"
-          hslSliders="false"
-          display="widget"
-          model="hsl"
-          :enableAlpha="false"
-        >
-        </Verte>
-        <div class="q-pa-md q-gutter-md">selected {{ hslValue }}</div>
-      </div>
+      <q-color v-model="color" format-model="hex" no-header no-footer />
+      <div class="q-pa-md q-gutter-md">selected {{ color }}</div>
       <q-btn @click="showValue">show color</q-btn>
     </q-card-section>
   </q-card>
 </template>
 
 <script>
-import { defineComponent, ref } from "vue";
-
-import { Verte } from "verte-vue3";
-import "verte-vue3/dist/verte.css";
+import { defineComponent } from "vue";
+import { colors } from 'quasar'
+const { rgbToHsv,hexToRgb } = colors
 
 export default defineComponent({
   name: "ColorPage",
-  setup() {
-    console.log("setting up color component");
+  data() {
     return {
-      gValue: ref(true),
-      bValue: ref(true),
-      hslValue: ref("000"),
-      other: ref(["#000"]),
-    };
-  },
-  components: {
-    Verte,
+      color: '#000000',
+    }
   },
   methods: {
     showValue() {
-      console.log(this.hslValue);
+      console.log(this.color);
+      console.log("hex: ", this.color);
+      const rgb=colors.hexToRgb(this.color);
+      const hsv = colors.rgbToHsv(rgb);
+      console.log("hsv:",hsv);
     },
-    showColorByEvent(e) {
-      console.log(e);
+  },
+  watch: {
+    color(val) {
+      console.log("color changed:", val);
+      const rgb = colors.hexToRgb(val);
+      const hsv = colors.rgbToHsv(rgb);
+      console.log("hsv", hsv);
     },
   },
 });
 </script>
-<style lang="scss"></style>
+<style scoped>
+.q-color__hue {
+  width: 30px !important;
+}
+</style>
