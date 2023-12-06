@@ -31,7 +31,7 @@
     "autoprefixer": "^10.4.2",
     "bootstrap-icons": "^1.11.2",
     "eslint": "^8.10.0",
-    "eslint-config-prettier": "^9.0.0",
+    "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-vue": "^9.0.0",
     "material-icons": "^1.13.12",
     "postcss": "^8.4.14",
