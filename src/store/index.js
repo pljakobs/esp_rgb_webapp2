@@ -21,12 +21,10 @@ function getNestedProperty(obj, path) {
 }
 
 export function createComputedProperties(store, fields) {
-  console.log("createComputedProperties called for ", fields);
   const computedProperties = {};
   let current = computedProperties;
 
   fields.forEach((field) => {
-    console.log("creating computed propery for field: ", field);
     const keys = field.split(".");
     const lastKey = keys.pop();
 
@@ -36,34 +34,44 @@ export function createComputedProperties(store, fields) {
     });
 
     current[lastKey] = computed({
-      get: () => getNestedProperty(store.data, field),
-      set: (value) => store.updateConfigData(field, value),
+      get: () => getNestedProperty(store.state.data, field),
+      set: (value) => store.updateData(field, value),
     });
 
-    // Reset current to the root object for the next field
     current = computedProperties;
   });
 
   return computedProperties;
 }
 
-export const colorStore=defineStore("color",{
-  actions:{
-    async fetchData(){
-      try{
-        const response=await fetch(`http://${controllerIpAddress}/color`);
-        const jsonData=await response.json();
-        this.data=jsonData;
-        console.log("data fetched: ",jsonData);
-    }catch(error){
-      console.error("Error fetching color data:",error);
-    }
+import { defineComponent } from "vue";
+
+export const colorStore = defineStore({
+  id: "color",
+  state: () => ({
+    data: null,
+    hsv: { h: 0, s: 0, v: 0, ct: 0 },
+  }),
+  actions: {
+    async fetchData() {
+      try {
+        const response = await fetch(`http://${controllerIpAddress}/color`);
+        const jsonData = await response.json();
+        this.data = jsonData;
+        console.log("data fetched: ", jsonData);
+      } catch (error) {
+        console.error("Error fetching color data:", error);
+      }
+    },
+    updateData(field, value) {
+      console.log("color update for field: ", field, "value: ", value);
+      this.hsv = { ...this.hsv, [field]: value };
+    },
   },
-  updateColor(field, value){
-    console.log("color updat for field: ",field,"value: ",value);
-  }
-})
-export const configDataStore = defineStore("configData", {
+});
+
+export const configDataStore = defineStore({
+  id: "configData",
   state: () => ({
     isLoading: true,
   }),
@@ -82,12 +90,12 @@ export const configDataStore = defineStore("configData", {
         this.isLoading = false;
       }
     },
-    updateConfigData(field, value) {
+    updateData(field, value) {
       console.log(
         "updateConfigData called for field: ",
         field,
         "value: ",
-        value
+        value,
       );
       const path = field.split(".");
       let current = this.data;

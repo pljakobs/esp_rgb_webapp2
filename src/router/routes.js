@@ -1,4 +1,4 @@
-import Color from "pages/Color.vue";
+import ColorPage from "pages/ColorPage.vue";
 import ColorSettings from "pages/ColorSettings.vue";
 import NetworkSettings from "pages/NetworkSettings.vue";
 import SystemSettings from "pages/SystemSettings.vue";
@@ -9,8 +9,11 @@ const routes = [
     path: "/",
     component: () => import("layouts/RgbwwLayout.vue"),
     children: [
-      { path: "", component: Color },
-      { path: "/ColorPage", component: ColorPage },
+      { path: "", component: ColorPage },
+      {
+        path: "/ColorPage",
+        component: ColorPage,
+      },
       {
         path: "/ColorSettings",
         component: ColorSettings,
