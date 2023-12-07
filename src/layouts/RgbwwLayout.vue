@@ -71,7 +71,7 @@ const linksList = [
     title: "Color",
     caption: "Color",
     icon: "lightbulb",
-    link: "/Color",
+    link: "/ColorPage",
   },
   {
     title: "Color Settings",

@@ -6,6 +6,7 @@ const controllerIpAddress = "192.168.29.38";
 
 // Helper function to get a nested property by a dot-separated path
 function getNestedProperty(obj, path) {
+  console.log("getNestedProperty called for path: ", path, "obj: ", obj);
   const keys = path.split(".");
   let current = obj;
 
@@ -21,33 +22,81 @@ function getNestedProperty(obj, path) {
 }
 
 export function createComputedProperties(store, fields) {
-  console.log("createComputedProperties called for ", fields);
   const computedProperties = {};
   let current = computedProperties;
 
   fields.forEach((field) => {
-    console.log("creating computed propery for field: ", field);
     const keys = field.split(".");
     const lastKey = keys.pop();
 
+    console.log("keys: ", keys, "lastKey: ", lastKey, "field: ", field);
     keys.forEach((key) => {
       current[key] = current[key] || {};
       current = current[key];
     });
 
     current[lastKey] = computed({
-      get: () => getNestedProperty(store.data, field),
-      set: (value) => store.updateConfigData(field, value),
+      get: () => getNestedProperty(store.state, field),
+      set: (value) => store.updateData(field, value),
     });
 
-    // Reset current to the root object for the next field
     current = computedProperties;
   });
 
   return computedProperties;
 }
 
-export const configDataStore = defineStore("configData", {
+import { defineComponent } from "vue";
+
+export const colorDataStore = defineStore({
+  id: "color",
+  state: () => ({
+    data: null,
+    raw: { r: 0, g: 0, b: 0, cw: 0, ww: 0 },
+    hsv: { h: 0, s: 0, v: 0, ct: 0 },
+  }),
+  actions: {
+    async fetchData() {
+      try {
+        console.log("color start fetching data");
+        const response = await fetch(`http://${controllerIpAddress}/color`);
+        const jsonData = await response.json();
+        this.data = jsonData;
+        console.log("color data fetched: ", jsonData);
+      } catch (error) {
+        console.error("Error fetching color data:", error);
+      }
+    },
+    updateData(field, value) {
+      console.log("color update for field: ", field, "value: ", value);
+      this[field] = value;
+      let payload = {};
+      payload[field] = value;
+      console.log("color update payload: ", JSON.stringify(payload));
+      fetch(`http://${controllerIpAddress}/color`, {
+        // Use controllerIpAddress here
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(this.data),
+      })
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          return response.json();
+        })
+        .then((data) => {})
+        .catch((error) => {
+          console.error("There was a problem with the fetch operation:", error);
+        });
+    },
+  },
+});
+
+export const configDataStore = defineStore({
+  id: "configData",
   state: () => ({
     isLoading: true,
   }),
@@ -55,23 +104,23 @@ export const configDataStore = defineStore("configData", {
     async fetchData() {
       this.isLoading = true;
       try {
-        console.log("start fetching data");
+        console.log("config start fetching data");
         const response = await fetch(`http://${controllerIpAddress}/config`); // Use controllerIpAddress here
         const jsonData = await response.json();
         this.data = jsonData;
-        console.log("data fetched: ", jsonData);
+        console.log("config data fetched: ", jsonData);
       } catch (error) {
         console.error("Error fetching config data:", error);
       } finally {
         this.isLoading = false;
       }
     },
-    updateConfigData(field, value) {
+    updateData(field, value) {
       console.log(
         "updateConfigData called for field: ",
         field,
         "value: ",
-        value
+        value,
       );
       const path = field.split(".");
       let current = this.data;

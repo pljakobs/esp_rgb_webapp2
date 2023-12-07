@@ -18,7 +18,7 @@
     "pinia": "^2.1.7",
     "quasar": "^2.6.0",
     "undici-types": "^5.28.1",
-    "verte-vue3": "^1.0.1",
+    "vue-color": "^2.8.1",
     "vue": "^3.3.10",
     "vue-router": "^4.0.0"
   },
