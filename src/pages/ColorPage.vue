@@ -16,16 +16,17 @@
 </template>
 
 <script>
-import { ref, watch, computed } from "vue";
+import { ref, watch, computed, onMounted } from "vue";
 import { colors } from "quasar";
-import { colorStore, createComputedProperties } from "src/store"; // replace with the correct import paths
+import { colorDataStore, createComputedProperties } from "src/store"; // replace with the correct import paths
 import ColorSlider from "src/components/ColorSlider.vue";
 
 const { rgbToHsv, hexToRgb } = colors;
 
 export default {
   setup() {
-    const store = colorStore();
+    const colorStore = colorDataStore();
+    const color = ref("#000000");
     const fields = [
       "raw.r",
       "raw.g",
@@ -36,24 +37,39 @@ export default {
       "hsv.s",
       "hsv.v",
       "hsv.ct",
-      "hsv",
-      "raw",
     ];
-    const computedProperties = createComputedProperties(store, fields);
+    const computedProperties = createComputedProperties(colorStore, fields);
 
-    watch(hsv, (val) => {
+    const hsv_c = computed(() => ({
+      h: computedProperties.hsv.h,
+      s: computedProperties.hsv.s,
+      v: computedProperties.hsv.v,
+      ct: computedProperties.hsv.ct,
+    }));
+
+    const raw_c = computed(() => ({
+      r: computedProperties.raw.r,
+      g: computedProperties.raw.g,
+      b: computedProperties.raw.b,
+      ww: computedProperties.raw.ww,
+      cw: computedProperties.raw.cw,
+    }));
+
+    watch(computedProperties.hsv, (val) => {
       console.log("hsv changed:", val);
       const rgb = hsvToRgb(val);
       const hex = rgbToHex(rgb);
       console.log("hex", hex);
       color.value = hex;
     });
+
     watch(color, (val) => {
-      color.value - slider.log("color changed:", val);
+      color.value - console.log("color changed:", val);
       console.log("color changed:", val);
       const rgb = hexToRgb(val);
       const hsv = rgbToHsv(rgb);
       console.log("hsv", hsv);
+      colorStore.updateData("hsv", hsv);
     });
 
     return {
