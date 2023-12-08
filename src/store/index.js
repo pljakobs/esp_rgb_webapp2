@@ -48,6 +48,25 @@ export function createComputedProperties(store, fields) {
 
 import { defineComponent } from "vue";
 
+export const presetDataStorage = defineStore({
+  id: "preset",
+  actions: {
+    async fetchData() {
+      try {
+        console.log("preset start fetching data");
+        const response = await fetch(
+          "http://$(controllerIpAddress)/preset.json",
+        );
+        const jsonData = await response.json;
+        this.data = jsonData;
+        console.log("preset data fetched: ", jsonData);
+      } catch (error) {
+        console.error("Error fetching preset data:", error);
+      }
+    },
+  },
+});
+
 export const colorDataStore = defineStore({
   id: "color",
   state: () => ({

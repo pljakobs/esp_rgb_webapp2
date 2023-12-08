@@ -12,9 +12,11 @@ export default {
   setup() {
     const configStore = configDataStore();
     const colorStore = colorDataStore();
+    const presetStore = presetDataStore;
     onMounted(() => {
       colorStore.fetchData();
       configStore.fetchData();
+      presetStore.fetchData();
     });
   },
 };
