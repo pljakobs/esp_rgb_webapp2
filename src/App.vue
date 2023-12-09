@@ -5,14 +5,14 @@
 <script>
 import { onMounted } from "vue";
 import { defineStore } from "pinia";
-import { configDataStore, colorDataStore } from "src/store";
+import { configDataStore, colorDataStore, presetDataStore } from "src/store";
 
 export default {
   name: "App",
   setup() {
     const configStore = configDataStore();
     const colorStore = colorDataStore();
-    const presetStore = presetDataStore;
+    const presetStore = presetDataStore();
     onMounted(() => {
       colorStore.fetchData();
       configStore.fetchData();
