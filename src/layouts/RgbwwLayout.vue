@@ -1,8 +1,5 @@
 <template>
-  <div v-if="store.isLoading">
-    <q-spinner> </q-spinner>
-  </div>
-  <div v-else>
+  <div>
     <q-layout view="hHh lpR fFf">
       <q-header elevated class="bg-primary text-white">
         <q-toolbar>
