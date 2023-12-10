@@ -1,63 +1,20 @@
 import { defineStore } from "pinia";
-import { computed } from "vue";
-import { defineComponent } from "vue";
 
 // Define controllerIpAddress as a constant
 const controllerIpAddress = "192.168.29.38";
 
-// Helper function to get a nested property by a dot-separated path
-function getNestedProperty(obj, path) {
-  console.log("getNestedProperty called for path: ", path, "obj: ", obj);
-  const keys = path.split(".");
-  let current = obj;
-
-  for (let i = 0; i < keys.length; i++) {
-    if (!current) {
-      return undefined;
-    }
-    console.log("current: ", current, "keys[i]=" + keys[i]);
-    current = current[keys[i]];
-  }
-
-  return current;
-}
-
-export function createComputedProperties(store, fields) {
-  const computedProperties = {};
-  let current = computedProperties;
-
-  fields.forEach((field) => {
-    const keys = field.split(".");
-    const lastKey = keys.pop();
-
-    keys.forEach((key) => {
-      current[key] = current[key] || {};
-      current = current[key];
-    });
-    console.log(
-      "getter for ",
-      store.id,
-      "field: ",
-      field,
-      "yields",
-      getNestedProperty(store.state, field),
-    );
-
-    current[lastKey] = computed({
-      get: () => getNestedProperty(store.state, field),
-      set: (value) => store.updateData(field, value),
-    });
-
-    current = computedProperties;
-  });
-
-  return computedProperties;
-}
+const storeStatus = {
+  LOADING: "loading",
+  READY: "ready",
+  ERROR: "error",
+};
 
 export const presetDataStore = defineStore({
-  id: "preset",
+  id: "presetDataStore",
+
   state: () => ({
     data: null,
+    status: storeStatus.LOADING,
   }),
   actions: {
     async fetchData() {
@@ -68,8 +25,37 @@ export const presetDataStore = defineStore({
         );
         const jsonData = await response.json();
         this.data = jsonData;
+        this.status = storeStatus.READY;
         console.log("preset data fetched: ", jsonData);
       } catch (error) {
+        this.status = storeStatus.ERROR;
+        this.error = error;
+        console.error("Error fetching preset data:", error);
+      }
+    },
+  },
+});
+
+export const infoDataStore = defineStore({
+  id: "infoDataStore",
+  state: () => ({
+    data: null,
+    status: storeStatus.LOADING,
+  }),
+  actions: {
+    async fetchData() {
+      try {
+        console.log("info start fetching data");
+        const response = await fetch(
+          `http://${controllerIpAddress}/info`, // correct string interpolation
+        );
+        const jsonData = await response.json();
+        this.data = jsonData;
+        this.status = storeStatus.READY;
+        console.log("preset data fetched: ", jsonData);
+      } catch (error) {
+        this.status = storeStatus.ERROR;
+        this.error = error;
         console.error("Error fetching preset data:", error);
       }
     },
@@ -77,9 +63,10 @@ export const presetDataStore = defineStore({
 });
 
 export const colorDataStore = defineStore({
-  id: "color",
+  id: "colorDataStore",
   state: () => ({
     data: null,
+    status: storeStatus.LOADING,
     raw: { r: 0, g: 0, b: 0, cw: 0, ww: 0 },
     hsv: { h: 0, s: 0, v: 0, ct: 0 },
   }),
@@ -90,8 +77,11 @@ export const colorDataStore = defineStore({
         const response = await fetch(`http://${controllerIpAddress}/color`);
         const jsonData = await response.json();
         this.data = jsonData;
+        this.status = storeStatus.READY;
         console.log("color data fetched: ", jsonData);
       } catch (error) {
+        this.storeStatus = storeStatus.ERROR;
+        this.error = error;
         console.error("Error fetching color data:", error);
       }
     },
@@ -132,9 +122,9 @@ export const colorDataStore = defineStore({
 });
 
 export const configDataStore = defineStore({
-  id: "configData",
+  id: "configDataStore",
   state: () => ({
-    isLoading: true,
+    storeStatus: storeStatus.LOADING,
   }),
   actions: {
     async fetchData() {
@@ -144,11 +134,12 @@ export const configDataStore = defineStore({
         const response = await fetch(`http://${controllerIpAddress}/config`); // Use controllerIpAddress here
         const jsonData = await response.json();
         this.data = jsonData;
+        this.storeStatus = storeStatus.READY;
         console.log("config data fetched: ", jsonData);
       } catch (error) {
+        this.storeStatus = storeStatus.ERROR;
+        this.error = error;
         console.error("Error fetching config data:", error);
-      } finally {
-        this.isLoading = false;
       }
     },
     updateData(field, value) {
@@ -158,26 +149,6 @@ export const configDataStore = defineStore({
         "value: ",
         value,
       );
-      const path = field.split(".");
-      let current = this.data;
-
-      for (let i = 0; i < path.length - 1; i++) {
-        current = current[path[i]];
-      }
-
-      current[path[path.length - 1]] = value;
-
-      // Construct the payload to only include the updated property
-      let payload = {};
-      let payloadCurrent = payload;
-
-      for (let i = 0; i < path.length - 1; i++) {
-        payloadCurrent[path[i]] = {};
-        payloadCurrent = payloadCurrent[path[i]];
-      }
-
-      payloadCurrent[path[path.length - 1]] = value;
-      console.log("calling api with payload: ", JSON.stringify(payload));
       // Make a PUT request to the API endpoint
       fetch(`http://${controllerIpAddress}/config`, {
         // Use controllerIpAddress here
@@ -200,3 +171,4 @@ export const configDataStore = defineStore({
     },
   },
 });
+export { storeStatus };

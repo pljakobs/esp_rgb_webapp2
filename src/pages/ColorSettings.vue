@@ -105,76 +105,62 @@
 </template>
 <script>
 import { ref, watch, computed } from "vue";
-import { configDataStore, createComputedProperties } from "src/store";
+import { configDataStore } from "src/store";
 import ColorSlider from "src/components/ColorSlider.vue";
 
 export default {
   setup() {
-    const store = configData;
-
-    const fields = [
-      "color.hsv.red",
-      "color.hsv.yellow",
-      "color.hsv.green",
-      "color.hsv.cyan",
-      "color.hsv.blue",
-      "color.hsv.magenta",
-      "color.hsv.model",
-      "color.brightness.red",
-      "color.brightness.green",
-      "color.brightness.blue",
-      "color.brightness.ww",
-      "color.brightness.cw",
-      "color.colortemp.ww",
-      "color.colortemp.cw",
-    ];
-    const computedProperties = createComputedProperties(store, fields);
-
+    const configData = configDataStore();
+    onMounted(async () => {
+      await colorData.fetchData();
+      console.log(colorData.state);
+      isLoading.value = false;
+    });
     const transitionOptions = ["Normal", "Spektrum", "Rainbow"];
     const transitionModel = ref(
-      transitionOptions[computedProperties.color.hsv.model.value],
+      transitionOptions[configData.color.hsv.model.value],
     );
-    console.log("transition mode:", computedProperties.color.hsv.model.value);
+    console.log("transition mode:", configData.color.hsv.model.value);
 
     const colorGains = [
       {
         label: "Red",
-        model: computedProperties.color.hsv.red.value,
+        model: configData.color.hsv.red.value,
         min: -30,
         max: 30,
         color: "red",
       },
       {
         label: "Yellow",
-        model: computedProperties.color.hsv.yellow.value,
+        model: configData.color.hsv.yellow.value,
         min: -30,
         max: 30,
         color: "yellow",
       },
       {
         label: "Green",
-        model: computedProperties.color.hsv.green.value,
+        model: configData.color.hsv.green.value,
         min: -30,
         max: 30,
         color: "green",
       },
       {
         label: "Cyan",
-        model: computedProperties.color.hsv.cyan.value,
+        model: configData.color.hsv.cyan.value,
         min: -30,
         max: 30,
         color: "cyan",
       },
       {
         label: "Blue",
-        model: computedProperties.color.hsv.blue.value,
+        model: configData.color.hsv.blue.value,
         min: -30,
         max: 30,
         color: "blue",
       },
       {
         label: "Magenta",
-        model: computedProperties.color.hsv.magenta.value,
+        model: configData.color.hsv.magenta.value,
         min: -30,
         max: 30,
         color: "#ff0090",
@@ -188,21 +174,21 @@ export default {
       const sliders = [
         {
           label: "Red",
-          model: computedProperties.color.brightness.red.value,
+          model: configData.color.brightness.red.value,
           min: 0,
           max: 100,
           color: "red",
         },
         {
           label: "Green",
-          model: computedProperties.color.brightness.green.value,
+          model: configData.color.brightness.green.value,
           min: 0,
           max: 100,
           color: "green",
         },
         {
           label: "Blue",
-          model: computedProperties.color.brightness.blue.value,
+          model: configData.color.brightness.blue.value,
           min: 0,
           max: 100,
           color: "blue",
@@ -212,7 +198,7 @@ export default {
       if (colorModel.value === "RGBWW" || colorModel.value === "RGBWWCW") {
         sliders.push({
           label: "Warm White",
-          model: computedProperties.color.brightness.ww.value,
+          model: configData.color.brightness.ww.value,
           min: 0,
           max: 100,
           color: "yellow",
@@ -222,7 +208,7 @@ export default {
       if (colorModel.value === "RGBCW" || colorModel.value === "RGBWWCW") {
         sliders.push({
           label: "Cold White",
-          model: computedProperties.color.brightness.cw.value,
+          model: configData.color.brightness.cw.value,
           min: 0,
           max: 100,
           color: "cyan",
@@ -235,14 +221,14 @@ export default {
     const colorTemperatures = [
       {
         label: "warm white",
-        model: computedProperties.color.colortemp.ww.value,
+        model: configData.color.colortemp.ww.value,
         min: 2500,
         max: 8000,
         color: "yellow",
       },
       {
         label: "cold white",
-        model: computedProperties.color.colortemp.cw.value,
+        model: configData.color.colortemp.cw.value,
         min: 2500,
         max: 8000,
         color: "cyan",
@@ -260,7 +246,7 @@ export default {
       console.log(
         `from update trigger: \nTransition model changed to ${newTransitionModel}`,
       );
-      computedProperties.color.hsv.model.value =
+      configData.color.hsv.model.value =
         transitionOptions.indexOf(newTransitionModel);
     };
 
@@ -285,7 +271,7 @@ export default {
       colorTemperatures,
       updateColorSlider,
       updateTransitionMode,
-      computedProperties,
+      isLoading: computed(() => configData.isLoading),
     };
   },
   components: {

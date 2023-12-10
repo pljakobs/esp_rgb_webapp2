@@ -1,5 +1,8 @@
 <template>
-  <div class="card-container">
+  <div v-if="colorData.status === storeStatus.LOADING">
+    <q-spinner />
+  </div>
+  <div v-if="colorData.status === storeStatus.READY" class="card-container">
     <div class="row">
       <q-btn-group>
         <q-btn
@@ -78,70 +81,73 @@
       </q-carousel-slide>
     </q-carousel>
   </div>
+  <div v-if="colorData.status === storeStatus.ERROR">
+    <q-card bordered class="my-card shadow-4 col-auto fit q-gutter-md">
+      <q-card-section>
+        <div class="text-h6">
+          <q-icon name="Emergency Home" />
+          Uh oh, something went wrong communicating with the controller
+        </div>
+      </q-card-section>
+    </q-card>
+  </div>
 </template>
 <script>
 import { ref, watch, computed, onMounted } from "vue";
 import { colors } from "quasar";
-import { colorDataStore, createComputedProperties } from "src/store"; // replace with the correct import paths
+import { colorDataStore, storeStatus } from "src/store"; // replace with the correct import paths
 import ColorSlider from "src/components/ColorSlider.vue";
 
 const { rgbToHsv, hexToRgb } = colors;
 
 export default {
   setup() {
+    const isLoading = ref(true);
     const carouselPage = ref("hsv");
-    const colorStore = colorDataStore;
-    console.log(colorStore.state);
+
+    const colorData = colorDataStore();
+
+    onMounted(async () => {
+      await colorData.fetchData();
+      console.log(colorData.state);
+      isLoading.value = false;
+    });
 
     const color = ref("#000000");
-    const fields = [
-      "raw.r",
-      "raw.g",
-      "raw.b",
-      "raw.ww",
-      "raw.cw",
-      "hsv.h",
-      "hsv.s",
-      "hsv.v",
-      "hsv.ct",
-    ];
-    const computedProperties = createComputedProperties(colorStore, fields);
-    console.log("computedProperties", computedProperties);
-
     const colorSliders = computed(() => {
       // Define the sliders based on the selected model
       const sliders = [
         {
           label: "Red",
-          model: computedProperties.raw.r,
+          model: colorData.raw.r,
           min: 0,
           max: 1023,
           color: "red",
         },
         {
           label: "Green",
-          model: computedProperties.raw.g,
+          model: colorData.raw.g,
           min: 0,
           max: 1023,
           color: "green",
         },
         {
           label: "Blue",
-          model: computedProperties.raw.b,
+          model: colorData.raw.b,
           min: 0,
           max: 1023,
           color: "blue",
         },
         {
           label: "Warm White",
-          model: computedProperties.raw.ww,
+          model: colorData.raw.ww,
           min: 0,
           max: 1023,
           color: "yellow",
         },
         {
           label: "Cold White",
-          model: computedProperties.raw.cw,
+          model: colorData.raw.cw,
           min: 0,
           max: 1023,
           color: "cyan",
@@ -151,21 +157,21 @@ export default {
     });
 
     const hsv_c = computed(() => ({
-      h: computedProperties.hsv.h,
-      s: computedProperties.hsv.s,
-      v: computedProperties.hsv.v,
-      ct: computedProperties.hsv.ct,
+      h: colorData.hsv.h,
+      s: colorData.hsv.s,
+      v: colorData.hsv.v,
+      ct: colorData.hsv.ct,
     }));
 
     const raw_c = computed(() => ({
-      r: computedProperties.raw.r,
-      g: computedProperties.raw.g,
-      b: computedProperties.raw.b,
-      ww: computedProperties.raw.ww,
-      cw: computedProperties.raw.cw,
+      r: colorData.raw.r,
+      g: colorData.raw.g,
+      b: colorData.raw.b,
+      ww: colorData.raw.ww,
+      cw: colorData.raw.cw,
     }));
 
-    watch(computedProperties.hsv, (val) => {
+    watch(colorData.hsv, (val) => {
       console.log("hsv changed:", val);
       const rgb = hsvToRgb(val);
       const hex = rgbToHex(rgb);
@@ -179,27 +185,21 @@ export default {
       const rgb = hexToRgb(val);
       const hsv = rgbToHsv(rgb);
       console.log("hsv", hsv);
-      colorStore.updateData("hsv", hsv);
+      colorData.updateData("hsv", hsv);
     });
 
     const updateColorSlider = (slider, value) => {
       console.log("update for", slider);
       console.log("new value", value);
-      //store.updateConfigData(slider.label.toLowerCase(), value);
-      //store.dispatch('config/updateConfigData',''
     };
 
-    onMounted(async () => {
-      await colorStore.fetchData();
-      console.log("color store in ColorPage.vue", colorStore.state);
-    });
-
     return {
-      ...computedProperties,
       color,
       carouselPage,
       colorSliders,
       updateColorSlider,
+      colorData,
+      storeStatus,
     };
   },
 
