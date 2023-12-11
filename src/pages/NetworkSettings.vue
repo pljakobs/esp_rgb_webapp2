@@ -34,13 +34,13 @@
         </div>
         <div class="text-h7">
           <q-toggle
-            v-model="network.connection.dhcp.value"
+            v-model="infoData.data.connection.dhcp.value"
             label="use dhcp"
             left-label
           />
         </div>
       </q-card-section>
-      <q-card-section v-if="!configData.network.connection.dhcp.value">
+      <q-card-section v-if="!configData.data.network.connection.dhcp.value">
         <q-input
           v-model="configData.network.connection.ip.value"
           label="IP Address"
@@ -138,7 +138,7 @@
           left-label
         />
         <q-toggle
-          v-model="sync.cmd_slave_enabled.value"
+          v-model="configData.sync.cmd_slave_enabled.value"
           label="CMD"
           left-label
         />
@@ -173,9 +173,16 @@ export default {
       () => infoData.status,
       (newStatus, oldStatus) => {
         console.log("infoData.status changed from", oldStatus, "to", newStatus);
+        console.log("infoData store content is now", infoData);
       },
     );
-
+    /**
+     * Watches for changes in the infoData status and updates the connectionItems value accordingly.
+     * If the infoData status is READY, it populates the connectionItems array with the relevant connection information.
+     * The connectionItems array contains objects with label-value pairs representing different connection properties.
+     * The label represents the name of the property, and the value represents the corresponding value.
+     * The connection properties include SSID, MAC Address, DHCP status, IP Address, IP Netmask, and IP Gateway.
+     */
     watchEffect(() => {
       if (infoData.status === storeStatus.READY) {
         console.log("infoData.status", infoData.status);
@@ -187,14 +194,14 @@ export default {
             label: "DHCP:",
             value: infoData.data.connection.dhcp ? "yes" : "no",
           },
-          { label: "IP-Address:", value: configData.data.connection.ip },
+          { label: "IP-Address:", value: infoData.data.connection.ip },
           {
             label: "IP Netmask:",
             value: infoData.data.connection.netmask,
           },
           {
             label: "IP Gateway:",
-            value: infoData.connection.gateway,
+            value: infoData.data.connection.gateway,
           },
         ];
       }
