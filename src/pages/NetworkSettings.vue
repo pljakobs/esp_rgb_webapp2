@@ -1,13 +1,18 @@
 <template>
-  configData: {{ configData.status }} <br />
-  infoData: {{ infoData.status }}
   <div
     v-if="
       infoData.status === storeStatus.LOADING ||
       configData.status === storeStatus.LOADING
     "
   >
-    <H1><q-spinner-radio color="brown" /></H1>
+    <h1><q-spinner-radio color="light-blue" /></h1>
+  </div>
+  <div v-else>
+    <q-card bordered class="my-card shadow-4 col-auto fit q-gutter-md">
+      <q-card-section>
+        <dataTable :Items="connectionItems" />
+      </q-card-section>
+    </q-card>
   </div>
   <div
     v-if="
@@ -34,25 +39,33 @@
         </div>
         <div class="text-h7">
           <q-toggle
-            v-model="infoData.data.connection.dhcp.value"
+            v-model="configData.data.network.connection.dhcp"
             label="use dhcp"
             left-label
           />
         </div>
       </q-card-section>
-      <q-card-section v-if="!configData.data.network.connection.dhcp.value">
-        <q-input
-          v-model="configData.network.connection.ip.value"
-          label="IP Address"
-        />
-        <q-input
-          v-model="configData.network.connection.netmask.value"
-          label="IP Netmask"
-        />
-        <q-input
-          v-model="configData.network.connection.gateway.value"
-          label="IP Gateway"
-        />
+      <q-card-section v-if="!configData.data.network.connection.dhcp">
+        <div class="row">
+          <div class="col-4">
+            <q-input
+              v-model="configData.data.network.connection.ip"
+              label="IP Address"
+            />
+          </div>
+          <div class="col-4">
+            <q-input
+              v-model="configData.data.network.connection.netmask"
+              label="IP Netmask"
+            />
+          </div>
+          <div class="col-4">
+            <q-input
+              v-model="configData.data.network.connection.gateway"
+              label="IP Gateway"
+            />
+          </div>
+        </div>
       </q-card-section>
     </q-card>
     <q-card bordered class="my-card shadow-4 col-auto fit q-gutter-md">
@@ -64,42 +77,39 @@
         </div>
         <div class="text-h7">
           <q-toggle
-            v-model="configData.network.mqtt.enabled.value"
+            v-model="configData.data.network.mqtt.enabled"
             label="enable MQTT"
             left-label
           />
-          {{ configData.network.mqtt.enabled.value }}
+          {{ configData.data.network.mqtt.enabled }}
         </div>
       </q-card-section>
 
-      <q-card-section v-if="configData.network.mqtt.enabled.value">
+      <q-card-section v-if="configData.data.network.mqtt.enabled">
         <q-separator />
-        <q-row>
-          <q-col cols="4">
+        <div class="row">
+          <div class="col-4">
             <q-input
-              v-model="configData.network.mqtt.server.value"
+              v-model="configData.data.network.mqtt.server"
               label="MQTT Server"
             />
-          </q-col>
-          <q-col cols="3">
+          </div>
+          <div class="col-4">
+            <q-input v-model="configData.data.network.mqtt.port" label="Port" />
+          </div>
+          <div class="col-4">
             <q-input
-              v-model="configData.network.mqtt.port.value"
-              label="Port"
-            />
-          </q-col>
-          <q-col cols="5">
-            <q-input
-              v-model="configData.network.mqtt.topic_base.value"
+              v-model="configData.data.network.mqtt.topic_base"
               label="Topic"
             />
-          </q-col>
-        </q-row>
+          </div>
+        </div>
         <q-input
-          v-model="configData.network.mqtt.username.value"
+          v-model="configData.data.network.mqtt.username"
           label="MQTT Username"
         />
         <q-input
-          v-model="configData.network.mqtt.password.value"
+          v-model="configData.data.network.mqtt.password"
           filled
           :type="isPwd ? 'password' : 'text'"
           hint="Password with toggle"
@@ -116,34 +126,34 @@
 
         <div>Controller is primary for</div>
         <q-toggle
-          v-model="configData.sync.clock_master_enabled.value"
+          v-model="configData.data.sync.clock_master_enabled"
           label="Clock"
           left-label
         />
         <q-toggle
-          v-model="configData.sync.cmd_master_enabled.value"
+          v-model="configData.data.sync.cmd_master_enabled"
           label="CMD"
           left-label
         />
         <q-toggle
-          v-model="configData.sync.color_master_enabled.value"
+          v-model="configData.data.sync.color_master_enabled"
           label="Color"
           left-label
         />
         <q-separator />
         <div>Controller is secondary for</div>
         <q-toggle
-          v-model="configData.sync.clock_slave_enabled.value"
+          v-model="configData.data.sync.clock_slave_enabled"
           label="Clock"
           left-label
         />
         <q-toggle
-          v-model="configData.sync.cmd_slave_enabled.value"
+          v-model="configData.data.sync.cmd_slave_enabled"
           label="CMD"
           left-label
         />
         <q-toggle
-          v-model="configData.sync.color_slave_enabled.value"
+          v-model="configData.data.sync.color_slave_enabled"
           label="Color"
           left-label
         />

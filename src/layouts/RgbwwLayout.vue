@@ -1,5 +1,81 @@
 <template>
-  <div>
+  <div
+    v-if="
+      infoData.status === storeStatus.LOADING ||
+      configData.status === storeStatus.LOADING ||
+      colorData.status === storeStatus.LOADING ||
+      presetData.status === storeStatus.LOADING ||
+      groupsData.status === storeStatus.LOADING
+    "
+  >
+    <div class="center-container bg-light-grey">
+      <div class="flex flex-center">
+        <div class="q-pa-md">
+          <h1><q-spinner-radio color="light-blue" /></h1>
+          loading... <br />Configuration:
+          <span
+            v-if="configData.status === storeStatus.READY"
+            class="text-success"
+            >✔️</span
+          >
+          <q-spinner
+            v-else-if="configData.status === storeStatus.LOADING"
+            color="light-blue"
+          />
+          <span v-else class="text-danger">❌ {{ configData.error }} </span
+          ><br />
+          Information:
+          <span
+            v-if="infoData.status === storeStatus.READY"
+            class="text-success"
+            >✔️</span
+          >
+          <q-spinner
+            v-else-if="infoData.status === storeStatus.LOADING"
+            color="light-blue"
+          />
+          <span v-else class="text-danger">❌ {{ infoData.errro }}</span
+          ><br />
+          Colors:
+          <span
+            v-if="colorData.status === storeStatus.READY"
+            class="text-success"
+            >✔️</span
+          >
+          <q-spinner
+            v-else-if="colorData.status === storeStatus.LOADING"
+            color="light-blue"
+          />
+          <span v-else class="text-danger">❌ {{ colorData.error }}</span
+          ><br />
+          Presets:
+          <span
+            v-if="presetData.status === storeStatus.READY"
+            class="text-success"
+            >✔️</span
+          >
+          <q-spinner
+            v-else-if="presetData.status === storeStatus.LOADING"
+            color="light-blue"
+          />
+          <span v-else class="text-danger">❌ {{ presetData.error }}</span
+          ><br />
+          Groups:
+          <span
+            v-if="groupsData.status === storeStatus.READY"
+            class="text-success"
+            >✔️</span
+          >
+          <q-spinner
+            v-else-if="groupsData.status === storeStatus.LOADING"
+            color="light-blue"
+          />
+          <span v-else class="text-danger">❌ {{ groupsData.error }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div v-else>
     <q-layout view="hHh lpR fFf">
       <q-header elevated class="bg-primary text-white">
         <q-toolbar>
@@ -61,8 +137,14 @@
 <script>
 import { defineComponent, onBeforeMount, ref } from "vue";
 import EssentialLink from "components/EssentialLink.vue";
-import { configDataStore } from "src/store"; // replace with your store path
-
+import {
+  configDataStore,
+  infoDataStore,
+  colorDataStore,
+  presetDataStore,
+  groupsDataStore,
+  storeStatus,
+} from "src/store";
 const linksList = [
   {
     title: "Color",
@@ -105,13 +187,21 @@ export default defineComponent({
   setup() {
     const leftDrawerOpen = ref(false);
 
-    const store = configDataStore();
+    const configData = configDataStore();
+    const infoData = infoDataStore();
+    const colorData = colorDataStore();
+    const presetData = presetDataStore();
+    const groupsData = groupsDataStore();
 
-    onBeforeMount(async () => await store.fetchData());
     return {
       essentialLinks: linksList,
       leftDrawerOpen,
-      store,
+      configData,
+      infoData,
+      colorData,
+      presetData,
+      groupsData,
+      storeStatus,
       toggleLeftDrawer() {
         leftDrawerOpen.value = !leftDrawerOpen.value;
       },
@@ -119,3 +209,15 @@ export default defineComponent({
   },
 });
 </script>
+<style scoped>
+.center-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+</style>

@@ -10,6 +10,7 @@ import {
   colorDataStore,
   presetDataStore,
   infoDataStore,
+  groupsDataStore,
 } from "src/store";
 
 export default {
@@ -19,11 +20,13 @@ export default {
     const colorStore = colorDataStore();
     const presetStore = presetDataStore();
     const infoStore = infoDataStore();
+    const groupsData = groupsDataStore();
     onMounted(() => {
       colorStore.fetchData();
       configStore.fetchData();
       presetStore.fetchData();
       infoStore.fetchData();
+      groupsData.fetchData();
     });
   },
 };
