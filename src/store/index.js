@@ -36,6 +36,33 @@ export const presetDataStore = defineStore({
   },
 });
 
+export const groupsDataStore = defineStore({
+  id: "groupsDataStore",
+
+  state: () => ({
+    data: null,
+    status: storeStatus.LOADING,
+  }),
+  actions: {
+    async fetchData() {
+      try {
+        console.log("preset start fetching data");
+        const response = await fetch(
+          `http://${controllerIpAddress}/groups.json`, // correct string interpolation
+        );
+        const jsonData = await response.json();
+        this.data = jsonData;
+        this.status = storeStatus.READY;
+        console.log("groups data fetched: ", jsonData);
+      } catch (error) {
+        this.status = storeStatus.ERROR;
+        this.error = error;
+        console.error("Error fetching groups data:", error);
+      }
+    },
+  },
+});
+
 export const infoDataStore = defineStore({
   id: "infoDataStore",
   state: () => ({
@@ -133,7 +160,6 @@ export const configDataStore = defineStore({
   }),
   actions: {
     async fetchData() {
-      this.isLoading = true;
       try {
         console.log("config start fetching data");
         const response = await fetch(`http://${controllerIpAddress}/config`); // Use controllerIpAddress here
