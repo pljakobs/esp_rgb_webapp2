@@ -271,7 +271,8 @@ export default {
       colorTemperatures,
       updateColorSlider,
       updateTransitionMode,
-      isLoading: computed(() => configData.isLoading),
+      configData,
+      infoData,
     };
   },
   components: {

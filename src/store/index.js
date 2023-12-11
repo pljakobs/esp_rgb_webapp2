@@ -52,11 +52,16 @@ export const infoDataStore = defineStore({
         const jsonData = await response.json();
         this.data = jsonData;
         this.status = storeStatus.READY;
-        console.log("preset data fetched: ", jsonData);
+        console.log(
+          "infoData status: ",
+          this.status,
+          "\ninfoData fetched: ",
+          this.data,
+        );
       } catch (error) {
         this.status = storeStatus.ERROR;
         this.error = error;
-        console.error("Error fetching preset data:", error);
+        console.error("Error fetching info data:", error);
       }
     },
   },
@@ -80,7 +85,7 @@ export const colorDataStore = defineStore({
         this.status = storeStatus.READY;
         console.log("color data fetched: ", jsonData);
       } catch (error) {
-        this.storeStatus = storeStatus.ERROR;
+        this.status = storeStatus.ERROR;
         this.error = error;
         console.error("Error fetching color data:", error);
       }
@@ -124,7 +129,7 @@ export const colorDataStore = defineStore({
 export const configDataStore = defineStore({
   id: "configDataStore",
   state: () => ({
-    storeStatus: storeStatus.LOADING,
+    status: storeStatus.LOADING,
   }),
   actions: {
     async fetchData() {
@@ -134,10 +139,10 @@ export const configDataStore = defineStore({
         const response = await fetch(`http://${controllerIpAddress}/config`); // Use controllerIpAddress here
         const jsonData = await response.json();
         this.data = jsonData;
-        this.storeStatus = storeStatus.READY;
+        this.status = storeStatus.READY;
         console.log("config data fetched: ", jsonData);
       } catch (error) {
-        this.storeStatus = storeStatus.ERROR;
+        this.status = storeStatus.ERROR;
         this.error = error;
         console.error("Error fetching config data:", error);
       }

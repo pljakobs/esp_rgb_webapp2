@@ -1,11 +1,13 @@
 <template>
+  configData: {{ configData.status }} <br />
+  infoData: {{ infoData.status }}
   <div
     v-if="
       infoData.status === storeStatus.LOADING ||
       configData.status === storeStatus.LOADING
     "
   >
-    <q-spinner />
+    <H1><q-spinner-radio color="brown" /></H1>
   </div>
   <div
     v-if="
@@ -152,7 +154,7 @@
 
 <script>
 import dataTable from "components/dataTable.vue";
-import { ref } from "vue";
+import { ref, watchEffect, watch } from "vue";
 import { configDataStore, infoDataStore, storeStatus } from "src/store";
 
 export default {
@@ -164,38 +166,44 @@ export default {
     const infoData = infoDataStore();
 
     const isPwd = ref(true);
+    const connectionItems = ref([]);
+    // add a watchEffect for when infoData.status goes out of storeStatus.READY again (e.g. when the connection is lost)
 
-    const connectionItems = [
-      { label: "SSID:", value: infoData.connection.ssid },
-      { label: "MAC-Address:", value: infoData.connection.mac },
-      {
-        label: "DHCP:",
-        value: infoData.network.connection.dhcp ? "yes" : "no",
+    watch(
+      () => infoData.status,
+      (newStatus, oldStatus) => {
+        console.log("infoData.status changed from", oldStatus, "to", newStatus);
       },
-      { label: "IP-Address:", value: configData.network.connection.ip },
-      {
-        label: "IP Netmask:",
-        value: infoData.connection.netmask,
-      },
-      {
-        label: "IP Gateway:",
-        value: infoData.connection.gateway,
-      },
-    ];
-    onMounted(async () => {
-      await colorData.fetchData();
-      console.log(colorData.state);
-      isLoading.value = false;
+    );
+
+    watchEffect(() => {
+      if (infoData.status === storeStatus.READY) {
+        console.log("infoData.status", infoData.status);
+        console.log("infoData.data", infoData.data);
+        connectionItems.value = [
+          { label: "SSID:", value: infoData.data.connection.ssid },
+          { label: "MAC-Address:", value: infoData.data.connection.mac },
+          {
+            label: "DHCP:",
+            value: infoData.data.connection.dhcp ? "yes" : "no",
+          },
+          { label: "IP-Address:", value: configData.data.connection.ip },
+          {
+            label: "IP Netmask:",
+            value: infoData.data.connection.netmask,
+          },
+          {
+            label: "IP Gateway:",
+            value: infoData.connection.gateway,
+          },
+        ];
+      }
     });
-    onMounted(async () => {
-      await colorData.fetchData();
-      console.log(colorData.state);
-      isLoading.value = false;
-    });
+
     return {
       connectionItems,
       isPwd,
-      infoDataStore,
+      infoData,
       configData,
       storeStatus,
     };
