@@ -23,6 +23,7 @@ export default {
     const groupsData = groupsDataStore();
     onMounted(() => {
       colorStore.fetchData();
+      colorStore.setupWebSocket();
       configStore.fetchData();
       presetStore.fetchData();
       infoStore.fetchData();

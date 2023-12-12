@@ -1,8 +1,8 @@
 import { defineStore } from "pinia";
 
 // Define controllerIpAddress as a constant
-//const controllerIpAddress = "192.168.29.38";
-const controllerIpAddress = "led-ku.fritz.box";
+const controllerIpAddress = "192.168.29.38";
+//const controllerIpAddress = "led-ku.fritz.box";
 const storeStatus = {
   LOADING: "loading",
   READY: "ready",
@@ -126,7 +126,7 @@ export const colorDataStore = defineStore({
       }
     },
     setupWebSocket() {
-      const socket = new WebSocket("ws://${controllerIpAddress}:9090");
+      const socket = new WebSocket(`ws://${controllerIpAddress}:9090`);
 
       socket.onmessage = (event) => {
         console.log("WebSocket message:", event.data);
