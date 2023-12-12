@@ -1,7 +1,4 @@
 <template>
-  <div v-if="colorData.status === storeStatus.LOADING">
-    <q-spinner />
-  </div>
   <div v-if="colorData.status === storeStatus.READY" class="card-container">
     <div class="row">
       <q-btn-group>
@@ -76,7 +73,61 @@
 
       <q-carousel-slide name="presets">
         <q-card class="my-card shadow-4 col-auto q-gutter-md">
-          this will contain the presets
+          <q-list>
+            <q-item
+              v-for="preset in presetData.data['presets']"
+              :key="preset.name"
+              class="q-my-sm"
+            >
+              <q-item-section avatar>
+                <q-badge
+                  :style="{
+                    backgroundColor: preset.raw
+                      ? `rgb(${preset.raw.r}, ${preset.raw.g}, ${preset.raw.b})`
+                      : `rgb(${hsvToRgb(preset.hsv).r}, ${
+                          hsvToRgb(preset.hsv).g
+                        }, ${hsvToRgb(preset.hsv).b})`,
+                    width: '30px',
+                    height: '30px',
+                    borderRadius: '50%',
+                    border: '1px solid black',
+                  }"
+                  round
+                />
+              </q-item-section>
+              <q-item-section avatar>
+                <q-badge
+                  style="
+                    background-color: black;
+                    color: white;
+                    font-size: 0.8em;
+                  "
+                  round
+                >
+                  {{ preset.raw ? "RAW" : "HSV" }}
+                </q-badge>
+              </q-item-section>
+              <q-item-section>
+                {{ preset.name }}
+              </q-item-section>
+              <q-item-section>
+                <q-icon
+                  name="star"
+                  :class="{ 'text-yellow': preset.favorite }"
+                  style="font-size: 1.5em"
+                />
+              </q-item-section>
+
+              <!--
+              <q-item-section>
+                <div v-if="preset.hsv">{{ hsvToRgb(preset.hsv) }}</div>
+                <div v-else>
+                  {{ preset.raw.r }}, {{ preset.raw.g }}, {{ preset.raw.b }}
+                </div>
+              </q-item-section>
+              -->
+            </q-item>
+          </q-list>
         </q-card>
       </q-carousel-slide>
     </q-carousel>
@@ -95,10 +146,10 @@
 <script>
 import { ref, watch, computed, onMounted } from "vue";
 import { colors } from "quasar";
-import { colorDataStore, storeStatus } from "src/store"; // replace with the correct import paths
+import { colorDataStore, storeStatus, presetDataStore } from "src/store"; // replace with the correct import paths
 import ColorSlider from "src/components/ColorSlider.vue";
 
-const { rgbToHsv, hexToRgb } = colors;
+const { rgbToHsv, hexToRgb, hsvToRgb } = colors;
 
 export default {
   setup() {
@@ -106,12 +157,7 @@ export default {
     const carouselPage = ref("hsv");
 
     const colorData = colorDataStore();
-
-    onMounted(async () => {
-      await colorData.fetchData();
-      console.log(colorData.state);
-      isLoading.value = false;
-    });
+    const presetData = presetDataStore();
 
     const color = ref("#000000");
     const colorSliders = computed(() => {
@@ -200,6 +246,8 @@ export default {
       updateColorSlider,
       colorData,
       storeStatus,
+      presetData,
+      hsvToRgb,
     };
   },
 
