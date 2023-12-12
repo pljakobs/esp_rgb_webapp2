@@ -1,8 +1,8 @@
 import { defineStore } from "pinia";
 
 // Define controllerIpAddress as a constant
-const controllerIpAddress = "192.168.29.38";
-
+//const controllerIpAddress = "192.168.29.38";
+const controllerIpAddress = "led-ku.fritz.box";
 const storeStatus = {
   LOADING: "loading",
   READY: "ready",
@@ -36,9 +36,17 @@ export const presetDataStore = defineStore({
   },
 });
 
+/**
+ * Groups Store
+ *
+ * one goal for this release is for the app to have a notion of controller groups that can be used to control multiple lights at once
+ *
+ * for now, this is implemented as a simple stored file on the controller that can be accessed by <controllerIpAddress>/groups.json and
+ * written to using the /storage api call that expects a json object with filename: at the top level, followed by data: and the object
+ * to write to flash
+ */
 export const groupsDataStore = defineStore({
   id: "groupsDataStore",
-
   state: () => ({
     data: null,
     status: storeStatus.LOADING,
@@ -116,6 +124,30 @@ export const colorDataStore = defineStore({
         this.error = error;
         console.error("Error fetching color data:", error);
       }
+    },
+    setupWebSocket() {
+      const socket = new WebSocket("ws://${controllerIpAddress}:9090");
+
+      socket.onmessage = (event) => {
+        console.log("WebSocket message:", event.data);
+        const data = JSON.parse(event.data);
+
+        if (data.raw) {
+          this.raw = data.raw;
+        }
+
+        if (data.hsv) {
+          this.hsv = data.hsv;
+        }
+      };
+
+      socket.onerror = (error) => {
+        console.error("WebSocket error:", error);
+      };
+
+      socket.onclose = (event) => {
+        console.log("WebSocket closed:", event);
+      };
     },
     updateData(field, value) {
       console.log("color update for field: ", field, "value: ", value);
