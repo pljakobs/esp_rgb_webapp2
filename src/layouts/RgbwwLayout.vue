@@ -112,6 +112,20 @@
         </q-list>
       </q-drawer>
       <q-page-container>
+        <div id="q-app" class="bg-blue-grey-2" style="min-eight: 100vh">
+          <div
+            id="parent"
+            class="fit row wrap justify-center items-start content-start"
+          >
+            <div
+              class="col-xs-12 col-sm-8 col-md-8 col-lg-4 q-gutter-md"
+              justify-center
+            >
+              <RouterView></RouterView>
+            </div>
+          </div>
+          <!--
+      <q-page-container>
         screen width: {{ $q.screen.width }}
         <div id="q-app" class="bg-blue-grey-2" style="min-height: 100vh">
           <div class="flex flex-center column">
@@ -129,6 +143,9 @@
               </div>
             </div>
           </div>
+        </div>
+      </q-page-container>
+    -->
         </div>
       </q-page-container>
     </q-layout>
