@@ -1,25 +1,5 @@
 <template>
-  <div
-    v-if="
-      infoData.status === storeStatus.LOADING ||
-      configData.status === storeStatus.LOADING
-    "
-  >
-    <h1><q-spinner-radio color="light-blue" /></h1>
-  </div>
-  <div v-else>
-    <q-card bordered class="my-card shadow-4 col-auto fit q-gutter-md">
-      <q-card-section>
-        <dataTable :Items="connectionItems" />
-      </q-card-section>
-    </q-card>
-  </div>
-  <div
-    v-if="
-      infoData.status === storeStatus.READY &&
-      configData.status === storeStatus.READY
-    "
-  >
+  <div>
     <q-card bordered class="my-card shadow-4 col-auto fit q-gutter-md">
       <q-card-section>
         <div class="text-h6">

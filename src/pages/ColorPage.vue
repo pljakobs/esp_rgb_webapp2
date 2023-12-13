@@ -1,124 +1,131 @@
 <template>
-  <div v-if="colorData.status === storeStatus.READY" class="card-container">
-    <div class="row">
-      <q-btn-group>
-        <q-btn
-          name="hsv"
-          label="HSV"
-          icon="palette"
-          color="primary"
-          @click="carouselPage = 'hsv'"
-        />
-        <q-btn
-          name="raw"
-          label="Raw"
-          icon="palette"
-          color="primary"
-          @click="carouselPage = 'raw'"
-        />
-        <q-btn
-          name="presets"
-          label="Presets"
-          icon="palette"
-          color="primary"
-          @click="carouselPage = 'presets'"
-        />
-      </q-btn-group>
-    </div>
-    <q-carousel v-model="carouselPage" animated>
-      <q-carousel-slide name="hsv">
-        <q-card bordered class="my-card shadow-4 col-auto fit q-gutter-md">
-          <q-card-section>
-            <div class="text-h6">
-              <q-icon name="palette" />
-              HSV
-            </div>
-          </q-card-section>
-          <q-separator />
-          <q-card-section
-            ><q-color v-model="color" format-model="hex" no-header no-footer />
-          </q-card-section>
-        </q-card>
-      </q-carousel-slide>
+  <div>
+    <q-card bordered class="my-card shadow-4 col-auto fit q-gutter-md">
+      <div class="row justify-center">
+        <q-btn-group>
+          <q-btn
+            name="hsv"
+            label="HSV"
+            icon="palette"
+            color="primary"
+            @click="carouselPage = 'hsv'"
+          />
+          <q-btn
+            name="raw"
+            label="Raw"
+            icon="palette"
+            color="primary"
+            @click="carouselPage = 'raw'"
+          />
+          <q-btn
+            name="presets"
+            label="Presets"
+            icon="palette"
+            color="primary"
+            @click="carouselPage = 'presets'"
+          />
+        </q-btn-group>
+      </div>
+      <q-carousel v-model="carouselPage" animated>
+        <q-carousel-slide name="hsv">
+          <q-card ref="colorPickerCard">
+            <q-card-section>
+              <div class="text-h6">
+                <q-icon name="palette" />
+                HSV
+              </div>
+            </q-card-section>
+            <q-separator />
+            <q-card-section class="flex justify-center"
+              ><q-color
+                :style="{ height: '$(cardWidth)px' }"
+                v-model="color"
+                format-model="hex"
+                no-header
+                no-footer
+              />
+            </q-card-section>
+          </q-card>
+        </q-carousel-slide>
 
-      <q-carousel-slide name="raw">
-        <q-card bordered class="my-card shadow-4 col-auto fit q-gutter-md">
-          <q-card-section>
-            <div class="text-h6">
-              <q-icon name="palette" />
-              RAW
-            </div>
-          </q-card-section>
-          <q-separator />
-          <q-card-section>
-            raw sliders
-            <ColorSlider
-              v-for="colorSlider in colorSliders"
-              :key="colorSlider.label"
-              :min="colorSlider.min"
-              :max="colorSlider.max"
-              :label="colorSlider.label"
-              :value="colorSlider.model"
-              :color="colorSlider.color"
-              @update:model="
-                ($event) => {
-                  console.log('in function:', $event);
-                  updateColorSlider(colorSlider, $event);
-                }
-              "
-            />
-          </q-card-section>
-        </q-card>
-      </q-carousel-slide>
+        <q-carousel-slide name="raw">
+          <q-card>
+            <q-card-section>
+              <div class="text-h6">
+                <q-icon name="palette" />
+                RAW
+              </div>
+            </q-card-section>
+            <q-separator />
+            <q-card-section>
+              raw sliders
+              <ColorSlider
+                v-for="colorSlider in colorSliders"
+                :key="colorSlider.label"
+                :min="colorSlider.min"
+                :max="colorSlider.max"
+                :label="colorSlider.label"
+                :value="colorSlider.model"
+                :color="colorSlider.color"
+                @update:model="
+                  ($event) => {
+                    console.log('in function:', $event);
+                    updateColorSlider(colorSlider, $event);
+                  }
+                "
+              />
+            </q-card-section>
+          </q-card>
+        </q-carousel-slide>
 
-      <q-carousel-slide name="presets">
-        <q-card class="my-card shadow-4 col-auto q-gutter-md">
-          <q-list>
-            <q-item
-              v-for="preset in presetData.data['presets']"
-              :key="preset.name"
-              class="q-my-sm"
-            >
-              <q-item-section avatar>
-                <q-badge
-                  :style="{
-                    backgroundColor: preset.raw
-                      ? `rgb(${preset.raw.r}, ${preset.raw.g}, ${preset.raw.b})`
-                      : `rgb(${hsvToRgb(preset.hsv).r}, ${
-                          hsvToRgb(preset.hsv).g
-                        }, ${hsvToRgb(preset.hsv).b})`,
-                    width: '30px',
-                    height: '30px',
-                    borderRadius: '50%',
-                    border: '1px solid black',
-                  }"
-                  round
-                />
-              </q-item-section>
-              <q-item-section avatar>
-                <q-badge
-                  style="
-                    background-color: black;
-                    color: white;
-                    font-size: 0.8em;
-                  "
-                  round
-                >
-                  {{ preset.raw ? "RAW" : "HSV" }}
-                </q-badge>
-              </q-item-section>
-              <q-item-section>
-                {{ preset.name }}
-              </q-item-section>
-              <q-item-section>
-                <q-icon
-                  name="star"
-                  :class="{ 'text-yellow': preset.favorite }"
-                  style="font-size: 1.5em"
-                />
-              </q-item-section>
+        <q-carousel-slide name="presets">
+          <q-card>
+            <q-list>
+              <q-item
+                v-for="preset in presetData.data['presets']"
+                :key="preset.name"
+                class="q-my-sm"
+              >
+                <q-item-section avatar>
+                  <q-badge
+                    :style="{
+                      backgroundColor: preset.raw
+                        ? `rgb(${preset.raw.r}, ${preset.raw.g}, ${preset.raw.b})`
+                        : `rgb(${hsvToRgb(preset.hsv).r}, ${
+                            hsvToRgb(preset.hsv).g
+                          }, ${hsvToRgb(preset.hsv).b})`,
+                      width: '30px',
+                      height: '30px',
+                      borderRadius: '50%',
+                      border: '1px solid black',
+                    }"
+                    round
+                  />
+                </q-item-section>
+                <q-item-section avatar>
+                  <q-badge
+                    style="
+                      background-color: black;
+                      color: white;
+                      font-size: 0.8em;
+                    "
+                    round
+                  >
+                    {{ preset.raw ? "RAW" : "HSV" }}
+                  </q-badge>
+                </q-item-section>
+                <q-item-section>
+                  {{ preset.name }}
+                </q-item-section>
+                <q-item-section>
+                  <q-icon
+                    name="star"
+                    :class="{ 'text-yellow': preset.favorite }"
+                    style="font-size: 1.5em"
+                  />
+                </q-item-section>
 
-              <!--
+                <!--
               <q-item-section>
                 <div v-if="preset.hsv">{{ hsvToRgb(preset.hsv) }}</div>
                 <div v-else>
@@ -126,20 +133,11 @@
                 </div>
               </q-item-section>
               -->
-            </q-item>
-          </q-list>
-        </q-card>
-      </q-carousel-slide>
-    </q-carousel>
-  </div>
-  <div v-if="colorData.status === storeStatus.ERROR">
-    <q-card bordered class="my-card shadow-4 col-auto fit q-gutter-md">
-      <q-card-section>
-        <div class="text-h6">
-          <q-icon name="Emergency Home" />
-          Uh oh, something went wrong communicating with the controller
-        </div>
-      </q-card-section>
+              </q-item>
+            </q-list>
+          </q-card>
+        </q-carousel-slide>
+      </q-carousel>
     </q-card>
   </div>
 </template>
@@ -239,6 +237,15 @@ export default {
       console.log("new value", value);
     };
 
+    /*
+     * This is a workaround for the fact that the q-color component does not have a width property.
+     */
+    const colorPickerCard = ref(null);
+    const cardWidth = computed(() => {
+      console.log("colorPickerCard", colorPickerCard.value.$el.offsetWidth);
+      return colorPickerCard.value ? colorPickerCard.value.$el.offsetWidth : 0;
+    });
+
     return {
       color,
       carouselPage,
@@ -263,5 +270,8 @@ export default {
 }
 .q-carousel {
   height: 80vh;
+}
+.q-card {
+  height: 100%;
 }
 </style>
