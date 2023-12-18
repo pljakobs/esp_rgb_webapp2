@@ -30,7 +30,7 @@
     "@quasar/app-vite": "^1.7.1",
     "autoprefixer": "^10.4.2",
     "bootstrap-icons": "^1.11.2",
-    "eslint": "^8.10.0",
+    "eslint": "^8.56.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-vue": "^9.0.0",
     "material-icons": "^1.13.12",
