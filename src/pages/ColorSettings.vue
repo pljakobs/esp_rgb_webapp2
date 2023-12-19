@@ -261,7 +261,7 @@ export default {
       },
     );
 
-    return {
+    return {np
       transitionModel,
       colorModel,
       transitionOptions,

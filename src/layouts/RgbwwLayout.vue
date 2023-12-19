@@ -118,7 +118,7 @@
             class="fit row wrap justify-center items-start content-start"
           >
             <div
-              class="col-xs-12 col-sm-8 col-md-8 col-lg-4 q-gutter-md"
+              class="col-xs-12 col-sm-5 col-md-5 col-lg-4 q-gutter-md"
               justify-center
             >
               <RouterView></RouterView>

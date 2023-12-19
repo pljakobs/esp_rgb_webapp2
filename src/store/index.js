@@ -126,8 +126,9 @@ export const colorDataStore = defineStore({
       }
     },
     setupWebSocket() {
-      const socket = new WebSocket(`ws://${controllerIpAddress}:9090`);
-
+      console.log("entering setupWebSocke");
+      const socket = new WebSocket(`ws://${controllerIpAddress}/ws`);
+      console.log("opening webSocket");
       socket.onmessage = (event) => {
         console.log("WebSocket message:", event.data);
         const data = JSON.parse(event.data);
@@ -169,7 +170,7 @@ export const colorDataStore = defineStore({
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(this.data),
+        body: JSON.stringify(payload),
       })
         .then((response) => {
           if (!response.ok) {

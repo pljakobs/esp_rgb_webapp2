@@ -274,4 +274,20 @@ export default {
 .q-card {
   height: 100%;
 }
+.q-color-picker {
+  max-width: 400px;
+  min-width: 240px;
+}
+
+:deep(.q-slider) {
+  height: 20px;
+}
+:deep(.q-slider__track) {
+  height: 32px;
+}
+:deep(.q-slider__thumb) {
+  width: 40px;
+  height: 40px;
+}
 </style>
+den
