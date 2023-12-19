@@ -17,7 +17,7 @@
     "axios": "^1.6.2",
     "pinia": "^2.1.7",
     "quasar": "^2.14.2",
-    "undici-types": "^5.28.1",
+    "undici-types": "^6.0.1",
     "vue-color": "^2.8.1",
     "vue": "^3.3.12",
     "vue-router": "^4.0.0"
