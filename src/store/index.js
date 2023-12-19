@@ -1,5 +1,6 @@
 import { defineStore } from "pinia";
 import { computed } from "vue";
+import { defineComponent } from "vue";
 
 // Define controllerIpAddress as a constant
 const controllerIpAddress = "192.168.29.38";
@@ -29,11 +30,18 @@ export function createComputedProperties(store, fields) {
     const keys = field.split(".");
     const lastKey = keys.pop();
 
-    console.log("keys: ", keys, "lastKey: ", lastKey, "field: ", field);
     keys.forEach((key) => {
       current[key] = current[key] || {};
       current = current[key];
     });
+    console.log(
+      "getter for ",
+      store.id,
+      "field: ",
+      field,
+      "yields",
+      getNestedProperty(store.state, field),
+    );
 
     current[lastKey] = computed({
       get: () => getNestedProperty(store.state, field),
@@ -46,18 +54,19 @@ export function createComputedProperties(store, fields) {
   return computedProperties;
 }
 
-import { defineComponent } from "vue";
-
-export const presetDataStorage = defineStore({
+export const presetDataStore = defineStore({
   id: "preset",
+  state: () => ({
+    data: null,
+  }),
   actions: {
     async fetchData() {
       try {
         console.log("preset start fetching data");
         const response = await fetch(
-          "http://$(controllerIpAddress)/preset.json",
+          `http://${controllerIpAddress}/presets.json`, // correct string interpolation
         );
-        const jsonData = await response.json;
+        const jsonData = await response.json();
         this.data = jsonData;
         console.log("preset data fetched: ", jsonData);
       } catch (error) {
@@ -88,7 +97,15 @@ export const colorDataStore = defineStore({
     },
     updateData(field, value) {
       console.log("color update for field: ", field, "value: ", value);
-      this[field] = value;
+
+      const path = field.split(".");
+      let current = this;
+
+      for (let i = 0; i < path.length - 1; i++) {
+        current = current[path[i]];
+      }
+
+      current[path[path.length - 1]] = value;
       let payload = {};
       payload[field] = value;
       console.log("color update payload: ", JSON.stringify(payload));

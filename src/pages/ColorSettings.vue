@@ -110,7 +110,7 @@ import ColorSlider from "src/components/ColorSlider.vue";
 
 export default {
   setup() {
-    const store = configDataStore();
+    const store = configData;
 
     const fields = [
       "color.hsv.red",
@@ -132,7 +132,7 @@ export default {
 
     const transitionOptions = ["Normal", "Spektrum", "Rainbow"];
     const transitionModel = ref(
-      transitionOptions[computedProperties.color.hsv.model.value]
+      transitionOptions[computedProperties.color.hsv.model.value],
     );
     console.log("transition mode:", computedProperties.color.hsv.model.value);
 
@@ -258,7 +258,7 @@ export default {
 
     const updateTransitionMode = (newTransitionModel) => {
       console.log(
-        `from update trigger: \nTransition model changed to ${newTransitionModel}`
+        `from update trigger: \nTransition model changed to ${newTransitionModel}`,
       );
       computedProperties.color.hsv.model.value =
         transitionOptions.indexOf(newTransitionModel);
@@ -270,9 +270,9 @@ export default {
         // Triggered when selectedModel changes
         // You can update the colorSliders array here if needed
         console.log(
-          "Selected color model changed:, from ${oldColorModel} to ${newColorModel}"
+          "Selected color model changed:, from ${oldColorModel} to ${newColorModel}",
         );
-      }
+      },
     );
 
     return {
