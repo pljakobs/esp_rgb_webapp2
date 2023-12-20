@@ -1,4 +1,5 @@
 import { defineStore } from "pinia";
+import { watch } from "vue";
 
 // Define controllerIpAddress as a constant
 const controllerIpAddress = "192.168.29.38";
@@ -126,38 +127,24 @@ export const colorDataStore = defineStore({
         console.error("Error fetching color data:", error);
       }
     },
-    setupWebSocket() {
-      console.log("entering setupWebSocke");
-      const socket = new WebSocket(`ws://${controllerIpAddress}/ws`);
-      console.log("opening webSocket");
-
-      socket.onmessage = (event) => {
-        // console.log("WebSocket message:", event.data);
-        const data = JSON.parse(event.data);
-        if (data.method === "color_event") {
-          if (data.params.mode === "hsv") {
-            this.data.hsv = data.params.hsv;
-          } else if (data.params.mode === "raw") {
-            this.data.hsv = data.params.hsv;
+    setupWebSocket(webSocketState) {
+      watch(webSocketState.data, (newData) => {
+        if (newData.method === "color_event") {
+          if (newData.params.mode === "hsv") {
+            this.data.hsv = newData.params.hsv;
+          } else if (newData.params.mode === "raw") {
+            this.data.hsv = newData.params.hsv;
           }
           this.change_by = "websocket";
           console.log(
             "color store updated by websocket message",
             JSON.stringify(this.data),
           );
-        } else if (data.method === "keep_alive") {
+        } else if (newData.method === "keep_alive") {
           //keepalive message
           console.log("keepalive message received");
         }
-      };
-
-      socket.onerror = (error) => {
-        console.error("WebSocket error:", error);
-      };
-
-      socket.onclose = (event) => {
-        console.log("WebSocket closed:", event);
-      };
+      });
     },
     updateData(field, value) {
       if (this.change_by != "websocket" && this.change_by != "load") {
@@ -249,4 +236,4 @@ export const configDataStore = defineStore({
     },
   },
 });
-export { storeStatus };
+export { storeStatus, controllerIpAddress };

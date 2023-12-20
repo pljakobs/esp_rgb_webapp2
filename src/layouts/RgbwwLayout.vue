@@ -12,7 +12,7 @@
       <div class="flex flex-center">
         <div class="q-pa-md">
           <h1><q-spinner-radio color="light-blue" /></h1>
-          loading... <br />Configuration:
+          loading from {{ controllerIpAddress }}... <br />Configuration:
           <span
             v-if="configData.status === storeStatus.READY"
             class="text-success"
@@ -161,6 +161,7 @@ import {
   presetDataStore,
   groupsDataStore,
   storeStatus,
+  controllerIpAddress,
 } from "src/store";
 const linksList = [
   {
