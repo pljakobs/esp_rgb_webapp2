@@ -107,6 +107,7 @@ export const colorDataStore = defineStore({
   state: () => ({
     data: null,
     status: storeStatus.LOADING,
+    change_by: "load",
     raw: { r: 0, g: 0, b: 0, cw: 0, ww: 0 },
     hsv: { h: 0, s: 0, v: 0, ct: 0 },
   }),
@@ -129,16 +130,24 @@ export const colorDataStore = defineStore({
       console.log("entering setupWebSocke");
       const socket = new WebSocket(`ws://${controllerIpAddress}/ws`);
       console.log("opening webSocket");
+
       socket.onmessage = (event) => {
-        console.log("WebSocket message:", event.data);
+        // console.log("WebSocket message:", event.data);
         const data = JSON.parse(event.data);
-
-        if (data.raw) {
-          this.raw = data.raw;
-        }
-
-        if (data.hsv) {
-          this.hsv = data.hsv;
+        if (data.method === "color_event") {
+          if (data.params.mode === "hsv") {
+            this.data.hsv = data.params.hsv;
+          } else if (data.params.mode === "raw") {
+            this.data.hsv = data.params.hsv;
+          }
+          this.change_by = "websocket";
+          console.log(
+            "color store updated by websocket message",
+            JSON.stringify(this.data),
+          );
+        } else if (data.method === "keep_alive") {
+          //keepalive message
+          console.log("keepalive message received");
         }
       };
 
@@ -151,37 +160,42 @@ export const colorDataStore = defineStore({
       };
     },
     updateData(field, value) {
-      console.log("color update for field: ", field, "value: ", value);
+      if (this.change_by != "websocket" && this.change_by != "load") {
+        console.log("color update for field: ", field, "value: ", value);
 
-      const path = field.split(".");
-      let current = this;
+        const path = field.split(".");
+        let current = this;
 
-      for (let i = 0; i < path.length - 1; i++) {
-        current = current[path[i]];
-      }
+        for (let i = 0; i < path.length - 1; i++) {
+          current = current[path[i]];
+        }
 
-      current[path[path.length - 1]] = value;
-      let payload = {};
-      payload[field] = value;
-      console.log("color update payload: ", JSON.stringify(payload));
-      fetch(`http://${controllerIpAddress}/color`, {
-        // Use controllerIpAddress here
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      })
-        .then((response) => {
-          if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-          }
-          return response.json();
+        current[path[path.length - 1]] = value;
+        let payload = {};
+        payload[field] = value;
+        console.log("color update payload: ", JSON.stringify(payload));
+        fetch(`http://${controllerIpAddress}/color`, {
+          // Use controllerIpAddress here
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
         })
-        .then((data) => {})
-        .catch((error) => {
-          console.error("There was a problem with the fetch operation:", error);
-        });
+          .then((response) => {
+            if (!response.ok) {
+              throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+          })
+          .then((data) => {})
+          .catch((error) => {
+            console.error(
+              "There was a problem with the fetch operation:",
+              error,
+            );
+          });
+      }
     },
   },
 });

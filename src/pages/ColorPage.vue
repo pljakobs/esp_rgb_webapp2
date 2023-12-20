@@ -147,7 +147,7 @@ import { colors } from "quasar";
 import { colorDataStore, storeStatus, presetDataStore } from "src/store"; // replace with the correct import paths
 import ColorSlider from "src/components/ColorSlider.vue";
 
-const { rgbToHsv, hexToRgb, hsvToRgb } = colors;
+const { rgbToHsv, hexToRgb, hsvToRgb, rgbToHex } = colors;
 
 export default {
   setup() {
@@ -215,21 +215,28 @@ export default {
       cw: colorData.raw.cw,
     }));
 
-    watch(colorData.hsv, (val) => {
-      console.log("hsv changed:", val);
-      const rgb = hsvToRgb(val);
-      const hex = rgbToHex(rgb);
-      console.log("hex", hex);
-      color.value = hex;
-    });
+    watch(
+      () => colorData.data.hsv,
+      (val) => {
+        //colorData is the store
+        console.log("Color Store hsv changed:", val);
+        const rgb = hsvToRgb(val);
+        const hex = rgbToHex(rgb);
+        console.log("hex", hex);
+        color.value = hex;
+      },
+    );
 
+    // ...
     watch(color, (val) => {
-      color.value - console.log("color changed:", val);
-      console.log("color changed:", val);
+      //color is the q-color component
+      console.log("color picker changed:", val);
       const rgb = hexToRgb(val);
       const hsv = rgbToHsv(rgb);
       console.log("hsv", hsv);
+
       colorData.updateData("hsv", hsv);
+      colorData.data.change_by = "color picker";
     });
 
     const updateColorSlider = (slider, value) => {
