@@ -12,7 +12,8 @@
       <div class="flex flex-center">
         <div class="q-pa-md">
           <h1><q-spinner-radio color="light-blue" /></h1>
-          loading from {{ controllerIpAddress }}... <br />Configuration:
+          loading from {{ controllers.currentController }}...
+          <br />Configuration:
           <span
             v-if="configData.status === storeStatus.READY"
             class="text-success"
@@ -101,6 +102,15 @@
         show-if-above
         bordered
       >
+        <q-select
+          filled
+          v-model="controllers.currentController"
+          :options="controllers.data"
+          option-label="hostname"
+          option-value="ip_address"
+          label="Select a controller"
+          @input="controllers.selectController($event)"
+        />
         <q-list>
           <q-item-label header>main menu</q-item-label>
 
@@ -161,7 +171,7 @@ import {
   presetDataStore,
   groupsDataStore,
   storeStatus,
-  controllerIpAddress,
+  controllersStore,
 } from "src/store";
 const linksList = [
   {
@@ -205,12 +215,14 @@ export default defineComponent({
   setup() {
     const leftDrawerOpen = ref(false);
 
+    const controllers = controllersStore();
     const configData = configDataStore();
     const infoData = infoDataStore();
     const colorData = colorDataStore();
     const presetData = presetDataStore();
     const groupsData = groupsDataStore();
-
+    console.log("MainLayout setup");
+    console.log("controllers.data:", JSON.stringify(controllers.data));
     return {
       essentialLinks: linksList,
       leftDrawerOpen,
@@ -219,6 +231,7 @@ export default defineComponent({
       colorData,
       presetData,
       groupsData,
+      controllers,
       storeStatus,
       toggleLeftDrawer() {
         leftDrawerOpen.value = !leftDrawerOpen.value;

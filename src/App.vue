@@ -3,38 +3,33 @@
 </template>
 
 <script>
-import { onMounted } from "vue";
-import { defineStore } from "pinia";
-import useWebSocket from "src/services/websocket";
-import {
-  configDataStore,
-  colorDataStore,
-  presetDataStore,
-  infoDataStore,
-  groupsDataStore,
-  controllerIpAddress, // this will be a dynamic address later
-} from "src/store";
+import { onMounted, watch } from "vue";
+import { controllersStore } from "src/store";
+
+import initializeStores from "src/services/initializeStores";
 
 export default {
   name: "App",
   setup() {
-    const configStore = configDataStore();
-    const colorStore = colorDataStore();
-    const presetStore = presetDataStore();
-    const infoStore = infoDataStore();
-    const groupsData = groupsDataStore();
-    const webSocketState = useWebSocket(`ws://${controllerIpAddress}/ws`);
+    const controllers = controllersStore();
+    const { webSocketState } = initializeStores();
 
+    watch(
+      () => controllers.currentController,
+      () => {
+        console.log(
+          "switching to controller",
+          controllers.currentController["hostname"],
+        );
+        if (webSocketState && webSocketState.close) {
+          webSocketState.close();
+        }
+        initializeStores();
+      },
+    );
     onMounted(() => {
-      colorStore.fetchData();
-      colorStore.setupWebSocket();
-      colorStore.setupWebSocket(webSocketState); // pass the websocket state to the store
-      configStore.fetchData();
-      presetStore.fetchData();
-      infoStore.fetchData();
-      groupsData.fetchData();
+      initializeStores();
     });
-
     return { webSocketState };
   },
 };

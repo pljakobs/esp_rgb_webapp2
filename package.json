@@ -14,11 +14,12 @@
   },
   "dependencies": {
     "@quasar/extras": "^1.16.8",
+    "mdns-js": "^1.0.3",
     "pinia": "^2.1.7",
     "quasar": "^2.14.2",
     "undici-types": "^6.0.1",
-    "vue-color": "^2.8.1",
     "vue": "^3.3.13",
+    "vue-color": "^2.8.1",
     "vue-router": "^4.0.0"
   },
   "devDependencies": {
