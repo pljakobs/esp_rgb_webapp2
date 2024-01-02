@@ -67,6 +67,7 @@
                 :label="colorSlider.label"
                 :value="colorSlider.model"
                 :color="colorSlider.color"
+                labelOnTop
                 @update:model="
                   ($event) => {
                     console.log('in function:', $event);
