@@ -2,7 +2,7 @@ import { defineStore } from "pinia";
 import { watch } from "vue";
 import useWebSocket from "../services/websocket.js";
 
-const localhost = { hostame: "loclahost", ip_address: "192.168.29.69" };
+const localhost = { hostname: "localhost", ip_address: "192.168.29.69" };
 const storeStatus = {
   LOADING: "loading",
   READY: "ready",
@@ -13,9 +13,9 @@ export const controllersStore = defineStore({
   id: "controllersStore",
 
   state: () => ({
-    data: null,
     status: storeStatus.LOADING,
     currentController: localhost,
+    data: [localhost],
   }),
   actions: {
     async fetchData() {
@@ -24,6 +24,12 @@ export const controllersStore = defineStore({
         const response = await fetch(`http://${localhost["ip_address"]}/hosts`);
         const jsonData = await response.json();
         this.data = jsonData["hosts"];
+        this.data = jsonData["hosts"].map((host) => {
+          return {
+            ...host,
+            ip_address: host.ip_address.trim(),
+          };
+        }); //removing leading and trailing whitespaces from the ip address
         this.status = storeStatus.READY;
         console.log("hosts data fetched: ", jsonData);
       } catch (error) {
@@ -200,7 +206,15 @@ export const colorDataStore = defineStore({
       };
     },
     updateData(field, value) {
-      if (this.change_by != "websocket" && this.change_by != "load") {
+      console.log(
+        "color upate called for field: ",
+        field,
+        "value: ",
+        value,
+        "changed by: ",
+        this.change_by,
+      );
+      if (this.change_by != "websocket") {
         const controllers = controllersStore();
 
         console.log("color update for field: ", field, "value: ", value);

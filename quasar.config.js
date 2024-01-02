@@ -75,8 +75,20 @@ module.exports = configure(function (/* ctx */) {
       // vitePlugins: [
       //   [ 'package-name', { ..options.. } ]
       // ]
-    },
 
+      // changes to make the spa build more µController friendly (no cache busting, single directory)
+      webpack: {
+        output: {
+          filename: "[name].js",
+          chunkFilename: "[name].js",
+        },
+      },
+      vite: {
+        build: {
+          assetsDir: "", // Output assets in the root directory
+        },
+      },
+    },
     // Full list of options: https://v2.quasar.dev/quasar-cli-vite/quasar-config-js#devServer
     devServer: {
       // https: true

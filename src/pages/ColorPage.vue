@@ -7,21 +7,21 @@
             name="hsv"
             label="HSV"
             icon="palette"
-            color="primary"
+            :color="carouselPage === 'hsv' ? 'secondary' : 'primary'"
             @click="carouselPage = 'hsv'"
           />
           <q-btn
             name="raw"
             label="Raw"
             icon="palette"
-            color="primary"
+            :color="carouselPage === 'raw' ? 'secondary' : 'primary'"
             @click="carouselPage = 'raw'"
           />
           <q-btn
             name="presets"
             label="Presets"
             icon="palette"
-            color="primary"
+            :color="carouselPage === 'presets' ? 'secondary' : 'primary'"
             @click="carouselPage = 'presets'"
           />
         </q-btn-group>
@@ -160,6 +160,7 @@ export default {
     const color = ref("#000000");
     const colorSliders = computed(() => {
       // Define the sliders based on the selected model
+      // TODO provide API to define channel names
       const sliders = [
         {
           label: "Red",
@@ -235,13 +236,34 @@ export default {
       const hsv = rgbToHsv(rgb);
       console.log("hsv", hsv);
 
-      colorData.updateData("hsv", hsv);
       colorData.data.change_by = "color picker";
+      colorData.updateData("hsv", hsv);
     });
 
     const updateColorSlider = (slider, value) => {
       console.log("update for", slider);
       console.log("new value", value);
+      const colorMap = {
+        Red: "r",
+        Green: "g",
+        Blue: "b",
+        "Warm White": "ww",
+        "Cold White": "cw",
+      };
+
+      // Get the raw color key
+      const rawColorKey = colorMap[slider.label];
+
+      if (rawColorKey) {
+        let raw = {};
+        raw[rawColorKey] = value;
+
+        // Convert the object to a JSON string
+        //const raw = JSON.stringify(finalObject);
+        console.log("raw:", raw);
+        colorData.data.change_by = "raw slider";
+        colorData.updateData("raw", raw);
+      }
     };
 
     /*

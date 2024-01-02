@@ -92,10 +92,13 @@
               <img src="icons/favicon.ico" />
             </q-avatar>
           </q-btn>
-          <q-toolbar-title> Lightinator Mini </q-toolbar-title>
+          <q-toolbar-title>
+            Lightinator Mini on {{ controllers.currentController["hostname"] }}
+          </q-toolbar-title>
         </q-toolbar>
       </q-header>
       <q-drawer
+        ref="leftDrawer"
         v-model="leftDrawerOpen"
         :overlay="$q.screen.lt.sm"
         :persistent="$q.screen.gt.sm"
@@ -109,7 +112,7 @@
           option-label="hostname"
           option-value="ip_address"
           label="Select a controller"
-          @input="controllers.selectController($event)"
+          @input="handleControllerSelection"
         />
         <q-list>
           <q-item-label header>main menu</q-item-label>
@@ -134,35 +137,13 @@
               <RouterView></RouterView>
             </div>
           </div>
-          <!--
-      <q-page-container>
-        screen width: {{ $q.screen.width }}
-        <div id="q-app" class="bg-blue-grey-2" style="min-height: 100vh">
-          <div class="flex flex-center column">
-            <div
-              class="row"
-              style="min-height: 400px; width: 100%; padding: 24px"
-            >
-              <div
-                id="parent"
-                class="fit row wrap justify-center items-start content-start"
-              >
-                <div class="col-xs-12 col-sm-8 col-md-10 col-lg-6 q-gutter-md">
-                  <RouterView></RouterView>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </q-page-container>
-    -->
         </div>
       </q-page-container>
     </q-layout>
   </div>
 </template>
 <script>
-import { defineComponent, onBeforeMount, ref } from "vue";
+import { defineComponent, ref, watch, onMounted, onUnmounted } from "vue";
 import EssentialLink from "components/EssentialLink.vue";
 import {
   configDataStore,
@@ -221,8 +202,58 @@ export default defineComponent({
     const colorData = colorDataStore();
     const presetData = presetDataStore();
     const groupsData = groupsDataStore();
+    const intervalId = ref(null);
+
     console.log("MainLayout setup");
-    console.log("controllers.data:", JSON.stringify(controllers.data));
+
+    const isSmallScreen = ref(window.innerWidth <= 600); // Change 600 to your small breakpoint
+
+    const updateIsSmallScreen = () => {
+      isSmallScreen.value = window.innerWidth <= 600; // Change 600 to your small breakpoint
+    };
+
+    onMounted(() => {
+      window.addEventListener("resize", updateIsSmallScreen);
+    });
+
+    onUnmounted(() => {
+      window.removeEventListener("resize", updateIsSmallScreen);
+    });
+    const handleControllerSelection = (event) => {
+      controllers.selectController(event);
+    };
+    watch(
+      () => controllers.currentController,
+      () => {
+        toggleLeftDrawer();
+      },
+    );
+    watch(
+      () => [leftDrawerOpen.value, isSmallScreen.value],
+      ([isDrawerOpen, isSmallScreen]) => {
+        if (leftDrawerOpen.value || !isSmallScreen) {
+          controllers.fetchData(); //re-fetch neighbours when opening drawer
+          // Start interval when drawer is opened
+          intervalId.value = setInterval(() => {
+            console.log("re-feching controllers");
+            controllers.fetchData();
+          }, 15000);
+        } else {
+          // Clear interval when drawer is closed
+          if (intervalId.value) {
+            clearInterval(intervalId.value);
+            intervalId.value = null;
+          }
+        }
+      },
+      { immediate: true },
+    );
+    const toggleLeftDrawer = () => {
+      if (isSmallScreen.value) {
+        leftDrawerOpen.value = !leftDrawerOpen.value;
+      }
+    };
+
     return {
       essentialLinks: linksList,
       leftDrawerOpen,
@@ -233,9 +264,8 @@ export default defineComponent({
       groupsData,
       controllers,
       storeStatus,
-      toggleLeftDrawer() {
-        leftDrawerOpen.value = !leftDrawerOpen.value;
-      },
+      handleControllerSelection,
+      toggleLeftDrawer,
     };
   },
 });

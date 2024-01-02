@@ -23,9 +23,9 @@ export default function initializeStores() {
   const infoStore = infoDataStore();
   const groupsData = groupsDataStore();
   if (controllers.currentController !== undefined) {
-    const webSocketState = useWebSocket(
-      `ws://${controllers.currentController["ip_address"]}/ws`,
-    );
+    const url = "ws://" + controllers.currentController["ip_address"] + "/ws";
+    console.log("=> openening websocket for ", url);
+    const webSocketState = useWebSocket(url);
 
     colorStore.fetchData();
     colorStore.setupWebSocket(webSocketState); // pass the websocket state to the store
