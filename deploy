@@ -1,0 +1,5 @@
+npx quasar build
+./minifyFontnames.sh
+./gzipSPA.sh
+rsync -a dist/spa/ devbox:~/devel/esp_rgbww_firmware/spiffs
+ssh devbox "cd devel/esp_rgbww_firmware/;make -j8 flashpart PART=spiffs0"

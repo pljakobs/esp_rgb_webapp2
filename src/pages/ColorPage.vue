@@ -29,104 +29,124 @@
       <q-carousel v-model="carouselPage" animated>
         <q-carousel-slide name="hsv">
           <q-card ref="colorPickerCard">
-            <q-card-section>
-              <div class="text-h6">
-                <q-icon name="palette" />
-                HSV
-              </div>
-            </q-card-section>
-            <q-separator />
-            <q-card-section class="flex justify-center"
-              ><q-color
-                :style="{ height: '$(cardWidth)px' }"
-                v-model="color"
-                format-model="hex"
-                no-header
-                no-footer
-              />
-            </q-card-section>
+            <q-scroll-area style="height: 100%; width: 100%">
+              <q-card-section>
+                <div class="text-h6">
+                  <q-icon name="palette" />
+                  HSV
+                </div>
+              </q-card-section>
+              <q-separator />
+              <q-card-section class="flex justify-center"
+                ><q-color
+                  :style="{ height: '$(cardWidth)px' }"
+                  v-model="color"
+                  format-model="hex"
+                  no-header
+                  no-footer
+                />
+              </q-card-section>
+              <q-card-section class="flex justify-center">
+                <q-btn
+                  icon="star"
+                  label="add preset"
+                  @click="() => openDialog('hsv')"
+                />
+              </q-card-section>
+            </q-scroll-area>
           </q-card>
         </q-carousel-slide>
 
         <q-carousel-slide name="raw">
           <q-card>
-            <q-card-section>
-              <div class="text-h6">
-                <q-icon name="palette" />
-                RAW
-              </div>
-            </q-card-section>
-            <q-separator />
-            <q-card-section>
-              raw sliders
-              <ColorSlider
-                v-for="colorSlider in colorSliders"
-                :key="colorSlider.label"
-                :min="colorSlider.min"
-                :max="colorSlider.max"
-                :label="colorSlider.label"
-                :value="colorSlider.model"
-                :color="colorSlider.color"
-                labelOnTop
-                @update:model="
-                  ($event) => {
-                    console.log('in function:', $event);
-                    updateColorSlider(colorSlider, $event);
-                  }
-                "
-              />
-            </q-card-section>
+            <q-scroll-area style="height: 100%; width: 100%">
+              <q-card-section>
+                <div class="text-h6">
+                  <q-icon name="palette" />
+                  RAW
+                </div>
+              </q-card-section>
+              <q-separator />
+              <q-card-section>
+                raw sliders
+                <ColorSlider
+                  v-for="colorSlider in colorSliders"
+                  :key="colorSlider.label"
+                  :min="colorSlider.min"
+                  :max="colorSlider.max"
+                  :label="colorSlider.label"
+                  :value="colorSlider.model"
+                  :color="colorSlider.color"
+                  labelOnTop
+                  @update:model="
+                    ($event) => {
+                      console.log('in function:', $event);
+                      updateColorSlider(colorSlider, $event);
+                    }
+                  "
+                />
+              </q-card-section>
+              <q-card-section class="flex justify-center">
+                <q-btn
+                  icon="star"
+                  label="add preset"
+                  @click="() => openDialog('raw')"
+                />
+              </q-card-section>
+            </q-scroll-area>
           </q-card>
         </q-carousel-slide>
 
         <q-carousel-slide name="presets">
-          <q-card>
-            <q-list>
-              <q-item
-                v-for="preset in presetData.data['presets']"
-                :key="preset.name"
-                class="q-my-sm"
-              >
-                <q-item-section avatar>
-                  <q-badge
-                    :style="{
-                      backgroundColor: preset.raw
-                        ? `rgb(${preset.raw.r}, ${preset.raw.g}, ${preset.raw.b})`
-                        : `rgb(${hsvToRgb(preset.hsv).r}, ${
-                            hsvToRgb(preset.hsv).g
-                          }, ${hsvToRgb(preset.hsv).b})`,
-                      width: '30px',
-                      height: '30px',
-                      borderRadius: '50%',
-                      border: '1px solid black',
-                    }"
-                    round
-                  />
-                </q-item-section>
-                <q-item-section avatar>
-                  <q-badge
-                    style="
-                      background-color: black;
-                      color: white;
-                      font-size: 0.8em;
-                    "
-                    round
-                  >
-                    {{ preset.raw ? "RAW" : "HSV" }}
-                  </q-badge>
-                </q-item-section>
-                <q-item-section>
-                  {{ preset.name }}
-                </q-item-section>
-                <q-item-section>
-                  <q-icon
-                    name="star"
-                    :class="{ 'text-yellow': preset.favorite }"
-                    style="font-size: 1.5em"
-                  />
-                </q-item-section>
+          <q-card class="full-height">
+            <q-scroll-area style="height: 100%; width: 100%">
+              <q-list separator style="{ overflowY: 'auto'; height: 100%}">
+                <q-item
+                  v-for="preset in presetData.data['presets']"
+                  :key="preset.name"
+                  class="q-my-sm"
+                >
+                  <q-item-section avatar>
+                    <q-badge
+                      :style="{
+                        backgroundColor: preset.raw
+                          ? `rgb(${preset.raw.r}, ${preset.raw.g}, ${preset.raw.b})`
+                          : `rgb(${hsvToRgb(preset.hsv).r}, ${
+                              hsvToRgb(preset.hsv).g
+                            }, ${hsvToRgb(preset.hsv).b})`,
+                        width: '30px',
+                        height: '30px',
+                        borderRadius: '50%',
+                        border: '1px solid black',
+                      }"
+                      @click="handlePresetClick(preset)"
+                      round
+                    />
+                  </q-item-section>
+                  <q-item-section avatar>
+                    <q-badge
+                      style="
+                        background-color: black;
+                        color: white;
+                        font-size: 0.8em;
+                      "
+                      round
+                      @click="handlePresetClick(preset)"
+                    >
+                      {{ preset.raw ? "RAW" : "HSV" }}
+                    </q-badge>
+                  </q-item-section>
+                  <q-item-section @click="handlePresetClick(preset)">
+                    {{ preset.name }}
+                  </q-item-section>
+                  <q-item-section>
+                    <q-icon
+                      name="star"
+                      :class="{ 'text-yellow': preset.favorite }"
+                    />
+                  </q-item-section>
 
-                <!--
+                  <!--
               <q-item-section>
                 <div v-if="preset.hsv">{{ hsvToRgb(preset.hsv) }}</div>
                 <div v-else>
@@ -134,16 +154,34 @@
                 </div>
               </q-item-section>
               -->
-              </q-item>
-            </q-list>
+                </q-item>
+              </q-list>
+            </q-scroll-area>
           </q-card>
         </q-carousel-slide>
       </q-carousel>
     </q-card>
   </div>
+  <q-dialog v-model="showDialog">
+    <q-card style="height: 210px">
+      <q-card-section>
+        <div class="text-h6">Save as {{ presetColorModel }} preset</div>
+      </q-card-section>
+      <q-card-section>
+        <q-input v-model="presetName" label="Preset name" />
+      </q-card-section>
+      <q-card-actions align="right">
+        <q-btn flat label="Cancel" @click="showDialog = false" />
+        <q-btn
+          label="Save"
+          @click="() => savePreset(presetName, presetColorModel)"
+        />
+      </q-card-actions>
+    </q-card>
+  </q-dialog>
 </template>
 <script>
-import { ref, watch, computed, onMounted } from "vue";
+import { ref, watch, computed, onMounted, onUnmounted } from "vue";
 import { colors } from "quasar";
 import { colorDataStore, storeStatus, presetDataStore } from "src/store"; // replace with the correct import paths
 import ColorSlider from "src/components/ColorSlider.vue";
@@ -159,6 +197,11 @@ export default {
     const presetData = presetDataStore();
 
     const color = ref("#000000");
+
+    const showDialog = ref(false);
+    const presetName = ref("");
+    const presetColorModel = ref("");
+
     const colorSliders = computed(() => {
       // Define the sliders based on the selected model
       // TODO provide API to define channel names
@@ -267,6 +310,107 @@ export default {
       }
     };
 
+    const savePreset = (presetName, colorModel) => {
+      let settings;
+      if (colorModel === "raw") {
+        // Calculate the raw settings...
+        settings = rawSettings.value;
+      } else if (colorModel === "hsv") {
+        console.log("save preset, color", color.value);
+        const rgb = hexToRgb(color.value);
+        const hsv = rgbToHsv(rgb);
+        console.log(
+          "saving hsv preset ",
+          presetName,
+          "colorModel ",
+          colorModel,
+          "value",
+          hsv,
+        );
+        settings = hsv; // Set the settings to the HSV value
+      } else {
+        console.error("Unknown color model");
+        return; // Exit the function if color model is unknown
+      }
+
+      // Check if there is a duplicate preset
+      const duplicatePreset = presetData.data.presets.find(
+        (preset) => preset.name === presetName.value,
+      );
+      if (duplicatePreset) {
+        // Ask the user if they want to overwrite or change the name
+        const confirmOverwrite = confirm(
+          `A preset with the name "${presetName}" and color model "${colorModel}" already exists. Do you want to overwrite it?`,
+        );
+
+        if (confirmOverwrite) {
+          // Overwrite the existing preset
+          //duplicatePreset.settings = settings;
+          console.log(
+            `Preset "${presetName}" with color model "${colorModel}" has been overwritten.`,
+          );
+        } else {
+          // Change the name of the preset
+          const newPresetName = prompt(
+            "Please enter a new name for the preset:",
+          );
+          if (newPresetName) {
+            // Create a new preset with the updated name
+            if (colorModel === "hsv") {
+              presetData.addPreset({
+                name: newPresetName,
+                hsv: settings,
+                favorite: false,
+              });
+            } else {
+              presetData.addPreset({
+                name: newPresetName,
+                raw: settings,
+                favorite: false,
+              });
+            }
+            console.log(
+              `Preset "${newPresetName}" with color model "${colorModel}" has been added.`,
+            );
+          }
+        }
+      } else {
+        // Insert the new preset into the presetDataStore
+        if (colorModel === "hsv") {
+          presetData.addPreset({
+            name: presetName,
+            hsv: settings,
+            favorite: false,
+          });
+        } else {
+          presetData.addPreset({
+            name: presetName,
+            raw: settings,
+            favorite: false,
+          });
+        }
+        console.log(
+          `Preset "${presetName.value}" with color model "${colorModel}" has been added.`,
+        );
+      }
+    };
+
+    const openDialog = (colorModel) => {
+      presetColorModel.value = colorModel;
+      showDialog.value = true;
+    };
+    const handlePresetClick = (preset) => {
+      console.log("preset selected", preset);
+
+      if (preset.raw) {
+        colorData.data.change_by = "preset";
+        colorData.updateData("raw", preset.raw);
+      } else {
+        colorData.data.change_by = "preset";
+        colorData.updateData("hsv", preset.hsv);
+      }
+    };
+
     /*
      * This is a workaround for the fact that the q-color component does not have a width property.
      */
@@ -285,6 +429,12 @@ export default {
       storeStatus,
       presetData,
       hsvToRgb,
+      handlePresetClick,
+      showDialog,
+      presetName,
+      savePreset,
+      openDialog,
+      presetColorModel,
     };
   },
 

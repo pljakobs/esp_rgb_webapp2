@@ -2,7 +2,13 @@ import { defineStore } from "pinia";
 import { watch } from "vue";
 import useWebSocket from "../services/websocket.js";
 
-const localhost = { hostname: "localhost", ip_address: "192.168.29.69" };
+const localhost = {
+  hostname: "localhost",
+  ip_address:
+    process.env.NODE_ENV === "development"
+      ? "192.168.29.62"
+      : window.location.hostname,
+};
 const storeStatus = {
   LOADING: "loading",
   READY: "ready",
@@ -15,6 +21,7 @@ export const controllersStore = defineStore({
   state: () => ({
     status: storeStatus.LOADING,
     currentController: localhost,
+
     data: [localhost],
   }),
   actions: {
@@ -59,11 +66,11 @@ export const presetDataStore = defineStore({
   }),
   actions: {
     async fetchData() {
-      const controllers = controllersStore();
+      const controllers = controllersStore(); // Add this line
       try {
         console.log("preset start fetching data");
         const response = await fetch(
-          `http://${controllers.currentController["ip_address"]}/presets.json`, // correct string interpolation
+          `http://${controllers.currentController["ip_address"]}/presets.json`,
         );
         const jsonData = await response.json();
         this.data = jsonData;
@@ -73,6 +80,30 @@ export const presetDataStore = defineStore({
         this.status = storeStatus.ERROR;
         this.error = error;
         console.error("Error fetching preset data:", error);
+      }
+    },
+    async addPreset(preset) {
+      const controllers = controllersStore(); // Add this line
+      this.data["presets"].push(preset);
+      let payload = { filename: "presets.json", data: this.data };
+      console.log("addPreset payload: ", JSON.stringify(payload));
+      try {
+        const response = await fetch(
+          `http://${controllers.currentController["ip_address"]}/storage`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(payload),
+          },
+        );
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        console.log("Preset added successfully");
+      } catch (error) {
+        console.error("Error adding preset:", error);
       }
     },
   },

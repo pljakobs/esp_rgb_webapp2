@@ -104,63 +104,59 @@
   </q-card>
 </template>
 <script>
-import { ref, watch, computed } from "vue";
+import { ref, watch, computed, onMounted } from "vue";
 import { configDataStore } from "src/store";
 import ColorSlider from "src/components/ColorSlider.vue";
 
 export default {
   setup() {
     const configData = configDataStore();
-    onMounted(async () => {
-      await colorData.fetchData();
-      console.log(colorData.state);
-      isLoading.value = false;
-    });
+
     const transitionOptions = ["Normal", "Spektrum", "Rainbow"];
     const transitionModel = ref(
-      transitionOptions[configData.color.hsv.model.value],
+      transitionOptions[configData.data.color.hsv.model],
     );
-    console.log("transition mode:", configData.color.hsv.model.value);
+    console.log("transition mode:", configData.data.color.hsv.model);
 
     const colorGains = [
       {
         label: "Red",
-        model: configData.color.hsv.red.value,
+        model: configData.data.color.hsv.red,
         min: -30,
         max: 30,
         color: "red",
       },
       {
         label: "Yellow",
-        model: configData.color.hsv.yellow.value,
+        model: configData.data.color.hsv.yellow,
         min: -30,
         max: 30,
         color: "yellow",
       },
       {
         label: "Green",
-        model: configData.color.hsv.green.value,
+        model: configData.data.color.hsv.green,
         min: -30,
         max: 30,
         color: "green",
       },
       {
         label: "Cyan",
-        model: configData.color.hsv.cyan.value,
+        model: configData.data.color.hsv.cyan,
         min: -30,
         max: 30,
         color: "cyan",
       },
       {
         label: "Blue",
-        model: configData.color.hsv.blue.value,
+        model: configData.data.color.hsv.blue,
         min: -30,
         max: 30,
         color: "blue",
       },
       {
         label: "Magenta",
-        model: configData.color.hsv.magenta.value,
+        model: configData.data.color.hsv.magenta,
         min: -30,
         max: 30,
         color: "#ff0090",
@@ -174,21 +170,21 @@ export default {
       const sliders = [
         {
           label: "Red",
-          model: configData.color.brightness.red.value,
+          model: configData.data.color.brightness.red,
           min: 0,
           max: 100,
           color: "red",
         },
         {
           label: "Green",
-          model: configData.color.brightness.green.value,
+          model: configData.data.color.brightness.green,
           min: 0,
           max: 100,
           color: "green",
         },
         {
           label: "Blue",
-          model: configData.color.brightness.blue.value,
+          model: configData.data.color.brightness.blue,
           min: 0,
           max: 100,
           color: "blue",
@@ -198,7 +194,7 @@ export default {
       if (colorModel.value === "RGBWW" || colorModel.value === "RGBWWCW") {
         sliders.push({
           label: "Warm White",
-          model: configData.color.brightness.ww.value,
+          model: configData.data.color.brightness.ww,
           min: 0,
           max: 100,
           color: "yellow",
@@ -208,7 +204,7 @@ export default {
       if (colorModel.value === "RGBCW" || colorModel.value === "RGBWWCW") {
         sliders.push({
           label: "Cold White",
-          model: configData.color.brightness.cw.value,
+          model: configData.data.color.brightness.cw,
           min: 0,
           max: 100,
           color: "cyan",
@@ -221,14 +217,14 @@ export default {
     const colorTemperatures = [
       {
         label: "warm white",
-        model: configData.color.colortemp.ww.value,
+        model: configData.data.color.colortemp.ww,
         min: 2500,
         max: 8000,
         color: "yellow",
       },
       {
         label: "cold white",
-        model: configData.color.colortemp.cw.value,
+        model: configData.data.color.colortemp.cw,
         min: 2500,
         max: 8000,
         color: "cyan",
@@ -246,12 +242,18 @@ export default {
       console.log(
         `from update trigger: \nTransition model changed to ${newTransitionModel}`,
       );
-      configData.color.hsv.model.value =
+      console.log(
+        "old transition model:",
+        configData.data.color.hsv.model,
+        " new transition model: ",
+        transitionOptions.indexOf(newTransitionModel),
+      );
+      configData.data.color.hsv.model =
         transitionOptions.indexOf(newTransitionModel);
     };
 
     watch(
-      () => colorModel.value,
+      () => colorModel,
       (oldColorModel, newColorModel) => {
         // Triggered when selectedModel changes
         // You can update the colorSliders array here if needed
@@ -272,7 +274,6 @@ export default {
       updateColorSlider,
       updateTransitionMode,
       configData,
-      infoData,
     };
   },
   components: {

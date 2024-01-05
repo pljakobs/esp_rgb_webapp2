@@ -14,6 +14,8 @@ export default {
     const controllers = controllersStore();
     const { webSocketState } = initializeStores();
 
+    const webhost = window.location.hostname;
+    console.log("webhost", webhost);
     watch(
       () => controllers.currentController,
       () => {

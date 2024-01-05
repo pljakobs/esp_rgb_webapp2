@@ -52,6 +52,7 @@ module.exports = configure(function (/* ctx */) {
         browser: ["es2019", "edge88", "firefox78", "chrome87", "safari13.1"],
         node: "node16",
       },
+      useFilenameHashes: false /* disable cache busting */,
 
       vueRouterMode: "hash", // available values: 'hash', 'history'
       // vueRouterBase,
@@ -83,10 +84,23 @@ module.exports = configure(function (/* ctx */) {
           chunkFilename: "[name].js",
         },
       },
-      vite: {
-        build: {
-          assetsDir: "", // Output assets in the root directory
-        },
+      extendWebpack(cfg) {
+        if (ctx.prod) {
+          cfg.output.filename = (pathData) => {
+            let name = pathData.chunk.name;
+            if (name.length > 10) {
+              name = name.substring(0, 10);
+            }
+            return name + ".[contenthash].js";
+          };
+          cfg.output.chunkFilename = (pathData) => {
+            let name = pathData.chunk.name;
+            if (name.length > 10) {
+              name = name.substring(0, 10);
+            }
+            return name + ".[contenthash].js";
+          };
+        }
       },
     },
     // Full list of options: https://v2.quasar.dev/quasar-cli-vite/quasar-config-js#devServer
