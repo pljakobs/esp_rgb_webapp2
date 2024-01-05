@@ -6,7 +6,7 @@ const localhost = {
   hostname: "localhost",
   ip_address:
     process.env.NODE_ENV === "development"
-      ? "192.168.29.62"
+      ? "192.168.29.69"
       : window.location.hostname,
 };
 const storeStatus = {

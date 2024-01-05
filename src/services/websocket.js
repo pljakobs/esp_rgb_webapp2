@@ -30,6 +30,14 @@ export default function useWebSocket(url) {
     };
   }
 
+  function destroy() {
+    if (state.socket) {
+      state.socket.close();
+      state.socket = null;
+    }
+    url = null;
+  }
+
   const send = (method, params) => {
     if (state.isOpen) {
       state.socket.send(JSON.stringify({ jsonrpc: "2.0", method, params }));
@@ -39,5 +47,5 @@ export default function useWebSocket(url) {
   // Call connect to open the WebSocket
   connect();
 
-  return { ...toRefs(state), send, connect };
+  return { ...toRefs(state), send, connect, destroy };
 }

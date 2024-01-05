@@ -23,8 +23,14 @@ export default {
           "switching to controller",
           controllers.currentController["hostname"],
         );
-        if (webSocketState && webSocketState.close) {
-          webSocketState.close();
+        console.log(
+          "current websocket state",
+          webSocketState.socket.url,
+          webSocketState.socket.isOpen,
+        );
+        if (webSocketState && webSocketState.socket.isOpen) {
+          console.log("closing websocket to", webSocketState.url);
+          webSocketState.destroy();
         }
         initializeStores();
       },

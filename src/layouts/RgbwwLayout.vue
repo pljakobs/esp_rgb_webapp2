@@ -220,7 +220,10 @@ export default defineComponent({
       window.removeEventListener("resize", updateIsSmallScreen);
     });
     const handleControllerSelection = (event) => {
-      console.log("handleControllerSelection", event);
+      console.log(
+        "===============================\nhandleControllerSelection",
+        event,
+      );
       controllers.selectController(event);
     };
     watch(
