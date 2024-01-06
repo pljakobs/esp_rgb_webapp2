@@ -92,8 +92,17 @@
               <img src="icons/favicon.ico" />
             </q-avatar>
           </q-btn>
-          <q-toolbar-title>
-            Lightinator Mini on {{ controllers.currentController["hostname"] }}
+          <q-toolbar-title
+            class="bg-primary"
+            :class="{
+              'bg-red': lostConnection,
+              'bg-orange': !isOpen && !lostConnection,
+            }"
+          >
+            Lightinator Mini on
+            {{ controllers.currentController["hostname"] }} websocket is
+            {{ isOpen ? "Open" : "Not Open" }} and lostConnection is
+            {{ lostConnection ? "true" : "false" }}
           </q-toolbar-title>
         </q-toolbar>
       </q-header>
@@ -145,6 +154,8 @@
 <script>
 import { defineComponent, ref, watch, onMounted, onUnmounted } from "vue";
 import EssentialLink from "components/EssentialLink.vue";
+import useWebSocket from "src/services/websocket.js";
+
 import {
   configDataStore,
   infoDataStore,
@@ -203,6 +214,7 @@ export default defineComponent({
     const presetData = presetDataStore();
     const groupsData = groupsDataStore();
     const intervalId = ref(null);
+    const { isOpen, lostConnection } = useWebSocket();
 
     console.log("MainLayout setup");
 
@@ -219,6 +231,7 @@ export default defineComponent({
     onUnmounted(() => {
       window.removeEventListener("resize", updateIsSmallScreen);
     });
+
     const handleControllerSelection = (event) => {
       console.log(
         "===============================\nhandleControllerSelection",
@@ -239,7 +252,7 @@ export default defineComponent({
           controllers.fetchData(); //re-fetch neighbours when opening drawer
           // Start interval when drawer is opened
           intervalId.value = setInterval(() => {
-            console.log("re-feching controllers");
+            //console.log("re-feching controllers");
             controllers.fetchData();
           }, 15000);
         } else {
@@ -268,6 +281,8 @@ export default defineComponent({
       groupsData,
       controllers,
       storeStatus,
+      isOpen,
+      lostConnection,
       handleControllerSelection,
       toggleLeftDrawer,
     };
@@ -284,5 +299,12 @@ export default defineComponent({
   left: 0;
   width: 100%;
   height: 100%;
+}
+.bg-red {
+  background-color: red;
+}
+
+.bg-orange {
+  background-color: orange;
 }
 </style>

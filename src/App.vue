@@ -12,7 +12,6 @@ export default {
   name: "App",
   setup() {
     const controllers = controllersStore();
-    const { webSocketState } = initializeStores();
 
     const webhost = window.location.hostname;
     console.log("webhost", webhost);
@@ -23,22 +22,12 @@ export default {
           "switching to controller",
           controllers.currentController["hostname"],
         );
-        console.log(
-          "current websocket state",
-          webSocketState.socket.url,
-          webSocketState.socket.isOpen,
-        );
-        if (webSocketState && webSocketState.socket.isOpen) {
-          console.log("closing websocket to", webSocketState.url);
-          webSocketState.destroy();
-        }
         initializeStores();
       },
     );
     onMounted(() => {
       initializeStores();
     });
-    return { webSocketState };
   },
 };
 </script>

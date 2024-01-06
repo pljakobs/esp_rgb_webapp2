@@ -1,6 +1,6 @@
 import { defineStore } from "pinia";
 import { watch } from "vue";
-import useWebSocket from "../services/websocket.js";
+import useWebSocket from "src/services/websocket.js";
 
 const localhost = {
   hostname: "localhost",
@@ -27,7 +27,7 @@ export const controllersStore = defineStore({
   actions: {
     async fetchData() {
       try {
-        console.log("controllers start fetching data");
+        //console.log("controllers start fetching data");
         const response = await fetch(`http://${localhost["ip_address"]}/hosts`);
         const jsonData = await response.json();
         this.data = jsonData["hosts"];
@@ -38,7 +38,7 @@ export const controllersStore = defineStore({
           };
         }); //removing leading and trailing whitespaces from the ip address
         this.status = storeStatus.READY;
-        console.log("hosts data fetched: ", jsonData);
+        //console.log("hosts data fetched: ", jsonData);
       } catch (error) {
         this.status = storeStatus.ERROR;
         this.error = error;
@@ -195,6 +195,7 @@ export const colorDataStore = defineStore({
   actions: {
     async fetchData() {
       const controllers = controllersStore();
+      const { onJson, isOpen } = useWebSocket();
 
       try {
         console.log("color start fetching data");
@@ -205,83 +206,28 @@ export const colorDataStore = defineStore({
         this.data = jsonData;
         this.status = storeStatus.READY;
         console.log("color data fetched: ", jsonData);
+
+        watch(isOpen, (newIsOpen) => {
+          if (newIsOpen) {
+            onJson("color_event", (params) => {
+              this.change_by = "websocket";
+
+              if (params.mode === "hsv" || params.mode === "raw") {
+                this.data.hsv = params.hsv;
+              }
+
+              console.log(
+                "color store updated by websocket message",
+                JSON.stringify(this.data),
+              );
+              this.change_by = null;
+            });
+          }
+        });
       } catch (error) {
         this.status = storeStatus.ERROR;
         this.error = error;
         console.error("Error fetching color data:", error);
-      }
-    },
-    setupWebSocket(webSocketState) {
-      this.webSocket = webSocketState;
-      this.webSocket.socket.onmessage = (event) => {
-        const newData = JSON.parse(event.data);
-
-        if (newData.method === "color_event") {
-          this.change_by = "websocket";
-
-          if (newData.params.mode === "hsv") {
-            this.data.hsv = newData.params.hsv;
-          } else if (newData.params.mode === "raw") {
-            this.data.hsv = newData.params.hsv;
-          }
-
-          console.log(
-            "color store updated by websocket message",
-            JSON.stringify(this.data),
-          );
-
-          this.change_by = null;
-        } else if (newData.method === "keep_alive") {
-          console.log("keepalive message received");
-        }
-      };
-    },
-    updateData(field, value) {
-      console.log(
-        "color upate called for field: ",
-        field,
-        "value: ",
-        value,
-        "changed by: ",
-        this.change_by,
-      );
-      if (this.change_by != "websocket") {
-        const controllers = controllersStore();
-
-        console.log("color update for field: ", field, "value: ", value);
-
-        const path = field.split(".");
-        let current = this;
-
-        for (let i = 0; i < path.length - 1; i++) {
-          current = current[path[i]];
-        }
-
-        current[path[path.length - 1]] = value;
-        let payload = {};
-        payload[field] = value;
-        console.log("color update payload: ", JSON.stringify(payload));
-        fetch(`http://${controllers.currentController["ip_address"]}/color`, {
-          // Use controllers.currentController here
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(payload),
-        })
-          .then((response) => {
-            if (!response.ok) {
-              throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            return response.json();
-          })
-          .then((data) => {})
-          .catch((error) => {
-            console.error(
-              "There was a problem with the fetch operation:",
-              error,
-            );
-          });
       }
     },
   },
