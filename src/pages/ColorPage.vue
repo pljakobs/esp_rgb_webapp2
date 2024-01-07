@@ -67,7 +67,12 @@
                 </div>
               </q-card-section>
               <q-separator />
-              <q-card-section> {{ colorData.data.raw }} </q-card-section>
+              <q-card-section>
+                raw-r: {{ colorData.data.raw.r }}, raw-g:
+                {{ colorData.data.raw.g }}, raw-b: {{ colorData.data.raw.b }},
+                raw-ww: {{ colorData.data.raw.ww }}, raw-cw:
+                {{ colorData.data.raw.cw }}</q-card-section
+              >
               <q-card-section>
                 raw sliders
                 <ColorSlider
@@ -203,74 +208,69 @@ export default {
     const presetName = ref("");
     const presetColorModel = ref("");
 
-    const colorSliders = computed(() => {
-      // Define the sliders based on the selected model
-      // TODO provide API to define channel names
-      const sliders = [
-        {
-          label: "Red",
-          model: colorData.data.raw.r,
-          min: 0,
-          max: 1023,
-          color: "red",
-        },
-        {
-          label: "Green",
-          model: colorData.data.raw.g,
-          min: 0,
-          max: 1023,
-          color: "green",
-        },
-        {
-          label: "Blue",
-          model: colorData.data.raw.b,
-          min: 0,
-          max: 1023,
-          color: "blue",
-        },
-        {
-          label: "Warm White",
-          model: colorData.data.raw.ww,
-          min: 0,
-          max: 1023,
-          color: "yellow",
-        },
-        {
-          label: "Cold White",
-          model: colorData.data.raw.cw,
-          min: 0,
-          max: 1023,
-          color: "cyan",
-        },
-      ];
-      return sliders;
-    });
+    const colorSliders = computed(() => [
+      {
+        label: "Red",
+        model: colorData.data.raw.r,
+        min: 0,
+        max: 1023,
+        color: "red",
+      },
+      {
+        label: "Green",
+        model: colorData.data.raw.g,
+        min: 0,
+        max: 1023,
+        color: "green",
+      },
+      {
+        label: "Blue",
+        model: colorData.data.raw.b,
+        min: 0,
+        max: 1023,
+        color: "blue",
+      },
+      {
+        label: "Warm White",
+        model: colorData.data.raw.ww,
+        min: 0,
+        max: 1023,
+        color: "yellow",
+      },
+      {
+        label: "Cold White",
+        model: colorData.data.raw.cw,
+        min: 0,
+        max: 1023,
+        color: "cyan",
+      },
+    ]);
 
     const hsv_c = computed(() => ({
-      h: colorData.hsv.h,
-      s: colorData.hsv.s,
-      v: colorData.hsv.v,
-      ct: colorData.hsv.ct,
+      h: colorData.data.hsv.h,
+      s: colorData.data.hsv.s,
+      v: colorData.data.hsv.v,
+      ct: colorData.data.hsv.ct,
     }));
 
     const raw_c = computed(() => ({
-      r: colorData.raw.r,
-      g: colorData.raw.g,
-      b: colorData.raw.b,
-      ww: colorData.raw.ww,
-      cw: colorData.raw.cw,
+      r: colorData.data.raw.r,
+      g: colorData.data.raw.g,
+      b: colorData.data.raw.b,
+      ww: colorData.data.raw.ww,
+      cw: colorData.data.raw.cw,
     }));
 
     watch(
       () => colorData.data.hsv,
       (val) => {
-        if (!val === undefined) {
+        if (val !== undefined) {
           //goes undefined when raw has changed
           //colorData is the store
           console.log("Color Store hsv changed:", val);
           const rgb = hsvToRgb(val);
           const hex = rgbToHex(rgb);
-          console.log("hex", hex);
+          console.log("updated color, hex", hex);
           color.value = hex;
         }
       },
@@ -407,10 +407,10 @@ export default {
       console.log("preset selected", preset);
 
       if (preset.raw) {
-        colorData.data.change_by = "preset";
+        colorData.change_by = "preset";
         colorData.updateData("raw", preset.raw);
       } else {
-        colorData.data.change_by = "preset";
+        colorData.change_by = "preset";
         colorData.updateData("hsv", preset.hsv);
       }
     };

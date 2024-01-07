@@ -185,12 +185,12 @@ export const infoDataStore = defineStore({
 export const colorDataStore = defineStore({
   id: "colorDataStore",
   state: () => ({
-    data: null,
+    data: {
+      raw: { r: 0, g: 0, b: 0, cw: 0, ww: 0 },
+      hsv: { h: 0, s: 0, v: 0, ct: 0 },
+    },
     status: storeStatus.LOADING,
     change_by: "load",
-    raw: { r: 0, g: 0, b: 0, cw: 0, ww: 0 },
-    hsv: { h: 0, s: 0, v: 0, ct: 0 },
-    webSocket: null,
   }),
   actions: {
     async fetchData() {
@@ -213,6 +213,8 @@ export const colorDataStore = defineStore({
               this.change_by = "websocket";
               console.log("params mode: ", params.mode);
               if (params.mode === "hsv") {
+                console.log("updating hsv color data", params.hsv);
+
                 this.data.hsv = params.hsv;
               } else if (params.mode === "raw") {
                 console.log("updating raw color data", params.raw);
@@ -220,8 +222,8 @@ export const colorDataStore = defineStore({
               }
 
               console.log(
-                "color store updated by websocket message",
-                JSON.stringify(this.data),
+                "color store updated by websocket message to ",
+                JSON.stringify(this),
               );
               this.change_by = null;
             });
@@ -234,10 +236,17 @@ export const colorDataStore = defineStore({
       }
     },
     updateData(field, value) {
+      console.log("updatData called, change by: ", this.change_by);
       if (this.change_by != "websocket" && this.change_by != "load") {
         const controllers = controllersStore();
 
         console.log("color update for field: ", field, "value: ", value);
+        if (field === "hsv") {
+          this.data.hsv = value;
+        } else if (field === "raw") {
+          const [[key, val]] = Object.entries(value);
+          this.data.raw[key] = val;
+        }
 
         const path = field.split(".");
         let current = this;
