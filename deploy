@@ -1,8 +1,27 @@
-npx quasar build
+echo $1
+if [ "$1" = "debug" ]
+then
+	echo "deploying debug"
+	npx quasar build -d 
+else
+	echo "deploying prod"
+	npx quasar build
+fi
 ./minifyFontnames.sh
 ./gzipSPA.sh
-git describe --abbrev=4 --dirty --always --tags >dist/spa/VERSION
+version=$(git describe --abbrev=4 --dirty --always --tags)
+if [ "$1" = "debug" ]
+then
+	version=$version"-debug"
+fi
+echo $version >dist/spa/VERSION
 echo "deploying " 
 cat dist/spa/VERSION
 rsync -a dist/spa/ devbox:~/devel/esp_rgbww_firmware/spiffs
-ssh devbox "cd devel/esp_rgbww_firmware/;make -j8 flashpart PART=spiffs0"
+if [ "$1" = "debug" ]
+then 
+	ssh devbox "cd devel/esp_rgbww_firmware;cp hwconfig.debug hwconfig.hw"
+else
+	ssh devbox "cd devel/esp_rgbww_firmware;cp hwconfig.prod hwconfig.hw"
+fi
+ssh devbox "cd devel/esp_rgbww_firmware/;make clean;make -j8 flash PART=spiffs0"
