@@ -67,6 +67,7 @@
                 </div>
               </q-card-section>
               <q-separator />
+              <q-card-section> {{ colorData.data.raw }} </q-card-section>
               <q-card-section>
                 raw sliders
                 <ColorSlider
@@ -208,35 +209,35 @@ export default {
       const sliders = [
         {
           label: "Red",
-          model: colorData.raw.r,
+          model: colorData.data.raw.r,
           min: 0,
           max: 1023,
           color: "red",
         },
         {
           label: "Green",
-          model: colorData.raw.g,
+          model: colorData.data.raw.g,
           min: 0,
           max: 1023,
           color: "green",
         },
         {
           label: "Blue",
-          model: colorData.raw.b,
+          model: colorData.data.raw.b,
           min: 0,
           max: 1023,
           color: "blue",
         },
         {
           label: "Warm White",
-          model: colorData.raw.ww,
+          model: colorData.data.raw.ww,
           min: 0,
           max: 1023,
           color: "yellow",
         },
         {
           label: "Cold White",
-          model: colorData.raw.cw,
+          model: colorData.data.raw.cw,
           min: 0,
           max: 1023,
           color: "cyan",
@@ -263,12 +264,15 @@ export default {
     watch(
       () => colorData.data.hsv,
       (val) => {
-        //colorData is the store
-        console.log("Color Store hsv changed:", val);
-        const rgb = hsvToRgb(val);
-        const hex = rgbToHex(rgb);
-        console.log("hex", hex);
-        color.value = hex;
+        if (!val === undefined) {
+          //goes undefined when raw has changed
+          //colorData is the store
+          console.log("Color Store hsv changed:", val);
+          const rgb = hsvToRgb(val);
+          const hex = rgbToHex(rgb);
+          console.log("hex", hex);
+          color.value = hex;
+        }
       },
     );
 
@@ -280,7 +284,7 @@ export default {
       const hsv = rgbToHsv(rgb);
       console.log("hsv", hsv);
 
-      colorData.data.change_by = "color picker";
+      colorData.change_by = "color picker";
       colorData.updateData("hsv", hsv);
     });
 
@@ -305,7 +309,7 @@ export default {
         // Convert the object to a JSON string
         //const raw = JSON.stringify(finalObject);
         console.log("raw:", raw);
-        colorData.data.change_by = "raw slider";
+        colorData.change_by = "raw slider";
         colorData.updateData("raw", raw);
       }
     };

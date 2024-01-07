@@ -211,9 +211,12 @@ export const colorDataStore = defineStore({
           if (newIsOpen) {
             onJson("color_event", (params) => {
               this.change_by = "websocket";
-
-              if (params.mode === "hsv" || params.mode === "raw") {
+              console.log("params mode: ", params.mode);
+              if (params.mode === "hsv") {
                 this.data.hsv = params.hsv;
+              } else if (params.mode === "raw") {
+                console.log("updating raw color data", params.raw);
+                this.data.raw = params.raw;
               }
 
               console.log(
@@ -228,6 +231,50 @@ export const colorDataStore = defineStore({
         this.status = storeStatus.ERROR;
         this.error = error;
         console.error("Error fetching color data:", error);
+      }
+    },
+    updateData(field, value) {
+      if (this.change_by != "websocket" && this.change_by != "load") {
+        const controllers = controllersStore();
+
+        console.log("color update for field: ", field, "value: ", value);
+
+        const path = field.split(".");
+        let current = this;
+
+        for (let i = 0; i < path.length - 1; i++) {
+          current = current[path[i]];
+        }
+
+        current[path[path.length - 1]] = value;
+        let payload = {};
+        payload[field] = value;
+        console.log("color update payload: ", JSON.stringify(payload));
+        console.log(
+          "sending update to controller: ",
+          controllers.currentController["ip_address"],
+        );
+        fetch(`http://${controllers.currentController["ip_address"]}/color`, {
+          // Use controllers.currentController here
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        })
+          .then((response) => {
+            if (!response.ok) {
+              throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+          })
+          .then((data) => {})
+          .catch((error) => {
+            console.error(
+              "There was a problem with the fetch operation:",
+              error,
+            );
+          });
       }
     },
   },
