@@ -338,9 +338,16 @@ export default {
       }
 
       // Check if there is a duplicate preset
+      /*
+      if(presetData.data === undefined) {
+        console.log("presetData.data is undefined");
+        return;
+      }
       const duplicatePreset = presetData.data.presets.find(
         (preset) => preset.name === presetName.value,
       );
+      */
+      const duplicatePreset = false;
       if (duplicatePreset) {
         // Ask the user if they want to overwrite or change the name
         const confirmOverwrite = confirm(
@@ -362,12 +369,14 @@ export default {
             // Create a new preset with the updated name
             if (colorModel === "hsv") {
               presetData.addPreset({
+                id: "",
                 name: newPresetName,
                 hsv: settings,
                 favorite: false,
               });
             } else {
               presetData.addPreset({
+                id: "",
                 name: newPresetName,
                 raw: settings,
                 favorite: false,
@@ -382,12 +391,14 @@ export default {
         // Insert the new preset into the presetDataStore
         if (colorModel === "hsv") {
           presetData.addPreset({
+            id: "",
             name: presetName,
             hsv: settings,
             favorite: false,
           });
         } else {
           presetData.addPreset({
+            id: "",
             name: presetName,
             raw: settings,
             favorite: false,

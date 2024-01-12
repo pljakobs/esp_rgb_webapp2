@@ -6,7 +6,7 @@ const localhost = {
   hostname: "localhost",
   ip_address:
     process.env.NODE_ENV === "development"
-      ? "192.168.29.69"
+      ? "192.168.29.49"
       : window.location.hostname,
 };
 const storeStatus = {
@@ -61,21 +61,37 @@ export const presetDataStore = defineStore({
   id: "presetDataStore",
 
   state: () => ({
-    data: null,
+    data: {
+      presets: [],
+    },
     status: storeStatus.LOADING,
   }),
   actions: {
     async fetchData() {
-      const controllers = controllersStore(); // Add this line
+      const controllers = controllersStore();
       try {
         console.log("preset start fetching data");
-        const response = await fetch(
-          `http://${controllers.currentController["ip_address"]}/presets.json`,
+        console.log(
+          `http://${controllers.currentController["ip_address"]}/object?type=p`,
         );
-        const jsonData = await response.json();
-        this.data = jsonData;
+        const response = await fetch(
+          `http://${controllers.currentController["ip_address"]}/object?type=p`,
+        );
+        const presetsArray = await response.json();
+        console.log("presetsArray: ", presetsArray);
+        for (let i = 0; i < presetsArray["presets"].length; i++) {
+          const id = presetsArray["presets"][i];
+          console.log("fetching preset with id: ", id);
+          const response = await fetch(
+            `http://${controllers.currentController["ip_address"]}/object?type=p&id=${id}`,
+          );
+          const preset = await response.json();
+          console.log("preset fetched: ", preset);
+          console.log("preset data: ", this.data);
+          this.data["presets"].push(preset);
+        }
         this.status = storeStatus.READY;
-        console.log("preset data fetched: ", jsonData);
+        console.log("preset data fetched: ", JSON.stringify(this.data));
       } catch (error) {
         this.status = storeStatus.ERROR;
         this.error = error;
@@ -84,12 +100,11 @@ export const presetDataStore = defineStore({
     },
     async addPreset(preset) {
       const controllers = controllersStore(); // Add this line
-      this.data["presets"].push(preset);
-      let payload = { filename: "presets.json", data: this.data };
+      let payload = preset;
       console.log("addPreset payload: ", JSON.stringify(payload));
       try {
         const response = await fetch(
-          `http://${controllers.currentController["ip_address"]}/storage`,
+          `http://${controllers.currentController["ip_address"]}/object?type=p`,
           {
             method: "POST",
             headers: {
@@ -101,7 +116,9 @@ export const presetDataStore = defineStore({
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
+        console.log("response: ", JSON.stringify(response));
         console.log("Preset added successfully");
+        this.data["presets"].push(preset);
       } catch (error) {
         console.error("Error adding preset:", error);
       }
