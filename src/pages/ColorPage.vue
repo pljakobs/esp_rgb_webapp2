@@ -145,10 +145,19 @@
                   <q-item-section @click="handlePresetClick(preset)">
                     {{ preset.name }}
                   </q-item-section>
-                  <q-item-section>
+                  <q-item-section side>
                     <q-icon
                       name="star"
+                      size="2em"
                       :class="{ 'text-yellow': preset.favorite }"
+                      @click="toggleFavorite(preset)"
+                    />
+                  </q-item-section>
+                  <q-item-section side>
+                    <q-icon
+                      name="delete"
+                      size="2em"
+                      @click="deletePreset(preset)"
                     />
                   </q-item-section>
 
@@ -318,7 +327,7 @@ export default {
       let settings;
       if (colorModel === "raw") {
         // Calculate the raw settings...
-        settings = rawSettings.value;
+        settings = { ...colorData.data.raw };
       } else if (colorModel === "hsv") {
         console.log("save preset, color", color.value);
         const rgb = hexToRgb(color.value);
@@ -337,77 +346,52 @@ export default {
         return; // Exit the function if color model is unknown
       }
 
-      // Check if there is a duplicate preset
-      /*
-      if(presetData.data === undefined) {
-        console.log("presetData.data is undefined");
-        return;
-      }
-      const duplicatePreset = presetData.data.presets.find(
-        (preset) => preset.name === presetName.value,
+      // Insert the new preset into the presetDataStore
+      console.log(
+        "adding preset with name",
+        presetName,
+        "model",
+        colorModel,
+        "value",
+        settings,
       );
-      */
-      const duplicatePreset = false;
-      if (duplicatePreset) {
-        // Ask the user if they want to overwrite or change the name
-        const confirmOverwrite = confirm(
-          `A preset with the name "${presetName}" and color model "${colorModel}" already exists. Do you want to overwrite it?`,
-        );
-
-        if (confirmOverwrite) {
-          // Overwrite the existing preset
-          //duplicatePreset.settings = settings;
-          console.log(
-            `Preset "${presetName}" with color model "${colorModel}" has been overwritten.`,
-          );
-        } else {
-          // Change the name of the preset
-          const newPresetName = prompt(
-            "Please enter a new name for the preset:",
-          );
-          if (newPresetName) {
-            // Create a new preset with the updated name
-            if (colorModel === "hsv") {
-              presetData.addPreset({
-                id: "",
-                name: newPresetName,
-                hsv: settings,
-                favorite: false,
-              });
-            } else {
-              presetData.addPreset({
-                id: "",
-                name: newPresetName,
-                raw: settings,
-                favorite: false,
-              });
-            }
-            console.log(
-              `Preset "${newPresetName}" with color model "${colorModel}" has been added.`,
-            );
-          }
-        }
-      } else {
-        // Insert the new preset into the presetDataStore
-        if (colorModel === "hsv") {
-          presetData.addPreset({
+      if (colorModel === "hsv") {
+        presetData
+          .addPreset({
             id: "",
             name: presetName,
             hsv: settings,
             favorite: false,
+          })
+          .catch((error) => {
+            console.error("Error adding preset:", error);
           });
-        } else {
-          presetData.addPreset({
+      } else {
+        presetData
+          .addPreset({
             id: "",
             name: presetName,
             raw: settings,
             favorite: false,
+          })
+          .catch((error) => {
+            console.error("Error adding preset:", error);
           });
-        }
-        console.log(
-          `Preset "${presetName.value}" with color model "${colorModel}" has been added.`,
-        );
       }
+      showDialog.value = false;
+      console.log(
+        `Preset "${presetName.value}" with color model "${colorModel}" has been added.`,
+      );
+    };
+
+    const toggleFavorite = (preset) => {
+      preset.favorite = !preset.favorite;
+      presetData.updatePreset(preset);
+    };
+
+    const deletePreset = (preset) => {
+      // Remove the preset from presetData.data['presets']
+      presetData.deletePreset(preset);
     };
 
     const openDialog = (colorModel) => {
@@ -450,6 +434,8 @@ export default {
       savePreset,
       openDialog,
       presetColorModel,
+      toggleFavorite,
+      deletePreset,
     };
   },
 

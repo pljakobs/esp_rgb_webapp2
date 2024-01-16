@@ -88,7 +88,14 @@ export const presetDataStore = defineStore({
           const preset = await response.json();
           console.log("preset fetched: ", preset);
           console.log("preset data: ", this.data);
-          this.data["presets"].push(preset);
+          if (
+            !preset.deleted &&
+            !this.data["presets"].some((p) => p.id === preset.id)
+          ) {
+            this.data["presets"].push(preset);
+          } else {
+            console.log("preset already exists in store or is deleted");
+          }
         }
         this.status = storeStatus.READY;
         console.log("preset data fetched: ", JSON.stringify(this.data));
@@ -99,7 +106,7 @@ export const presetDataStore = defineStore({
       }
     },
     async addPreset(preset) {
-      const controllers = controllersStore(); // Add this line
+      const controllers = controllersStore();
       let payload = preset;
       console.log("addPreset payload: ", JSON.stringify(payload));
       try {
@@ -116,11 +123,65 @@ export const presetDataStore = defineStore({
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
-        console.log("response: ", JSON.stringify(response));
+        const responseData = await response.json();
+        console.log("response: ", JSON.stringify(responseData));
         console.log("Preset added successfully");
+        preset.id = responseData.id;
         this.data["presets"].push(preset);
+        console.log("added preset", preset.name, "with id", preset.id);
       } catch (error) {
         console.error("Error adding preset:", error);
+      }
+    },
+    async updatePreset(preset) {
+      const controllers = controllersStore();
+      let payload = preset;
+      console.log("updatePreset payload: ", JSON.stringify(payload));
+      try {
+        const response = await fetch(
+          `http://${controllers.currentController["ip_address"]}/object?type=p&id=${preset.id}`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(payload),
+          },
+        );
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const presetToUpdate = this.data["presets"].find(
+          (p) => p.id === preset.id,
+        );
+        if (presetToUpdate) {
+          Object.assign(presetToUpdate, preset);
+        }
+        console.log("updated preset", preset.name, "with id", preset.id);
+      } catch (error) {
+        console.error("Error updating preset:", error);
+      }
+    },
+    async deletePreset(preset) {
+      const controllers = controllersStore();
+      let payload = { id: preset.id, type: "p", deleted: "true" };
+      try {
+        const response = await fetch(
+          `http://${controllers.currentController["ip_address"]}/object?type=p&id=${preset.id}`,
+          {
+            method: "POST",
+            body: JSON.stringify(payload),
+          },
+        );
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        this.data["presets"] = this.data["presets"].filter(
+          (p) => p.id !== preset.id,
+        );
+        console.log("deleted preset", preset.name, "with id", preset.id);
+      } catch (error) {
+        console.error("Error deleting preset:", error);
       }
     },
   },
@@ -231,7 +292,8 @@ export const colorDataStore = defineStore({
               console.log("params mode: ", params.mode);
               if (params.mode === "hsv") {
                 console.log("updating hsv color data", params.hsv);
-
+                console.log("this.data.hsv: ", this.data.hsv);
+                console.log("params.hsv: ", params.hsv);
                 this.data.hsv = params.hsv;
               } else if (params.mode === "raw") {
                 console.log("updating raw color data", params.raw);
