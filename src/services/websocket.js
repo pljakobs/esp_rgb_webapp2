@@ -122,6 +122,7 @@ export default function useWebSocket() {
     if (!state.callbacks[key]) {
       state.callbacks[key] = [];
     }
+    console.log("registered callback for ", key);
     state.callbacks[key].push(callback);
   };
 

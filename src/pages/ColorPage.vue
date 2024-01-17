@@ -108,7 +108,7 @@
             <q-scroll-area style="height: 100%; width: 100%">
               <q-list separator style="{ overflowY: 'auto'; height: 100%}">
                 <q-item
-                  v-for="preset in presetData.data['presets']"
+                  v-for="preset in activePresets"
                   :key="preset.name"
                   class="q-my-sm"
                 >
@@ -438,7 +438,13 @@ export default {
       deletePreset,
     };
   },
-
+  computed: {
+    activePresets() {
+      return this.presetData.data["presets"].filter(
+        (preset) => !preset.deleted,
+      );
+    },
+  },
   components: {
     ColorSlider,
   },

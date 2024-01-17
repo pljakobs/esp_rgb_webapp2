@@ -66,9 +66,11 @@ export const presetDataStore = defineStore({
     },
     status: storeStatus.LOADING,
   }),
+
   actions: {
     async fetchData() {
       const controllers = controllersStore();
+      const { onJson, isOpen } = useWebSocket();
       try {
         console.log("preset start fetching data");
         console.log(
@@ -99,6 +101,30 @@ export const presetDataStore = defineStore({
         }
         this.status = storeStatus.READY;
         console.log("preset data fetched: ", JSON.stringify(this.data));
+
+        watch(isOpen, (newIsOpen) => {
+          if (newIsOpen) {
+            onJson("preset", (params) => {
+              this.change_by = "websocket";
+              console.log("params: ", params);
+
+              const existingPresetIndex = this.data.presets.findIndex(
+                (p) => p.id === params.id,
+              );
+              if (existingPresetIndex !== -1) {
+                // Overwrite existing preset
+                this.data.presets[existingPresetIndex] = params;
+                console.log("Preset overwritten: ", params);
+              } else {
+                // Create new preset
+                this.data.presets.push(params);
+                console.log("New preset created: ", params);
+              }
+
+              this.change_by = null;
+            });
+          }
+        });
       } catch (error) {
         this.status = storeStatus.ERROR;
         this.error = error;
