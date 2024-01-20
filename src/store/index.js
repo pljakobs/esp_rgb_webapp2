@@ -15,6 +15,9 @@ const storeStatus = {
   ERROR: "error",
 };
 
+const maxRetries = 5; // Maximum number of retries
+const retryDelay = 1000; // Delay for the first retry in milliseconds
+
 export const controllersStore = defineStore({
   id: "controllersStore",
 
@@ -25,7 +28,7 @@ export const controllersStore = defineStore({
     data: [localhost],
   }),
   actions: {
-    async fetchData() {
+    async fetchData(retryCount = 0) {
       try {
         //console.log("controllers start fetching data");
         const response = await fetch(`http://${localhost["ip_address"]}/hosts`);
@@ -68,7 +71,7 @@ export const presetDataStore = defineStore({
   }),
 
   actions: {
-    async fetchData() {
+    async fetchData(retryCount = 0) {
       const controllers = controllersStore();
       const { onJson, isOpen } = useWebSocket();
       try {
@@ -229,7 +232,7 @@ export const groupsDataStore = defineStore({
     status: storeStatus.LOADING,
   }),
   actions: {
-    async fetchData() {
+    async fetchData(retryCount = 0) {
       const controllers = controllersStore();
 
       try {
@@ -260,7 +263,7 @@ export const infoDataStore = defineStore({
     status: storeStatus.LOADING,
   }),
   actions: {
-    async fetchData() {
+    async fetchData(retryCount = 0) {
       const controllers = controllersStore();
 
       try {
@@ -268,6 +271,21 @@ export const infoDataStore = defineStore({
         const response = await fetch(
           `http://${controllers.currentController["ip_address"]}/info`, // correct string interpolation
         );
+
+        if (response.status === 429 && retryCount < maxRetries) {
+          // Too many requests, retry after a delay
+          console.log(
+            `Request limit reached, retrying after ${
+              retryDelay * 2 ** retryCount
+            }ms...`,
+          );
+          setTimeout(
+            () => this.fetchData(retryCount + 1),
+            retryDelay * 2 ** retryCount,
+          );
+          return;
+        }
+
         const jsonData = await response.json();
         this.data = jsonData;
         this.status = storeStatus.READY;
@@ -297,43 +315,31 @@ export const colorDataStore = defineStore({
     change_by: "load",
   }),
   actions: {
-    async fetchData() {
+    async fetchData(retryCount = 0) {
       const controllers = controllersStore();
-      const { onJson, isOpen } = useWebSocket();
 
       try {
         console.log("color start fetching data");
         const response = await fetch(
           `http://${controllers.currentController["ip_address"]}/color`,
         );
+        if (response.status === 429 && retryCount < maxRetries) {
+          // Too many requests, retry after a delay
+          console.log(
+            `Request limit reached, retrying after ${
+              retryDelay * 2 ** retryCount
+            }ms...`,
+          );
+          setTimeout(
+            () => this.fetchData(retryCount + 1),
+            retryDelay * 2 ** retryCount,
+          );
+          return;
+        }
         const jsonData = await response.json();
         this.data = jsonData;
         this.status = storeStatus.READY;
         console.log("color data fetched: ", jsonData);
-
-        watch(isOpen, (newIsOpen) => {
-          if (newIsOpen) {
-            onJson("color_event", (params) => {
-              this.change_by = "websocket";
-              console.log("params mode: ", params.mode);
-              if (params.mode === "hsv") {
-                console.log("updating hsv color data", params.hsv);
-                console.log("this.data.hsv: ", this.data.hsv);
-                console.log("params.hsv: ", params.hsv);
-                this.data.hsv = params.hsv;
-              } else if (params.mode === "raw") {
-                console.log("updating raw color data", params.raw);
-                this.data.raw = params.raw;
-              }
-
-              console.log(
-                "color store updated by websocket message to ",
-                JSON.stringify(this),
-              );
-              this.change_by = null;
-            });
-          }
-        });
       } catch (error) {
         this.status = storeStatus.ERROR;
         this.error = error;
@@ -394,20 +400,57 @@ export const colorDataStore = defineStore({
   },
 });
 
+const { onJson, isOpen } = useWebSocket();
+watch(isOpen, (newIsOpen) => {
+  if (newIsOpen) {
+    onJson("color_event", (params) => {
+      colorDataStore.change_by = "websocket";
+      console.log("params mode: ", params.mode);
+      if (params.mode === "hsv") {
+        console.log("updating hsv color data", params.hsv);
+        console.log("colorDataStore.data.hsv: ", colorDataStore.data.hsv);
+        console.log("params.hsv: ", params.hsv);
+        colorDataStore.data.hsv = params.hsv;
+      } else if (params.mode === "raw") {
+        console.log("updating raw color data", params.raw);
+        colorDataStore.data.raw = params.raw;
+      }
+
+      console.log(
+        "color store updated by websocket message to ",
+        JSON.stringify(colorDataStore),
+      );
+      colorDataStore.change_by = null;
+    });
+  }
+});
 export const configDataStore = defineStore({
   id: "configDataStore",
   state: () => ({
     status: storeStatus.LOADING,
   }),
   actions: {
-    async fetchData() {
+    async fetchData(retryCount = 0) {
       const controllers = controllersStore();
 
       try {
         console.log("config start fetching data");
         const response = await fetch(
           `http://${controllers.currentController["ip_address"]}/config`,
-        ); // Use controllers.currentController here
+        );
+        if (response.status === 429 && retryCount < maxRetries) {
+          // Too many requests, retry after a delay
+          console.log(
+            `Request limit reached, retrying after ${
+              retryDelay * 2 ** retryCount
+            }ms...`,
+          );
+          setTimeout(
+            () => this.fetchData(retryCount + 1),
+            retryDelay * 2 ** retryCount,
+          );
+          return;
+        }
         const jsonData = await response.json();
         this.data = jsonData;
         this.status = storeStatus.READY;

@@ -7,6 +7,7 @@ import {
   infoDataStore,
   groupsDataStore,
   controllersStore,
+  storeStatus,
 } from "src/store";
 
 export default function initializeStores() {
@@ -32,7 +33,8 @@ export default function initializeStores() {
     configStore.fetchData();
     presetStore.fetchData();
     infoStore.fetchData();
-    groupsData.fetchData();
+    //groupsData.fetchData();
+    groupsData.status = storeStatus.READY;
     controllers.fetchData();
   }
 }

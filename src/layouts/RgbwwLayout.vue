@@ -155,7 +155,7 @@
 import { defineComponent, ref, watch, onMounted, onUnmounted } from "vue";
 import EssentialLink from "components/EssentialLink.vue";
 import useWebSocket from "src/services/websocket.js";
-
+import { useRouter } from "vue-router";
 import {
   configDataStore,
   infoDataStore,
@@ -165,6 +165,7 @@ import {
   storeStatus,
   controllersStore,
 } from "src/store";
+
 const linksList = [
   {
     title: "Color",
@@ -216,12 +217,14 @@ export default defineComponent({
     const intervalId = ref(null);
     const { isOpen, lostConnection } = useWebSocket();
 
+    const router = useRouter();
+
     console.log("MainLayout setup");
 
-    const isSmallScreen = ref(window.innerWidth <= 600); // Change 600 to your small breakpoint
+    const isSmallScreen = ref(window.innerWidth <= 400); // Change 600 to your small breakpoint
 
     const updateIsSmallScreen = () => {
-      isSmallScreen.value = window.innerWidth <= 600; // Change 600 to your small breakpoint
+      isSmallScreen.value = window.innerWidth <= 400; // Change 600 to your small breakpoint
     };
 
     onMounted(() => {
@@ -239,12 +242,41 @@ export default defineComponent({
       );
       controllers.selectController(event);
     };
+
     watch(
-      () => controllers.currentController,
+      () => infoData.status === storeStatus.READY,
       () => {
-        toggleLeftDrawer();
+        console.log("infoData.status changed to", infoData.status);
+        console.log("check if this is an unconfigured controller");
+        console.log(
+          "connected:",
+          infoData.data.connection.connected ? "true" : "false",
+        );
+        console.log("ssid:", infoData.data.connection.ssid);
+
+        if (
+          !infoData.data.connection.connected &&
+          infoData.data.connection.ssid === ""
+        ) {
+          // the controller has no configured ssid and is not connected to a wifi network
+          // we are therefore talking to a controller in AP mode, trigger the controler config
+          // section
+          console.log("new controller, redirecting to /networkinit");
+          router.push("/networkinit");
+        } else {
+          console.log("controller is configured, not redirecting");
+        }
       },
-    );
+    ),
+      // close the left drawer when the current controller changes
+      // that should only ever happen by selecting a controller from
+      // the controllers dropdown list *in* the left drawer.
+      watch(
+        () => controllers.currentController,
+        () => {
+          toggleLeftDrawer();
+        },
+      );
     watch(
       () => [leftDrawerOpen.value, isSmallScreen.value],
       ([isDrawerOpen, isSmallScreen]) => {
