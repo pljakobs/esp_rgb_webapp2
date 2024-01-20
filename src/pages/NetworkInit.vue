@@ -57,18 +57,65 @@
       </div>
     </q-card>
   </div>
+  <div v-if="wifiData.connected" class="popup">
+    <h3>Connection Established</h3>
+    <p>Connected to: {{ wifiData.ssid }}</p>
+    <table>
+      <tr>
+        <td>Address</td>
+        <td>
+          <a :href="'http://' + wifiData.ip">{{ wifiData.ip }}</a>
+        </td>
+      </tr>
+      <tr>
+        <td>Netmask</td>
+        <td>{{ wifiData.netmask }}</td>
+      </tr>
+      <tr>
+        <td>Gateway</td>
+        <td>{{ wifiData.gateway }}</td>
+      </tr>
+    </table>
+  </div>
 </template>
 
 <script>
 import { ref, onMounted, watch } from "vue";
+import useWebSocket from "src/services/websocket.js";
 
 export default {
   setup() {
+    const wifiData = ref({
+      connected: false,
+      ssid: null,
+      dhcp: null,
+      ip: null,
+      netmask: null,
+      gateway: null,
+      mac: null,
+    });
     const selectedNetwork = ref(null);
     const networks = ref([]);
     const password = ref("");
     const ssid = ref("");
     const ip_address = window.location.hostname;
+
+    const { onJson, isOpen } = useWebSocket();
+
+    watch(isOpen, (newIsOpen) => {
+      if (newIsOpen) {
+        console.log("registering wifi_connect callback");
+        onJson("wifi_connected", (params) => {
+          wifiData.value.connected = params.connected;
+          wifiData.value.ssid = params.ssid;
+          wifiData.value.dhcp = params.dhcp;
+          wifiData.value.ip = params.ip;
+          wifiData.value.netmask = params.netmask;
+          wifiData.value.gateway = params.gateway;
+          wifiData.value.mac = params.mac;
+        });
+      }
+    });
 
     const connectToNetwork = async () => {
       console.log("Connecting to network:", ssid.value);
@@ -86,7 +133,7 @@ export default {
       });
 
       if (response.ok) {
-        console.log("Connected to network");
+        console.log("connecting to network");
       } else {
         console.log("Failed to connect to network");
       }
@@ -153,7 +200,31 @@ export default {
       fetchNetworks();
     });
 
+    const getSignalIcon = (signalStrength) => {
+      if (signalStrength >= 75) {
+        return "signal_wifi_4_bar";
+      } else if (signalStrength >= 50) {
+        return "signal_wifi_3_bar";
+      } else if (signalStrength >= 25) {
+        return "signal_wifi_2_bar";
+      } else {
+        return "signal_wifi_1_bar";
+      }
+    };
+
+    const getEncryptionIcon = (encryption) => {
+      switch (encryption) {
+        case "WPA":
+          return "lock";
+        case "WEP":
+          return "lock_outline";
+        default:
+          return "lock_open";
+      }
+    };
+
     return {
+      wifiData,
       selectedNetwork,
       networks,
       password,

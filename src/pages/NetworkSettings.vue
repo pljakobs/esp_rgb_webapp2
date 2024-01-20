@@ -144,7 +144,7 @@
 
 <script>
 import dataTable from "components/dataTable.vue";
-import { ref, watchEffect,e  watch } from "vue";
+import { ref, watchEffect, watch } from "vue";
 import { configDataStore, infoDataStore, storeStatus } from "src/store";
 
 export default {
