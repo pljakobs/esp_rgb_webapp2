@@ -1,5 +1,6 @@
 echo $1
 dir=$(pwd)
+rm dist/spa/* -rf
 if [ "$1" = "debug" ]
 then
 	echo "deploying debug"

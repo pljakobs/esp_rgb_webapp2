@@ -63,34 +63,39 @@
       />
     </q-card>
   </div>
-  <q-menu v-model="wifiData.connected">
-    <div class="popup">
-      <h4>Connection Established</h4>
-      <p>Connected to: {{ wifiData.ssid }}</p>
-      <table>
-        <tr>
-          <td>Address</td>
-          <td>
-            <a :href="'http://' + wifiData.ip">{{ wifiData.ip }}</a>
-          </td>
-        </tr>
-        <tr>
-          <td>Netmask</td>
-          <td>{{ wifiData.netmask }}</td>
-        </tr>
-        <tr>
-          <td>Gateway</td>
-          <td>{{ wifiData.gateway }}</td>
-        </tr>
-      </table>
-      <q-btn
-        color="secondary"
-        label="restart controller"
-        @click="onRestartController"
-        style="margin-top: 16px"
-      />
-    </div>
-  </q-menu>
+  <q-dialog v-model="wifiData.connected">
+    <q-card>
+      <q-card-section>
+        <div class="popup">
+          <h4>Connection Established</h4>
+          <p>Connected to: {{ wifiData.ssid }}</p>
+          <table>
+            <tr>
+              <td>Address</td>
+              <td>
+                <a :href="'http://' + wifiData.ip">{{ wifiData.ip }}</a>
+              </td>
+            </tr>
+            <tr>
+              <td>Netmask</td>
+              <td>{{ wifiData.netmask }}</td>
+            </tr>
+            <tr>
+              <td>Gateway</td>
+              <td>{{ wifiData.gateway }}</td>
+            </tr>
+          </table>
+          <p>Controller will restart in {{ countdown }} seconds</p>
+          <q-btn
+            color="secondary"
+            label="restart now"
+            @click="onRestartController"
+            style="margin-top: 16px"
+          />
+        </div>
+      </q-card-section>
+    </q-card>
+  </q-dialog>
 </template>
 
 <script>
@@ -112,6 +117,7 @@ export default {
     const networks = ref([]);
     const password = ref("");
     const ssid = ref("");
+    const countdown = ref(0);
 
     const ip_address =
       process.env.NODE_ENV === "development"
@@ -122,6 +128,7 @@ export default {
     watch(isOpen, (newIsOpen) => {
       if (newIsOpen) {
         console.log("registering wifi_connect callback");
+
         onJson("wifi_connected", (params) => {
           wifiData.value.connected = params.connected;
           wifiData.value.ssid = params.ssid;
@@ -134,12 +141,31 @@ export default {
       }
     });
 
+    watch(wifiData, (newWifiData) => {
+      if (newWifiData.connected) {
+        countdown.value = 10; // Start countdown from 10 seconds
+        const countdownInterval = setInterval(() => {
+          countdown.value--;
+          if (countdown.value <= 0) {
+            clearInterval(countdownInterval);
+            setTimeout(() => {
+              sysCmd("restart");
+            }, 2000); // Wait for 2 seconds before restarting
+            window.location.href = "http://" + newWifiData.ip;
+          }
+        }, 1000);
+      }
+    });
+
     const onRestartController = () => {
       sysCmd("restart");
     };
 
     const onForgetWifi = () => {
       sysCmd("forget_wifi");
+      setTimeout(() => {
+        sysCmd("restart");
+      }, 2000);
     };
 
     const sysCmd = async (command) => {
@@ -160,17 +186,23 @@ export default {
     };
 
     const connectToNetwork = async () => {
-      console.log("Connecting to network:", ssid.value);
+      console.log(
+        "selectedNetwork.value",
+        JSON.stringify(selectedNetwork.value),
+      );
+      console.log("Connecting to network:", selectedNetwork.value.ssid);
       console.log("Password:", password.value);
 
+      const new_ssid = selectedNetwork.value.ssid;
+      const new_password = password.value;
       const response = await fetch(`http://${ip_address}/connect`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          ssid: ssid.value,
-          password: password.value,
+          ssid: new_ssid,
+          password: new_password,
         }),
       });
 
@@ -282,8 +314,10 @@ export default {
       ssid,
       getEncryptionIcon,
       getSignalIcon,
+      onRestartController,
       onForgetWifi,
       connectToNetwork,
+      countdown,
     };
   },
 };
