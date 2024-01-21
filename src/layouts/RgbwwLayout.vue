@@ -134,7 +134,7 @@
         </q-list>
       </q-drawer>
       <q-page-container>
-        <div id="q-app" class="bg-blue-grey-2" style="min-eight: 100vh">
+        <div id="q-app" class="bg-blue-grey-2" style="min-height: 100vh">
           <div
             id="parent"
             class="fit row wrap justify-center items-start content-start"

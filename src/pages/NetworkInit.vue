@@ -1,6 +1,6 @@
 <template>
   <div>
-    <q-card bordered class="my-card shadow-4 col-auto fit q-gutter-md">
+    <q-card class="full-height shadow-4 col-auto fit q-gutter-md q-pa-md">
       <div class="row justify-center">
         <h4>application initialization</h4>
         <q-select
@@ -18,13 +18,13 @@
               v-bind="props.itemProps"
               style="display: flex; justify-content: space-between; width: 100%"
             >
-              <q-item-section>
-                <q-icon :name="getSignalIcon(props.opt.signal)" />
-              </q-item-section>
-              <q-item-section>
+              <q-item-section style="flex: 7">
                 {{ props.opt.ssid }}
               </q-item-section>
-              <q-item-section>
+              <q-item-section style="flex: 2">
+                {{ props.opt.signal }}
+              </q-item-section>
+              <q-item-section style="flex: 1">
                 <q-icon :name="getEncryptionIcon(props.opt.encryption)" />
               </q-item-section>
             </q-item>
@@ -33,7 +33,7 @@
 
         <q-input
           filled
-          v-model="selectedNetwork"
+          v-model="selectedNetwork.ssid"
           :label="selectedNetwork ? 'SSID' : 'Enter SSID'"
           hint="Enter the SSID of the network"
           style="width: 80%"
@@ -55,28 +55,42 @@
           style="margin-top: 16px"
         />
       </div>
+      <q-btn
+        color="secondary"
+        label="forget wifi"
+        @click="onForgetWifi"
+        style="margin-top: 16px"
+      />
     </q-card>
   </div>
-  <div v-if="wifiData.connected" class="popup">
-    <h3>Connection Established</h3>
-    <p>Connected to: {{ wifiData.ssid }}</p>
-    <table>
-      <tr>
-        <td>Address</td>
-        <td>
-          <a :href="'http://' + wifiData.ip">{{ wifiData.ip }}</a>
-        </td>
-      </tr>
-      <tr>
-        <td>Netmask</td>
-        <td>{{ wifiData.netmask }}</td>
-      </tr>
-      <tr>
-        <td>Gateway</td>
-        <td>{{ wifiData.gateway }}</td>
-      </tr>
-    </table>
-  </div>
+  <q-menu v-model="wifiData.connected">
+    <div class="popup">
+      <h4>Connection Established</h4>
+      <p>Connected to: {{ wifiData.ssid }}</p>
+      <table>
+        <tr>
+          <td>Address</td>
+          <td>
+            <a :href="'http://' + wifiData.ip">{{ wifiData.ip }}</a>
+          </td>
+        </tr>
+        <tr>
+          <td>Netmask</td>
+          <td>{{ wifiData.netmask }}</td>
+        </tr>
+        <tr>
+          <td>Gateway</td>
+          <td>{{ wifiData.gateway }}</td>
+        </tr>
+      </table>
+      <q-btn
+        color="secondary"
+        label="restart controller"
+        @click="onRestartController"
+        style="margin-top: 16px"
+      />
+    </div>
+  </q-menu>
 </template>
 
 <script>
@@ -94,12 +108,15 @@ export default {
       gateway: null,
       mac: null,
     });
-    const selectedNetwork = ref(null);
+    const selectedNetwork = ref({ ssid: "", signal: 0, encryption: "" });
     const networks = ref([]);
     const password = ref("");
     const ssid = ref("");
-    const ip_address = window.location.hostname;
 
+    const ip_address =
+      process.env.NODE_ENV === "development"
+        ? "192.168.29.49"
+        : window.location.hostname;
     const { onJson, isOpen } = useWebSocket();
 
     watch(isOpen, (newIsOpen) => {
@@ -116,6 +133,31 @@ export default {
         });
       }
     });
+
+    const onRestartController = () => {
+      sysCmd("restart");
+    };
+
+    const onForgetWifi = () => {
+      sysCmd("forget_wifi");
+    };
+
+    const sysCmd = async (command) => {
+      console.log(`Sending command: ${command}`);
+      const body = JSON.stringify({ cmd: command });
+      const response = await fetch(`http://${ip_address}/system`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: body,
+      });
+      if (response.ok) {
+        console.log(`Command ${command} executed successfully`);
+      } else {
+        console.log(`Failed to execute command: ${command}`);
+      }
+    };
 
     const connectToNetwork = async () => {
       console.log("Connecting to network:", ssid.value);
@@ -192,7 +234,7 @@ export default {
       } catch (error) {
         console.log("error fetching networks", error);
       } finally {
-        setTimeout(() => fetchNetworks(), 15000); // fetch networks ever 15s
+        setTimeout(() => fetchNetworks(), 30000); // fetch networks ever 15s
       }
     };
 
@@ -201,20 +243,29 @@ export default {
     });
 
     const getSignalIcon = (signalStrength) => {
-      if (signalStrength >= 75) {
-        return "signal_wifi_4_bar";
-      } else if (signalStrength >= 50) {
-        return "signal_wifi_3_bar";
-      } else if (signalStrength >= 25) {
-        return "signal_wifi_2_bar";
+      console.log(` strength: ${signalStrength}`);
+      let icon;
+      if (signalStrength >= -50) {
+        icon = "signal_wifi_4_bar";
+      } else if (signalStrength >= -65) {
+        icon = "signal_wifi_3_bar";
+      } else if (signalStrength >= -80) {
+        icon = "signal_wifi_2_bar";
+      } else if (signalStrength >= -90) {
+        icon = "signal_wifi_1_bar";
       } else {
-        return "signal_wifi_1_bar";
+        icon = "signal_wifi_0_bar";
       }
+      // Add '_round' to the icon name to use the filled version
+      icon += "_round";
+      console.log(`Icon: ${icon}`);
+      return icon;
     };
-
     const getEncryptionIcon = (encryption) => {
       switch (encryption) {
         case "WPA":
+        case "WPA2_PSK":
+        case "WPA_WPA2_PSK":
           return "lock";
         case "WEP":
           return "lock_outline";
@@ -229,8 +280,17 @@ export default {
       networks,
       password,
       ssid,
+      getEncryptionIcon,
+      getSignalIcon,
+      onForgetWifi,
       connectToNetwork,
     };
   },
 };
 </script>
+<style scoped>
+.icon-wrapper {
+  width: 24px; /* Adjust this value as needed */
+  text-align: center;
+}
+</style>
