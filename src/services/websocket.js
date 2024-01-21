@@ -38,6 +38,7 @@ export default function useWebSocket() {
       console.log("=> websocket opened");
       let manualClose = false;
       state.isOpen = true;
+      state.lostConnection = false;
     };
 
     state.socket.onmessage = (event) => {
@@ -64,17 +65,26 @@ export default function useWebSocket() {
           state.isOpen = false;
           state.lostConnection = true;
 
-          // Try to reconnect after 65 seconds
-          clearTimeout(reconnectTimeout);
-          reconnectTimeout = setTimeout(
-            () => {
-              console.log("=> trying to reconnect");
-              connect();
-            },
-            Math.min(1000 * 2 ** reconnectAttempts, 30000),
-          ); // Exponential backoff
-          reconnectAttempts += 1;
-        }, 65000); // 65 seconds
+          // Try to reconnect after 5 seconds for the first 5 attempts
+          // Then try to reconnect after 10 seconds for the next 20 attempts
+          // Then try to reconnect after 20 seconds for all subsequent attempts
+          let delay;
+          if (reconnectAttempts < 5) {
+            delay = 5000;
+          } else if (reconnectAttempts < 25) {
+            delay = 10000;
+          } else {
+            delay = 20000;
+          }
+
+          if (url != null && !manualClose) {
+            setTimeout(() => {
+              connect(url);
+            }, delay);
+          }
+
+          reconnectAttempts++;
+        }, 5000); // This is the timeout for the keep_alive message
       }
       if (state.callbacks[key]) {
         state.callbacks[key].forEach((callback) => callback(message.params));

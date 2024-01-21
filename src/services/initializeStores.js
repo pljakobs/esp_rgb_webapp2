@@ -19,7 +19,6 @@ export default function initializeStores() {
 
   const configStore = configDataStore();
   const colorStore = colorDataStore();
-  const presetStore = presetDataStore();
   const infoStore = infoDataStore();
   const groupsData = groupsDataStore();
   const webSocket = useWebSocket();
@@ -31,7 +30,6 @@ export default function initializeStores() {
 
     colorStore.fetchData();
     configStore.fetchData();
-    presetStore.fetchData();
     infoStore.fetchData();
     //groupsData.fetchData();
     groupsData.status = storeStatus.READY;

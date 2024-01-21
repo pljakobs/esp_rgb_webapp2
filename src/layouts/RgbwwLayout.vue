@@ -3,9 +3,7 @@
     v-if="
       infoData.status === storeStatus.LOADING ||
       configData.status === storeStatus.LOADING ||
-      colorData.status === storeStatus.LOADING ||
-      presetData.status === storeStatus.LOADING ||
-      groupsData.status === storeStatus.LOADING
+      colorData.status === storeStatus.LOADING
     "
   >
     <div class="center-container bg-light-grey">
@@ -49,18 +47,7 @@
           />
           <span v-else class="text-danger">❌ {{ colorData.error }}</span
           ><br />
-          Presets:
-          <span
-            v-if="presetData.status === storeStatus.READY"
-            class="text-success"
-            >✔️</span
-          >
-          <q-spinner
-            v-else-if="presetData.status === storeStatus.LOADING"
-            color="light-blue"
-          />
-          <span v-else class="text-danger">❌ {{ presetData.error }}</span
-          ><br />
+
           Groups:
           <span
             v-if="groupsData.status === storeStatus.READY"
@@ -160,7 +147,6 @@ import {
   configDataStore,
   infoDataStore,
   colorDataStore,
-  presetDataStore,
   groupsDataStore,
   storeStatus,
   controllersStore,
@@ -212,7 +198,6 @@ export default defineComponent({
     const configData = configDataStore();
     const infoData = infoDataStore();
     const colorData = colorDataStore();
-    const presetData = presetDataStore();
     const groupsData = groupsDataStore();
     const intervalId = ref(null);
     const { isOpen, lostConnection } = useWebSocket();
@@ -309,7 +294,6 @@ export default defineComponent({
       configData,
       infoData,
       colorData,
-      presetData,
       groupsData,
       controllers,
       storeStatus,

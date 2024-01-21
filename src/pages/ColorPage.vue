@@ -271,6 +271,17 @@ export default {
     }));
 
     watch(
+      () => carouselPage,
+      (val) => {
+        if (
+          val === "presets" &&
+          presetData.storeStatus === storeStatus.LOADING
+        ) {
+          presetData.fetchData();
+        }
+      },
+    );
+    watch(
       () => colorData.data.hsv,
       (val) => {
         if (val !== undefined) {

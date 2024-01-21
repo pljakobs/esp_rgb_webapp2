@@ -127,17 +127,8 @@ export default {
 
     watch(isOpen, (newIsOpen) => {
       if (newIsOpen) {
-        console.log("registering wifi_connect callback");
-
-        onJson("wifi_connected", (params) => {
-          wifiData.value.connected = params.connected;
-          wifiData.value.ssid = params.ssid;
-          wifiData.value.dhcp = params.dhcp;
-          wifiData.value.ip = params.ip;
-          wifiData.value.netmask = params.netmask;
-          wifiData.value.gateway = params.gateway;
-          wifiData.value.mac = params.mac;
-        });
+        console.log("registering status callback");
+        registerWebSocketCallback();
       }
     });
 
@@ -157,15 +148,24 @@ export default {
       }
     });
 
+    const registerWebSocketCallback = () => {
+      onJson("wifi_status", (params) => {
+        wifiData.value.connected = params.station.connected;
+        wifiData.value.ssid = params.station.ssid;
+        wifiData.value.dhcp = params.station.dhcp;
+        wifiData.value.ip = params.station.ip;
+        wifiData.value.netmask = params.station.netmask;
+        wifiData.value.gateway = params.station.gateway;
+        wifiData.value.mac = params.station.mac;
+      });
+    };
+
     const onRestartController = () => {
       sysCmd("restart");
     };
 
     const onForgetWifi = () => {
-      sysCmd("forget_wifi");
-      setTimeout(() => {
-        sysCmd("restart");
-      }, 2000);
+      sysCmd("forget_wifi_and_restart");
     };
 
     const sysCmd = async (command) => {
@@ -272,6 +272,9 @@ export default {
 
     onMounted(() => {
       fetchNetworks();
+      if (isOpen) {
+        registerWebSocketCallback();
+      }
     });
 
     const getSignalIcon = (signalStrength) => {
