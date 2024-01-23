@@ -101,6 +101,7 @@
         show-if-above
         bordered
       >
+        {{ isSelectOpen.value ? "true" : "false" }}
         <q-select
           filled
           v-model="controllers.currentController"
@@ -109,7 +110,10 @@
           option-value="ip_address"
           label="Select a controller"
           @input="handleControllerSelection"
+          @popup-show="() => $nextTick(() => (isSelectOpen.value = true))"
+          @popup-hide="() => $nextTick(() => (isSelectOpen.value = false))"
         />
+
         <q-list>
           <q-item-label header>main menu</q-item-label>
 
@@ -202,6 +206,8 @@ export default defineComponent({
     const intervalId = ref(null);
     const { isOpen, lostConnection } = useWebSocket();
 
+    const isSelectOpen = ref(false);
+
     const router = useRouter();
 
     console.log("MainLayout setup");
@@ -263,9 +269,9 @@ export default defineComponent({
         },
       );
     watch(
-      () => [leftDrawerOpen.value, isSmallScreen.value],
-      ([isDrawerOpen, isSmallScreen]) => {
-        if (leftDrawerOpen.value || !isSmallScreen) {
+      () => isSelectOpen.value,
+      (isSelectOpen) => {
+        if (isSelectOpen) {
           controllers.fetchData(); //re-fetch neighbours when opening drawer
           // Start interval when drawer is opened
           intervalId.value = setInterval(() => {
@@ -299,6 +305,7 @@ export default defineComponent({
       storeStatus,
       isOpen,
       lostConnection,
+      isSelectOpen,
       handleControllerSelection,
       toggleLeftDrawer,
     };

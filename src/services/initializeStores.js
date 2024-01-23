@@ -21,6 +21,7 @@ export default function initializeStores() {
   const colorStore = colorDataStore();
   const infoStore = infoDataStore();
   const groupsData = groupsDataStore();
+  const presets = presetDataStore();
   const webSocket = useWebSocket();
 
   if (controllers.currentController) {
@@ -28,11 +29,20 @@ export default function initializeStores() {
     console.log("=> requesting websocket for ", url);
     webSocket.connect(url);
 
-    colorStore.fetchData();
-    configStore.fetchData();
-    infoStore.fetchData();
-    //groupsData.fetchData();
-    groupsData.status = storeStatus.READY;
-    controllers.fetchData();
+    async function initializeStores() {
+      try {
+        await controllers.fetchData();
+        await colorStore.fetchData();
+        await configStore.fetchData();
+        await infoStore.fetchData();
+        await presets.fetchData();
+        //groupsData.fetchData();
+        groupsData.status = storeStatus.READY;
+        await controllers.fetchData();
+      } catch (error) {
+        console.log("error initializing stores: ", error);
+      }
+    }
+    initializeStores();
   }
 }

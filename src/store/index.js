@@ -30,7 +30,7 @@ export const controllersStore = defineStore({
   actions: {
     async fetchData(retryCount = 0) {
       try {
-        //console.log("controllers start fetching data");
+        console.log("controllers start fetching data");
         const response = await fetch(`http://${localhost["ip_address"]}/hosts`);
         const jsonData = await response.json();
         this.data = jsonData["hosts"];
@@ -84,8 +84,7 @@ export const presetDataStore = defineStore({
         );
         const presetsArray = await response.json();
         console.log("presetsArray: ", presetsArray);
-        for (let i = 0; i < presetsArray["presets"].length; i++) {
-          const id = presetsArray["presets"][i];
+        for (const id of presetsArray["presets"]) {
           console.log("fetching preset with id: ", id);
           const response = await fetch(
             `http://${controllers.currentController["ip_address"]}/object?type=p&id=${id}`,

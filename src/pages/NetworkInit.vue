@@ -63,28 +63,45 @@
       />
     </q-card>
   </div>
-  <q-dialog v-model="wifiData.connected">
+  <q-dialog v-model="wifiConfigured">
     <q-card>
       <q-card-section>
         <div class="popup">
-          <h4>Connection Established</h4>
-          <p>Connected to: {{ wifiData.ssid }}</p>
-          <table>
-            <tr>
-              <td>Address</td>
-              <td>
-                <a :href="'http://' + wifiData.ip">{{ wifiData.ip }}</a>
-              </td>
-            </tr>
-            <tr>
-              <td>Netmask</td>
-              <td>{{ wifiData.netmask }}</td>
-            </tr>
-            <tr>
-              <td>Gateway</td>
-              <td>{{ wifiData.gateway }}</td>
-            </tr>
-          </table>
+          <div v-if="!wifidata.connected">
+            <h4>Connecting to network</h4>
+            {{ wifiData.message }}
+            <q-spinner />
+          </div>
+          <div v-if="connectionError">
+            <h4>Connection Failed</h4>
+            <p>{{ connectionErrorMessage }}</p>
+            <q-btn
+              color="secondary"
+              label="Ok"
+              @click="onOk"
+              style="margin-top: 16px"
+            />
+          </div>
+          <div v-if="wifidata.connected">
+            <h4>Connection Established</h4>
+            <p>Connected to: {{ wifiData.ssid }}</p>
+            <table>
+              <tr>
+                <td>Address</td>
+                <td>
+                  <a :href="'http://' + wifiData.ip">{{ wifiData.ip }}</a>
+                </td>
+              </tr>
+              <tr>
+                <td>Netmask</td>
+                <td>{{ wifiData.netmask }}</td>
+              </tr>
+              <tr>
+                <td>Gateway</td>
+                <td>{{ wifiData.gateway }}</td>
+              </tr>
+            </table>
+          </div>
           <p>Controller will restart in {{ countdown }} seconds</p>
           <q-btn
             color="secondary"
@@ -118,6 +135,9 @@ export default {
     const password = ref("");
     const ssid = ref("");
     const countdown = ref(0);
+    const wifiConfigured = ref(false);
+    const connectionError = ref(false);
+    const connectionErrorMessage = ref("");
 
     const ip_address =
       process.env.NODE_ENV === "development"
@@ -149,6 +169,7 @@ export default {
     });
 
     const registerWebSocketCallback = () => {
+      wifiData.value.connected = params.station.connected;
       onJson("wifi_status", (params) => {
         wifiData.value.connected = params.station.connected;
         wifiData.value.ssid = params.station.ssid;
@@ -157,6 +178,15 @@ export default {
         wifiData.value.netmask = params.station.netmask;
         wifiData.value.gateway = params.station.gateway;
         wifiData.value.mac = params.station.mac;
+        wifiData.value.message = params.message;
+
+        if (wifiData.value.connected) {
+          wifiConfigured.value = true;
+          connectionError.value = false;
+        } else {
+          connectionError.value = true;
+          connectionErrorMessage.value = params.message;
+        }
       });
     };
 
@@ -208,11 +238,19 @@ export default {
 
       if (response.ok) {
         console.log("connecting to network");
+        wifiConfigured.value = true;
       } else {
         console.log("Failed to connect to network");
+        connectionError.value = true;
+        connectionErrorMessage.value = "Failed to connect to network";
       }
     };
 
+    const onOk = () => {
+      connectionError.value = false;
+      connectionErrorMessage.value = "";
+      wifiConfigured.value = false;
+    };
     watch(selectedNetwork, (newVal) => {
       ssid.value = newVal;
     });
@@ -321,6 +359,10 @@ export default {
       onForgetWifi,
       connectToNetwork,
       countdown,
+      wifiConfigured,
+      connectionError,
+      connectionErrorMessage,
+      onOk,
     };
   },
 };
