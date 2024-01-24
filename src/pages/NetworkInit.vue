@@ -61,9 +61,26 @@
         @click="onForgetWifi"
         style="margin-top: 16px"
       />
+      <q-btn
+        color="secondary"
+        label="start countdown"
+        @click="
+          {
+            wifiData.value.connected = true;
+            wifiConfigured.value = true;
+            showDialog.value = true;
+          }
+        "
+        style="margin-top: 16px"
+      />
     </q-card>
   </div>
-  <q-dialog v-model="wifiConfigured">
+  <q-dialog v-model="showDialog.value">
+    <h4>dialog</h4>
+  </q-dialog>
+  <!--
+  </q-dialog>
+  <q-dialog v-model="showDialog.value">
     <q-card>
       <q-card-section>
         <div class="popup">
@@ -113,10 +130,11 @@
       </q-card-section>
     </q-card>
   </q-dialog>
+  -->
 </template>
 
 <script>
-import { ref, onMounted, watch } from "vue";
+import { ref, onMounted, computed, watch } from "vue";
 import useWebSocket from "src/services/websocket.js";
 
 export default {
@@ -139,6 +157,8 @@ export default {
     const connectionError = ref(false);
     const connectionErrorMessage = ref("");
 
+    const showDialog = computed(() => selectedNetwork.value.ssid !== "");
+
     const ip_address =
       process.env.NODE_ENV === "development"
         ? "192.168.29.49"
@@ -158,11 +178,11 @@ export default {
         const countdownInterval = setInterval(() => {
           countdown.value--;
           if (countdown.value <= 0) {
+            sysCmd("restart"); // Restart the controller, this will be a delayed command, so it will take ~2.5 seconds to restart
             clearInterval(countdownInterval);
             setTimeout(() => {
-              sysCmd("restart");
-            }, 2000); // Wait for 2 seconds before restarting
-            window.location.href = "http://" + newWifiData.ip;
+              window.location.href = "http://" + newWifiData.ip;
+            }, 3500);
           }
         }, 1000);
       }
@@ -363,6 +383,7 @@ export default {
       connectionError,
       connectionErrorMessage,
       onOk,
+      showDialog,
     };
   },
 };
