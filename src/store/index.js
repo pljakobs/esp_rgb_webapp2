@@ -41,14 +41,17 @@ export const controllersStore = defineStore({
         const response = await fetch(`http://${localhost["ip_address"]}/hosts`);
         const jsonData = await response.json();
         this.data = jsonData["hosts"];
-        this.data = jsonData["hosts"].map((host) => {
-          return {
-            ...host,
-            ip_address: host.ip_address.trim(),
-          };
-        }); //removing leading and trailing whitespaces from the ip address
+        console.log("controllers data fetched: ", jsonData["hosts"]);
+        this.data = jsonData["hosts"]
+          .filter((host) => host.ip_address)
+          .map((host) => {
+            return {
+              ...host,
+              ip_address: host.ip_address.trim(),
+            };
+          }); //removing leading and trailing whitespaces from the ip address
         this.status = storeStatus.READY;
-        //console.log("hosts data fetched: ", jsonData);
+        console.log("hosts data fetched: ", JSON.stringify(this.data));
       } catch (error) {
         this.status = storeStatus.ERROR;
         this.error = error;

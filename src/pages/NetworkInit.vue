@@ -81,13 +81,13 @@
       </q-card-section>
     </q-card>
   </div>
-  <div v-if="showDialog === true">
-    <q-card> das wäre ihr Dialog gewesen </q-card>
-  </div>
-  <!--
+
   <q-dialog v-model="showDialog">
     <q-card>
-      <div v-if="!wifidata.connected">
+      <div v-if="!wifiData">
+        <h4>no wifi data available (yet)</h4>
+      </div>
+      <div v-if="!wifiData.connected">
         <q-card-section>
           <h4>Connecting to network</h4>
           {{ wifiData.message }}
@@ -96,7 +96,7 @@
       </div>
     </q-card>
   </q-dialog>
--->
+
   <!--
   </q-dialog>
   <q-dialog v-model="showDialog.value">
@@ -155,13 +155,15 @@
 <script>
 import { ref, onMounted, watch } from "vue";
 import useWebSocket from "src/services/websocket.js";
-import { localhost } from "src/store/index.js";
-import { systemCommand } from "src/services/systemCommands.js";
+import { controllersStore, storeStatus } from "src/store/index.js";
+import systemCommand from "src/services/systemCommands.js";
 
 export default {
   setup() {
+    const controllers = controllersStore();
     const wifiData = ref({
       connected: false,
+      message: "",
       ssid: null,
       dhcp: null,
       ip: null,
@@ -195,7 +197,12 @@ export default {
       }
     });
 
-    /*
+    /**
+     * Watches the wifiData object for changes and performs actions when the device is connected to the network.
+     * Starts a countdown from 10 seconds and restarts the controller after the countdown reaches 0.
+     * Redirects the user to the device's IP address after a delay of 3.5 seconds.
+     * @param {Object} wifiData - The wifiData object containing information about the network connection.
+     */
     watch(wifiData, (newWifiData) => {
       if (newWifiData.connected) {
         countdown.value = 10; // Start countdown from 10 seconds
@@ -211,7 +218,6 @@ export default {
         }, 1000);
       }
     });
-    */
 
     /**
      * @brief Registers a WebSocket callback to update the WiFi status.
@@ -222,7 +228,7 @@ export default {
      * If the WiFi is not connected, it sets `connectionError` to true and `connectionErrorMessage` to the received message.
      */
     const registerWebSocketCallback = () => {
-      wifiData.value.connected = params.station.connected;
+      //wifiData.value.connected = params.station.connected;
       onJson("wifi_status", (params) => {
         wifiData.value.connected = params.station.connected;
         wifiData.value.ssid = params.station.ssid;
@@ -253,6 +259,14 @@ export default {
       console.log("showDialog (hiding)", showDialog.value);
     };
 
+    const onRestartController = () => {
+      systemCommand.restController;
+    };
+
+    const onForgetWifi = () => {
+      systemCommand.forgetWifi;
+    };
+
     watch(showDialog, (newVal) => {
       console.log("showDialog changed", newVal);
     });
@@ -267,16 +281,19 @@ export default {
 
       const new_ssid = selectedNetwork.value.ssid;
       const new_password = password.value;
-      const response = await fetch(`http://${ip_address}/connect`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+      const response = await fetch(
+        `http://${controllers.currentController.ip_address}/connect`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            ssid: new_ssid,
+            password: new_password,
+          }),
         },
-        body: JSON.stringify({
-          ssid: new_ssid,
-          password: new_password,
-        }),
-      });
+      );
 
       if (response.ok) {
         console.log("connecting to network");
@@ -293,18 +310,22 @@ export default {
       connectionErrorMessage.value = "";
       wifiConfigured.value = false;
     };
+
     watch(selectedNetwork, (newVal) => {
       ssid.value = newVal;
     });
 
     const fetchNetworks = async (retryCount = 0) => {
       try {
-        if (ip_address !== null) {
+        if (controllers.currentController.ip_address !== null) {
           console.log("fetching networks");
           // step 1: get the list of available networks
-          let response = await fetch(`http://${ip_address}/networks`, {
-            method: "GET",
-          });
+          let response = await fetch(
+            `http://${controllers.currentController.ip_address}/networks`,
+            {
+              method: "GET",
+            },
+          );
           if (response.status === 429 && retryCount < maxRetries) {
             // Too many requests, retry after a delay
             console.log(
@@ -326,9 +347,12 @@ export default {
           console.log("networks", JSON.stringify(networks.value));
 
           // step 2: scan for available wifi networks
-          response = await fetch(`http://${ip_address}/scan_networks`, {
-            method: "POST",
-          });
+          response = await fetch(
+            `http://${controllers.currentController.ip_address}/scan_networks`,
+            {
+              method: "POST",
+            },
+          );
           if (response.status === 429 && retryCount < maxRetries) {
             // Too many requests, retry after a delay
             console.log(
@@ -390,7 +414,7 @@ export default {
     };
 
     return {
-      wifiData,
+      ...wifiData,
       selectedNetwork,
       networks,
       password,
