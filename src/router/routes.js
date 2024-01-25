@@ -27,7 +27,7 @@ const routes = [
         path: "/SystemSettings",
         component: SystemSettings,
       },
-      { path: "/test", component: NetworkInit },
+      { path: "/test", component: testPage },
       { path: "/networkinit", component: NetworkInit },
     ],
   },

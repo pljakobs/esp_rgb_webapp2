@@ -2,7 +2,14 @@ import { defineStore } from "pinia";
 import { watch } from "vue";
 import useWebSocket from "src/services/websocket.js";
 
-const localhost = {
+/**
+ * Retrieves the IP address based on the current environment.
+ * If the environment is set to "development", it returns the hardcoded IP address of a well known controller.
+ * Otherwise, it returns the hostname of the current window.
+ *
+ * @returns {string} The IP address.
+ */
+export const localhost = {
   hostname: "localhost",
   ip_address:
     process.env.NODE_ENV === "development"

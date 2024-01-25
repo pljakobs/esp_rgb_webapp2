@@ -1,7 +1,8 @@
 <template>
   <div>
     <q-card class="full-height shadow-4 col-auto fit q-gutter-md q-pa-md">
-      <div class="row justify-center">
+      <!--
+      <q-card-section class="row justify-center">
         <h4>application initialization</h4>
         <q-select
           filled
@@ -47,37 +48,55 @@
           hint="Enter the password for the network"
           style="width: 80%"
         />
-
+      </q-card-section>
+    -->
+      <q-card-actions>
         <q-btn
           color="primary"
           label="Connect"
           @click="connectToNetwork"
           style="margin-top: 16px"
         />
-      </div>
-      <q-btn
-        color="secondary"
-        label="forget wifi"
-        @click="onForgetWifi"
-        style="margin-top: 16px"
-      />
-      <q-btn
-        color="secondary"
-        label="start countdown"
-        @click="
-          {
-            wifiData.value.connected = true;
-            wifiConfigured.value = true;
-            showDialog.value = true;
-          }
-        "
-        style="margin-top: 16px"
-      />
+        <q-btn
+          color="secondary"
+          label="forget wifi"
+          @click="onForgetWifi"
+          style="margin-top: 16px"
+        />
+        <q-btn
+          color="secondary"
+          label="show dialog"
+          @click="doShowDialog"
+          style="margin-top: 16px"
+        />
+        <q-btn
+          color="secondary"
+          label="hide dialog"
+          @click="doHideDialog"
+          style="margin-top: 16px"
+        />
+      </q-card-actions>
+      <q-card-section>
+        {{ showDialog }}
+      </q-card-section>
     </q-card>
   </div>
-  <q-dialog v-model="showDialog.value">
-    <h4>dialog</h4>
+  <div v-if="showDialog === true">
+    <q-card> das wäre ihr Dialog gewesen </q-card>
+  </div>
+  <!--
+  <q-dialog v-model="showDialog">
+    <q-card>
+      <div v-if="!wifidata.connected">
+        <q-card-section>
+          <h4>Connecting to network</h4>
+          {{ wifiData.message }}
+          <q-spinner />
+        </q-card-section>
+      </div>
+    </q-card>
   </q-dialog>
+-->
   <!--
   </q-dialog>
   <q-dialog v-model="showDialog.value">
@@ -134,8 +153,10 @@
 </template>
 
 <script>
-import { ref, onMounted, computed, watch } from "vue";
+import { ref, onMounted, watch } from "vue";
 import useWebSocket from "src/services/websocket.js";
+import { localhost } from "src/store/index.js";
+import { systemCommand } from "src/services/systemCommands.js";
 
 export default {
   setup() {
@@ -157,14 +178,16 @@ export default {
     const connectionError = ref(false);
     const connectionErrorMessage = ref("");
 
-    const showDialog = computed(() => selectedNetwork.value.ssid !== "");
+    const showDialog = ref(false);
 
-    const ip_address =
-      process.env.NODE_ENV === "development"
-        ? "192.168.29.49"
-        : window.location.hostname;
     const { onJson, isOpen } = useWebSocket();
 
+    /**
+     * @brief Waits for the websocket connection to be established and registers relevant callbacks.
+     *
+     * This function watches the "isOpen" variable and when it becomes true, it registers the status callback
+     * by calling the "registerWebSocketCallback" function.
+     */
     watch(isOpen, (newIsOpen) => {
       if (newIsOpen) {
         console.log("registering status callback");
@@ -172,6 +195,7 @@ export default {
       }
     });
 
+    /*
     watch(wifiData, (newWifiData) => {
       if (newWifiData.connected) {
         countdown.value = 10; // Start countdown from 10 seconds
@@ -187,7 +211,16 @@ export default {
         }, 1000);
       }
     });
+    */
 
+    /**
+     * @brief Registers a WebSocket callback to update the WiFi status.
+     *
+     * This function registers a WebSocket callback on "wifi_satus" that updates the local WiFi status based on the data received from the controller .
+     * It updates the `wifiData` object with the connected status, SSID, DHCP status, IP address, netmask, gateway, MAC address, and message.
+     * If the WiFi is connected, it sets `wifiConfigured` to true and `connectionError` to false.
+     * If the WiFi is not connected, it sets `connectionError` to true and `connectionErrorMessage` to the received message.
+     */
     const registerWebSocketCallback = () => {
       wifiData.value.connected = params.station.connected;
       onJson("wifi_status", (params) => {
@@ -210,30 +243,19 @@ export default {
       });
     };
 
-    const onRestartController = () => {
-      sysCmd("restart");
+    const doShowDialog = () => {
+      showDialog.value = true;
+      console.log("showDialog (showing)", showDialog.value);
     };
 
-    const onForgetWifi = () => {
-      sysCmd("forget_wifi_and_restart");
+    const doHideDialog = () => {
+      showDialog.value = false;
+      console.log("showDialog (hiding)", showDialog.value);
     };
 
-    const sysCmd = async (command) => {
-      console.log(`Sending command: ${command}`);
-      const body = JSON.stringify({ cmd: command });
-      const response = await fetch(`http://${ip_address}/system`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: body,
-      });
-      if (response.ok) {
-        console.log(`Command ${command} executed successfully`);
-      } else {
-        console.log(`Failed to execute command: ${command}`);
-      }
-    };
+    watch(showDialog, (newVal) => {
+      console.log("showDialog changed", newVal);
+    });
 
     const connectToNetwork = async () => {
       console.log(
@@ -384,6 +406,8 @@ export default {
       connectionErrorMessage,
       onOk,
       showDialog,
+      doShowDialog,
+      doHideDialog,
     };
   },
 };

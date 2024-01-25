@@ -182,6 +182,12 @@ const linksList = [
     link: "/SystemSettings",
   },
   {
+    title: "Network Init",
+    caption: "",
+    icon: "wifi",
+    link: "/NetworkInit",
+  },
+  {
     title: "test",
     caption: "",
     icon: "lightbulb",
