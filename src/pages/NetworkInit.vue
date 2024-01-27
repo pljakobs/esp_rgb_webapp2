@@ -83,16 +83,20 @@
   </div>
 
   <q-dialog v-model="showDialog">
-    <q-card>
-      <div v-if="!wifiData">
-        <h4>no wifi data available (yet)</h4>
-      </div>
-      <div v-if="!wifiData.connected">
+    <!--<q-card>
+
+      <div v-if="wifiData.connected !== 'connected'">
         <q-card-section>
           <h4>Connecting to network</h4>
           {{ wifiData.message }}
           <q-spinner />
         </q-card-section>
+      </div>
+    </q-card>
+    -->
+    <q-card>
+      <div v-if="!wifiData">
+        <h4>no wifi data available (yet)</h4>
       </div>
     </q-card>
   </q-dialog>
@@ -185,7 +189,7 @@ export default {
     const { onJson, isOpen } = useWebSocket();
 
     /**
-     * @brief Waits for the websocket connection to be established and registers relevant callbacks.
+     * @brief registers relevant callbacks.
      *
      * This function watches the "isOpen" variable and when it becomes true, it registers the status callback
      * by calling the "registerWebSocketCallback" function.
@@ -203,6 +207,7 @@ export default {
      * Redirects the user to the device's IP address after a delay of 3.5 seconds.
      * @param {Object} wifiData - The wifiData object containing information about the network connection.
      */
+
     watch(wifiData, (newWifiData) => {
       if (newWifiData.connected) {
         countdown.value = 10; // Start countdown from 10 seconds
@@ -266,10 +271,6 @@ export default {
     const onForgetWifi = () => {
       systemCommand.forgetWifi;
     };
-
-    watch(showDialog, (newVal) => {
-      console.log("showDialog changed", newVal);
-    });
 
     const connectToNetwork = async () => {
       console.log(
@@ -425,10 +426,10 @@ export default {
       onForgetWifi,
       connectToNetwork,
       countdown,
-      wifiConfigured,
-      connectionError,
-      connectionErrorMessage,
-      onOk,
+      //wifiConfigured,
+      //connectionError,
+      //connectionErrorMessage,
+      //onOk,
       showDialog,
       doShowDialog,
       doHideDialog,
