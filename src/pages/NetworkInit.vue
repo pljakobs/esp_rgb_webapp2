@@ -78,19 +78,20 @@
 
       {{ showDialog }}
     </q-card>
-    <q-card>
+    <q-card class="full-height shadow-4 col-auto fit q-gutter-md q-pa-md">
       <q-card-section>
         <div class="text-h6">Wifi Data</div>
       </q-card-section>
 
       <q-card-section>
+        working version: 2
         <div>Connected:{{ wifiData.connected }}</div>
       </q-card-section>
     </q-card>
   </div>
 
   <q-dialog v-model="showDialog">
-    <q-card>
+    <q-card class="full-height shadow-4 col-auto fit q-gutter-md q-pa-md">
       <div v-if="!wifiData.connected">
         <h4>Connecting to network</h4>
         {{ wifiData.message }}
