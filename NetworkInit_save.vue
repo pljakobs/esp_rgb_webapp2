@@ -1,6 +1,7 @@
 <template>
   <div>
     <q-card class="full-height shadow-4 col-auto fit q-gutter-md q-pa-md">
+      <!--
       <q-card-section class="row justify-center">
         <h4>application initialization</h4>
         <q-select
@@ -48,7 +49,7 @@
           style="width: 80%"
         />
       </q-card-section>
-
+    -->
       <q-card-actions>
         <q-btn
           color="primary"
@@ -75,72 +76,95 @@
           style="margin-top: 16px"
         />
       </q-card-actions>
-
-      {{ showDialog }}
-    </q-card>
-    <q-card>
       <q-card-section>
-        <div class="text-h6">Wifi Data</div>
-      </q-card-section>
-
-      <q-card-section>
-        <div>Connected:{{ wifiData.connected }}</div>
+        {{ showDialog }}
       </q-card-section>
     </q-card>
   </div>
 
   <q-dialog v-model="showDialog">
+    <!--<q-card>
+
+      <div v-if="wifiData.connected !== 'connected'">
+        <q-card-section>
+          <h4>Connecting to network</h4>
+          {{ wifiData.message }}
+          <q-spinner />
+        </q-card-section>
+      </div>
+    </q-card>
+    -->
     <q-card>
-      <div v-if="!wifiData.connected">
-        <h4>Connecting to network</h4>
-        {{ wifiData.message }}
-        <q-spinner />
+      <div v-if="!wifiData">
+        <h4>no wifi data available (yet)</h4>
       </div>
-      <div v-if="wifiData.connected">
-        <h4>Connection Established</h4>
-        <p>Connected to: {{ wifiData.ssid }}</p>
-        <table>
-          <tr>
-            <td>Address</td>
-            <td>
-              <a :href="'http://' + wifiData.ip">{{ wifiData.ip }}</a>
-            </td>
-          </tr>
-          <tr>
-            <td>Netmask</td>
-            <td>{{ wifiData.netmask }}</td>
-          </tr>
-          <tr>
-            <td>Gateway</td>
-            <td>{{ wifiData.gateway }}</td>
-          </tr>
-        </table>
-      </div>
-      <p>Controller will restart in {{ countdown }} seconds</p>
-      <q-btn
-        color="secondary"
-        label="restart now"
-        @click="onRestartController"
-        style="margin-top: 16px"
-      />
     </q-card>
   </q-dialog>
+
+  <!--
+  </q-dialog>
+  <q-dialog v-model="showDialog.value">
+    <q-card>
+      <q-card-section>
+        <div class="popup">
+          <div v-if="!wifidata.connected">
+            <h4>Connecting to network</h4>
+            {{ wifiData.message }}
+            <q-spinner />
+          </div>
+          <div v-if="connectionError">
+            <h4>Connection Failed</h4>
+            <p>{{ connectionErrorMessage }}</p>
+            <q-btn
+              color="secondary"
+              label="Ok"
+              @click="onOk"
+              style="margin-top: 16px"
+            />
+          </div>
+          <div v-if="wifidata.connected">
+            <h4>Connection Established</h4>
+            <p>Connected to: {{ wifiData.ssid }}</p>
+            <table>
+              <tr>
+                <td>Address</td>
+                <td>
+                  <a :href="'http://' + wifiData.ip">{{ wifiData.ip }}</a>
+                </td>
+              </tr>
+              <tr>
+                <td>Netmask</td>
+                <td>{{ wifiData.netmask }}</td>
+              </tr>
+              <tr>
+                <td>Gateway</td>
+                <td>{{ wifiData.gateway }}</td>
+              </tr>
+            </table>
+          </div>
+          <p>Controller will restart in {{ countdown }} seconds</p>
+          <q-btn
+            color="secondary"
+            label="restart now"
+            @click="onRestartController"
+            style="margin-top: 16px"
+          />
+        </div>
+      </q-card-section>
+    </q-card>
+  </q-dialog>
+  -->
 </template>
 
 <script>
-import { ref, onMounted, watch, watchEffect } from "vue";
+import { ref, onMounted, watch } from "vue";
 import useWebSocket from "src/services/websocket.js";
-import {
-  controllersStore,
-  infoDataStore,
-  storeStatus,
-} from "src/store/index.js";
+import { controllersStore, storeStatus } from "src/store/index.js";
 import systemCommand from "src/services/systemCommands.js";
 
 export default {
   setup() {
     const controllers = controllersStore();
-    const infoData = infoDataStore();
     const wifiData = ref({
       connected: false,
       message: "",
@@ -156,6 +180,9 @@ export default {
     const password = ref("");
     const ssid = ref("");
     const countdown = ref(0);
+    const wifiConfigured = ref(false);
+    const connectionError = ref(false);
+    const connectionErrorMessage = ref("");
 
     const showDialog = ref(false);
 
@@ -181,6 +208,22 @@ export default {
      * @param {Object} wifiData - The wifiData object containing information about the network connection.
      */
 
+    watch(wifiData, (newWifiData) => {
+      if (newWifiData.connected) {
+        countdown.value = 10; // Start countdown from 10 seconds
+        const countdownInterval = setInterval(() => {
+          countdown.value--;
+          if (countdown.value <= 0) {
+            sysCmd("restart"); // Restart the controller, this will be a delayed command, so it will take ~2.5 seconds to restart
+            clearInterval(countdownInterval);
+            setTimeout(() => {
+              window.location.href = "http://" + newWifiData.ip;
+            }, 3500);
+          }
+        }, 1000);
+      }
+    });
+
     /**
      * @brief Registers a WebSocket callback to update the WiFi status.
      *
@@ -192,7 +235,6 @@ export default {
     const registerWebSocketCallback = () => {
       //wifiData.value.connected = params.station.connected;
       onJson("wifi_status", (params) => {
-        console.log("==> websocket: wifi_status", JSON.stringify(params));
         wifiData.value.connected = params.station.connected;
         wifiData.value.ssid = params.station.ssid;
         wifiData.value.dhcp = params.station.dhcp;
@@ -203,50 +245,31 @@ export default {
         wifiData.value.message = params.message;
 
         if (wifiData.value.connected) {
-          wifiData.value.configured = true;
-          wifiData.value.error = false;
-          wifiData.value.errorMessage = "";
+          wifiConfigured.value = true;
+          connectionError.value = false;
         } else {
-          wifiData.value.configured = false;
-          wifiData.value.error = false;
-          wifiData.value.errorMessage = "";
+          connectionError.value = true;
+          connectionErrorMessage.value = params.message;
         }
-
-        console.log("wifiData", JSON.stringify(wifiData));
       });
     };
 
-    /**
-     * Function to show the dialog.
-     */
     const doShowDialog = () => {
       showDialog.value = true;
       console.log("showDialog (showing)", showDialog.value);
     };
 
-    /**
-     * Function to hide the dialog.
-     */
     const doHideDialog = () => {
       showDialog.value = false;
       console.log("showDialog (hiding)", showDialog.value);
     };
 
-    watch(showDialog, (newShowDialog) => {
-      console.log("showDialog (watch)", newShowDialog);
-    });
-    /**
-     * Function to restart the controller.
-     */
     const onRestartController = () => {
-      systemCommand.restartController();
+      systemCommand.restController;
     };
 
-    /**
-     * Function to forget the WiFi network.
-     */
     const onForgetWifi = () => {
-      systemCommand.forgetWifi();
+      systemCommand.forgetWifi;
     };
 
     const connectToNetwork = async () => {
@@ -254,7 +277,6 @@ export default {
         "selectedNetwork.value",
         JSON.stringify(selectedNetwork.value),
       );
-      showDialog.value = true;
       console.log("Connecting to network:", selectedNetwork.value.ssid);
       console.log("Password:", password.value);
 
@@ -273,18 +295,26 @@ export default {
           }),
         },
       );
+
       if (response.ok) {
         console.log("connecting to network");
-        wifiConfigured.value = false;
-        wifiData.value.message = "Connecting to network";
-        showDialog.value = true;
+        wifiConfigured.value = true;
       } else {
         console.log("Failed to connect to network");
-        wifiData.value.connected = false;
-        wifiData.value.message = "Failed to initiate connection";
-        showDialog.value = true;
+        connectionError.value = true;
+        connectionErrorMessage.value = "Failed to connect to network";
       }
     };
+
+    const onOk = () => {
+      connectionError.value = false;
+      connectionErrorMessage.value = "";
+      wifiConfigured.value = false;
+    };
+
+    watch(selectedNetwork, (newVal) => {
+      ssid.value = newVal;
+    });
 
     const fetchNetworks = async (retryCount = 0) => {
       try {
@@ -346,45 +376,11 @@ export default {
     };
 
     onMounted(() => {
-      console.log("onMounted NetworkInit, fetching Networks");
       fetchNetworks();
-      console.log("onMounted updating wifiData");
-      updateWifiData();
-      console.log("onMounted: isOpen is", isOpen ? "true" : "false");
       if (isOpen) {
-        console.log("onMounted registering callback");
         registerWebSocketCallback();
-      } else {
-        console.log("onMounted websocket not open, deferring callback reg");
       }
     });
-
-    const updateWifiData = () => {
-      console.log("==== updateWifiData");
-      console.log("== infoData", JSON.stringify(infoData));
-      if (infoData.storeStatus == storeStatus.LOADED) {
-        console.log("populating wifiData");
-        wifiData.value.connected = infoData.data.connection.connected;
-        wifiData.value.ssid = infoData.data.connection.ssid;
-        wifiData.value.dhcp = infoData.data.connection.dhcp;
-        wifiData.value.ip = infoData.data.connection.ip;
-        wifiData.value.netmask = infoData.data.connection.netmask;
-        wifiData.value.gateway = infoData.data.connection.gateway;
-        wifiData.value.mac = infoData.data.connection.mac;
-        wifiData.value.message = "";
-        console.log("===>wifiData", wifiData.value.ssid);
-      } else {
-        console.log("==== creating empty wifiData structure");
-        wifiData.value.connected = "";
-        wifiData.value.ssid = "";
-        wifiData.value.dhcp = "";
-        wifiData.value.ip = "";
-        wifiData.value.netmask = "";
-        wifiData.value.gateway = "";
-        wifiData.value.mac = "";
-        wifiData.value.message = "";
-      }
-    };
 
     const getSignalIcon = (signalStrength) => {
       console.log(` strength: ${signalStrength}`);
@@ -417,31 +413,9 @@ export default {
           return "lock_open";
       }
     };
-    /**
-     * Watches the wifiData object for changes and performs actions when the device is connected to the network.
-     * Starts a countdown from 10 seconds and restarts the controller after the countdown reaches 0.
-     * Redirects the user to the device's IP address after a delay of 3.5 seconds.
-     * @param {Object} wifiData - The wifiData object containing information about the network connection.
-     */
-
-    watchEffect(() => {
-      if (wifiData.value.connected && showDialog) {
-        countdown.value = 10; // Start countdown from 10 seconds
-        const countdownInterval = setInterval(() => {
-          countdown.value--;
-          if (countdown.value <= 0) {
-            systemCommand.restartController(); // Restart the controller, this will be a delayed command, so it will take ~2.5 seconds to restart
-            clearInterval(countdownInterval);
-            setTimeout(() => {
-              window.location.href = "http://" + wifiData.value.ip;
-            }, 3500);
-          }
-        }, 1000);
-      }
-    });
 
     return {
-      wifiData,
+      ...wifiData,
       selectedNetwork,
       networks,
       password,
@@ -451,10 +425,14 @@ export default {
       onRestartController,
       onForgetWifi,
       connectToNetwork,
+      countdown,
+      //wifiConfigured,
+      //connectionError,
+      //connectionErrorMessage,
+      //onOk,
       showDialog,
       doShowDialog,
       doHideDialog,
-      countdown,
     };
   },
 };

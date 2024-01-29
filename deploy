@@ -20,6 +20,7 @@ then
 	version=$version"-debug"
 fi
 echo $version >dist/spa/VERSION
+echo "VUE_APP_BUILD_NUMBER=$version" >.env
 echo "deploying " 
 cat dist/spa/VERSION
 rsync -a dist/spa/ devbox:~/devel/esp_rgbww_firmware/spiffs

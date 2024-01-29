@@ -101,7 +101,6 @@
         show-if-above
         bordered
       >
-        {{ isSelectOpen.value ? "true" : "false" }}
         <q-select
           filled
           v-model="controllers.currentController"
@@ -215,8 +214,6 @@ export default defineComponent({
     const isSelectOpen = ref(false);
 
     const router = useRouter();
-
-    console.log("MainLayout setup");
 
     const isSmallScreen = ref(window.innerWidth <= 400); // Change 600 to your small breakpoint
 
