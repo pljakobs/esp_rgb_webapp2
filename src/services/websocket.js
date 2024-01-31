@@ -1,11 +1,18 @@
 import { reactive, toRefs } from "vue";
 
+export const wsStatus = {
+  CONNECTING: "connecting",
+  CONNECTED: "connected",
+  DISCONNECTED: "disconnected",
+  FAILED: "failed",
+};
+
 const state = reactive({
   data: null,
   error: null,
   socket: null,
-  isOpen: false,
-  lostConnection: false,
+  url: null,
+  status: wsStatus.DISCONNECTED,
   callbacks: {},
 });
 
@@ -14,40 +21,33 @@ let lostConnectionTimeout = null;
 let reconnectTimeout = null;
 let reconnectAttempts = 0;
 let manualClose = false;
-let currentSocket = null;
 
 export default function useWebSocket() {
   function connect(url) {
-    if (state.isOpen || url === null || url === undefined) {
-      return currentSocket;
+    state.url = url;
+    if (url === null || url === undefined) {
+      console.log("=> websocket url is null or undefined");
+      return false;
+    } else if (state.status === wsStatus.CONNECTED) {
+      console.log("=> websocket is already connected");
+      return state.socket;
+    } else if (state.status === wsStatus.CONNECTING) {
+      console.log("=> websocket is connecting");
+      return false;
     }
-    console.log("websocket.isOpen: ", state.isOpen ? "true" : "false");
-    console.log(
-      "websocket.lostConnection: ",
-      state.lostConnection ? "true" : "false",
-    );
 
-    if (state.isOpen && !state.lostConnection) {
-      console.log("=> websocket already exists");
-      return;
-    }
-    console.log("=> opening websocket for ", url);
-    state.socket = new WebSocket(url);
+    console.log("=> opening websocket for ", state.url);
+    state.status = wsStatus.CONNECTING;
+    state.socket = new WebSocket(state.url);
 
     state.socket.onopen = () => {
       console.log("=> websocket opened");
-      manualClose = false;
-      state.isOpen = true;
-      state.lostConnection = false;
+      state.status = wsStatus.CONNECTED;
     };
 
     function handleKeepAlive(message) {
       console.log("=> keep alive at time", (Date.now() - startTime) / 1000);
-      console.log("==> websocket.isOpen: ", state.isOpen ? "true" : "false");
-      console.log(
-        "==> websocket.lostConnection: ",
-        state.lostConnection ? "true" : "false",
-      );
+      console.log("==> websocket is: ", state.status);
       const response = {
         id: message.id,
         method: "keep_alive",
@@ -61,9 +61,7 @@ export default function useWebSocket() {
     function resetLostConnectionTimeout() {
       lostConnectionTimeout = setTimeout(() => {
         console.log("=> websocket keep_alive timeout");
-        manualClose = false;
-        state.isOpen = false;
-        state.lostConnection = true;
+        state.status = wsStatus.FAILED;
         state.socket.close();
         reconnect();
       }, 125000); // This is the timeout for the keep_alive message
@@ -82,9 +80,9 @@ export default function useWebSocket() {
         delay = 20000;
       }
 
-      if (url != null && !manualClose) {
+      if (state.url != null && state.status === wsStatus.CLOSED) {
         setTimeout(() => {
-          connect(url);
+          connect(state.url);
         }, delay);
       }
 
@@ -110,11 +108,12 @@ export default function useWebSocket() {
 
     state.socket.onclose = () => {
       console.log("=> websocket closing");
-      state.isOpen = false;
-      state.lostConnection = false;
+      if (state.status !== wsStatus.DISCONNECTED) {
+        state.status = wsStatus.FAILED;
+      }
 
       // Try to reconnect after 5 seconds
-      if (url != null && !manualClose) {
+      if (state.url != null && state.status === wsStatus.FAILED) {
         setTimeout(connect, 5000);
       }
     };
@@ -126,17 +125,16 @@ export default function useWebSocket() {
       state.socket.close();
     }
     state.socket.close();
-    state.isOpen = false;
-    state.lostConnection = false;
-    manualClose = true;
+    state.status = wsStatus.DISCONNECTED;
+
     clearTimeout(lostConnectionTimeout);
     clearTimeout(reconnectTimeout);
-    url = null;
-    currentSocket = null;
+    state.url = null;
+    state.socket = null;
   }
 
   const send = (method, params) => {
-    if (state.isOpen) {
+    if (state.status === wsStatus.CONNECTED) {
       state.socket.send(JSON.stringify({ jsonrpc: "2.0", method, params }));
     }
   };
@@ -150,6 +148,6 @@ export default function useWebSocket() {
   };
 
   // Call connect to open the WebSocket
-  currentSocket = { ...toRefs(state), send, connect, destroy, onJson };
+  let currentSocket = { ...toRefs(state), send, connect, destroy, onJson };
   return currentSocket;
 }

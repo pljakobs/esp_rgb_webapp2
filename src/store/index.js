@@ -1,6 +1,6 @@
 import { defineStore } from "pinia";
 import { watch } from "vue";
-import useWebSocket from "src/services/websocket.js";
+import useWebSocket, { wsStatus } from "../services/websocket";
 
 /**
  * Retrieves the IP address based on the current environment.
@@ -16,7 +16,7 @@ export const localhost = {
       ? "192.168.29.49"
       : window.location.hostname,
 };
-const storeStatus = {
+export const storeStatus = {
   LOADING: "loading",
   READY: "ready",
   ERROR: "error",
@@ -83,7 +83,7 @@ export const presetDataStore = defineStore({
   actions: {
     async fetchData(retryCount = 0) {
       const controllers = controllersStore();
-      const { onJson, isOpen } = useWebSocket();
+      const ws = useWebSocket();
       try {
         console.log("preset start fetching data");
         console.log(
@@ -114,29 +114,32 @@ export const presetDataStore = defineStore({
         this.status = storeStatus.READY;
         console.log("preset data fetched: ", JSON.stringify(this.data));
 
-        watch(isOpen, (newIsOpen) => {
-          if (newIsOpen) {
-            onJson("preset", (params) => {
-              this.change_by = "websocket";
-              console.log("params: ", params);
+        watch(
+          () => ws.status,
+          (newStatus) => {
+            if (newStatus === wsStatus.CONNECTED) {
+              onJson("preset", (params) => {
+                this.change_by = "websocket";
+                console.log("params: ", params);
 
-              const existingPresetIndex = this.data.presets.findIndex(
-                (p) => p.id === params.id,
-              );
-              if (existingPresetIndex !== -1) {
-                // Overwrite existing preset
-                this.data.presets[existingPresetIndex] = params;
-                console.log("Preset overwritten: ", params);
-              } else {
-                // Create new preset
-                this.data.presets.push(params);
-                console.log("New preset created: ", params);
-              }
+                const existingPresetIndex = this.data.presets.findIndex(
+                  (p) => p.id === params.id,
+                );
+                if (existingPresetIndex !== -1) {
+                  // Overwrite existing preset
+                  this.data.presets[existingPresetIndex] = params;
+                  console.log("Preset overwritten: ", params);
+                } else {
+                  // Create new preset
+                  this.data.presets.push(params);
+                  console.log("New preset created: ", params);
+                }
 
-              this.change_by = null;
-            });
-          }
-        });
+                this.change_by = null;
+              });
+            }
+          },
+        );
       } catch (error) {
         this.status = storeStatus.ERROR;
         this.error = error;
@@ -409,30 +412,33 @@ export const colorDataStore = defineStore({
   },
 });
 
-const { onJson, isOpen } = useWebSocket();
-watch(isOpen, (newIsOpen) => {
-  if (newIsOpen) {
-    onJson("color_event", (params) => {
-      colorDataStore.change_by = "websocket";
-      console.log("params mode: ", params.mode);
-      if (params.mode === "hsv") {
-        console.log("updating hsv color data", params.hsv);
-        console.log("colorDataStore.data.hsv: ", colorDataStore.data.hsv);
-        console.log("params.hsv: ", params.hsv);
-        colorDataStore.data.hsv = params.hsv;
-      } else if (params.mode === "raw") {
-        console.log("updating raw color data", params.raw);
-        colorDataStore.data.raw = params.raw;
-      }
+const ws = useWebSocket();
+watch(
+  () => ws.status,
+  (newStatus, oldStatus) => {
+    if (newStatus === wsStatus.CONNECTED) {
+      onJson("color_event", (params) => {
+        colorDataStore.change_by = "websocket";
+        console.log("params mode: ", params.mode);
+        if (params.mode === "hsv") {
+          console.log("updating hsv color data", params.hsv);
+          console.log("colorDataStore.data.hsv: ", colorDataStore.data.hsv);
+          console.log("params.hsv: ", params.hsv);
+          colorDataStore.data.hsv = params.hsv;
+        } else if (params.mode === "raw") {
+          console.log("updating raw color data", params.raw);
+          colorDataStore.data.raw = params.raw;
+        }
 
-      console.log(
-        "color store updated by websocket message to ",
-        JSON.stringify(colorDataStore),
-      );
-      colorDataStore.change_by = null;
-    });
-  }
-});
+        console.log(
+          "color store updated by websocket message to ",
+          JSON.stringify(colorDataStore),
+        );
+        colorDataStore.change_by = null;
+      });
+    }
+  },
+);
 export const configDataStore = defineStore({
   id: "configDataStore",
   state: () => ({
@@ -499,4 +505,3 @@ export const configDataStore = defineStore({
     },
   },
 });
-export { storeStatus };

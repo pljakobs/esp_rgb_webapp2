@@ -79,17 +79,9 @@
               <img src="icons/favicon.ico" />
             </q-avatar>
           </q-btn>
-          <q-toolbar-title
-            class="bg-primary"
-            :class="{
-              'bg-red': lostConnection,
-              'bg-orange': !isOpen && !lostConnection,
-            }"
-          >
+          <q-toolbar-title>
             Lightinator Mini on
             {{ controllers.currentController["hostname"] }} websocket is
-            {{ isOpen ? "Open" : "Not Open" }} and lostConnection is
-            {{ lostConnection ? "true" : "false" }}
           </q-toolbar-title>
         </q-toolbar>
       </q-header>
@@ -123,6 +115,12 @@
           />
         </q-list>
       </q-drawer>
+      <q-btn
+        round
+        :style="{ position: 'fixed', right: '20px', bottom: '20px' }"
+        :color="buttonColor"
+        :icon="buttonIcon"
+      />
       <q-page-container>
         <div id="q-app" class="bg-blue-grey-2" style="min-height: 100vh">
           <div
@@ -141,11 +139,16 @@
     </q-layout>
   </div>
 </template>
+
 <script>
-import { defineComponent, ref, watch, onMounted, onUnmounted } from "vue";
-import EssentialLink from "components/EssentialLink.vue";
-import useWebSocket from "src/services/websocket.js";
-import { useRouter } from "vue-router";
+import {
+  defineComponent,
+  ref,
+  watch,
+  onMounted,
+  onUnmounted,
+  computed,
+} from "vue";
 import {
   configDataStore,
   infoDataStore,
@@ -154,6 +157,9 @@ import {
   storeStatus,
   controllersStore,
 } from "src/store";
+import EssentialLink from "components/EssentialLink.vue";
+import useWebSocket, { wsStatus } from "src/services/websocket.js";
+import { useRouter } from "vue-router";
 
 const linksList = [
   {
@@ -209,7 +215,7 @@ export default defineComponent({
     const colorData = colorDataStore();
     const groupsData = groupsDataStore();
     const intervalId = ref(null);
-    const { isOpen, lostConnection } = useWebSocket();
+    const ws = useWebSocket();
 
     const isSelectOpen = ref(false);
 
@@ -220,7 +226,31 @@ export default defineComponent({
     const updateIsSmallScreen = () => {
       isSmallScreen.value = window.innerWidth <= 400; // Change 600 to your small breakpoint
     };
+    const buttonColor = computed(() => {
+      switch (ws.status) {
+        case wsStatus.CONNECTED:
+          return "green";
+        case wsStatus.DISCONNECTED:
+          return "red";
+        case wsStatus.CONNECTING:
+          return "yellow";
+        default:
+          return "grey";
+      }
+    });
 
+    const buttonIcon = computed(() => {
+      switch (ws.status) {
+        case wsStatus.CONNECTED:
+          return "check";
+        case wsStatus.DISCONNECTED:
+          return "close";
+        case wsStatus.CONNECTING:
+          return "help";
+        default:
+          return "info";
+      }
+    });
     onMounted(() => {
       window.addEventListener("resize", updateIsSmallScreen);
     });
@@ -306,11 +336,11 @@ export default defineComponent({
       groupsData,
       controllers,
       storeStatus,
-      isOpen,
-      lostConnection,
       isSelectOpen,
       handleControllerSelection,
       toggleLeftDrawer,
+      buttonColor,
+      buttonIcon,
     };
   },
 });
