@@ -109,22 +109,27 @@ export default function useWebSocket() {
     state.socket.onclose = () => {
       console.log("=> websocket closing");
       if (state.status !== wsStatus.DISCONNECTED) {
+        console.log(
+          "=> websocket was not disconnected -> probably lost connection",
+        );
         state.status = wsStatus.FAILED;
       }
 
       // Try to reconnect after 5 seconds
       if (state.url != null && state.status === wsStatus.FAILED) {
+        console.log("=> websocket reconnecting");
         setTimeout(connect, 5000);
       }
     };
   }
 
   function destroy() {
-    console.log("=> closing websocket");
+    console.log("=> websocket closing by destroy()");
     if (state.socket.readyState === WebSocket.OPEN) {
+      //if socket was open, close
       state.socket.close();
     }
-    state.socket.close();
+    //state.socket.close();
     state.status = wsStatus.DISCONNECTED;
 
     clearTimeout(lostConnectionTimeout);
@@ -147,6 +152,7 @@ export default function useWebSocket() {
     state.callbacks[key].push(callback);
   };
 
+  console.log("=> useWebsocket state: ", JSON.stringify(state));
   // Call connect to open the WebSocket
   let currentSocket = { ...toRefs(state), send, connect, destroy, onJson };
   return currentSocket;

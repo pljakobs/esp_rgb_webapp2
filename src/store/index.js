@@ -115,10 +115,10 @@ export const presetDataStore = defineStore({
         console.log("preset data fetched: ", JSON.stringify(this.data));
 
         watch(
-          () => ws.status,
+          () => ws.status.value,
           (newStatus) => {
             if (newStatus === wsStatus.CONNECTED) {
-              onJson("preset", (params) => {
+              ws.onJson("preset", (params) => {
                 this.change_by = "websocket";
                 console.log("params: ", params);
 
@@ -413,32 +413,35 @@ export const colorDataStore = defineStore({
 });
 
 const ws = useWebSocket();
+console.log("ws: ", ws);
 watch(
-  () => ws.status,
+  () => ws.status.value,
   (newStatus, oldStatus) => {
     if (newStatus === wsStatus.CONNECTED) {
-      onJson("color_event", (params) => {
-        colorDataStore.change_by = "websocket";
+      ws.onJson("color_event", (params) => {
+        const colorData = colorDataStore();
+        colorData.change_by = "websocket";
         console.log("params mode: ", params.mode);
         if (params.mode === "hsv") {
           console.log("updating hsv color data", params.hsv);
-          console.log("colorDataStore.data.hsv: ", colorDataStore.data.hsv);
+          console.log("colorDataStore.data.hsv: ", JSON.stringify(colorData));
           console.log("params.hsv: ", params.hsv);
-          colorDataStore.data.hsv = params.hsv;
+          colorData.data.hsv = params.hsv;
         } else if (params.mode === "raw") {
           console.log("updating raw color data", params.raw);
-          colorDataStore.data.raw = params.raw;
+          colorData.data.raw = params.raw;
         }
 
         console.log(
           "color store updated by websocket message to ",
-          JSON.stringify(colorDataStore),
+          JSON.stringify(colorData),
         );
-        colorDataStore.change_by = null;
+        colorData.change_by = null;
       });
     }
   },
 );
+
 export const configDataStore = defineStore({
   id: "configDataStore",
   state: () => ({

@@ -169,7 +169,7 @@ export default {
      * by calling the "registerWebSocketCallback" function.
      */
     watch(
-      () => ws.status,
+      () => ws.status.value,
       (newStatus) => {
         if (newStatus === wsStatus.CONNECTED) {
           console.log("registering status callback");
@@ -195,7 +195,7 @@ export default {
      */
     const registerWebSocketCallback = () => {
       //wifiData.value.connected = params.station.connected;
-      onJson("wifi_status", (params) => {
+      ws.onJson("wifi_status", (params) => {
         console.log("==> websocket: wifi_status", JSON.stringify(params));
         wifiData.value.connected = params.station.connected;
         wifiData.value.ssid = params.station.ssid;

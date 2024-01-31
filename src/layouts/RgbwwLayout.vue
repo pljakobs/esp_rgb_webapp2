@@ -227,7 +227,8 @@ export default defineComponent({
       isSmallScreen.value = window.innerWidth <= 400; // Change 600 to your small breakpoint
     };
     const buttonColor = computed(() => {
-      switch (ws.status) {
+      console.log("=> websocket ws.status.value", ws.status.value);
+      switch (ws.status.value) {
         case wsStatus.CONNECTED:
           return "green";
         case wsStatus.DISCONNECTED:
@@ -240,7 +241,7 @@ export default defineComponent({
     });
 
     const buttonIcon = computed(() => {
-      switch (ws.status) {
+      switch (ws.status.value) {
         case wsStatus.CONNECTED:
           return "check";
         case wsStatus.DISCONNECTED:
@@ -282,7 +283,7 @@ export default defineComponent({
           !infoData.data.connection.connected &&
           infoData.data.connection.ssid === ""
         ) {
-          // the controller has no configured ssid and is not connected to a wifi network
+          // the controller has no configured ssid wsand is not connected to a wifi network
           // we are therefore talking to a controller in AP mode, trigger the controler config
           // section
           console.log("new controller, redirecting to /networkinit");
