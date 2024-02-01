@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import useWebSocket from "src/services/websocket";
+import useWebSocket, { wsStatus } from "src/services/websocket.js";
 import {
   configDataStore,
   colorDataStore,

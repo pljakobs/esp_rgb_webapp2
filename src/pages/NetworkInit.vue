@@ -130,7 +130,7 @@
 
 <script>
 import { ref, onMounted, watch, watchEffect } from "vue";
-import useWebSocket from "src/services/websocket.js";
+import useWebSocket, { wsStatus } from "../services/websocket";
 import {
   controllersStore,
   infoDataStore,
@@ -160,20 +160,7 @@ export default {
 
     const showDialog = ref(false);
 
-    const { onJson, isOpen } = useWebSocket();
-
-    /**
-     * @brief registers relevant callbacks.
-     *
-     * This function watches the "isOpen" variable and when it becomes true, it registers the status callback
-     * by calling the "registerWebSocketCallback" function.
-     */
-    watch(isOpen, (newIsOpen) => {
-      if (newIsOpen) {
-        console.log("registering status callback");
-        registerWebSocketCallback();
-      }
-    });
+    const ws = useWebSocket();
 
     /**
      * Watches the wifiData object for changes and performs actions when the device is connected to the network.
@@ -192,7 +179,7 @@ export default {
      */
     const registerWebSocketCallback = () => {
       //wifiData.value.connected = params.station.connected;
-      onJson("wifi_status", (params) => {
+      ws.onJson("wifi_status", (params) => {
         console.log("==> websocket: wifi_status", JSON.stringify(params));
         wifiData.value.connected = params.station.connected;
         wifiData.value.ssid = params.station.ssid;
@@ -426,7 +413,7 @@ export default {
      */
 
     watchEffect(() => {
-      if (wifiData.value.connected && showDialog) {
+      if (status.value === "connected" && showDialog) {
         countdown.value = 10; // Start countdown from 10 seconds
         const countdownInterval = setInterval(() => {
           countdown.value--;
