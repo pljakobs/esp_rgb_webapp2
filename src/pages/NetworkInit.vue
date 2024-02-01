@@ -163,22 +163,6 @@ export default {
     const ws = useWebSocket();
 
     /**
-     * @brief registers relevant callbacks.
-     *
-     * This function watches the "isOpen" variable and when it becomes true, it registers the status callback
-     * by calling the "registerWebSocketCallback" function.
-     */
-    watch(
-      () => ws.status.value,
-      (newStatus) => {
-        if (newStatus === wsStatus.CONNECTED) {
-          console.log("registering status callback");
-          registerWebSocketCallback();
-        }
-      },
-    );
-
-    /**
      * Watches the wifiData object for changes and performs actions when the device is connected to the network.
      * Starts a countdown from 10 seconds and restarts the controller after the countdown reaches 0.
      * Redirects the user to the device's IP address after a delay of 3.5 seconds.

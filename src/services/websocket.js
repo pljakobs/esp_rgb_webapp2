@@ -145,6 +145,7 @@ export default function useWebSocket() {
   };
 
   const onJson = (key, callback) => {
+    console.log("=> registering callback for ", key);
     if (!state.callbacks[key]) {
       state.callbacks[key] = [];
     }
