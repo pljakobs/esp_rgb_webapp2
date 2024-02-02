@@ -38,16 +38,55 @@
           hint="Enter the SSID of the network"
           style="width: 80%"
         />
-
-        <q-input
-          filled
-          v-model="password"
-          label="Password"
-          type="password"
-          hint="Enter the password for the network"
-          style="width: 80%"
-        />
+        <transition name="shake" mode="out-in">
+          <q-input
+            :class="{ shake: wifiData.message === 'Wrong Password' }"
+            filled
+            v-model="password"
+            label="Password"
+            type="password"
+            hint="Enter the password for the network"
+            style="width: 80%"
+          />
+        </transition>
+        <div v-if="wifiData.message === 'Wrong Password'">
+          <p>password authentication failed, please try again</p>
+        </div>
+        <div v-if="wifiData.message === 'AP not found.'">
+          <p>
+            Accesspoint {{ wifiData.value.ssid }} could not be found, please try
+            again
+          </p>
+        </div>
       </q-card-section>
+      <div v-if="wifiData.message !== ''">
+        <q-card-section>
+          {{ wifiData.message }}
+          <div v-if="!wifiData.connected">
+            <q-spinner />
+          </div>
+          <div v-if="wifiData.connected">
+            <h4>Connection Established</h4>
+            <p>Connected to: {{ wifiData.ssid }}</p>
+            <table>
+              <tr>
+                <td>Address</td>
+                <td>
+                  <a :href="'http://' + wifiData.ip">{{ wifiData.ip }}</a>
+                </td>
+              </tr>
+              <tr>
+                <td>Netmask</td>
+                <td>{{ wifiData.netmask }}</td>
+              </tr>
+              <tr>
+                <td>Gateway</td>
+                <td>{{ wifiData.gateway }}</td>
+              </tr>
+            </table>
+          </div>
+        </q-card-section>
+      </div>
 
       <q-card-actions>
         <q-btn
@@ -84,14 +123,14 @@
       </q-card-section>
 
       <q-card-section>
-        working version: 9
+        working version:10
         <div>Connected:{{ wifiData.connected }}</div>
       </q-card-section>
     </q-card>
   </div>
-
-  <q-dialog v-model="showDialog">
-    <q-card class="full-height shadow-4 col-auto fit q-gutter-md q-pa-md">
+  <!--
+  <q-dialog v-model=false>
+    <q-card class="shadow-4 col-auto fit q-gutter-md q-pa-md">
       <div v-if="!wifiData.connected">
         <h4>Connecting to network</h4>
         {{ wifiData.message }}
@@ -126,7 +165,7 @@
       />
     </q-card>
   </q-dialog>
-</template>
+--></template>
 
 <script>
 import { ref, onMounted, watch, watchEffect } from "vue";
@@ -170,7 +209,10 @@ export default {
       //wifiData.value.connected = params.station.connected;
       console.log("registerWebSocketCallback");
       ws.onJson("wifi_status", (params) => {
-        console.log("==> websocket: wifi_status", JSON.stringify(params));
+        console.log(
+          "==> websocket: wifi_status",
+          JSON.stringify(params, null, 2),
+        );
         wifiData.value.connected = params.station.connected;
         wifiData.value.ssid = params.station.ssid;
         wifiData.value.dhcp = params.station.dhcp;
@@ -188,6 +230,11 @@ export default {
           wifiData.value.configured = false;
           wifiData.value.error = false;
           wifiData.value.errorMessage = "";
+        }
+
+        console.log("message: ", params.message);
+        if (params.message === "Wrong password") {
+          showDialog.value = false;
         }
 
         console.log("wifiData", JSON.stringify(wifiData));
@@ -435,5 +482,34 @@ export default {
 .icon-wrapper {
   width: 24px; /* Adjust this value as needed */
   text-align: center;
+}
+.shake {
+  animation: shake 0.82s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+}
+
+@keyframes shake {
+  10%,
+  90% {
+    transform: translate3d(-1px, 0, 0);
+  }
+
+  20%,
+  80% {
+    transform: translate3d(2px, 0, 0);
+  }
+
+  30%,
+  50%,
+  70% {
+    transform: translate3d(-4px, 0, 0);
+  }
+
+  40%,
+  60% {
+    transform: translate3d(4px, 0, 0);
+  }
 }
 </style>
