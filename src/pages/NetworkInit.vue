@@ -84,7 +84,7 @@
       </q-card-section>
 
       <q-card-section>
-        working version: 2
+        working version: 9
         <div>Connected:{{ wifiData.connected }}</div>
       </q-card-section>
     </q-card>
@@ -159,26 +159,16 @@ export default {
     const countdown = ref(0);
 
     const showDialog = ref(false);
-
+    const maxRetries = 5;
+    const retryDelay = 1000;
     const ws = useWebSocket();
 
     /**
-     * Watches the wifiData object for changes and performs actions when the device is connected to the network.
-     * Starts a countdown from 10 seconds and restarts the controller after the countdown reaches 0.
-     * Redirects the user to the device's IP address after a delay of 3.5 seconds.
-     * @param {Object} wifiData - The wifiData object containing information about the network connection.
-     */
 
-    /**
-     * @brief Registers a WebSocket callback to update the WiFi status.
-     *
-     * This function registers a WebSocket callback on "wifi_satus" that updates the local WiFi status based on the data received from the controller .
-     * It updates the `wifiData` object with the connected status, SSID, DHCP status, IP address, netmask, gateway, MAC address, and message.
-     * If the WiFi is connected, it sets `wifiConfigured` to true and `connectionError` to false.
-     * If the WiFi is not connected, it sets `connectionError` to true and `connectionErrorMessage` to the received message.
      */
     const registerWebSocketCallback = () => {
       //wifiData.value.connected = params.station.connected;
+      console.log("registerWebSocketCallback");
       ws.onJson("wifi_status", (params) => {
         console.log("==> websocket: wifi_status", JSON.stringify(params));
         wifiData.value.connected = params.station.connected;
@@ -263,7 +253,6 @@ export default {
       );
       if (response.ok) {
         console.log("connecting to network");
-        wifiConfigured.value = false;
         wifiData.value.message = "Connecting to network";
         showDialog.value = true;
       } else {
@@ -333,23 +322,9 @@ export default {
       }
     };
 
-    onMounted(() => {
-      console.log("onMounted NetworkInit, fetching Networks");
-      fetchNetworks();
-      console.log("onMounted updating wifiData");
-      updateWifiData();
-      console.log("onMounted: isOpen is", isOpen ? "true" : "false");
-      if (isOpen) {
-        console.log("onMounted registering callback");
-        registerWebSocketCallback();
-      } else {
-        console.log("onMounted websocket not open, deferring callback reg");
-      }
-    });
-
     const updateWifiData = () => {
       console.log("==== updateWifiData");
-      console.log("== infoData", JSON.stringify(infoData));
+      //console.log("== infoData", JSON.stringify(infoData));
       if (infoData.storeStatus == storeStatus.LOADED) {
         console.log("populating wifiData");
         wifiData.value.connected = infoData.data.connection.connected;
@@ -373,6 +348,15 @@ export default {
         wifiData.value.message = "";
       }
     };
+
+    onMounted(() => {
+      console.log("onMounted NetworkInit, fetching Networks");
+      fetchNetworks();
+      console.log("onMounted registering callback");
+      registerWebSocketCallback();
+      console.log("onMounted updating wifiData");
+      updateWifiData();
+    });
 
     const getSignalIcon = (signalStrength) => {
       console.log(` strength: ${signalStrength}`);
