@@ -42,7 +42,7 @@ const sysCmd = async (command, additionalBody = {}) => {
 const systemCommand = {
   restartController: () => {
     console.log("this would restart the controller");
-    //sysCmd("restart");
+    sysCmd("restart");
   },
 
   stopAP: () => {

@@ -40,7 +40,7 @@
         />
         <transition name="shake" mode="out-in">
           <q-input
-            :class="{ shake: wifiData.message === 'Wrong Password' }"
+            :class="{ shake: wifiData.message === 'Wrong password' }"
             filled
             v-model="password"
             label="Password"
@@ -49,21 +49,22 @@
             style="width: 80%"
           />
         </transition>
-        <div v-if="wifiData.message === 'Wrong Password'">
+        {{ wifiData.message }}
+        <div v-if="wifiData.message === 'Wrong password'">
           <p>password authentication failed, please try again</p>
         </div>
         <div v-if="wifiData.message === 'AP not found.'">
           <p>
-            Accesspoint {{ wifiData.value.ssid }} could not be found, please try
-            again
+            Accesspoint {{ wifiData.ssid }} could not be found, please try again
           </p>
         </div>
       </q-card-section>
-      <div v-if="wifiData.message !== ''">
+      <!--<div v-if="wifiData.message !== ''">-->
+      <div>
         <q-card-section>
           {{ wifiData.message }}
-          <div v-if="!wifiData.connected">
-            <q-spinner />
+          <div v-if="wifiData.message === 'Connecting to network'">
+            {{ wifiData.message }} <q-spinner />
           </div>
           <div v-if="wifiData.connected">
             <h4>Connection Established</h4>
@@ -114,8 +115,6 @@
           style="margin-top: 16px"
         />
       </q-card-actions>
-
-      {{ showDialog }}
     </q-card>
     <q-card class="full-height shadow-4 col-auto fit q-gutter-md q-pa-md">
       <q-card-section>
@@ -123,8 +122,10 @@
       </q-card-section>
 
       <q-card-section>
-        working version:10
+        working version:20
         <div>Connected:{{ wifiData.connected }}</div>
+        messages:
+        <div v-for="(msg, index) in log" :key="index">- {{ msg }}</div>
       </q-card-section>
     </q-card>
   </div>
@@ -201,6 +202,7 @@ export default {
     const maxRetries = 5;
     const retryDelay = 1000;
     const ws = useWebSocket();
+    const log = ref([]);
 
     /**
 
@@ -248,6 +250,10 @@ export default {
       showDialog.value = true;
       console.log("showDialog (showing)", showDialog.value);
     };
+
+    watch(wifiData.value.message, (newMessage) => {
+      console.log("wifiData.message", newMessage);
+    });
 
     /**
      * Function to hide the dialog.
@@ -300,12 +306,15 @@ export default {
       );
       if (response.ok) {
         console.log("connecting to network");
+        log.value.push("connecting to network");
         wifiData.value.message = "Connecting to network";
         showDialog.value = true;
       } else {
         console.log("Failed to connect to network");
+        log.value.push("Failed to connect to network");
         wifiData.value.connected = false;
         wifiData.value.message = "Failed to initiate connection";
+        log.value.push("Failed to initiate connection");
         showDialog.value = true;
       }
     };
@@ -374,6 +383,7 @@ export default {
       //console.log("== infoData", JSON.stringify(infoData));
       if (infoData.storeStatus == storeStatus.LOADED) {
         console.log("populating wifiData");
+        log.value.push("populating wifiData");
         wifiData.value.connected = infoData.data.connection.connected;
         wifiData.value.ssid = infoData.data.connection.ssid;
         wifiData.value.dhcp = infoData.data.connection.dhcp;
@@ -385,6 +395,7 @@ export default {
         console.log("===>wifiData", wifiData.value.ssid);
       } else {
         console.log("==== creating empty wifiData structure");
+        log.value.push("creating empty wifiData structure");
         wifiData.value.connected = "";
         wifiData.value.ssid = "";
         wifiData.value.dhcp = "";
@@ -442,22 +453,47 @@ export default {
      * Redirects the user to the device's IP address after a delay of 3.5 seconds.
      * @param {Object} wifiData - The wifiData object containing information about the network connection.
      */
-
-    watchEffect(() => {
-      if (status.value === "connected" && showDialog) {
-        countdown.value = 10; // Start countdown from 10 seconds
-        const countdownInterval = setInterval(() => {
-          countdown.value--;
-          if (countdown.value <= 0) {
+    watch(
+      () => wifiData.value.message,
+      (newVal, oldVal) => {
+        log.value.push(newVal);
+        if (
+          oldVal === "Connecting to WiFi" &&
+          newVal === "Connected to WiFi" &&
+          showDialog
+        ) {
+          console.log("Connected to network, stopping access point");
+          setTimeout(() => {
             systemCommand.restartController(); // Restart the controller, this will be a delayed command, so it will take ~2.5 seconds to restart
-            clearInterval(countdownInterval);
+            console.log("controller restart initiated");
+            let retryCount = 0;
             setTimeout(() => {
-              window.location.href = "http://" + wifiData.value.ip;
-            }, 3500);
-          }
-        }, 1000);
-      }
-    });
+              const reconnectInterval = setInterval(() => {
+                if (retryCount >= 15) {
+                  clearInterval(reconnectInterval);
+                  console.log("Max retry limit reached");
+                  return;
+                }
+                fetch(`http://${wifiData.value.ip}`, { method: "OPTIONS" })
+                  .then((response) => {
+                    if (response.ok) {
+                      clearInterval(reconnectInterval);
+                      console.log(
+                        "controller responded on new ip, redirecting to new ip",
+                      );
+                      window.location.href = `http://${wifiData.value.ip}/`;
+                    }
+                  })
+                  .catch((error) => {
+                    console.error("Error:", error);
+                  });
+                retryCount++;
+              }, 2500);
+            }, 5000);
+          }, 1000);
+        }
+      },
+    );
 
     return {
       wifiData,
@@ -474,6 +510,7 @@ export default {
       doShowDialog,
       doHideDialog,
       countdown,
+      log,
     };
   },
 };
