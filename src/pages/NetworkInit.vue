@@ -120,9 +120,7 @@
       <q-card-section>
         <div class="text-h6">Wifi Data</div>
       </q-card-section>
-
       <q-card-section>
-        working version:20
         <div>Connected:{{ wifiData.connected }}</div>
         messages:
         <div v-for="(msg, index) in log" :key="index">- {{ msg }}</div>

@@ -281,13 +281,15 @@ export default {
         }
       },
     );
+
     watch(
       () => colorData.data.hsv,
       (val) => {
         if (val !== undefined) {
           //goes undefined when raw has changed
           //colorData is the store
-          console.log("Color Store hsv changed:", val);
+          console.log("colorPage watcher Color Store hsv changed:", val);
+          console.log("color store:", JSON.stringify(colorData));
           const rgb = hsvToRgb(val);
           const hex = rgbToHex(rgb);
           console.log("updated color, hex", hex);
@@ -305,8 +307,25 @@ export default {
       console.log("hsv", hsv);
 
       colorData.change_by = "color picker";
+      console.log(
+        "colorPage picker watcher color store:",
+        JSON.stringify(colorData.data),
+      );
       colorData.updateData("hsv", hsv);
     });
+
+    watch(
+      () => colorData.$state,
+      (newState) => {
+        if ("hsv" in newState) {
+          console.warn(
+            "hsv property added to root of store:",
+            JSON.stringify(newState.hsv),
+          );
+        }
+      },
+      { deep: true },
+    );
 
     const updateColorSlider = (slider, value) => {
       console.log("update for", slider);

@@ -1,6 +1,11 @@
 #!/bin/bash
 echo $1
 dir=$(pwd)
+if [[ -f ./index.html.gz ]]
+then
+	gunzip *.gz
+fi
+
 rm dist/spa/* -rf
 if [ "$1" = "debug" ]
 then
@@ -25,7 +30,7 @@ echo "VUE_APP_BUILD_NUMBER=$version" >.env
 echo "deploying " 
 cat dist/spa/VERSION
 rsync -a dist/spa/ devbox:~/devel/esp_rgbww_firmware/spiffs
-if [ "$1" = "debug" ]
+if [ "$1" = "debug" -o -f dist/spa/assets/index.js.map.gz ]
 then 
 	ssh devbox "cd devel/esp_rgbww_firmware;cp hwconfig.debug hwconfig.hw"
 else

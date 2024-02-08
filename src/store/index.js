@@ -24,6 +24,21 @@ export const storeStatus = {
 const maxRetries = 5; // Maximum number of retries
 const retryDelay = 1000; // Delay for the first retry in milliseconds
 
+function safeStringify(obj) {
+  const cache = new Set();
+  return JSON.stringify(obj, (key, value) => {
+    if (typeof value === "object" && value !== null) {
+      if (cache.has(value)) {
+        // Duplicate reference found, discard key
+        return;
+      }
+      // Store value in our set
+      cache.add(value);
+    }
+    return value;
+  });
+}
+
 export const controllersStore = defineStore({
   id: "controllersStore",
 
@@ -345,6 +360,8 @@ export const colorDataStore = defineStore({
         this.data = jsonData;
         this.status = storeStatus.READY;
         console.log("color data fetched: ", jsonData);
+        //console.log("color data store: ", JSON.stringify(this));
+        console.log("color data store(s): ", safeStringify(this));
       } catch (error) {
         this.status = storeStatus.ERROR;
         this.error = error;
@@ -357,11 +374,20 @@ export const colorDataStore = defineStore({
         const colorData = colorDataStore();
         colorData.change_by = "websocket";
         console.log("params mode: ", params.mode);
+        console.log("existing color data: ", JSON.stringify(colorData));
         if (params.mode === "hsv") {
-          console.log("updating hsv color data", params.hsv);
-          console.log("colorDataStore.data.hsv: ", JSON.stringify(colorData));
-          console.log("params.hsv: ", params.hsv);
+          console.log("updating hsv color data", JSON.stringify(params.hsv));
+          console.log(
+            "old hsv color          ",
+            JSON.stringify(colorData.data.hsv),
+          );
+          //console.log("colorDataStore.data.hsv: ", JSON.stringify(colorData));
+          //console.log("params.hsv: ", params.hsv);
           colorData.data.hsv = params.hsv;
+          console.log(
+            "new hsv color          ",
+            JSON.stringify(colorData.data.hsv),
+          );
         } else if (params.mode === "raw") {
           console.log("updating raw color data", params.raw);
           colorData.data.raw = params.raw;
@@ -380,13 +406,29 @@ export const colorDataStore = defineStore({
         const controllers = controllersStore();
 
         console.log("color update for field: ", field, "value: ", value);
+        //console.log("old colorData: ", JSON.stringify(this));
+        console.log("old colorData(s): ", safeStringify(this));
         if (field === "hsv") {
+          console.log(
+            "store updateData for hsv, old store: ",
+            JSON.stringify(this),
+          );
           this.data.hsv = value;
+          console.log(
+            "store updateData for hsv, new store: ",
+            JSON.stringify(this),
+          );
         } else if (field === "raw") {
+          console.log("key: ", key, " value: ", val);
           const [[key, val]] = Object.entries(value);
           this.data.raw[key] = val;
         }
-
+        console.log(
+          "store updateData for hsv, before creating payload: ",
+          JSON.stringify(this),
+        );
+        /* somewhere here is the error that causes the color store to get messed up
+        *****************************************************************************+
         const path = field.split(".");
         let current = this;
 
@@ -395,12 +437,17 @@ export const colorDataStore = defineStore({
         }
 
         current[path[path.length - 1]] = value;
+        */
         let payload = {};
         payload[field] = value;
         console.log("color update payload: ", JSON.stringify(payload));
         console.log(
           "sending update to controller: ",
           controllers.currentController["ip_address"],
+        );
+        console.log(
+          "store updateData for hsv, before api call: ",
+          JSON.stringify(this),
         );
         fetch(`http://${controllers.currentController["ip_address"]}/color`, {
           // Use controllers.currentController here
@@ -423,6 +470,11 @@ export const colorDataStore = defineStore({
               error,
             );
           });
+        console.log("color update request sent");
+        console.log(
+          "store updateData for hsv, after api call: ",
+          JSON.stringify(this),
+        );
       }
     },
   },
