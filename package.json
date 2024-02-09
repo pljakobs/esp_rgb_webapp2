@@ -28,7 +28,7 @@
     "@mdi/font": "^7.3.67",
     "@mdi/svg": "^7.4.47",
     "@quasar/app-vite": "^1.7.3",
-    "autoprefixer": "^10.4.2",
+    "autoprefixer": "^10.4.17",
     "bootstrap-icons": "^1.11.2",
     "eslint": "^8.56.0",
     "eslint-config-prettier": "^9.1.0",
