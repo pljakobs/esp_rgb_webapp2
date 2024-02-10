@@ -200,10 +200,11 @@ import { ref, watch, computed, onMounted, onUnmounted } from "vue";
 import { colors } from "quasar";
 import { colorDataStore, storeStatus, presetDataStore } from "src/store"; // replace with the correct import paths
 import ColorSlider from "src/components/ColorSlider.vue";
+import { boot } from 'quasar/wrappers'
 
 const { rgbToHsv, hexToRgb, hsvToRgb, rgbToHex } = colors;
 
-export default {
+export default boot(({ store }) => {
   setup() {
     const isLoading = ref(true);
     const carouselPage = ref("hsv");
@@ -478,7 +479,7 @@ export default {
   components: {
     ColorSlider,
   },
-};
+});
 </script>
 <style scoped>
 .card-container {
