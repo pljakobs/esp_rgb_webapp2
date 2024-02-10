@@ -1,4 +1,5 @@
-import { controllersStore, storeStatus } from "src/store/index.js";
+import { controllersStore } from "src/stores/controllersStore";
+import { storeStatus } from "src/stores/storeConstants";
 
 const sysCmd = async (command, additionalBody = {}) => {
   const controllers = controllersStore();
@@ -13,7 +14,7 @@ const sysCmd = async (command, additionalBody = {}) => {
         "Content-Type": "application/json",
       },
       body: body,
-    },
+    }
   );
   if (response.ok) {
     console.log(`Command ${command} executed successfully`);

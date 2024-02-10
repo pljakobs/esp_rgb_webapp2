@@ -3,12 +3,13 @@
 </template>
 
 <script>
+import { defineComponent } from "vue";
 import { onMounted, watch } from "vue";
-import { controllersStore } from "src/store";
+import { controllersStore } from "src/stores/controllersStore";
 
 import initializeStores from "src/services/initializeStores";
 
-export default {
+export default defineComponent({
   name: "App",
   setup() {
     const controllers = controllersStore();
@@ -20,14 +21,14 @@ export default {
       () => {
         console.log(
           "switching to controller",
-          controllers.currentController["hostname"],
+          controllers.currentController["hostname"]
         );
         initializeStores();
-      },
+      }
     );
     onMounted(() => {
       initializeStores();
     });
   },
-};
+});
 </script>

@@ -169,11 +169,11 @@
 <script>
 import { ref, onMounted, watch, watchEffect } from "vue";
 import useWebSocket, { wsStatus } from "../services/websocket";
-import {
-  controllersStore,
-  infoDataStore,
-  storeStatus,
-} from "src/store/index.js";
+
+import { controllersStore } from "src/stores/controllersStore.js";
+import { infoDataStore } from "src/stores/infoDataStore.js";
+import { storeStatus } from "src/stores/storeConstants";
+
 import systemCommand from "src/services/systemCommands.js";
 
 export default {
@@ -211,7 +211,7 @@ export default {
       ws.onJson("wifi_status", (params) => {
         console.log(
           "==> websocket: wifi_status",
-          JSON.stringify(params, null, 2),
+          JSON.stringify(params, null, 2)
         );
         wifiData.value.connected = params.station.connected;
         wifiData.value.ssid = params.station.ssid;
@@ -281,7 +281,7 @@ export default {
     const connectToNetwork = async () => {
       console.log(
         "selectedNetwork.value",
-        JSON.stringify(selectedNetwork.value),
+        JSON.stringify(selectedNetwork.value)
       );
       showDialog.value = true;
       console.log("Connecting to network:", selectedNetwork.value.ssid);
@@ -300,7 +300,7 @@ export default {
             ssid: new_ssid,
             password: new_password,
           }),
-        },
+        }
       );
       if (response.ok) {
         console.log("connecting to network");
@@ -326,18 +326,18 @@ export default {
             `http://${controllers.currentController.ip_address}/networks`,
             {
               method: "GET",
-            },
+            }
           );
           if (response.status === 429 && retryCount < maxRetries) {
             // Too many requests, retry after a delay
             console.log(
               `Request limit reached, retrying after ${
                 retryDelay * 2 ** retryCount
-              }ms...`,
+              }ms...`
             );
             setTimeout(
               () => fetchNetworks(retryCount + 1),
-              retryDelay * 2 ** retryCount,
+              retryDelay * 2 ** retryCount
             );
             return;
           }
@@ -353,18 +353,18 @@ export default {
             `http://${controllers.currentController.ip_address}/scan_networks`,
             {
               method: "POST",
-            },
+            }
           );
           if (response.status === 429 && retryCount < maxRetries) {
             // Too many requests, retry after a delay
             console.log(
               `Request limit reached, retrying after ${
                 retryDelay * 2 ** retryCount
-              }ms...`,
+              }ms...`
             );
             setTimeout(
               () => fetchNetworks(retryCount + 1),
-              retryDelay * 2 ** retryCount,
+              retryDelay * 2 ** retryCount
             );
             return;
           }
@@ -477,7 +477,7 @@ export default {
                     if (response.ok) {
                       clearInterval(reconnectInterval);
                       console.log(
-                        "controller responded on new ip, redirecting to new ip",
+                        "controller responded on new ip, redirecting to new ip"
                       );
                       window.location.href = `http://${wifiData.value.ip}/`;
                     }
@@ -490,7 +490,7 @@ export default {
             }, 5000);
           }, 1000);
         }
-      },
+      }
     );
 
     return {

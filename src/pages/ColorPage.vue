@@ -106,7 +106,15 @@
         <q-carousel-slide name="presets">
           <q-card class="full-height">
             <q-scroll-area style="height: 100%; width: 100%">
-              <q-list separator style="{ overflowY: 'auto'; height: 100%}">
+              <q-list
+                separator
+                style="
+                   {
+                    overflowy: 'auto';
+                    height: 100%;
+                  }
+                "
+              >
                 <q-item
                   v-for="preset in activePresets"
                   :key="preset.name"
@@ -198,13 +206,15 @@
 <script>
 import { ref, watch, computed, onMounted, onUnmounted } from "vue";
 import { colors } from "quasar";
-import { colorDataStore, storeStatus, presetDataStore } from "src/store"; // replace with the correct import paths
+import { storeStatus } from "src/stores/storeConstants";
+import { colorDataStore } from "src/stores/colorDataStore";
+import { presetDataStore } from "src/stores/presetDataStore";
 import ColorSlider from "src/components/ColorSlider.vue";
-import { boot } from 'quasar/wrappers'
+import { boot } from "quasar/wrappers";
 
 const { rgbToHsv, hexToRgb, hsvToRgb, rgbToHex } = colors;
 
-export default boot(({ store }) => {
+export default {
   setup() {
     const isLoading = ref(true);
     const carouselPage = ref("hsv");
@@ -280,7 +290,7 @@ export default boot(({ store }) => {
         ) {
           presetData.fetchData();
         }
-      },
+      }
     );
 
     watch(
@@ -296,7 +306,7 @@ export default boot(({ store }) => {
           console.log("updated color, hex", hex);
           color.value = hex;
         }
-      },
+      }
     );
 
     // ...
@@ -310,7 +320,7 @@ export default boot(({ store }) => {
       colorData.change_by = "color picker";
       console.log(
         "colorPage picker watcher color store:",
-        JSON.stringify(colorData.data),
+        JSON.stringify(colorData.data)
       );
       colorData.updateData("hsv", hsv);
     });
@@ -321,11 +331,11 @@ export default boot(({ store }) => {
         if ("hsv" in newState) {
           console.warn(
             "hsv property added to root of store:",
-            JSON.stringify(newState.hsv),
+            JSON.stringify(newState.hsv)
           );
         }
       },
-      { deep: true },
+      { deep: true }
     );
 
     const updateColorSlider = (slider, value) => {
@@ -369,7 +379,7 @@ export default boot(({ store }) => {
           "colorModel ",
           colorModel,
           "value",
-          hsv,
+          hsv
         );
         settings = hsv; // Set the settings to the HSV value
       } else {
@@ -384,7 +394,7 @@ export default boot(({ store }) => {
         "model",
         colorModel,
         "value",
-        settings,
+        settings
       );
       if (colorModel === "hsv") {
         presetData
@@ -411,7 +421,7 @@ export default boot(({ store }) => {
       }
       showDialog.value = false;
       console.log(
-        `Preset "${presetName.value}" with color model "${colorModel}" has been added.`,
+        `Preset "${presetName.value}" with color model "${colorModel}" has been added.`
       );
     };
 
@@ -472,14 +482,14 @@ export default boot(({ store }) => {
   computed: {
     activePresets() {
       return this.presetData.data["presets"].filter(
-        (preset) => !preset.deleted,
+        (preset) => !preset.deleted
       );
     },
   },
   components: {
     ColorSlider,
   },
-});
+};
 </script>
 <style scoped>
 .card-container {

@@ -145,7 +145,9 @@
 <script>
 import dataTable from "components/dataTable.vue";
 import { ref, watchEffect, watch } from "vue";
-import { configDataStore, infoDataStore, storeStatus } from "src/store";
+import { storeStatus } from "src/stores/storeConstants";
+import { infoDataStore } from "src/stores/infoDataStore";
+import { configDataStore } from "src/stores/configDataStore";
 
 export default {
   components: {
@@ -164,7 +166,7 @@ export default {
       (newStatus, oldStatus) => {
         console.log("infoData.status changed from", oldStatus, "to", newStatus);
         console.log("infoData store content is now", infoData);
-      },
+      }
     );
     /**
      * Watches for changes in the infoData status and updates the connectionItems value accordingly.

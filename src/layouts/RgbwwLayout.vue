@@ -47,7 +47,7 @@
           />
           <span v-else class="text-danger">❌ {{ colorData.error }}</span
           ><br />
-
+          <!--
           Groups:
           <span
             v-if="groupsData.status === storeStatus.READY"
@@ -59,6 +59,7 @@
             color="light-blue"
           />
           <span v-else class="text-danger">❌ {{ groupsData.error }}</span>
+          -->
         </div>
       </div>
     </div>
@@ -150,14 +151,13 @@ import {
   onUnmounted,
   computed,
 } from "vue";
-import {
-  configDataStore,
-  infoDataStore,
-  colorDataStore,
-  groupsDataStore,
-  storeStatus,
-  controllersStore,
-} from "src/store";
+import { configDataStore } from "src/stores/configDataStore";
+import { colorDataStore } from "src/stores/colorDataStore";
+import { presetDataStore } from "src/stores/presetDataStore";
+import { infoDataStore } from "src/stores/infoDataStore";
+import { controllersStore } from "src/stores/controllersStore";
+
+import { storeStatus } from "src/stores/storeConstants";
 import EssentialLink from "components/EssentialLink.vue";
 import useWebSocket, { wsStatus } from "src/services/websocket.js";
 import { useRouter } from "vue-router";
@@ -214,7 +214,7 @@ export default defineComponent({
     const configData = configDataStore();
     const infoData = infoDataStore();
     const colorData = colorDataStore();
-    const groupsData = groupsDataStore();
+    //const groupsData = groupsDataStore();
     const intervalId = ref(null);
     const ws = useWebSocket();
 
@@ -264,7 +264,7 @@ export default defineComponent({
     const handleControllerSelection = (event) => {
       console.log(
         "===============================\nhandleControllerSelection",
-        event,
+        event
       );
       controllers.selectController(event);
     };
@@ -276,7 +276,7 @@ export default defineComponent({
         console.log("check if this is an unconfigured controller");
         console.log(
           "connected:",
-          infoData.data.connection.connected ? "true" : "false",
+          infoData.data.connection.connected ? "true" : "false"
         );
         console.log("ssid:", infoData.data.connection.ssid);
 
@@ -292,7 +292,7 @@ export default defineComponent({
         } else {
           console.log("controller is configured, not redirecting");
         }
-      },
+      }
     ),
       // close the left drawer when the current controller changes
       // that should only ever happen by selecting a controller from
@@ -301,7 +301,7 @@ export default defineComponent({
         () => controllers.currentController,
         () => {
           toggleLeftDrawer();
-        },
+        }
       );
     watch(
       () => isSelectOpen.value,
@@ -321,7 +321,7 @@ export default defineComponent({
           }
         }
       },
-      { immediate: true },
+      { immediate: true }
     );
     const toggleLeftDrawer = () => {
       if (isSmallScreen.value) {
@@ -335,7 +335,7 @@ export default defineComponent({
       configData,
       infoData,
       colorData,
-      groupsData,
+      //groupsData,
       controllers,
       storeStatus,
       isSelectOpen,

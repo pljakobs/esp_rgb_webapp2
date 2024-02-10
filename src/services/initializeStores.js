@@ -1,26 +1,25 @@
-import { defineStore } from "pinia";
+//import { defineStore } from "pinia";
 import useWebSocket, { wsStatus } from "src/services/websocket.js";
-import {
-  configDataStore,
-  colorDataStore,
-  presetDataStore,
-  infoDataStore,
-  groupsDataStore,
-  controllersStore,
-  storeStatus,
-} from "src/store";
+
+import { configDataStore } from "src/stores/configDataStore";
+import { colorDataStore } from "src/stores/colorDataStore";
+import { presetDataStore } from "src/stores/presetDataStore";
+import { infoDataStore } from "src/stores/infoDataStore";
+import { controllersStore } from "src/stores/controllersStore";
+
+import { storeStatus } from "src/stores/storeConstants";
 
 export default function initializeStores() {
   const controllers = controllersStore();
   console.log(
     "initializing stores for ",
-    controllers.currentController["hostname"],
+    controllers.currentController["hostname"]
   );
 
   const configStore = configDataStore();
   const colorStore = colorDataStore();
   const infoStore = infoDataStore();
-  const groupsData = groupsDataStore();
+  //const groupsData = groupsDataStore();
   const presets = presetDataStore();
   const webSocket = useWebSocket();
 
@@ -37,7 +36,7 @@ export default function initializeStores() {
         await infoStore.fetchData();
         await presets.fetchData();
         //groupsData.fetchData();
-        groupsData.status = storeStatus.READY;
+        //groupsData.status = storeStatus.READY;
         await controllers.fetchData();
       } catch (error) {
         console.log("error initializing stores: ", error);
