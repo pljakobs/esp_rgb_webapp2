@@ -21,7 +21,7 @@ export function safeStringify(obj) {
   });
 }
 
-export async function fetchApi(endpoint, retryCount = 0) {
+export async function fetchApi(endpoint, retryCount = 5) {
   const controllers = controllersStore();
   let error = null;
   let jsonData = null;
@@ -29,18 +29,18 @@ export async function fetchApi(endpoint, retryCount = 0) {
   try {
     console.log(endpoint, " start fetching data");
     const response = await fetch(
-      `http://${controllers.currentController["ip_address"]}/${endpoint}`
+      `http://${controllers.currentController["ip_address"]}/${endpoint}`,
     );
     if (response.status === 429 && retryCount < maxRetries) {
       // Too many requests, retry after a delay
       console.log(
         `Request limit reached, retrying after ${
           retryDelay * 2 ** retryCount
-        }ms...`
+        }ms...`,
       );
       setTimeout(
         () => fetchApi(endpoint, retryCount + 1),
-        retryDelay * 2 ** retryCount
+        retryDelay * 2 ** retryCount,
       );
       return;
     }
@@ -52,7 +52,7 @@ export async function fetchApi(endpoint, retryCount = 0) {
     if (retryCount < maxRetries) {
       setTimeout(
         () => fetchApi(endpoint, retryCount + 1),
-        retryDelay * 2 ** retryCount
+        retryDelay * 2 ** retryCount,
       );
     }
   }

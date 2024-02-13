@@ -18,37 +18,52 @@ export const colorDataStore = defineStore({
     async fetchData(retryCount = 0) {
       const controllers = controllersStore();
       const ws = useWebSocket();
+      console.log("colorDataStore before fetch:", this);
 
       fetchApi("color").then(({ jsonData, error }) => {
+        console.log(
+          "colorDataStore fetchApi callback, error: ",
+          error,
+          "data: ",
+          JSON.stringify(jsonData),
+        );
+        console.log("colorDataStore entering callback", safeStringify(this));
+
         if (error) {
           console.error("error fetching color data:", error);
           this.status = storeStatus.ERROR;
         } else {
-          console.log("color data fetched: ", JSON.stringify(jsonData));
+          console.log("color data fetched: ", safeStringify(jsonData));
           this.data = jsonData;
+          console.log("colorDataStore after fetch:", safeStringify(this));
           this.status = storeStatus.READY;
         }
+        console.log(
+          "colorDataStore after fetch if clause:",
+          safeStringify(this),
+        );
       });
       //
       // Subscribe to color events
       //
+
       ws.onJson("color_event", (params) => {
         const colorData = colorDataStore();
         colorData.change_by = "websocket";
         console.log("params mode: ", params.mode);
-        console.log("existing color data: ", JSON.stringify(colorData));
+        console.log("existing color data: ", safeStringify(colorData));
         if (params.mode === "hsv") {
           console.log("updating hsv color data", JSON.stringify(params.hsv));
           console.log(
             "old hsv color          ",
-            JSON.stringify(colorData.data.hsv)
+            JSON.stringify(colorData.data.hsv),
           );
           //console.log("colorDataStore.data.hsv: ", JSON.stringify(colorData));
-          //console.log("params.hsv: ", params.hsv);
+          //console.log("params.hsv: ", params.Shsv);
           colorData.data.hsv = params.hsv;
           console.log(
             "new hsv color          ",
-            JSON.stringify(colorData.data.hsv)
+            JSON.stringify(colorData.data.hsv),
           );
         } else if (params.mode === "raw") {
           console.log("updating raw color data", params.raw);
@@ -57,7 +72,7 @@ export const colorDataStore = defineStore({
 
         console.log(
           "color store updated by websocket message to ",
-          JSON.stringify(colorData)
+          safeStringify(colorData),
         );
         colorData.change_by = null;
       });
@@ -66,19 +81,21 @@ export const colorDataStore = defineStore({
       console.log("updatData called, change by: ", this.change_by);
       if (this.change_by != "websocket" && this.change_by != "load") {
         const controllers = controllersStore();
+        const colorData = colorDataStore();
 
         console.log("color update for field: ", field, "value: ", value);
         //console.log("old colorData: ", JSON.stringify(this));
-        console.log("old colorData(s): ", safeStringify(this));
+        console.log("old colorData(this): ", safeStringify(this));
+        console.log("old colorData(colorData): ", safeStringify(colorData));
         if (field === "hsv") {
           console.log(
             "store updateData for hsv, old store: ",
-            JSON.stringify(this)
+            JSON.stringify(colorData),
           );
-          this.data.hsv = value;
+          colorData.data.hsv = value;
           console.log(
             "store updateData for hsv, new store: ",
-            JSON.stringify(this)
+            JSON.stringify(colorData),
           );
         } else if (field === "raw") {
           console.log("key: ", key, " value: ", val);
@@ -87,9 +104,9 @@ export const colorDataStore = defineStore({
         }
         console.log(
           "store updateData for hsv, before creating payload: ",
-          JSON.stringify(this)
+          JSON.stringify(this),
         );
-        /* somewhere here is the error that causes the color store to get messed up
+        /* I can't even remember what this was supposed to do
         *****************************************************************************+
         const path = field.split(".");
         let current = this;
@@ -105,11 +122,11 @@ export const colorDataStore = defineStore({
         console.log("color update payload: ", JSON.stringify(payload));
         console.log(
           "sending update to controller: ",
-          controllers.currentController["ip_address"]
+          controllers.currentController["ip_address"],
         );
         console.log(
           "store updateData for hsv, before api call: ",
-          JSON.stringify(this)
+          JSON.stringify(this),
         );
         fetch(`http://${controllers.currentController["ip_address"]}/color`, {
           // Use controllers.currentController here
@@ -129,13 +146,13 @@ export const colorDataStore = defineStore({
           .catch((error) => {
             console.error(
               "There was a problem with the fetch operation:",
-              error
+              error,
             );
           });
         console.log("color update request sent");
         console.log(
           "store updateData for hsv, after api call: ",
-          JSON.stringify(this)
+          JSON.stringify(this),
         );
       }
     },

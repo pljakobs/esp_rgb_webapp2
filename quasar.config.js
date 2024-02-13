@@ -9,6 +9,7 @@
 // https://v2.quasar.dev/quasar-cli-vite/quasar-config-js
 
 const { configure } = require("quasar/wrappers");
+const path = require("path");
 
 module.exports = configure(function (/* ctx */) {
   return {
@@ -27,7 +28,7 @@ module.exports = configure(function (/* ctx */) {
     // app boot file (/src/boot)
     // --> boot files are part of "main.js"
     // https://v2.quasar.dev/quasar-cli-vite/boot-files
-    boot: ["pinia"],
+    boot: ["i18n"],
 
     // https://v2.quasar.dev/quasar-cli-vite/quasar-config-js#css
     css: ["app.scss"],
@@ -74,35 +75,22 @@ module.exports = configure(function (/* ctx */) {
       // extendViteConf (viteConf) {},
       // viteVuePluginOptions: {},
 
-      // vitePlugins: [
-      //   [ 'package-name', { ..options.. } ]
-      // ]
+      vitePlugins: [
+        [
+          "@intlify/vite-plugin-vue-i18n",
+          {
+            // if you want to use Vue I18n Legacy API, you need to set `compositionOnly: false`
+            // compositionOnly: false,
 
-      // changes to make the spa build more µController friendly (no cache busting, single directory)
-      webpack: {
-        output: {
-          filename: "[name].js",
-          chunkFilename: "[name].js",
-        },
-      },
-      extendWebpack(cfg) {
-        if (ctx.prod) {
-          cfg.output.filename = (pathData) => {
-            let name = pathData.chunk.name;
-            if (name.length > 10) {
-              name = name.substring(0, 10);
-            }
-            return name + ".[contenthash].js";
-          };
-          cfg.output.chunkFilename = (pathData) => {
-            let name = pathData.chunk.name;
-            if (name.length > 10) {
-              name = name.substring(0, 10);
-            }
-            return name + ".[contenthash].js";
-          };
-        }
-      },
+            // if you want to use named tokens in your Vue I18n messages, such as 'Hello {name}',
+            // you need to set `runtimeOnly: false`
+            // runtimeOnly: false,
+
+            // you need to set i18n resource including paths !
+            include: path.resolve(__dirname, "./src/i18n/**"),
+          },
+        ],
+      ],
     },
     // Full list of options: https://v2.quasar.dev/quasar-cli-vite/quasar-config-js#devServer
     devServer: {

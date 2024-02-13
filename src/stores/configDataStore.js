@@ -14,10 +14,10 @@ export const configDataStore = defineStore({
 
       fetchApi("config").then(({ jsonData, error }) => {
         if (error) {
-          console.error("error fetching info data:", error);
+          console.error("error fetching config data:", error);
           this.status = storeStatus.ERROR;
         } else {
-          console.log("info data fetched: ", JSON.stringify(jsonData));
+          console.log("config data fetched: ", JSON.stringify(jsonData));
           this.data = jsonData;
           this.status = storeStatus.READY;
         }
