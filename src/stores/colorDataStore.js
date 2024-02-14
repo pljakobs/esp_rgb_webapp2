@@ -16,7 +16,6 @@ export const colorDataStore = defineStore({
   }),
   actions: {
     async fetchData(retryCount = 0) {
-      const controllers = controllersStore();
       const ws = useWebSocket();
       console.log("colorDataStore before fetch:", this);
 
@@ -27,54 +26,41 @@ export const colorDataStore = defineStore({
           "data: ",
           JSON.stringify(jsonData),
         );
-        console.log("colorDataStore entering callback", safeStringify(this));
+        console.log("colorDataStore entering callback", this);
 
         if (error) {
           console.error("error fetching color data:", error);
           this.status = storeStatus.ERROR;
         } else {
-          console.log("color data fetched: ", safeStringify(jsonData));
+          console.log("color data fetched: ", jsonData);
           this.data = jsonData;
-          console.log("colorDataStore after fetch:", safeStringify(this));
+          console.log("colorDataStore after fetch:", this);
           this.status = storeStatus.READY;
         }
-        console.log(
-          "colorDataStore after fetch if clause:",
-          safeStringify(this),
-        );
+        console.log("colorDataStore after fetch if clause:", this);
       });
       //
       // Subscribe to color events
       //
 
       ws.onJson("color_event", (params) => {
-        const colorData = colorDataStore();
-        colorData.change_by = "websocket";
+        this.change_by = "websocket";
         console.log("params mode: ", params.mode);
-        console.log("existing color data: ", safeStringify(colorData));
+        console.log("existing color data: ", this);
         if (params.mode === "hsv") {
           console.log("updating hsv color data", JSON.stringify(params.hsv));
-          console.log(
-            "old hsv color          ",
-            JSON.stringify(colorData.data.hsv),
-          );
+          console.log("old hsv color          ", JSON.stringify(this.data.hsv));
           //console.log("colorDataStore.data.hsv: ", JSON.stringify(colorData));
           //console.log("params.hsv: ", params.Shsv);
-          colorData.data.hsv = params.hsv;
-          console.log(
-            "new hsv color          ",
-            JSON.stringify(colorData.data.hsv),
-          );
+          this.data.hsv = params.hsv;
+          console.log("new hsv color          ", JSON.stringify(this.data.hsv));
         } else if (params.mode === "raw") {
           console.log("updating raw color data", params.raw);
-          colorData.data.raw = params.raw;
+          this.data.raw = params.raw;
         }
 
-        console.log(
-          "color store updated by websocket message to ",
-          safeStringify(colorData),
-        );
-        colorData.change_by = null;
+        console.log("color store updated by websocket message to ", this);
+        this.change_by = null;
       });
     },
     updateData(field, value) {
@@ -84,9 +70,7 @@ export const colorDataStore = defineStore({
         const colorData = colorDataStore();
 
         console.log("color update for field: ", field, "value: ", value);
-        //console.log("old colorData: ", JSON.stringify(this));
-        console.log("old colorData(this): ", safeStringify(this));
-        console.log("old colorData(colorData): ", safeStringify(colorData));
+        console.log("old colorData(this): ", this);
         if (field === "hsv") {
           console.log(
             "store updateData for hsv, old store: ",

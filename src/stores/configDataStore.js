@@ -2,6 +2,7 @@ import { defineStore } from "pinia";
 import { storeStatus } from "src/stores/storeConstants";
 import { controllersStore } from "src/stores/controllersStore";
 import { fetchApi } from "src/stores/storeHelpers";
+import { safeStringify } from "src/stores/storeHelpers";
 
 export const configDataStore = defineStore({
   id: "configDataStore",
@@ -20,6 +21,7 @@ export const configDataStore = defineStore({
           console.log("config data fetched: ", JSON.stringify(jsonData));
           this.data = jsonData;
           this.status = storeStatus.READY;
+          console.log("new configData(this): ", this);
         }
       });
     },
@@ -28,7 +30,7 @@ export const configDataStore = defineStore({
         "updateConfigData called for field: ",
         field,
         "value: ",
-        value
+        value,
       );
       // Make a PUT request to the API endpoint
       fetch(`http://${controllers.currentController["ip_address"]}/config`, {
