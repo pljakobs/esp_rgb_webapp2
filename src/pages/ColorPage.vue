@@ -68,6 +68,12 @@
               </q-card-section>
               <q-separator />
               <q-card-section>
+                raw-r: {{ colorData.data.raw.r }}, raw-g:
+                {{ colorData.data.raw.g }}, raw-b: {{ colorData.data.raw.b }},
+                raw-ww: {{ colorData.data.raw.ww }}, raw-cw:
+                {{ colorData.data.raw.cw }}</q-card-section
+              >
+              <q-card-section>
                 raw sliders
                 <ColorSlider
                   v-for="colorSlider in colorSliders"
@@ -100,9 +106,17 @@
         <q-carousel-slide name="presets">
           <q-card class="full-height">
             <q-scroll-area style="height: 100%; width: 100%">
-              <q-list separator style="{ overflowY: 'auto'; height: 100%}">
+              <q-list
+                separator
+                style="
+                   {
+                    overflowy: 'auto';
+                    height: 100%;
+                  }
+                "
+              >
                 <q-item
-                  v-for="preset in presetData.data['presets']"
+                  v-for="preset in activePresets"
                   :key="preset.name"
                   class="q-my-sm"
                 >
@@ -139,10 +153,19 @@
                   <q-item-section @click="handlePresetClick(preset)">
                     {{ preset.name }}
                   </q-item-section>
-                  <q-item-section>
+                  <q-item-section side>
                     <q-icon
                       name="star"
+                      size="2em"
                       :class="{ 'text-yellow': preset.favorite }"
+                      @click="toggleFavorite(preset)"
+                    />
+                  </q-item-section>
+                  <q-item-section side>
+                    <q-icon
+                      name="delete"
+                      size="2em"
+                      @click="deletePreset(preset)"
                     />
                   </q-item-section>
 
@@ -183,8 +206,11 @@
 <script>
 import { ref, watch, computed, onMounted, onUnmounted } from "vue";
 import { colors } from "quasar";
-import { colorDataStore, storeStatus, presetDataStore } from "src/store"; // replace with the correct import paths
+import { storeStatus } from "src/stores/storeConstants";
+import { colorDataStore } from "src/stores/colorDataStore";
+import { presetDataStore } from "src/stores/presetDataStore";
 import ColorSlider from "src/components/ColorSlider.vue";
+import { boot } from "quasar/wrappers";
 
 const { rgbToHsv, hexToRgb, hsvToRgb, rgbToHex } = colors;
 
@@ -202,73 +228,84 @@ export default {
     const presetName = ref("");
     const presetColorModel = ref("");
 
-    const colorSliders = computed(() => {
-      // Define the sliders based on the selected model
-      // TODO provide API to define channel names
-      const sliders = [
-        {
-          label: "Red",
-          model: colorData.raw.r,
-          min: 0,
-          max: 1023,
-          color: "red",
-        },
-        {
-          label: "Green",
-          model: colorData.raw.g,
-          min: 0,
-          max: 1023,
-          color: "green",
-        },
-        {
-          label: "Blue",
-          model: colorData.raw.b,
-          min: 0,
-          max: 1023,
-          color: "blue",
-        },
-        {
-          label: "Warm White",
-          model: colorData.raw.ww,
-          min: 0,
-          max: 1023,
-          color: "yellow",
-        },
-        {
-          label: "Cold White",
-          model: colorData.raw.cw,
-          min: 0,
-          max: 1023,
-          color: "cyan",
-        },
-      ];
-      return sliders;
-    });
+    const colorSliders = computed(() => [
+      {
+        label: "Red",
+        model: colorData.data.raw.r,
+        min: 0,
+        max: 1023,
+        color: "red",
+      },
+      {
+        label: "Green",
+        model: colorData.data.raw.g,
+        min: 0,
+        max: 1023,
+        color: "green",
+      },
+      {
+        label: "Blue",
+        model: colorData.data.raw.b,
+        min: 0,
+        max: 1023,
+        color: "blue",
+      },
+      {
+        label: "Warm White",
+        model: colorData.data.raw.ww,
+        min: 0,
+        max: 1023,
+        color: "yellow",
+      },
+      {
+        label: "Cold White",
+        model: colorData.data.raw.cw,
+        min: 0,
+        max: 1023,
+        color: "cyan",
+      },
+    ]);
 
     const hsv_c = computed(() => ({
-      h: colorData.hsv.h,
-      s: colorData.hsv.s,
-      v: colorData.hsv.v,
-      ct: colorData.hsv.ct,
+      h: colorData.data.hsv.h,
+      s: colorData.data.hsv.s,
+      v: colorData.data.hsv.v,
+      ct: colorData.data.hsv.ct,
     }));
 
     const raw_c = computed(() => ({
-      r: colorData.raw.r,
-      g: colorData.raw.g,
-      b: colorData.raw.b,
-      ww: colorData.raw.ww,
-      cw: colorData.raw.cw,
+      r: colorData.data.raw.r,
+      g: colorData.data.raw.g,
+      b: colorData.data.raw.b,
+      ww: colorData.data.raw.ww,
+      cw: colorData.data.raw.cw,
     }));
+
+    watch(
+      () => carouselPage,
+      (val) => {
+        if (
+          val === "presets" &&
+          presetData.storeStatus === storeStatus.LOADING
+        ) {
+          presetData.fetchData();
+        }
+      },
+    );
 
     watch(
       () => colorData.data.hsv,
       (val) => {
-        //colorData is the store
-        console.log("Color Store hsv changed:", val);
-        const rgb = hsvToRgb(val);
-        const hex = rgbToHex(rgb);
-        console.log("hex", hex);
-        color.value = hex;
+        if (val !== undefined) {
+          //goes undefined when raw has changed
+          //colorData is the store
+          console.log("colorPage watcher Color Store hsv changed:", val);
+          console.log("color store:", JSON.stringify(colorData.data));
+          const rgb = hsvToRgb(val);
+          const hex = rgbToHex(rgb);
+          console.log("updated color, hex", hex);
+          color.value = hex;
+        }
       },
     );
 
@@ -280,9 +317,26 @@ export default {
       const hsv = rgbToHsv(rgb);
       console.log("hsv", hsv);
 
-      colorData.data.change_by = "color picker";
+      colorData.change_by = "color picker";
+      console.log(
+        "colorPage picker watcher color store:",
+        JSON.stringify(colorData.data),
+      );
       colorData.updateData("hsv", hsv);
     });
+
+    watch(
+      () => colorData.$state,
+      (newState) => {
+        if ("hsv" in newState) {
+          console.warn(
+            "hsv property added to root of store:",
+            JSON.stringify(newState.hsv),
+          );
+        }
+      },
+      { deep: true },
+    );
 
     const updateColorSlider = (slider, value) => {
       console.log("update for", slider);
@@ -305,7 +359,7 @@ export default {
         // Convert the object to a JSON string
         //const raw = JSON.stringify(finalObject);
         console.log("raw:", raw);
-        colorData.data.change_by = "raw slider";
+        colorData.change_by = "raw slider";
         colorData.updateData("raw", raw);
       }
     };
@@ -314,7 +368,7 @@ export default {
       let settings;
       if (colorModel === "raw") {
         // Calculate the raw settings...
-        settings = rawSettings.value;
+        settings = { ...colorData.data.raw };
       } else if (colorModel === "hsv") {
         console.log("save preset, color", color.value);
         const rgb = hexToRgb(color.value);
@@ -333,66 +387,52 @@ export default {
         return; // Exit the function if color model is unknown
       }
 
-      // Check if there is a duplicate preset
-      const duplicatePreset = presetData.data.presets.find(
-        (preset) => preset.name === presetName.value,
+      // Insert the new preset into the presetDataStore
+      console.log(
+        "adding preset with name",
+        presetName,
+        "model",
+        colorModel,
+        "value",
+        settings,
       );
-      if (duplicatePreset) {
-        // Ask the user if they want to overwrite or change the name
-        const confirmOverwrite = confirm(
-          `A preset with the name "${presetName}" and color model "${colorModel}" already exists. Do you want to overwrite it?`,
-        );
-
-        if (confirmOverwrite) {
-          // Overwrite the existing preset
-          //duplicatePreset.settings = settings;
-          console.log(
-            `Preset "${presetName}" with color model "${colorModel}" has been overwritten.`,
-          );
-        } else {
-          // Change the name of the preset
-          const newPresetName = prompt(
-            "Please enter a new name for the preset:",
-          );
-          if (newPresetName) {
-            // Create a new preset with the updated name
-            if (colorModel === "hsv") {
-              presetData.addPreset({
-                name: newPresetName,
-                hsv: settings,
-                favorite: false,
-              });
-            } else {
-              presetData.addPreset({
-                name: newPresetName,
-                raw: settings,
-                favorite: false,
-              });
-            }
-            console.log(
-              `Preset "${newPresetName}" with color model "${colorModel}" has been added.`,
-            );
-          }
-        }
-      } else {
-        // Insert the new preset into the presetDataStore
-        if (colorModel === "hsv") {
-          presetData.addPreset({
+      if (colorModel === "hsv") {
+        presetData
+          .addPreset({
+            id: "",
             name: presetName,
             hsv: settings,
             favorite: false,
+          })
+          .catch((error) => {
+            console.error("Error adding preset:", error);
           });
-        } else {
-          presetData.addPreset({
+      } else {
+        presetData
+          .addPreset({
+            id: "",
             name: presetName,
             raw: settings,
             favorite: false,
+          })
+          .catch((error) => {
+            console.error("Error adding preset:", error);
           });
-        }
-        console.log(
-          `Preset "${presetName.value}" with color model "${colorModel}" has been added.`,
-        );
       }
+      showDialog.value = false;
+      console.log(
+        `Preset "${presetName.value}" with color model "${colorModel}" has been added.`,
+      );
+    };
+
+    const toggleFavorite = (preset) => {
+      preset.favorite = !preset.favorite;
+      presetData.updatePreset(preset);
+    };
+
+    const deletePreset = (preset) => {
+      // Remove the preset from presetData.data['presets']
+      presetData.deletePreset(preset);
     };
 
     const openDialog = (colorModel) => {
@@ -403,10 +443,10 @@ export default {
       console.log("preset selected", preset);
 
       if (preset.raw) {
-        colorData.data.change_by = "preset";
+        colorData.change_by = "preset";
         colorData.updateData("raw", preset.raw);
       } else {
-        colorData.data.change_by = "preset";
+        colorData.change_by = "preset";
         colorData.updateData("hsv", preset.hsv);
       }
     };
@@ -435,9 +475,17 @@ export default {
       savePreset,
       openDialog,
       presetColorModel,
+      toggleFavorite,
+      deletePreset,
     };
   },
-
+  computed: {
+    activePresets() {
+      return this.presetData.data["presets"].filter(
+        (preset) => !preset.deleted,
+      );
+    },
+  },
   components: {
     ColorSlider,
   },

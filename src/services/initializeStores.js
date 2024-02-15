@@ -1,40 +1,47 @@
-import { defineStore } from "pinia";
-import useWebSocket from "src/services/websocket";
-import {
-  configDataStore,
-  colorDataStore,
-  presetDataStore,
-  infoDataStore,
-  groupsDataStore,
-  controllersStore,
-} from "src/store";
+//import { defineStore } from "pinia";
+import useWebSocket, { wsStatus } from "src/services/websocket.js";
+
+import { configDataStore } from "src/stores/configDataStore";
+import { colorDataStore } from "src/stores/colorDataStore";
+import { presetDataStore } from "src/stores/presetDataStore";
+import { infoDataStore } from "src/stores/infoDataStore";
+import { controllersStore } from "src/stores/controllersStore";
+
+import { storeStatus } from "src/stores/storeConstants";
 
 export default function initializeStores() {
   const controllers = controllersStore();
-  ("");
   console.log(
     "initializing stores for ",
-    controllers.currentController["hostname"],
+    controllers.currentController["hostname"]
   );
 
   const configStore = configDataStore();
   const colorStore = colorDataStore();
-  const presetStore = presetDataStore();
   const infoStore = infoDataStore();
-  const groupsData = groupsDataStore();
-  if (controllers.currentController !== undefined) {
+  //const groupsData = groupsDataStore();
+  const presets = presetDataStore();
+  const webSocket = useWebSocket();
+
+  if (controllers.currentController) {
     const url = "ws://" + controllers.currentController["ip_address"] + "/ws";
-    console.log("=> openening websocket for ", url);
-    const webSocketState = useWebSocket(url);
+    console.log("=> requesting websocket for ", url);
+    webSocket.connect(url);
 
-    colorStore.fetchData();
-    colorStore.setupWebSocket(webSocketState); // pass the websocket state to the store
-    configStore.fetchData();
-    presetStore.fetchData();
-    infoStore.fetchData();
-    groupsData.fetchData();
-    controllers.fetchData();
-
-    return { webSocketState };
+    async function initializeStores() {
+      try {
+        await controllers.fetchData();
+        await colorStore.fetchData();
+        await configStore.fetchData();
+        await infoStore.fetchData();
+        await presets.fetchData();
+        //groupsData.fetchData();
+        //groupsData.status = storeStatus.READY;
+        await controllers.fetchData();
+      } catch (error) {
+        console.log("error initializing stores: ", error);
+      }
+    }
+    initializeStores();
   }
 }

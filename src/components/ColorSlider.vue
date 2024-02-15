@@ -91,7 +91,12 @@ export default {
     };
 
     watch(internalValue, updateModel);
-
+    watch(
+      () => props.value,
+      (newValue) => {
+        internalValue.value = newValue;
+      },
+    );
     return {
       internalValue,
       updateModel,

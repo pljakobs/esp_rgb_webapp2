@@ -1,5 +1,40 @@
-npx quasar build
+#!/bin/bash
+echo $1
+dir=$(pwd)
+if [[ -f ./index.html.gz ]]
+then
+	gunzip *.gz
+fi
+
+rm dist/spa/* -rf
+if [ "$1" = "debug" ]
+then
+	echo "deploying debug"
+	npx quasar build -d 
+else
+	echo "deploying prod"
+	npx quasar build
+fi
+cd $dir
+pwd
 ./minifyFontnames.sh
+pwd
 ./gzipSPA.sh
+version=$(git describe --abbrev=4 --dirty --always --tags)
+if [ "$1" = "debug" ]
+then
+	version=$version"-debug"
+fi
+echo $version >dist/spa/VERSION
+echo "VUE_APP_BUILD_NUMBER=$version" >.env
+echo "deploying " 
+cat dist/spa/VERSION
 rsync -a dist/spa/ devbox:~/devel/esp_rgbww_firmware/spiffs
-ssh devbox "cd devel/esp_rgbww_firmware/;make -j8 flashpart PART=spiffs0"
+if [ "$1" = "debug" -o -f dist/spa/assets/index.js.map.gz ]
+then 
+	ssh devbox "cd devel/esp_rgbww_firmware;cp hwconfig.debug hwconfig.hw"
+else
+	ssh devbox "cd devel/esp_rgbww_firmware;cp hwconfig.prod hwconfig.hw"
+fi
+#ssh devbox "cd devel/esp_rgbww_firmware/;make clean;make -j8 flash PART=spiffs0"
+ssh devbox "cd devel/esp_rgbww_firmware/;make clean;make -j8 flash"

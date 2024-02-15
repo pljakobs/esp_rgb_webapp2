@@ -3,9 +3,7 @@
     v-if="
       infoData.status === storeStatus.LOADING ||
       configData.status === storeStatus.LOADING ||
-      colorData.status === storeStatus.LOADING ||
-      presetData.status === storeStatus.LOADING ||
-      groupsData.status === storeStatus.LOADING
+      colorData.status === storeStatus.LOADING
     "
   >
     <div class="center-container bg-light-grey">
@@ -49,18 +47,7 @@
           />
           <span v-else class="text-danger">❌ {{ colorData.error }}</span
           ><br />
-          Presets:
-          <span
-            v-if="presetData.status === storeStatus.READY"
-            class="text-success"
-            >✔️</span
-          >
-          <q-spinner
-            v-else-if="presetData.status === storeStatus.LOADING"
-            color="light-blue"
-          />
-          <span v-else class="text-danger">❌ {{ presetData.error }}</span
-          ><br />
+          <!--
           Groups:
           <span
             v-if="groupsData.status === storeStatus.READY"
@@ -72,6 +59,7 @@
             color="light-blue"
           />
           <span v-else class="text-danger">❌ {{ groupsData.error }}</span>
+          -->
         </div>
       </div>
     </div>
@@ -93,7 +81,8 @@
             </q-avatar>
           </q-btn>
           <q-toolbar-title>
-            Lightinator Mini on {{ controllers.currentController["hostname"] }}
+            Lightinator Mini on
+            {{ controllers.currentController["hostname"] }} websocket is
           </q-toolbar-title>
         </q-toolbar>
       </q-header>
@@ -113,7 +102,10 @@
           option-value="ip_address"
           label="Select a controller"
           @input="handleControllerSelection"
+          @popup-show="() => $nextTick(() => (isSelectOpen.value = true))"
+          @popup-hide="() => $nextTick(() => (isSelectOpen.value = false))"
         />
+
         <q-list>
           <q-item-label header>main menu</q-item-label>
 
@@ -123,15 +115,22 @@
             v-bind="link"
           />
         </q-list>
+        working version:22
       </q-drawer>
+      <q-btn
+        round
+        :style="{ position: 'fixed', right: '20px', bottom: '20px' }"
+        :color="buttonColor"
+        :icon="buttonIcon"
+      />
       <q-page-container>
-        <div id="q-app" class="bg-blue-grey-2" style="min-eight: 100vh">
+        <div id="q-app" class="bg-blue-grey-2" style="min-height: 100vh">
           <div
             id="parent"
             class="fit row wrap justify-center items-start content-start"
           >
             <div
-              class="col-xs-12 col-sm-5 col-md-5 col-lg-4 q-gutter-md"
+              class="col-xs-12 col-sm-6 col-md-7 col-lg-5 q-gutter-md"
               justify-center
             >
               <RouterView></RouterView>
@@ -142,18 +141,27 @@
     </q-layout>
   </div>
 </template>
+
 <script>
-import { defineComponent, ref, watch, onMounted, onUnmounted } from "vue";
-import EssentialLink from "components/EssentialLink.vue";
 import {
-  configDataStore,
-  infoDataStore,
-  colorDataStore,
-  presetDataStore,
-  groupsDataStore,
-  storeStatus,
-  controllersStore,
-} from "src/store";
+  defineComponent,
+  ref,
+  watch,
+  onMounted,
+  onUnmounted,
+  computed,
+} from "vue";
+import { configDataStore } from "src/stores/configDataStore";
+import { colorDataStore } from "src/stores/colorDataStore";
+import { presetDataStore } from "src/stores/presetDataStore";
+import { infoDataStore } from "src/stores/infoDataStore";
+import { controllersStore } from "src/stores/controllersStore";
+
+import { storeStatus } from "src/stores/storeConstants";
+import EssentialLink from "components/EssentialLink.vue";
+import useWebSocket, { wsStatus } from "src/services/websocket.js";
+import { useRouter } from "vue-router";
+
 const linksList = [
   {
     title: "Color",
@@ -180,6 +188,12 @@ const linksList = [
     link: "/SystemSettings",
   },
   {
+    title: "Network Init",
+    caption: "",
+    icon: "wifi",
+    link: "/NetworkInit",
+  },
+  {
     title: "test",
     caption: "",
     icon: "lightbulb",
@@ -200,18 +214,45 @@ export default defineComponent({
     const configData = configDataStore();
     const infoData = infoDataStore();
     const colorData = colorDataStore();
-    const presetData = presetDataStore();
-    const groupsData = groupsDataStore();
+    //const groupsData = groupsDataStore();
     const intervalId = ref(null);
+    const ws = useWebSocket();
 
-    console.log("MainLayout setup");
+    const isSelectOpen = ref(false);
 
-    const isSmallScreen = ref(window.innerWidth <= 600); // Change 600 to your small breakpoint
+    const router = useRouter();
+
+    const isSmallScreen = ref(window.innerWidth <= 400); // Change 600 to your small breakpoint
 
     const updateIsSmallScreen = () => {
-      isSmallScreen.value = window.innerWidth <= 600; // Change 600 to your small breakpoint
+      isSmallScreen.value = window.innerWidth <= 400; // Change 600 to your small breakpoint
     };
+    const buttonColor = computed(() => {
+      console.log("=> websocket ws.status.value", ws.status.value);
+      switch (ws.status.value) {
+        case wsStatus.CONNECTED:
+          return "green";
+        case wsStatus.DISCONNECTED:
+          return "red";
+        case wsStatus.CONNECTING:
+          return "yellow";
+        default:
+          return "grey";
+      }
+    });
 
+    const buttonIcon = computed(() => {
+      switch (ws.status.value) {
+        case wsStatus.CONNECTED:
+          return "check";
+        case wsStatus.DISCONNECTED:
+          return "close";
+        case wsStatus.CONNECTING:
+          return "help";
+        default:
+          return "info";
+      }
+    });
     onMounted(() => {
       window.addEventListener("resize", updateIsSmallScreen);
     });
@@ -219,27 +260,57 @@ export default defineComponent({
     onUnmounted(() => {
       window.removeEventListener("resize", updateIsSmallScreen);
     });
+
     const handleControllerSelection = (event) => {
       console.log(
         "===============================\nhandleControllerSelection",
-        event,
+        event
       );
       controllers.selectController(event);
     };
+
     watch(
-      () => controllers.currentController,
+      () => infoData.status === storeStatus.READY,
       () => {
-        toggleLeftDrawer();
-      },
-    );
+        console.log("infoData.status changed to", infoData.status);
+        console.log("check if this is an unconfigured controller");
+        console.log(
+          "connected:",
+          infoData.data.connection.connected ? "true" : "false"
+        );
+        console.log("ssid:", infoData.data.connection.ssid);
+
+        if (
+          !infoData.data.connection.connected &&
+          infoData.data.connection.ssid === ""
+        ) {
+          // the controller has no configured ssid wsand is not connected to a wifi network
+          // we are therefore talking to a controller in AP mode, trigger the controler config
+          // section
+          console.log("new controller, redirecting to /networkinit");
+          router.push("/networkinit");
+        } else {
+          console.log("controller is configured, not redirecting");
+        }
+      }
+    ),
+      // close the left drawer when the current controller changes
+      // that should only ever happen by selecting a controller from
+      // the controllers dropdown list *in* the left drawer.
+      watch(
+        () => controllers.currentController,
+        () => {
+          toggleLeftDrawer();
+        }
+      );
     watch(
-      () => [leftDrawerOpen.value, isSmallScreen.value],
-      ([isDrawerOpen, isSmallScreen]) => {
-        if (leftDrawerOpen.value || !isSmallScreen) {
+      () => isSelectOpen.value,
+      (isSelectOpen) => {
+        if (isSelectOpen) {
           controllers.fetchData(); //re-fetch neighbours when opening drawer
           // Start interval when drawer is opened
           intervalId.value = setInterval(() => {
-            console.log("re-feching controllers");
+            //console.log("re-feching controllers");
             controllers.fetchData();
           }, 15000);
         } else {
@@ -250,7 +321,7 @@ export default defineComponent({
           }
         }
       },
-      { immediate: true },
+      { immediate: true }
     );
     const toggleLeftDrawer = () => {
       if (isSmallScreen.value) {
@@ -264,12 +335,14 @@ export default defineComponent({
       configData,
       infoData,
       colorData,
-      presetData,
-      groupsData,
+      //groupsData,
       controllers,
       storeStatus,
+      isSelectOpen,
       handleControllerSelection,
       toggleLeftDrawer,
+      buttonColor,
+      buttonIcon,
     };
   },
 });
@@ -284,5 +357,12 @@ export default defineComponent({
   left: 0;
   width: 100%;
   height: 100%;
+}
+.bg-red {
+  background-color: red;
+}
+
+.bg-orange {
+  background-color: orange;
 }
 </style>
