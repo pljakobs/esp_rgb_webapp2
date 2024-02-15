@@ -290,7 +290,7 @@ export default {
         ) {
           presetData.fetchData();
         }
-      }
+      },
     );
 
     watch(
@@ -300,13 +300,13 @@ export default {
           //goes undefined when raw has changed
           //colorData is the store
           console.log("colorPage watcher Color Store hsv changed:", val);
-          console.log("color store:", JSON.stringify(colorData));
+          console.log("color store:", JSON.stringify(colorData.data));
           const rgb = hsvToRgb(val);
           const hex = rgbToHex(rgb);
           console.log("updated color, hex", hex);
           color.value = hex;
         }
-      }
+      },
     );
 
     // ...
@@ -320,7 +320,7 @@ export default {
       colorData.change_by = "color picker";
       console.log(
         "colorPage picker watcher color store:",
-        JSON.stringify(colorData.data)
+        JSON.stringify(colorData.data),
       );
       colorData.updateData("hsv", hsv);
     });
@@ -331,11 +331,11 @@ export default {
         if ("hsv" in newState) {
           console.warn(
             "hsv property added to root of store:",
-            JSON.stringify(newState.hsv)
+            JSON.stringify(newState.hsv),
           );
         }
       },
-      { deep: true }
+      { deep: true },
     );
 
     const updateColorSlider = (slider, value) => {
@@ -379,7 +379,7 @@ export default {
           "colorModel ",
           colorModel,
           "value",
-          hsv
+          hsv,
         );
         settings = hsv; // Set the settings to the HSV value
       } else {
@@ -394,7 +394,7 @@ export default {
         "model",
         colorModel,
         "value",
-        settings
+        settings,
       );
       if (colorModel === "hsv") {
         presetData
@@ -421,7 +421,7 @@ export default {
       }
       showDialog.value = false;
       console.log(
-        `Preset "${presetName.value}" with color model "${colorModel}" has been added.`
+        `Preset "${presetName.value}" with color model "${colorModel}" has been added.`,
       );
     };
 
@@ -482,7 +482,7 @@ export default {
   computed: {
     activePresets() {
       return this.presetData.data["presets"].filter(
-        (preset) => !preset.deleted
+        (preset) => !preset.deleted,
       );
     },
   },

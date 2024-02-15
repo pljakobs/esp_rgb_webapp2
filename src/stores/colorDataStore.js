@@ -67,20 +67,12 @@ export const colorDataStore = defineStore({
       console.log("updatData called, change by: ", this.change_by);
       if (this.change_by != "websocket" && this.change_by != "load") {
         const controllers = controllersStore();
-        const colorData = colorDataStore();
 
         console.log("color update for field: ", field, "value: ", value);
         console.log("old colorData(this): ", this);
         if (field === "hsv") {
-          console.log(
-            "store updateData for hsv, old store: ",
-            JSON.stringify(colorData),
-          );
-          colorData.data.hsv = value;
-          console.log(
-            "store updateData for hsv, new store: ",
-            JSON.stringify(colorData),
-          );
+          this.data.hsv = value;
+          console.log("store updateData for hsv, new store: ", this);
         } else if (field === "raw") {
           console.log("key: ", key, " value: ", val);
           const [[key, val]] = Object.entries(value);
@@ -88,7 +80,7 @@ export const colorDataStore = defineStore({
         }
         console.log(
           "store updateData for hsv, before creating payload: ",
-          JSON.stringify(this),
+          this.data,
         );
         /* I can't even remember what this was supposed to do
         *****************************************************************************+
@@ -108,10 +100,7 @@ export const colorDataStore = defineStore({
           "sending update to controller: ",
           controllers.currentController["ip_address"],
         );
-        console.log(
-          "store updateData for hsv, before api call: ",
-          JSON.stringify(this),
-        );
+        console.log("store updateData for hsv, before api call: ", this);
         fetch(`http://${controllers.currentController["ip_address"]}/color`, {
           // Use controllers.currentController here
           method: "POST",
@@ -134,10 +123,7 @@ export const colorDataStore = defineStore({
             );
           });
         console.log("color update request sent");
-        console.log(
-          "store updateData for hsv, after api call: ",
-          JSON.stringify(this),
-        );
+        console.log("store updateData for hsv, after api call: ", this);
       }
     },
   },

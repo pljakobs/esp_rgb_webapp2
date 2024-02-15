@@ -3,10 +3,8 @@
 </template>
 
 <script>
-import { defineComponent } from "vue";
-import { onMounted, watch } from "vue";
+import { onMounted, watch, defineComponent } from "vue";
 import { controllersStore } from "src/stores/controllersStore";
-
 import initializeStores from "src/services/initializeStores";
 
 export default defineComponent({
@@ -21,10 +19,10 @@ export default defineComponent({
       () => {
         console.log(
           "switching to controller",
-          controllers.currentController["hostname"]
+          controllers.currentController["hostname"],
         );
         initializeStores();
-      }
+      },
     );
     onMounted(() => {
       initializeStores();
