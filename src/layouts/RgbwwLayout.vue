@@ -227,6 +227,7 @@ export default defineComponent({
     const updateIsSmallScreen = () => {
       isSmallScreen.value = window.innerWidth <= 400; // Change 600 to your small breakpoint
     };
+
     const buttonColor = computed(() => {
       console.log("=> websocket ws.status.value", ws.status.value);
       switch (ws.status.value) {
@@ -253,6 +254,7 @@ export default defineComponent({
           return "info";
       }
     });
+
     onMounted(() => {
       window.addEventListener("resize", updateIsSmallScreen);
     });
@@ -264,45 +266,55 @@ export default defineComponent({
     const handleControllerSelection = (event) => {
       console.log(
         "===============================\nhandleControllerSelection",
-        event
+        event,
       );
       controllers.selectController(event);
     };
 
+    const checkControllerConfigured = () => {
+      console.log("infoData.status changed to", infoData.status);
+      console.log("check if this is an unconfigured controller");
+      console.log(
+        "connected:",
+        infoData.data.connection.connected ? "true" : "false",
+      );
+      console.log("ssid:", infoData.data.connection.ssid);
+
+      if (
+        !infoData.data.connection.connected &&
+        infoData.data.connection.ssid === ""
+      ) {
+        // the controller has no configured ssid wsand is not connected to a wifi network
+        // we are therefore talking to a controller in AP mode, trigger the controler config
+        // section
+        console.log("new controller, redirecting to /networkinit");
+        router.push("/networkinit");
+      } else {
+        console.log("controller is configured, not redirecting");
+      }
+    };
+
+    // close the left drawer when the current controller changes
+    // that should only ever happen by selecting a controller from
+    // the controllers dropdown list *in* the left drawer.
     watch(
       () => infoData.status === storeStatus.READY,
       () => {
-        console.log("infoData.status changed to", infoData.status);
-        console.log("check if this is an unconfigured controller");
-        console.log(
-          "connected:",
-          infoData.data.connection.connected ? "true" : "false"
-        );
-        console.log("ssid:", infoData.data.connection.ssid);
+        checkControllerConfigured();
+      },
+    );
 
-        if (
-          !infoData.data.connection.connected &&
-          infoData.data.connection.ssid === ""
-        ) {
-          // the controller has no configured ssid wsand is not connected to a wifi network
-          // we are therefore talking to a controller in AP mode, trigger the controler config
-          // section
-          console.log("new controller, redirecting to /networkinit");
-          router.push("/networkinit");
-        } else {
-          console.log("controller is configured, not redirecting");
-        }
-      }
-    ),
-      // close the left drawer when the current controller changes
-      // that should only ever happen by selecting a controller from
-      // the controllers dropdown list *in* the left drawer.
-      watch(
-        () => controllers.currentController,
-        () => {
-          toggleLeftDrawer();
-        }
-      );
+    if (infoData.status === storeStatus.READY) {
+      checkControllerConfigured();
+    }
+
+    watch(
+      () => controllers.currentController,
+      () => {
+        toggleLeftDrawer();
+      },
+    );
+
     watch(
       () => isSelectOpen.value,
       (isSelectOpen) => {
@@ -321,8 +333,9 @@ export default defineComponent({
           }
         }
       },
-      { immediate: true }
+      { immediate: true },
     );
+
     const toggleLeftDrawer = () => {
       if (isSmallScreen.value) {
         leftDrawerOpen.value = !leftDrawerOpen.value;
