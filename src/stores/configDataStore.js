@@ -32,6 +32,7 @@ export const configDataStore = defineStore({
         "value: ",
         value,
       );
+      console.log("updating config data: ", this.data);
       // Make a PUT request to the API endpoint
       fetch(`http://${controllers.currentController["ip_address"]}/config`, {
         // Use controllers.currentController here

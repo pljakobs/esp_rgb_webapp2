@@ -37,4 +37,9 @@ else
 	ssh devbox "cd devel/esp_rgbww_firmware;cp hwconfig.prod hwconfig.hw"
 fi
 #ssh devbox "cd devel/esp_rgbww_firmware/;make clean;make -j8 flash PART=spiffs0"
-ssh devbox "cd devel/esp_rgbww_firmware/;make clean;make -j8 flash"
+if [ "$1" = "OTA" ]
+then
+	ssh devbox "cd devel/esp_rgbww_firmware/;make -j8;./deployOta"
+else
+	ssh devbox "cd devel/esp_rgbww_firmware/;make -j8 flash"
+fi

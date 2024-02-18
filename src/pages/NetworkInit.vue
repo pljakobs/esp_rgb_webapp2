@@ -99,19 +99,19 @@
         <q-btn
           color="secondary"
           label="forget wifi"
-          @click="onForgetWifi"
+          @click="forgetWifi"
           style="margin-top: 16px"
         />
         <q-btn
           color="secondary"
           label="show dialog"
-          @click="doShowDialog"
+          @click="sh < owDialog"
           style="margin-top: 16px"
         />
         <q-btn
           color="secondary"
           label="hide dialog"
-          @click="doHideDialog"
+          @click="hideDialog"
           style="margin-top: 16px"
         />
       </q-card-actions>
@@ -196,7 +196,7 @@ export default {
     const ssid = ref("");
     const countdown = ref(0);
 
-    const showDialog = ref(false);
+    const Dialog = ref(false);
     const maxRetries = 5;
     const retryDelay = 1000;
     const ws = useWebSocket();
@@ -211,7 +211,7 @@ export default {
       ws.onJson("wifi_status", (params) => {
         console.log(
           "==> websocket: wifi_status",
-          JSON.stringify(params, null, 2)
+          JSON.stringify(params, null, 2),
         );
         wifiData.value.connected = params.station.connected;
         wifiData.value.ssid = params.station.ssid;
@@ -234,7 +234,7 @@ export default {
 
         console.log("message: ", params.message);
         if (params.message === "Wrong password") {
-          showDialog.value = false;
+          Dialog.value = false;
         }
 
         console.log("wifiData", JSON.stringify(wifiData));
@@ -244,9 +244,9 @@ export default {
     /**
      * Function to show the dialog.
      */
-    const doShowDialog = () => {
-      showDialog.value = true;
-      console.log("showDialog (showing)", showDialog.value);
+    const showDialog = () => {
+      Dialog.value = true;
+      console.log("Dialog (showing)", Dialog.value);
     };
 
     watch(wifiData.value.message, (newMessage) => {
@@ -256,34 +256,34 @@ export default {
     /**
      * Function to hide the dialog.
      */
-    const doHideDialog = () => {
-      showDialog.value = false;
-      console.log("showDialog (hiding)", showDialog.value);
+    const hideDialog = () => {
+      Dialog.value = false;
+      console.log("Dialog (hiding)", Dialog.value);
     };
 
-    watch(showDialog, (newShowDialog) => {
-      console.log("showDialog (watch)", newShowDialog);
+    watch(Dialog, (newShowDialog) => {
+      console.log("Dialog (watch)", newShowDialog);
     });
     /**
      * Function to restart the controller.
      */
-    const onRestartController = () => {
+    const restartController = () => {
       systemCommand.restartController();
     };
 
     /**
      * Function to forget the WiFi network.
      */
-    const onForgetWifi = () => {
+    const forgetWifi = () => {
       systemCommand.forgetWifi();
     };
 
     const connectToNetwork = async () => {
       console.log(
         "selectedNetwork.value",
-        JSON.stringify(selectedNetwork.value)
+        JSON.stringify(selectedNetwork.value),
       );
-      showDialog.value = true;
+      Dialog.value = true;
       console.log("Connecting to network:", selectedNetwork.value.ssid);
       console.log("Password:", password.value);
 
@@ -300,20 +300,20 @@ export default {
             ssid: new_ssid,
             password: new_password,
           }),
-        }
+        },
       );
       if (response.ok) {
         console.log("connecting to network");
         log.value.push("connecting to network");
         wifiData.value.message = "Connecting to network";
-        showDialog.value = true;
+        Dialog.value = true;
       } else {
         console.log("Failed to connect to network");
         log.value.push("Failed to connect to network");
         wifiData.value.connected = false;
         wifiData.value.message = "Failed to initiate connection";
         log.value.push("Failed to initiate connection");
-        showDialog.value = true;
+        Dialog.value = true;
       }
     };
 
@@ -326,18 +326,18 @@ export default {
             `http://${controllers.currentController.ip_address}/networks`,
             {
               method: "GET",
-            }
+            },
           );
           if (response.status === 429 && retryCount < maxRetries) {
             // Too many requests, retry after a delay
             console.log(
               `Request limit reached, retrying after ${
                 retryDelay * 2 ** retryCount
-              }ms...`
+              }ms...`,
             );
             setTimeout(
               () => fetchNetworks(retryCount + 1),
-              retryDelay * 2 ** retryCount
+              retryDelay * 2 ** retryCount,
             );
             return;
           }
@@ -353,18 +353,18 @@ export default {
             `http://${controllers.currentController.ip_address}/scan_networks`,
             {
               method: "POST",
-            }
+            },
           );
           if (response.status === 429 && retryCount < maxRetries) {
             // Too many requests, retry after a delay
             console.log(
               `Request limit reached, retrying after ${
                 retryDelay * 2 ** retryCount
-              }ms...`
+              }ms...`,
             );
             setTimeout(
               () => fetchNetworks(retryCount + 1),
-              retryDelay * 2 ** retryCount
+              retryDelay * 2 ** retryCount,
             );
             return;
           }
@@ -458,7 +458,7 @@ export default {
         if (
           oldVal === "Connecting to WiFi" &&
           newVal === "Connected to WiFi" &&
-          showDialog
+          Dialog
         ) {
           console.log("Connected to network, stopping access point");
           setTimeout(() => {
@@ -477,7 +477,7 @@ export default {
                     if (response.ok) {
                       clearInterval(reconnectInterval);
                       console.log(
-                        "controller responded on new ip, redirecting to new ip"
+                        "controller responded on new ip, redirecting to new ip",
                       );
                       window.location.href = `http://${wifiData.value.ip}/`;
                     }
@@ -490,7 +490,7 @@ export default {
             }, 5000);
           }, 1000);
         }
-      }
+      },
     );
 
     return {
@@ -501,12 +501,12 @@ export default {
       ssid,
       getEncryptionIcon,
       getSignalIcon,
-      onRestartController,
-      onForgetWifi,
+      rstartController,
+      forgetWifi,
       connectToNetwork,
+      Dialog,
       showDialog,
-      doShowDialog,
-      doHideDialog,
+      hideDialog,
       countdown,
       log,
     };
