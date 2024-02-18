@@ -1,6 +1,6 @@
 <template>
   <div>
-    <q-card bordered class="my-card shadow-4 col-auto fit q-gutter-md">
+    <q-card bordered class="my-card shadow-4 col-auto fit q-gutter-md q-ma-md">
       <div class="row justify-center">
         <q-btn-group>
           <q-btn

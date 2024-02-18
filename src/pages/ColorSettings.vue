@@ -1,5 +1,5 @@
 <template>
-  <q-card bordered class="my-card shadow-4 col-auto fit q-gutter-md">
+  <q-card bordered class="my-card shadow-4 col-auto fit q-gutter-md q-ma-md">
     <q-card-section>
       <div class="text-h6">
         <q-icon name="tune" />
@@ -37,7 +37,7 @@
       />
     </q-card-section>
   </q-card>
-  <q-card bordered class="my-card shadow-4 col-auto fit q-gutter-md">
+  <q-card bordered class="my-card shadow-4 col-auto fit q-gutter-md q-ma-md">
     <q-card-section>
       <div class="text-h6">
         <q-icon name="palette" />
@@ -114,7 +114,7 @@ export default {
 
     const transitionOptions = ["Normal", "Spektrum", "Rainbow"];
     const transitionModel = ref(
-      transitionOptions[configData.data.color.hsv.model]
+      transitionOptions[configData.data.color.hsv.model],
     );
     console.log("transition mode:", configData.data.color.hsv.model);
 
@@ -240,13 +240,13 @@ export default {
 
     const updateTransitionMode = (newTransitionModel) => {
       console.log(
-        `from update trigger: \nTransition model changed to ${newTransitionModel}`
+        `from update trigger: \nTransition model changed to ${newTransitionModel}`,
       );
       console.log(
         "old transition model:",
         configData.data.color.hsv.model,
         " new transition model: ",
-        transitionOptions.indexOf(newTransitionModel)
+        transitionOptions.indexOf(newTransitionModel),
       );
       configData.data.color.hsv.model =
         transitionOptions.indexOf(newTransitionModel);
@@ -258,9 +258,9 @@ export default {
         // Triggered when selectedModel changes
         // You can update the colorSliders array here if needed
         console.log(
-          "Selected color model changed:, from ${oldColorModel} to ${newColorModel}"
+          "Selected color model changed:, from ${oldColorModel} to ${newColorModel}",
         );
-      }
+      },
     );
 
     return {

@@ -1,6 +1,6 @@
 <template>
   <div>
-    <q-card bordered class="my-card shadow-4 col-auto fit q-gutter-md">
+    <q-card bordered class="my-card shadow-4 col-auto fit q-gutter-md q-ma-md">
       <q-card-section>
         <div class="text-h6">
           <q-icon name="wifi" />
@@ -48,7 +48,7 @@
         </div>
       </q-card-section>
     </q-card>
-    <q-card bordered class="my-card shadow-4 col-auto fit q-gutter-md">
+    <q-card bordered class="my-card shadow-4 col-auto fit q-gutter-md q-ma-md">
       <q-card-section>
         <div class="text-h6">MQTT Settings</div>
         <div>
@@ -166,7 +166,7 @@ export default {
       (newStatus, oldStatus) => {
         console.log("infoData.status changed from", oldStatus, "to", newStatus);
         console.log("infoData store content is now", infoData);
-      }
+      },
     );
     /**
      * Watches for changes in the infoData status and updates the connectionItems value accordingly.

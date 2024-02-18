@@ -1,10 +1,85 @@
 <template>
   <div>
-    <q-card bordered class="my-card shadow-4 col-auto fit q-gutter-md">
-      <q-card-section
-        ><h4>update controller</h4>
-        <input type="text" v-model="otaUrl"
-      /></q-card-section>
+    <q-card bordered class="my-card shadow-4 col-auto fit q-gutter-md q-ma-md">
+      <q-card-section>
+        <div class="text-h6">
+          <q-icon name="info" />
+          Information
+        </div>
+      </q-card-section>
+      <q-separator />
+      <q-card-section>
+        <div class="text-h6 col-auto self-center q-gutter-md">
+          <div class="text-h6">Settings</div>
+          <q-card-actions>
+            <q-btn
+              label="export settings"
+              color="primary"
+              @click="exportSettings"
+              class="q-mt-md"
+            />
+            <q-btn
+              label="import settings"
+              color="primary"
+              @click="importSettings"
+              class="q-mt-md"
+            />
+          </q-card-actions>
+        </div>
+      </q-card-section>
+      <q-card-section>
+        <div class="text-h6 col-auto self-center q-gutter-md">
+          <div class="text-h6">System</div>
+          <q-card-actions>
+            <q-btn
+              label="restart"
+              color="primary"
+              @click="restartController"
+              class="q-mt-md"
+            />
+            <q-btn
+              label="reset"
+              color="primary"
+              @click="resetController"
+              class="q-mt-md"
+            />
+          </q-card-actions>
+        </div>
+      </q-card-section>
+    </q-card>
+    <q-card bordered class="my-card shadow-4 col-auto fit q-gutter-md q-ma-md">
+      <q-card-section>
+        <div class="text-h6">
+          <q-icon name="memory" />
+          Controller
+        </div>
+      </q-card-section>
+      <q-separator />
+      <q-card-section> todo: pin configuration goes here </q-card-section>
+    </q-card>
+    <q-card bordered class="my-card shadow-4 col-auto fit q-gutter-md q-ma-md">
+      <q-card-section>
+        <div class="text-h6">
+          <q-icon name="security" />
+          security
+        </div>
+      </q-card-section>
+      <q-separator />
+      <q-card-section>
+        todo: security config goes here. todo: not all new endpoints are yet
+        password secured
+      </q-card-section>
+    </q-card>
+
+    <q-card bordered class="my-card shadow-4 col-auto fit q-gutter-md q-ma-md">
+      <q-card-section>
+        <div class="text-h6">
+          <q-icon name="system_update" />
+          Firmware update
+        </div>
+      </q-card-section>
+      <q-separator />
+      <dataTable :Items="firmwareInfo" />
       <q-card-actions
         ><q-btn
           label="check firmware"
@@ -13,11 +88,11 @@
           class="q-mt-md"
       /></q-card-actions>
       <q-card-section v-if="firmware">
-        current: firmware: {{ infoData.git_version }} webapp:
-        {{ infoData.webapp_version }}
+        current: firmware: {{ infoData.data.git_version }} webapp:
+        {{ infoData.data.webapp_version }}
 
         available: firmware: {{ firmware.files.rom.fw_version }} webapp:
-        {{ firmware.files.rom.webapp_version }}
+        {{ firmware.files.spiffs.webapp_version }}
       </q-card-section>
     </q-card>
   </div>
@@ -29,8 +104,13 @@ import { controllersStore } from "src/stores/controllersStore.js";
 import { infoDataStore } from "src/stores/infoDataStore";
 import { ref, onMounted } from "vue";
 import dataTable from "src/components/dataTable.vue";
+import { watchEffect } from "vue";
+import { storeStatus } from "src/stores/storeConstants";
 
 export default {
+  components: {
+    dataTable,
+  },
   setup() {
     const controllers = controllersStore();
     const configData = configDataStore();
@@ -40,6 +120,38 @@ export default {
 
     const firmware = ref();
     const firmwareItems = ref([]);
+    const firmwareInfo = ref([]);
+
+    watchEffect(() => {
+      if (infoData.status === storeStatus.READY && infoData.data) {
+        firmwareInfo.value = [
+          {
+            label: "Firmware",
+            value: infoData.data.git_version,
+          },
+          {
+            label: "Web interface",
+            value: infoData.data.webapp_version,
+          },
+          {
+            label: "SOC",
+            value: infoData.data.soc,
+          },
+          {
+            label: "Partition layout",
+            value: infoData.data.part_layout,
+          },
+          {
+            label: "RGBWW Version",
+            value: infoData.data.rgbww.version,
+          },
+          {
+            label: "Sming version",
+            value: infoData.data.sming,
+          },
+        ];
+      }
+    });
 
     console.log("otaUrl", otaUrl.value);
     console.log("ifoData: ", infoData.data);
@@ -106,7 +218,14 @@ export default {
       });
       */
     };
-    return { otaUrl, updateController, firmware, checkFirmware, infoData };
+    return {
+      otaUrl,
+      updateController,
+      firmware,
+      checkFirmware,
+      infoData,
+      firmwareInfo,
+    };
   },
 };
 </script>
