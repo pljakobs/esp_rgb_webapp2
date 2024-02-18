@@ -1,6 +1,6 @@
 <template>
   <div>
-    <q-card class="full-height shadow-4 col-auto fit q-gutter-md q-pa-md">
+    <MyCard class="full-height">
       <q-card-section class="row justify-center">
         <h4>application initialization</h4>
         <q-select
@@ -115,8 +115,8 @@
           style="margin-top: 16px"
         />
       </q-card-actions>
-    </q-card>
-    <q-card class="full-height shadow-4 col-auto fit q-gutter-md q-pa-md">
+    </MyCard>
+    <MyCard class="full-height">
       <q-card-section>
         <div class="text-h6">Wifi Data</div>
       </q-card-section>
@@ -125,7 +125,7 @@
         messages:
         <div v-for="(msg, index) in log" :key="index">- {{ msg }}</div>
       </q-card-section>
-    </q-card>
+    </MyCard>
   </div>
   <!--
   <q-dialog v-model=false>
@@ -176,7 +176,12 @@ import { storeStatus } from "src/stores/storeConstants";
 
 import systemCommand from "src/services/systemCommands.js";
 
+import MyCard from "src/components/myCard.vue";
+
 export default {
+  components: {
+    MyCard,
+  },
   setup() {
     const controllers = controllersStore();
     const infoData = infoDataStore();
@@ -501,7 +506,7 @@ export default {
       ssid,
       getEncryptionIcon,
       getSignalIcon,
-      rstartController,
+      restartController,
       forgetWifi,
       connectToNetwork,
       Dialog,

@@ -1,6 +1,6 @@
 <template>
   <div>
-    <q-card bordered class="my-card shadow-4 col-auto fit q-gutter-md q-ma-md">
+    <MyCard>
       <q-card-section>
         <div class="text-h6">
           <q-icon name="info" />
@@ -46,8 +46,8 @@
           </q-card-actions>
         </div>
       </q-card-section>
-    </q-card>
-    <q-card bordered class="my-card shadow-4 col-auto fit q-gutter-md q-ma-md">
+    </MyCard>
+    <MyCard>
       <q-card-section>
         <div class="text-h6">
           <q-icon name="memory" />
@@ -56,8 +56,8 @@
       </q-card-section>
       <q-separator />
       <q-card-section> todo: pin configuration goes here </q-card-section>
-    </q-card>
-    <q-card bordered class="my-card shadow-4 col-auto fit q-gutter-md q-ma-md">
+    </MyCard>
+    <MyCard>
       <q-card-section>
         <div class="text-h6">
           <q-icon name="security" />
@@ -69,9 +69,9 @@
         todo: security config goes here. todo: not all new endpoints are yet
         password secured
       </q-card-section>
-    </q-card>
+    </MyCard>
 
-    <q-card bordered class="my-card shadow-4 col-auto fit q-gutter-md q-ma-md">
+    <MyCard>
       <q-card-section>
         <div class="text-h6">
           <q-icon name="system_update" />
@@ -94,7 +94,7 @@
         available: firmware: {{ firmware.files.rom.fw_version }} webapp:
         {{ firmware.files.spiffs.webapp_version }}
       </q-card-section>
-    </q-card>
+    </MyCard>
   </div>
 </template>
 
@@ -103,13 +103,16 @@ import { configDataStore } from "src/stores/configDataStore";
 import { controllersStore } from "src/stores/controllersStore.js";
 import { infoDataStore } from "src/stores/infoDataStore";
 import { ref, onMounted } from "vue";
-import dataTable from "src/components/dataTable.vue";
 import { watchEffect } from "vue";
 import { storeStatus } from "src/stores/storeConstants";
+
+import dataTable from "src/components/dataTable.vue";
+import MyCard from "src/components/myCard.vue";
 
 export default {
   components: {
     dataTable,
+    MyCard,
   },
   setup() {
     const controllers = controllersStore();
