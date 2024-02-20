@@ -33,7 +33,11 @@ export const configDataStore = defineStore({
         value,
       );
       console.log("updating config data: ", this.data);
+      const controllers = controllersStore();
+
       // Make a PUT request to the API endpoint
+      this.data[field] = value;
+
       fetch(`http://${controllers.currentController["ip_address"]}/config`, {
         // Use controllers.currentController here
         method: "POST",

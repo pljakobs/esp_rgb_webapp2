@@ -79,7 +79,14 @@
         </div>
       </q-card-section>
       <q-separator />
-      <dataTable :Items="firmwareInfo" />
+      <q-card-section>
+        <dataTable :Items="firmwareInfo" />
+        <q-input
+          v-model="otaUrl"
+          label="OTA URL"
+          hint="URL to the firmware update server"
+        />
+      </q-card-section>
       <q-card-actions
         ><q-btn
           label="check firmware"
@@ -96,14 +103,57 @@
       </q-card-section>
     </MyCard>
   </div>
+  <q-dialog v-model="dialogOpen">
+    <q-card
+      class="shadow-4 col-auto fit q-gutter-md q-pa-md"
+      style="max-width: 50%"
+    >
+      <q-card-section>
+        <div class="text-h6">
+          <q-icon name="system_update" />
+          Firmware update
+        </div>
+      </q-card-section>
+      <q-separator />
+      <q-card-section class="centered-content">
+        your platform is {{ infoData.data.soc }} with partition layout
+        {{ infoData.data.part_layout }}
+        <table class="styled-table">
+          <tr>
+            <th></th>
+            <th>installed</th>
+            <th>available</th>
+          </tr>
+          <tr>
+            <td class="label">firmware</td>
+            <td>{{ infoData.data.git_version }}</td>
+            <td>{{ firmware.files.rom.fw_version }}</td>
+          </tr>
+          <tr>
+            <td class="label">webapp</td>
+            <td>{{ infoData.data.webapp_version }}</td>
+            <td>{{ firmware.files.spiffs.webapp_version }}</td>
+          </tr>
+        </table>
+      </q-card-section>
+      <q-card-actions>
+        <q-btn
+          label="update"
+          color="primary"
+          @click="updateController"
+          class="q-mt-md"
+        />
+      </q-card-actions>
+    </q-card>
+  </q-dialog>
 </template>
 
 <script>
+import { ref, watchEffect } from "vue";
+
 import { configDataStore } from "src/stores/configDataStore";
 import { controllersStore } from "src/stores/controllersStore.js";
 import { infoDataStore } from "src/stores/infoDataStore";
-import { ref, onMounted } from "vue";
-import { watchEffect } from "vue";
 import { storeStatus } from "src/stores/storeConstants";
 
 import dataTable from "src/components/dataTable.vue";
@@ -120,6 +170,7 @@ export default {
     const infoData = infoDataStore();
 
     const otaUrl = ref(configData.data.ota.url);
+    const dialogOpen = ref(false);
 
     const firmware = ref();
     const firmwareItems = ref([]);
@@ -203,11 +254,13 @@ export default {
     };
 
     const checkFirmware = async () => {
-      configData.data.ota.url = otaUrl.value;
-      fetchFirmware();
+      configData.updateData("ota.url", otaUrl.value);
+      await fetchFirmware();
+      dialogOpen.value = true;
+      console.log("dialogOpen", dialogOpen.value);
     };
 
-    onMounted(checkFirmware);
+    //onMounted(checkFirmware);
 
     const updateController = async () => {
       console.log("update controller");
@@ -228,7 +281,35 @@ export default {
       checkFirmware,
       infoData,
       firmwareInfo,
+      dialogOpen,
     };
   },
 };
 </script>
+<style scoped>
+.styled-table {
+  border-collapse: separate;
+  border-spacing: 10px;
+}
+
+.styled-table th {
+  font-weight: bold;
+  text-align: center;
+}
+
+.styled-table td {
+  text-align: center;
+}
+
+.styled-table .label {
+  text-align: right;
+}
+
+.centered-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+</style>
