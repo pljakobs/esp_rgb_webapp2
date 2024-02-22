@@ -106,7 +106,7 @@
   <q-dialog v-model="dialogOpen">
     <q-card
       class="shadow-4 col-auto fit q-gutter-md q-pa-md"
-      style="max-width: 50%"
+      style="max-width: 450px; max-height: 400px"
     >
       <q-card-section>
         <div class="text-h6">
@@ -136,7 +136,13 @@
           </tr>
         </table>
       </q-card-section>
-      <q-card-actions>
+      <q-card-actions class="action-buttons">
+        <q-btn
+          label="cancel"
+          color="primary"
+          @click="dialogOpen = false"
+          class="q-mt-md"
+        />
         <q-btn
           label="update"
           color="primary"
@@ -263,16 +269,21 @@ export default {
     //onMounted(checkFirmware);
 
     const updateController = async () => {
-      console.log("update controller");
-
-      /*const postResponse = await fetch("http://controllers.localhost", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+      console.log(
+        "update controller:",
+        controllers.currentController["ip_address"],
+      );
+      console.log("updating firmware", firmware.value);
+      const postResponse = await fetch(
+        `http://${controllers.currentController["ip_address"]}/update`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(firmware.value["files"]),
         },
-        body: JSON.stringify(data),
-      });
-      */
+      );
     };
     return {
       otaUrl,
@@ -311,5 +322,14 @@ export default {
   align-items: center;
   justify-content: center;
   text-align: center;
+}
+
+.action-buttons {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  text-align: center;
+  margin-top: 10px;
 }
 </style>
