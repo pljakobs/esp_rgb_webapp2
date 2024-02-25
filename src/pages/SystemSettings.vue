@@ -43,6 +43,12 @@
               @click="resetController"
               class="q-mt-md"
             />
+            <q-btn
+              :label="switchROMLabel"
+              color="primary"
+              @click="switchROM"
+              class="q-mt-md"
+            />
           </q-card-actions>
         </div>
       </q-card-section>
@@ -106,7 +112,7 @@
   <q-dialog v-model="dialogOpen">
     <q-card
       class="shadow-4 col-auto fit q-gutter-md q-pa-md"
-      style="max-width: 450px; max-height: 400px"
+      style="max-width: 450px; max-height: 480px"
     >
       <q-card-section>
         <div class="text-h6">
@@ -164,12 +170,14 @@ import { storeStatus } from "src/stores/storeConstants";
 
 import dataTable from "src/components/dataTable.vue";
 import MyCard from "src/components/myCard.vue";
+import systemCommand from "src/services/systemCommands";
 
 export default {
   components: {
     dataTable,
     MyCard,
   },
+
   setup() {
     const controllers = controllersStore();
     const configData = configDataStore();
@@ -181,10 +189,16 @@ export default {
     const firmware = ref();
     const firmwareItems = ref([]);
     const firmwareInfo = ref([]);
+    const switchROMLabel = ref();
 
     watchEffect(() => {
       if (infoData.status === storeStatus.READY && infoData.data) {
+        switchROMLabel.value = `switch to ROM ${infoData.data.current_rom === 0 ? 1 : 0}`;
         firmwareInfo.value = [
+          {
+            label: "active ROM",
+            value: infoData.data.current_rom,
+          },
           {
             label: "Firmware",
             value: infoData.data.git_version,
@@ -274,6 +288,10 @@ export default {
         controllers.currentController["ip_address"],
       );
       console.log("updating firmware", firmware.value);
+      console.log(
+        "host: ",
+        `http://${controllers.currentController["ip_address"]}`,
+      );
       const postResponse = await fetch(
         `http://${controllers.currentController["ip_address"]}/update`,
         {
@@ -285,6 +303,11 @@ export default {
         },
       );
     };
+    const switchROM = () => {
+      console.log("switching ROM, current ${infoData.data.current_rom}");
+      systemCommand.switchRom();
+    };
+
     return {
       otaUrl,
       updateController,
@@ -293,6 +316,8 @@ export default {
       infoData,
       firmwareInfo,
       dialogOpen,
+      switchROM,
+      switchROMLabel,
     };
   },
 };
