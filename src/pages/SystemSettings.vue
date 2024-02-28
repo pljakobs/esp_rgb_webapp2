@@ -172,6 +172,8 @@ import dataTable from "src/components/dataTable.vue";
 import MyCard from "src/components/myCard.vue";
 import systemCommand from "src/services/systemCommands";
 
+//import { useQuasar } from "quasar";
+
 export default {
   components: {
     dataTable,
@@ -190,6 +192,8 @@ export default {
     const firmwareItems = ref([]);
     const firmwareInfo = ref([]);
     const switchROMLabel = ref();
+
+    const $q = useQuasar();
 
     watchEffect(() => {
       if (infoData.status === storeStatus.READY && infoData.data) {
@@ -228,8 +232,9 @@ export default {
     });
 
     console.log("otaUrl", otaUrl.value);
-    console.log("ifoData: ", infoData.data);
+    console.log("infoData: ", infoData.data);
     const fetchFirmware = async () => {
+      console.log("entering fetchFirmware");
       try {
         const response = await fetch(otaUrl.value, {
           method: "GET",
@@ -237,21 +242,43 @@ export default {
             "Content-Type": "application/json",
           },
         });
-
+        console.log("response: ", response);
         if (!response.ok) {
+          console.log("response was not ok");
+          $q.notify({
+            color: "negative",
+            message: `HTTP error! status: ${response.status}`,
+            icon: "report_problem",
+          });
+          console.error(`HTTP error! status: ${response.status}`);
           throw new Error(`HTTP error! status: ${response.status}`);
         }
 
         const data = await response.json();
         console.log("data", data);
-        firmware.value = data.firmware.find(
-          (item) =>
-            item.partitioning === infoData.data.part_layout &&
-            item.soc === infoData.data.soc,
-        );
+
+        if (data.firmware && data.firmware.length > 0) {
+          firmware.value = data.firmware.find(
+            (item) =>
+              item.partitioning === infoData.data.part_layout &&
+              item.soc === infoData.data.soc,
+          );
+        } else {
+          firmware.value = {
+            files: {
+              rom: data.rom,
+              spiffs: data.spiffs,
+            },
+          };
+        }
 
         if (!firmware.value) {
           console.error("No matching firmware found");
+          $q.notify({
+            color: "negative",
+            message: `no matching firmware found for your configuration / controller`,
+            icon: "report_problem",
+          });
         } else {
           console.log("firmware", JSON.stringify(firmware.value));
           firmwareItems.value = [
@@ -270,14 +297,20 @@ export default {
         }
       } catch (error) {
         console.error("There was a problem with the fetch operation: ", error);
+        $q.notify({
+          color: "negative",
+          message: `There was a problem with the fetch operation: ${error.message}`,
+          icon: "report_problem",
+        });
       }
     };
 
     const checkFirmware = async () => {
       configData.updateData("ota.url", otaUrl.value);
       await fetchFirmware();
-      dialogOpen.value = true;
-      console.log("dialogOpen", dialogOpen.value);
+      if (firmware.value) {
+        dialogOpen.value = true;
+      }
     };
 
     //onMounted(checkFirmware);
@@ -306,6 +339,9 @@ export default {
     const switchROM = () => {
       console.log("switching ROM, current ${infoData.data.current_rom}");
       systemCommand.switchRom();
+      setTimeout(() => {
+        location.reload();
+      }, 5000);
     };
 
     return {
