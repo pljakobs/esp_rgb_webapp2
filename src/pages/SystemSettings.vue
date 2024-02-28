@@ -44,7 +44,7 @@
               class="q-mt-md"
             />
             <q-btn
-              :label="switchROMLabel"
+              label="switch ROM"
               color="primary"
               @click="switchROM"
               class="q-mt-md"
@@ -191,13 +191,11 @@ export default {
     const firmware = ref();
     const firmwareItems = ref([]);
     const firmwareInfo = ref([]);
-    const switchROMLabel = ref();
 
     const $q = useQuasar();
 
     watchEffect(() => {
       if (infoData.status === storeStatus.READY && infoData.data) {
-        switchROMLabel.value = `switch to ROM ${infoData.data.current_rom === 0 ? 1 : 0}`;
         firmwareInfo.value = [
           {
             label: "active ROM",
@@ -335,6 +333,9 @@ export default {
           body: JSON.stringify(firmware.value["files"]),
         },
       );
+      setTimeout(() => {
+        location.reload();
+      }, 5000);
     };
     const switchROM = () => {
       console.log("switching ROM, current ${infoData.data.current_rom}");
@@ -353,7 +354,6 @@ export default {
       firmwareInfo,
       dialogOpen,
       switchROM,
-      switchROMLabel,
     };
   },
 };
