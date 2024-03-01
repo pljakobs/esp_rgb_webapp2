@@ -43,7 +43,7 @@ fi
 #ssh devbox "cd devel/esp_rgbww_firmware/;make clean;make -j8 flash PART=spiffs0"
 if [ "$1" = "OTA" ]
 then
-	ssh devbox "cd devel/esp_rgbww_firmware/;make -j8;./deployOta"
+	ssh devbox "cd devel/esp_rgbww_firmware/;make -j8;./deployOta PART_LAYOUT=v1"
 else
-	ssh devbox "cd devel/esp_rgbww_firmware/;make -j8 flash"
+	ssh devbox "cd devel/esp_rgbww_firmware/;make -j8 flash PART_LAYOUT=v1"
 fi
