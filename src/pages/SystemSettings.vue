@@ -335,14 +335,14 @@ export default {
       );
       setTimeout(() => {
         location.reload();
-      }, 5000);
+      }, 10000);
     };
     const switchROM = () => {
       console.log("switching ROM, current ${infoData.data.current_rom}");
       systemCommand.switchRom();
       setTimeout(() => {
         location.reload();
-      }, 5000);
+      }, 7500);
     };
 
     return {
