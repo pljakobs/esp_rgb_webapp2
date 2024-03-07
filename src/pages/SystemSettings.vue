@@ -158,6 +158,20 @@
       </q-card-actions>
     </q-card>
   </q-dialog>
+  <q-dialog v-model="countdownDialog">
+    <q-card
+      class="shadow-4 col-auto fit q-gutter-md q-pa-md"
+      style="max-width: 250; max-height: 200px"
+    >
+      <q-card-section>
+        <div class="text-h6">Updating...</div>
+      </q-card-section>
+      <q-linear-progress :value="progress" buffer="0" color="primary" />
+      <q-card-section>
+        <div>Reloading in {{ Math.floor(progress * 30) }} seconds...</div>
+      </q-card-section>
+    </q-card>
+  </q-dialog>
 </template>
 
 <script>
@@ -185,6 +199,8 @@ export default {
 
     const otaUrl = ref(configData.data.ota.url);
     const dialogOpen = ref(false);
+    const countdownDialog = ref(false);
+    const progress = ref(0);
 
     const firmware = ref();
     const firmwareItems = ref([]);
@@ -344,9 +360,20 @@ export default {
           body: JSON.stringify(firmware.value["files"]),
         },
       );
-      setTimeout(() => {
-        location.reload();
-      }, 10000);
+      dialogOpen.value = false;
+      startCountdown();
+    };
+
+    const startCountdown = () => {
+      countdownDialog.value = true;
+      progress.value = 1;
+      const interval = setInterval(() => {
+        progress.value -= 1 / 30;
+        if (progress.value <= 0) {
+          clearInterval(interval);
+          location.reload();
+        }
+      }, 1000);
     };
     const switchROM = () => {
       console.log("switching ROM, current ${infoData.data.current_rom}");
@@ -364,6 +391,9 @@ export default {
       infoData,
       firmwareInfo,
       dialogOpen,
+      countdownDialog,
+      startCountdown,
+      progress,
       switchROM,
     };
   },
