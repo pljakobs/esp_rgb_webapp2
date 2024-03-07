@@ -172,8 +172,6 @@ import dataTable from "src/components/dataTable.vue";
 import MyCard from "src/components/myCard.vue";
 import systemCommand from "src/services/systemCommands";
 
-//import { useQuasar } from "quasar";
-
 export default {
   components: {
     dataTable,
@@ -192,7 +190,7 @@ export default {
     const firmwareItems = ref([]);
     const firmwareInfo = ref([]);
 
-    const $q = useQuasar();
+    //const $q = useQuasar();
 
     watchEffect(() => {
       if (infoData.status === storeStatus.READY && infoData.data) {
@@ -243,11 +241,14 @@ export default {
         console.log("response: ", response);
         if (!response.ok) {
           console.log("response was not ok");
+          this.$toast.error(`HTTP error! status: ${response.status}`);
+          /*
           $q.notify({
             color: "negative",
             message: `HTTP error! status: ${response.status}`,
             icon: "report_problem",
           });
+          */
           console.error(`HTTP error! status: ${response.status}`);
           throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -272,11 +273,16 @@ export default {
 
         if (!firmware.value) {
           console.error("No matching firmware found");
+          this.$toast.warning(
+            `no matching firmware found for your configuration / controller`,
+          );
+          /*
           $q.notify({
             color: "negative",
             message: `no matching firmware found for your configuration / controller`,
             icon: "report_problem",
           });
+          */
         } else {
           console.log("firmware", JSON.stringify(firmware.value));
           firmwareItems.value = [
@@ -295,11 +301,16 @@ export default {
         }
       } catch (error) {
         console.error("There was a problem with the fetch operation: ", error);
+        this.$toast.error(
+          `There was a problem with the fetch operation: ${error.message}`,
+        );
+        /*
         $q.notify({
           color: "negative",
           message: `There was a problem with the fetch operation: ${error.message}`,
           icon: "report_problem",
         });
+        */
       }
     };
 
