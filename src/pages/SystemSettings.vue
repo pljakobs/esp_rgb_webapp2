@@ -300,8 +300,8 @@ export default {
             },
           };
         }
-        if (firmware.value.files.rom) {
-          const baseUrl = otaUrl.value.replace("version.json", "");
+        //if firmware was found, check if the url is local and convert it to a full url
+        if (firmware.value.files.rom && !firmware.value.files.rom.url.startsWith('http://') && !firmware.value.files.rom.url.startsWith('https://')          const baseUrl = otaUrl.value.replace("version.json", "");
           const path = firmware.value.files.rom.url.replace("./", "");
 
           firmware.value.files.rom.url = new URL(path, baseUrl).href;
@@ -310,7 +310,8 @@ export default {
             firmware.value.files.rom.url,
           );
         }
-        if (firmware.value.files.spiffs) {
+        if (firmware.value.files.spiffs && !firmware.value.files.spiffs.url.startsWith('http://') && !firmware.value.files.spiffs.url.startsWith('https://') {
+) {
           const baseUrl = otaUrl.value.replace("version.json", "");
           const path = firmware.value.files.spiffs.url.replace("./", "");
 
