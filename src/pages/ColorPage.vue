@@ -186,7 +186,10 @@
     </MyCard>
   </div>
   <q-dialog v-model="showDialog">
-    <MyCard>
+    <q-card
+      class="shadow-4 col-auto fit q-gutter-md q-pa-md"
+      style="max-width: 400px; max-height: 300px"
+    >
       <q-card-section>
         <div class="text-h6">Save as {{ presetColorModel }} preset</div>
       </q-card-section>
@@ -200,7 +203,7 @@
           @click="() => savePreset(presetName, presetColorModel)"
         />
       </q-card-actions>
-    </MyCard>
+    </q-card>
   </q-dialog>
 </template>
 <script>
