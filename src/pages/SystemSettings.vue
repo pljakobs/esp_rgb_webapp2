@@ -166,7 +166,9 @@
       <q-card-section>
         <div class="text-h6">Updating...</div>
       </q-card-section>
-      <q-linear-progress :value="progress" buffer="0" color="primary" />
+      <q-card-section class="row items-center">
+        <q-linear-progress :value="progress" color="primary" />
+      </q-card-section>
       <q-card-section>
         <div>Reloading in {{ Math.floor(progress * 30) }} seconds...</div>
       </q-card-section>
@@ -185,6 +187,8 @@ import { storeStatus } from "src/stores/storeConstants";
 import dataTable from "src/components/dataTable.vue";
 import MyCard from "src/components/myCard.vue";
 import systemCommand from "src/services/systemCommands";
+
+import { useQuasar } from "quasar";
 
 export default {
   components: {
@@ -206,7 +210,7 @@ export default {
     const firmwareItems = ref([]);
     const firmwareInfo = ref([]);
 
-    //const $q = useQuasar();
+    const $q = useQuasar();
 
     watchEffect(() => {
       if (infoData.status === storeStatus.READY && infoData.data) {
@@ -257,14 +261,24 @@ export default {
         console.log("response: ", response);
         if (!response.ok) {
           console.log("response was not ok");
-          this.$toast.error(`HTTP error! status: ${response.status}`);
-          /*
-          $q.notify({
-            color: "negative",
-            message: `HTTP error! status: ${response.status}`,
-            icon: "report_problem",
-          });
-          */
+          function alert() {
+            $q.dialog({
+              title: "HTTP error",
+              message: `HTTP error! status: ${response.status}`,
+              color: "negative",
+              icon: "report_problem",
+            })
+              .onOk(() => {
+                console.log("ok");
+              })
+              .onCancel(() => {
+                console.log("cancel");
+              })
+              .onDismiss(() => {
+                console.log("dismiss");
+              });
+          }
+          alert();
           console.error(`HTTP error! status: ${response.status}`);
           throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -286,19 +300,47 @@ export default {
             },
           };
         }
+        if (firmware.value.files.rom) {
+          const baseUrl = otaUrl.value.replace("version.json", "");
+          const path = firmware.value.files.rom.url.replace("./", "");
+
+          firmware.value.files.rom.url = new URL(path, baseUrl).href;
+          console.log(
+            "firmware.value.files.rom.url",
+            firmware.value.files.rom.url,
+          );
+        }
+        if (firmware.value.files.spiffs) {
+          const baseUrl = otaUrl.value.replace("version.json", "");
+          const path = firmware.value.files.spiffs.url.replace("./", "");
+
+          firmware.value.files.spiffs.url = new URL(path, baseUrl).href;
+          console.log(
+            "firmware.value.files.spiffs.url",
+            firmware.value.files.spiffs.url,
+          );
+        }
 
         if (!firmware.value) {
           console.error("No matching firmware found");
-          this.$toast.warning(
-            `no matching firmware found for your configuration / controller`,
-          );
-          /*
-          $q.notify({
-            color: "negative",
-            message: `no matching firmware found for your configuration / controller`,
-            icon: "report_problem",
-          });
-          */
+          function alert() {
+            $q.dialog({
+              title: "Firmware missing",
+              message: `no matching firmware found for your configuration / controller`,
+              color: "negative",
+              icon: "report_problem",
+            })
+              .onOk(() => {
+                console.log("ok");
+              })
+              .onCancel(() => {
+                console.log("cancel");
+              })
+              .onDismiss(() => {
+                console.log("dismiss");
+              });
+          }
+          alert();
         } else {
           console.log("firmware", JSON.stringify(firmware.value));
           firmwareItems.value = [
@@ -317,16 +359,24 @@ export default {
         }
       } catch (error) {
         console.error("There was a problem with the fetch operation: ", error);
-        this.$toast.error(
-          `There was a problem with the fetch operation: ${error.message}`,
-        );
-        /*
-        $q.notify({
-          color: "negative",
-          message: `There was a problem with the fetch operation: ${error.message}`,
-          icon: "report_problem",
-        });
-        */
+        function alert() {
+          $q.dialog({
+            title: "error fetching firmware list",
+            message: `There was a problem with the fetch operation: ${error.message}`,
+            color: "negative",
+            icon: "report_problem",
+          })
+            .onOk(() => {
+              console.log("ok");
+            })
+            .onCancel(() => {
+              console.log("cancel");
+            })
+            .onDismiss(() => {
+              console.log("dismiss");
+            });
+        }
+        alert();
       }
     };
 
@@ -375,6 +425,7 @@ export default {
         }
       }, 1000);
     };
+
     const switchROM = () => {
       console.log("switching ROM, current ${infoData.data.current_rom}");
       systemCommand.switchRom();
