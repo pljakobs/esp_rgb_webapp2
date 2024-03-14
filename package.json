@@ -16,7 +16,7 @@
     "@quasar/extras": "^1.16.8",
     "axios": "^1.6.7",
     "pinia": "^2.1.7",
-    "quasar": "^2.14.7",
+    "quasar": "^2.15.1",
     "undici-types": "^6.9.0",
     "vue-color": "^2.8.1",
     "vue": "^3.4.21",
