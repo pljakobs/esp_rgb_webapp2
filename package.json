@@ -15,10 +15,10 @@
   "dependencies": {
     "@quasar/extras": "^1.16.9",
     "pinia": "^2.1.7",
-    "quasar": "^2.14.6",
-    "vue": "^3.4.18",
+    "quasar": "^2.15.1",
+    "vue": "^3.4.21",
     "vue-i18n": "^9.9.1",
-    "vue-router": "^4.2.5",
+    "vue-router": "^4.3.0",
     "vue-toastification": "^2.0.0-rc.5",
     "vue-toastify": "^2.0.0-alpha.2"
   },
