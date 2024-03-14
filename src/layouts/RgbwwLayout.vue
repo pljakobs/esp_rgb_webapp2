@@ -80,10 +80,7 @@
               <img src="icons/favicon.ico" />
             </q-avatar>
           </q-btn>
-          <q-toolbar-title>
-            Lightinator Mini on
-            {{ controllers.currentController["hostname"] }} websocket is
-          </q-toolbar-title>
+          <q-toolbar-title> Lightinator Mini </q-toolbar-title>
         </q-toolbar>
       </q-header>
       <q-drawer
@@ -222,10 +219,10 @@ export default defineComponent({
 
     const router = useRouter();
 
-    const isSmallScreen = ref(window.innerWidth <= 400); // Change 600 to your small breakpoint
+    const isSmallScreen = ref(window.innerWidth <= 1024); // Change 600 to your small breakpoint
 
     const updateIsSmallScreen = () => {
-      isSmallScreen.value = window.innerWidth <= 400; // Change 600 to your small breakpoint
+      isSmallScreen.value = window.innerWidth <= 1024; // Change 600 to your small breakpoint
     };
 
     const buttonColor = computed(() => {
