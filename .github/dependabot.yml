@@ -10,3 +10,4 @@ updates:
     schedule:
       interval: "weekly"
     rebase-strategy: "auto"
+    target-branch: "devel"
