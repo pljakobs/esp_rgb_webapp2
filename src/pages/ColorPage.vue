@@ -1,6 +1,6 @@
 <template>
   <div>
-    <q-card bordered class="my-card shadow-4 col-auto fit q-gutter-md">
+    <MyCard>
       <div class="row justify-center">
         <q-btn-group>
           <q-btn
@@ -28,7 +28,7 @@
       </div>
       <q-carousel v-model="carouselPage" animated>
         <q-carousel-slide name="hsv">
-          <q-card ref="colorPickerCard">
+          <MyCard>
             <q-scroll-area style="height: 100%; width: 100%">
               <q-card-section>
                 <div class="text-h6">
@@ -54,7 +54,7 @@
                 />
               </q-card-section>
             </q-scroll-area>
-          </q-card>
+          </MyCard>
         </q-carousel-slide>
 
         <q-carousel-slide name="raw">
@@ -104,7 +104,7 @@
         </q-carousel-slide>
 
         <q-carousel-slide name="presets">
-          <q-card class="full-height">
+          <MyCard>
             <q-scroll-area style="height: 100%; width: 100%">
               <q-list
                 separator
@@ -180,13 +180,16 @@
                 </q-item>
               </q-list>
             </q-scroll-area>
-          </q-card>
+          </MyCard>
         </q-carousel-slide>
       </q-carousel>
-    </q-card>
+    </MyCard>
   </div>
   <q-dialog v-model="showDialog">
-    <q-card style="height: 210px">
+    <q-card
+      class="shadow-4 col-auto fit q-gutter-md q-pa-md"
+      style="max-width: 400px; max-height: 300px"
+    >
       <q-card-section>
         <div class="text-h6">Save as {{ presetColorModel }} preset</div>
       </q-card-section>
@@ -210,11 +213,15 @@ import { storeStatus } from "src/stores/storeConstants";
 import { colorDataStore } from "src/stores/colorDataStore";
 import { presetDataStore } from "src/stores/presetDataStore";
 import ColorSlider from "src/components/ColorSlider.vue";
-import { boot } from "quasar/wrappers";
+import MyCard from "src/components/myCard.vue";
 
 const { rgbToHsv, hexToRgb, hsvToRgb, rgbToHex } = colors;
 
 export default {
+  components: {
+    ColorSlider,
+    MyCard,
+  },
   setup() {
     const isLoading = ref(true);
     const carouselPage = ref("hsv");

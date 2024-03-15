@@ -32,9 +32,19 @@ cat dist/spa/VERSION
 rsync -a dist/spa/ devbox:~/devel/esp_rgbww_firmware/spiffs
 if [ "$1" = "debug" -o -f dist/spa/assets/index.js.map.gz ]
 then 
+	echo "parameter: $1"
+	ls -l dist/spa/assets/index.js.map.gz
+	echo "creating debug stype partition layout"
 	ssh devbox "cd devel/esp_rgbww_firmware;cp hwconfig.debug hwconfig.hw"
 else
+	echo "creating production style partition layout"
 	ssh devbox "cd devel/esp_rgbww_firmware;cp hwconfig.prod hwconfig.hw"
 fi
-#ssh devbox "cd devel/esp_rgbww_firmware/;make clean;make partmap-buid;make -j8 flash PART=spiffs0"
-ssh devbox "cd devel/esp_rgbww_firmware/;make clean;make partmap-build;make -j8 flash"
+#ssh devbox "cd devel/esp_rgbww_firmware/;make clean;make -j8 flash PART=spiffs0"
+if [ "$1" = "OTA" ]
+then
+	ssh devbox "cd devel/esp_rgbww_firmware/;make -j8;./deployOta PART_LAYOUT=v1"
+else
+	ssh devbox "cd devel/esp_rgbww_firmware/;make -j8 flash PART_LAYOUT=v1"
+fi
+

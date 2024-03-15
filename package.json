@@ -13,22 +13,25 @@
     "build": "quasar build"
   },
   "dependencies": {
-    "vue-i18n": "^9.9.1",
-    "pinia": "^2.1.7",
     "@quasar/extras": "^1.16.9",
+    "pinia": "^2.1.7",
     "quasar": "^2.15.1",
     "vue": "^3.4.21",
-    "vue-router": "^4.3.0"
+    "vue-i18n": "^9.9.1",
+    "vue-router": "^4.3.0",
+    "vue-toastification": "^2.0.0-rc.5",
+    "vue-toastify": "^2.0.0-alpha.2"
   },
   "devDependencies": {
-    "eslint": "^8.57.0",
-    "eslint-plugin-vue": "^9.21.1",
-    "eslint-config-prettier": "^9.1.0",
-    "prettier": "^3.2.5",
+
     "@intlify/vite-plugin-vue-i18n": "^6.0.3",
     "@quasar/app-vite": "^1.7.3",
     "autoprefixer": "^10.4.17",
-    "postcss": "^8.4.35"
+    "eslint": "^8.56.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-vue": "^9.21.1",
+    "postcss": "^8.4.35",
+    "prettier": "^3.2.5"
   },
   "engines": {
     "node": "^18 || ^16 || ^14.19",

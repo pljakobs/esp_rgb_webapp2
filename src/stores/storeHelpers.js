@@ -21,8 +21,9 @@ export function safeStringify(obj) {
   });
 }
 
-export async function fetchApi(endpoint, retryCount = 5) {
+export async function fetchApi(endpoint, retryCount = 0) {
   const controllers = controllersStore();
+  const maxRetries = 10;
   let error = null;
   let jsonData = null;
 

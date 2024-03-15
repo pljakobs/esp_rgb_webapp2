@@ -1,5 +1,6 @@
 import { controllersStore } from "src/stores/controllersStore";
 import { storeStatus } from "src/stores/storeConstants";
+import initializeStores from "./initializeStores";
 
 const sysCmd = async (command, additionalBody = {}) => {
   const controllers = controllersStore();
@@ -14,7 +15,7 @@ const sysCmd = async (command, additionalBody = {}) => {
         "Content-Type": "application/json",
       },
       body: body,
-    }
+    },
   );
   if (response.ok) {
     console.log(`Command ${command} executed successfully`);
@@ -44,6 +45,7 @@ const systemCommand = {
   restartController: () => {
     console.log("this would restart the controller");
     sysCmd("restart");
+    setTimeout(initializeStores, 5000);
   },
 
   stopAP: () => {
@@ -56,6 +58,7 @@ const systemCommand = {
 
   forgetWifiAndRestart: () => {
     sysCmd("forget_wifi_and_restart");
+    setTimeout(initializeStores, 5000);
   },
 
   umountfs: () => {
@@ -68,6 +71,7 @@ const systemCommand = {
 
   switchRom: () => {
     sysCmd("switch_rom");
+    setTimeout(initializeStores, 5000);
   },
 
   debug: (enable) => {

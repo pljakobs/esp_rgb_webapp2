@@ -1,5 +1,5 @@
 <template>
-  <q-card bordered class="my-card shadow-4 col-auto fit q-gutter-md">
+  <MyCard>
     <q-card-section>
       <div class="text-h6">
         <q-icon name="tune" />
@@ -36,8 +36,8 @@
         "
       />
     </q-card-section>
-  </q-card>
-  <q-card bordered class="my-card shadow-4 col-auto fit q-gutter-md">
+  </MyCard>
+  <MyCard>
     <q-card-section>
       <div class="text-h6">
         <q-icon name="palette" />
@@ -72,11 +72,8 @@
         "
       />
     </q-card-section>
-  </q-card>
-  <q-card
-    bordered
-    class="my-card shadow-4 col-auto fit q-gutter-md"
-    v-if="colorModel === 'RGBWWCW'"
+  </MyCard>
+  <MyCard v-if="colorModel === 'RGBWWCW'"
     ><q-card-section>
       <div class="text-h6">
         <q-icon name="exposure" />
@@ -101,20 +98,25 @@
         "
       />
     </q-card-section>
-  </q-card>
+  </MyCard>
 </template>
 <script>
 import { ref, watch, computed, onMounted } from "vue";
 import { configDataStore } from "src/stores/configDataStore";
 import ColorSlider from "src/components/ColorSlider.vue";
+import MyCard from "src/components/myCard.vue";
 
 export default {
+  components: {
+    MyCard,
+    ColorSlider,
+  },
   setup() {
     const configData = configDataStore();
 
     const transitionOptions = ["Normal", "Spektrum", "Rainbow"];
     const transitionModel = ref(
-      transitionOptions[configData.data.color.hsv.model]
+      transitionOptions[configData.data.color.hsv.model],
     );
     console.log("transition mode:", configData.data.color.hsv.model);
 
@@ -240,13 +242,13 @@ export default {
 
     const updateTransitionMode = (newTransitionModel) => {
       console.log(
-        `from update trigger: \nTransition model changed to ${newTransitionModel}`
+        `from update trigger: \nTransition model changed to ${newTransitionModel}`,
       );
       console.log(
         "old transition model:",
         configData.data.color.hsv.model,
         " new transition model: ",
-        transitionOptions.indexOf(newTransitionModel)
+        transitionOptions.indexOf(newTransitionModel),
       );
       configData.data.color.hsv.model =
         transitionOptions.indexOf(newTransitionModel);
@@ -258,9 +260,9 @@ export default {
         // Triggered when selectedModel changes
         // You can update the colorSliders array here if needed
         console.log(
-          "Selected color model changed:, from ${oldColorModel} to ${newColorModel}"
+          "Selected color model changed:, from ${oldColorModel} to ${newColorModel}",
         );
-      }
+      },
     );
 
     return {
@@ -278,6 +280,7 @@ export default {
   },
   components: {
     ColorSlider,
+    MyCard,
   },
 };
 </script>

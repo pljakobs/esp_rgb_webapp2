@@ -1,6 +1,6 @@
 <template>
   <div>
-    <q-card bordered class="my-card shadow-4 col-auto fit q-gutter-md">
+    <MyCard>
       <q-card-section>
         <div class="text-h6">
           <q-icon name="wifi" />
@@ -47,8 +47,8 @@
           </div>
         </div>
       </q-card-section>
-    </q-card>
-    <q-card bordered class="my-card shadow-4 col-auto fit q-gutter-md">
+    </MyCard>
+    <MyCard>
       <q-card-section>
         <div class="text-h6">MQTT Settings</div>
         <div>
@@ -138,20 +138,23 @@
           left-label
         />
       </q-card-section>
-    </q-card>
+    </MyCard>
   </div>
 </template>
 
 <script>
-import dataTable from "components/dataTable.vue";
 import { ref, watchEffect, watch } from "vue";
 import { storeStatus } from "src/stores/storeConstants";
 import { infoDataStore } from "src/stores/infoDataStore";
 import { configDataStore } from "src/stores/configDataStore";
 
+import dataTable from "components/dataTable.vue";
+import MyCard from "components/myCard.vue";
+
 export default {
   components: {
     dataTable,
+    MyCard,
   },
   setup() {
     const configData = configDataStore();
@@ -166,7 +169,7 @@ export default {
       (newStatus, oldStatus) => {
         console.log("infoData.status changed from", oldStatus, "to", newStatus);
         console.log("infoData store content is now", infoData);
-      }
+      },
     );
     /**
      * Watches for changes in the infoData status and updates the connectionItems value accordingly.
