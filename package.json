@@ -34,7 +34,7 @@
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-vue": "^9.22.0",
     "material-icons": "^1.13.12",
-    "postcss": "^8.4.35",
+    "postcss": "^8.4.36",
     "prettier": "^3.2.5",
     "subset-iconfont": "^1.0.3"
   },
