@@ -1,39 +1,63 @@
 <template>
-  <div>
-    <div v-if="isLoading">
-      <q-spinner> </q-spinner>
-      -&gt;{{ isLoading }}&lt;-
-    </div>
-    <div v-else>
-      <q-toggle
-        v-model="sync.color_master_enabled.value"
-        label="Color Master"
-        left-label
+  <q-card>
+    <q-card-section>
+      <h2>Test Page</h2>
+    </q-card-section>
+    <q-card-actions>
+      <q-btn
+        color="secondary"
+        label="show dialog"
+        @click="doShowDialog"
+        style="margin-top: 16px"
       />
-      <q-toggle
-        v-model="network.connection.dhcp.value"
-        label="dhcp"
-        left-label
-      />
-    </div>
+    </q-card-actions>
+    <q-card-section>
+      {{ showDialog }}
+    </q-card-section>
+  </q-card>
+  <div v-if="showDialog === true">
+    <q-card> das wäre ihr Dialog gewesen </q-card>
   </div>
+  <q-dialog v-model="showDialog">
+    <q-card>
+      <div>
+        <q-card-section>
+          <h4>Connecting to network</h4>
+          {{ showDialog }}
+          <q-spinner />
+        </q-card-section>
+        <q-card-actions>
+          <q-btn
+            color="secondary"
+            label="hide dialog"
+            @click="doHideDialog"
+            style="margin-top: 16px"
+        /></q-card-actions>
+      </div>
+    </q-card>
+  </q-dialog>
 </template>
 
 <script>
-import { computed } from "vue";
-import { configDataStore, createComputedProperties } from "src/store";
+import { ref, watch } from "vue";
 
 export default {
   setup() {
-    const store = configDataStore();
-
-    const fields = ["sync.color_master_enabled", "network.connection.dhcp"];
-    const computedProperties = createComputedProperties(store, fields);
-
-    return {
-      ...computedProperties, // Spread the computed properties into the returned object
-      isLoading: computed(() => store.isLoading),
+    const showDialog = ref(false);
+    const doShowDialog = () => {
+      showDialog.value = true;
+      console.log("showDialog (showing)", showDialog.value);
     };
+
+    const doHideDialog = () => {
+      showDialog.value = false;
+      console.log("showDialog (hiding)", showDialog.value);
+    };
+
+    watch(showDialog, (newVal) => {
+      console.log("showDialog changed", newVal);
+    });
+    return { doShowDialog, doHideDialog, showDialog };
   },
 };
 </script>
