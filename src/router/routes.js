@@ -2,7 +2,8 @@ import ColorPage from "pages/ColorPage.vue";
 import ColorSettings from "pages/ColorSettings.vue";
 import NetworkSettings from "pages/NetworkSettings.vue";
 import SystemSettings from "pages/SystemSettings.vue";
-import testPage from "src/pages/testPage.vue";
+import NetworkInit from "pages/NetworkInit.vue";
+import testPage from "pages/testPage.vue";
 
 const routes = [
   {
@@ -27,6 +28,7 @@ const routes = [
         component: SystemSettings,
       },
       { path: "/test", component: testPage },
+      { path: "/networkinit", component: NetworkInit },
     ],
   },
   // Always leave this as last one,

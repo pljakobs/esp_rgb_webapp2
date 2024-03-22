@@ -9,6 +9,7 @@
 // https://v2.quasar.dev/quasar-cli-vite/quasar-config-js
 
 const { configure } = require("quasar/wrappers");
+const path = require("path");
 
 module.exports = configure(function (/* ctx */) {
   return {
@@ -27,7 +28,7 @@ module.exports = configure(function (/* ctx */) {
     // app boot file (/src/boot)
     // --> boot files are part of "main.js"
     // https://v2.quasar.dev/quasar-cli-vite/boot-files
-    boot: ["pinia", "axios"],
+    boot: ["i18n"],
 
     // https://v2.quasar.dev/quasar-cli-vite/quasar-config-js#css
     css: ["app.scss"],
@@ -52,6 +53,7 @@ module.exports = configure(function (/* ctx */) {
         browser: ["es2019", "edge88", "firefox78", "chrome87", "safari13.1"],
         node: "node16",
       },
+      useFilenameHashes: false /* disable cache busting */,
 
       vueRouterMode: "hash", // available values: 'hash', 'history'
       // vueRouterBase,
@@ -67,16 +69,29 @@ module.exports = configure(function (/* ctx */) {
       // ignorePublicFolder: true,
       minify: true,
       polyfillModulePreload: true,
+      sourcemap: false,
       // distDir
 
       // extendViteConf (viteConf) {},
       // viteVuePluginOptions: {},
 
-      // vitePlugins: [
-      //   [ 'package-name', { ..options.. } ]
-      // ]
-    },
+      vitePlugins: [
+        [
+          "@intlify/vite-plugin-vue-i18n",
+          {
+            // if you want to use Vue I18n Legacy API, you need to set `compositionOnly: false`
+            // compositionOnly: false,
 
+            // if you want to use named tokens in your Vue I18n messages, such as 'Hello {name}',
+            // you need to set `runtimeOnly: false`
+            // runtimeOnly: false,
+
+            // you need to set i18n resource including paths !
+            include: path.resolve(__dirname, "./src/i18n/**"),
+          },
+        ],
+      ],
+    },
     // Full list of options: https://v2.quasar.dev/quasar-cli-vite/quasar-config-js#devServer
     devServer: {
       // https: true
