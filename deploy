@@ -34,7 +34,7 @@ if [ "$1" = "debug" -o -f dist/spa/assets/index.js.map.gz ]
 then 
 	echo "parameter: $1"
 	ls -l dist/spa/assets/index.js.map.gz
-	echo "creating debug stype partition layout"
+	echo "creating debug type partition layout"
 	ssh devbox "cd devel/esp_rgbww_firmware;cp hwconfig.debug hwconfig.hw"
 else
 	echo "creating production style partition layout"
