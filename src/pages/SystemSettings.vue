@@ -62,17 +62,11 @@
       </q-card-section>
       <q-separator />
       <q-card-section>
-        <select v-model="currentPinConfigName">
-          <option
-            v-for="name in pinConfigNames"
-            :key="name"
-            :value="name"
-            @change="updatePinConfig"
-          >
+        <select v-model="currentPinConfigName" @change="updatePinConfig">
+          <option v-for="name in pinConfigNames" :key="name" :value="name">
             {{ name }}
           </option>
         </select>
-        {{ currentPinConfig }}
         <!-- Table displaying the current pin configuration -->
         <table v-if="currentPinConfigName">
           <tr>
@@ -465,9 +459,12 @@ export default {
           );
         }
       }
-      // filter only those pinConfigs that are supported by the current controller
-      // this is really mostly future-proofing for controllers with more than five channels
-
+      getPinConfigNames();
+      getCurrentPinConfig();
+    };
+    // filter only those pinConfigs that are supported by the current controller
+    // this is really mostly future-proofing for controllers with more than five channels
+    const getPinConfigNames = () => {
       pinConfigNames.value = pinConfigData.value.pinconfigs
         .filter((item) =>
           configData.data.general.colorModelsSupported
@@ -475,12 +472,22 @@ export default {
             .includes(item.model.toLowerCase()),
         )
         .map((item) => item.name);
-
-      currentPinConfigName.value = configData.data.general.currentPinConfigName;
+    };
+    const getCurrentPinConfig = () => {
+      if (!currentPinConfigName.value) {
+        currentPinConfigName.value =
+          configData.data.general.currentPinConfigName;
+      }
+      console.log(
+        "getCurrentPinConfig called for config name ",
+        currentPinConfigName.value,
+      );
 
       currentPinConfig.value = pinConfigData.value.pinconfigs.find(
         (config) => config.name === currentPinConfigName.value,
       );
+
+      console.log("updated pinConfig:", currentPinConfig.value);
       //currentPinConfig.value = currentPinConfig.value.channels;
     };
 
@@ -491,10 +498,10 @@ export default {
         "general.currentPinConfigName",
         currentPinConfigName,
       );
-      currentPinConfig.value = pinConfigData.value.pinconfigs.find(
-        (config) => config.name === currentPinConfigName.value,
-      );
+
+      getCurrentPinConfig();
     };
+
     watchEffect(() => {
       if (infoData.status === storeStatus.READY && infoData.data) {
         firmwareInfo.value = [
@@ -555,6 +562,7 @@ export default {
       pinConfigNames,
       currentPinConfig,
       currentPinConfigName,
+      updatePinConfig,
     };
   },
 };
