@@ -61,7 +61,30 @@
         </div>
       </q-card-section>
       <q-separator />
-      <q-card-section> todo: pin configuration goes here </q-card-section>
+      <q-card-section>
+        <select v-model="currentPinConfigName">
+          <option
+            v-for="name in pinConfigNames"
+            :key="name"
+            :value="name"
+            @change="updatePinConfig"
+          >
+            {{ name }}
+          </option>
+        </select>
+        {{ currentPinConfig }}
+        <!-- Table displaying the current pin configuration -->
+        <table v-if="currentPinConfigName">
+          <tr>
+            <th>Name</th>
+            <th>Pin</th>
+          </tr>
+          <tr v-for="channel in currentPinConfig.channels" :key="channel.name">
+            <td>{{ channel.name }}</td>
+            <td>{{ channel.pin }}</td>
+          </tr>
+        </table>
+      </q-card-section>
     </MyCard>
     <MyCard>
       <q-card-section>
@@ -177,7 +200,7 @@
 </template>
 
 <script>
-import { ref, watchEffect } from "vue";
+import { ref, watchEffect, computed } from "vue";
 
 import { configDataStore } from "src/stores/configDataStore";
 import { controllersStore } from "src/stores/controllersStore.js";
@@ -212,43 +235,15 @@ export default {
 
     const $q = useQuasar();
 
-    watchEffect(() => {
-      if (infoData.status === storeStatus.READY && infoData.data) {
-        firmwareInfo.value = [
-          {
-            label: "active ROM",
-            value: infoData.data.current_rom,
-          },
-          {
-            label: "Firmware",
-            value: infoData.data.git_version,
-          },
-          {
-            label: "Web interface",
-            value: infoData.data.webapp_version,
-          },
-          {
-            label: "SOC",
-            value: infoData.data.soc,
-          },
-          {
-            label: "Partition layout",
-            value: infoData.data.part_layout,
-          },
-          {
-            label: "RGBWW Version",
-            value: infoData.data.rgbww.version,
-          },
-          {
-            label: "Sming version",
-            value: infoData.data.sming,
-          },
-        ];
-      }
-    });
+    const pinConfigData = ref(null);
+    const pinConfigNames = ref([]);
+
+    const currentPinConfigName = ref();
+    const currentPinConfig = ref([]);
 
     console.log("otaUrl", otaUrl.value);
     console.log("infoData: ", infoData.data);
+
     const fetchFirmware = async () => {
       console.log("entering fetchFirmware");
       try {
@@ -397,8 +392,6 @@ export default {
       }
     };
 
-    //onMounted(checkFirmware);
-
     const updateController = async () => {
       console.log(
         "update controller:",
@@ -443,6 +436,109 @@ export default {
       }, 7500);
     };
 
+    const loadPinConfigData = async () => {
+      try {
+        console.log(
+          "loading pin config from ",
+          configData.data.general.pinConfigUrl,
+        );
+        const response = await fetch(configData.data.general.pinConfigUrl);
+        if (!response.ok) throw new Error("Error loading pin config");
+        const jsonData = await response.json();
+        pinConfigData.value = jsonData;
+      } catch (error) {
+        console.error(
+          "Error loading pin config from pinConfigUrl, trying fallback URL",
+          error,
+        );
+        try {
+          const fallbackUrl = `controller.currentController["ip-address"]/config/pinconfig.js`;
+          const response = await fetch(fallbackUrl);
+          if (!response.ok)
+            throw new Error("Error loading pin config from fallback URL");
+          const jsonData = await response.json();
+          pinConfigData.value = jsonData;
+        } catch (fallbackError) {
+          console.error(
+            "Error loading pin config from fallback URL",
+            fallbackError,
+          );
+        }
+      }
+      // filter only those pinConfigs that are supported by the current controller
+      // this is really mostly future-proofing for controllers with more than five channels
+
+      pinConfigNames.value = pinConfigData.value.pinconfigs
+        .filter((item) =>
+          configData.data.general.colorModelsSupported
+            .map((model) => model.toLowerCase())
+            .includes(item.model.toLowerCase()),
+        )
+        .map((item) => item.name);
+
+      currentPinConfigName.value = configData.data.general.currentPinConfigName;
+
+      currentPinConfig.value = pinConfigData.value.pinconfigs.find(
+        (config) => config.name === currentPinConfigName.value,
+      );
+      //currentPinConfig.value = currentPinConfig.value.channels;
+    };
+
+    const updatePinConfig = () => {
+      console.log("updatePinConfig called");
+      console.log("updating pin config");
+      configData.updateData(
+        "general.currentPinConfigName",
+        currentPinConfigName,
+      );
+      currentPinConfig.value = pinConfigData.value.pinconfigs.find(
+        (config) => config.name === currentPinConfigName.value,
+      );
+    };
+    watchEffect(() => {
+      if (infoData.status === storeStatus.READY && infoData.data) {
+        firmwareInfo.value = [
+          {
+            label: "active ROM",
+            value: infoData.data.current_rom,
+          },
+          {
+            label: "Firmware",
+            value: infoData.data.git_version,
+          },
+          {
+            label: "Web interface",
+            value: infoData.data.webapp_version,
+          },
+          {
+            label: "SOC",
+            value: infoData.data.soc,
+          },
+          {
+            label: "Partition layout",
+            value: infoData.data.part_layout,
+          },
+          {
+            label: "RGBWW Version",
+            value: infoData.data.rgbww.version,
+          },
+          {
+            label: "Sming version",
+            value: infoData.data.sming,
+          },
+        ];
+      }
+    });
+
+    watchEffect(() => {
+      if (
+        configData.status === storeStatus.READY &&
+        controllers.status === storeStatus.READY
+      ) {
+        loadPinConfigData();
+      }
+    });
+
     return {
       otaUrl,
       updateController,
@@ -455,6 +551,10 @@ export default {
       startCountdown,
       progress,
       switchROM,
+      pinConfigData,
+      pinConfigNames,
+      currentPinConfig,
+      currentPinConfigName,
     };
   },
 };
