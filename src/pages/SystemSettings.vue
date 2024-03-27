@@ -68,16 +68,7 @@
           </option>
         </select>
         <!-- Table displaying the current pin configuration -->
-        <table v-if="currentPinConfigName">
-          <tr>
-            <th>Name</th>
-            <th>Pin</th>
-          </tr>
-          <tr v-for="channel in currentPinConfig.channels" :key="channel.name">
-            <td>{{ channel.name }}</td>
-            <td>{{ channel.pin }}</td>
-          </tr>
-        </table>
+        <dataTable :Items="formattedPinConfigData" />
       </q-card-section>
     </MyCard>
     <MyCard>
@@ -212,7 +203,24 @@ export default {
     dataTable,
     MyCard,
   },
+  computed: {
+    formattedPinConfigData() {
+      if (!this.currentPinConfig) {
+        return [];
+      }
+      if (
+        !this.currentPinConfig.channels ||
+        this.currentPinConfig.channels.length === 0
+      ) {
+        return [];
+      }
 
+      return this.currentPinConfig.channels.map((config) => ({
+        label: config.name,
+        value: config.pin,
+      }));
+    },
+  },
   setup() {
     const controllers = controllersStore();
     const configData = configDataStore();
