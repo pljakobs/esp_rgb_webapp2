@@ -21,17 +21,6 @@
         { "name": "warmwhite", "pin": "15" },
         { "name": "coldwhite", "pin": "12" }
       ]
-    },
-    {
-      "name": "test",
-      "model": "rgbww",
-      "channels": [
-        { "name": "red", "pin": "1" },
-        { "name": "green", "pin": "2" },
-        { "name": "blue", "pin": "3" },
-        { "name": "warmwhite", "pin": "4" },
-        { "name": "coldwhite", "pin": "5" }
-      ]
     }
   ]
 }
