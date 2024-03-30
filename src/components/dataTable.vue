@@ -27,8 +27,6 @@ export default {
 .table-container {
   padding-left: 5%;
   padding-right: 5%;
-  border: 1px solid #000;
-  border-radius: 20px;
 }
 .field-label {
   width: 120px;
@@ -47,11 +45,11 @@ export default {
   padding-left: 10%;
 }
 
-.table-item:nth-child(odd) {
+.table-item:nth-child(even) {
   background-color: #e8f4f8; /* Color odd lines light blue */
 }
 
-.table-item:nth-child(even) {
+.table-item:nth-child(odd) {
   background-color: transparent; /* Color even lines transparent */
 }
 </style>

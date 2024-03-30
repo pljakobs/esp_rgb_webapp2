@@ -112,7 +112,7 @@
             v-bind="link"
           />
         </q-list>
-        working version:55
+        Version:
       </q-drawer>
       <q-btn
         round

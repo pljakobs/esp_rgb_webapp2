@@ -21,15 +21,6 @@ export const configDataStore = defineStore({
           console.log("config data fetched: ", JSON.stringify(jsonData));
           this.data = jsonData;
           // add the pinConfigUrl - that will be provided by the api from the controller later
-          this.data.general.pinConfigUrl =
-            "https://raw.githubusercontent.com/pljakobs/esp_rgb_webapp2/devel/public/config/pinconfig.json";
-          this.data.general.colorModelsSupported = [
-            "RGB",
-            "RGBW",
-            "RGBWW",
-            "RAW",
-          ];
-          this.data.general.currentPinConfigName = "mrpj";
           this.status = storeStatus.READY;
           console.log("new configData(this): ", this);
         }
