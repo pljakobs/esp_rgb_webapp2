@@ -17,7 +17,7 @@
     "pinia": "^2.1.7",
     "quasar": "^2.15.2",
     "vue": "^3.4.21",
-    "vue-i18n": "^9.9.1",
+    "vue-i18n": "^9.12.1",
     "vue-router": "^4.3.0",
     "vue-toastification": "^2.0.0-rc.5",
     "vue-toastify": "^2.0.0-alpha.2"
