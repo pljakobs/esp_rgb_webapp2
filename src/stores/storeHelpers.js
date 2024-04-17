@@ -34,16 +34,18 @@ export async function fetchApi(endpoint, retryCount = 0) {
     );
     if (response.status === 429 && retryCount < maxRetries) {
       // Too many requests, retry after a delay
+      console.log("429 error", response.status, response.statusText);
       console.log(
         `Request limit reached, retrying after ${
           retryDelay * 2 ** retryCount
         }ms...`,
       );
-      setTimeout(
-        () => fetchApi(endpoint, retryCount + 1),
-        retryDelay * 2 ** retryCount,
+      return new Promise((resolve) =>
+        setTimeout(
+          () => resolve(fetchApi(endpoint, retryCount + 1)),
+          retryDelay * 2 ** retryCount,
+        ),
       );
-      return;
     }
     jsonData = await response.json();
     console.log(endpoint, " data fetched: ", JSON.stringify(jsonData));
@@ -51,9 +53,11 @@ export async function fetchApi(endpoint, retryCount = 0) {
     console.error("Error fetching color data:", err);
     error = err;
     if (retryCount < maxRetries) {
-      setTimeout(
-        () => fetchApi(endpoint, retryCount + 1),
-        retryDelay * 2 ** retryCount,
+      return new Promise((resolve) =>
+        setTimeout(
+          () => resolve(fetchApi(endpoint, retryCount + 1)),
+          retryDelay * 2 ** retryCount,
+        ),
       );
     }
   }
