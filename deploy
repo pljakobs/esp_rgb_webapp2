@@ -19,6 +19,7 @@ else
 fi
 cd $dir
 pwd
+npm run minify-fonts
 ./minifyFontnames.sh
 pwd
 ./gzipSPA.sh
