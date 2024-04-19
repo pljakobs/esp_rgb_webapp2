@@ -6,11 +6,14 @@
   "author": "Peter Jakobs <pjakobs@mobileme.de>",
   "private": true,
   "scripts": {
+    "setup": "python3 -m venv venv && source venv/bin/activate && pip install -r requirements.txt",
     "lint": "eslint --ext .js,.vue ./",
     "format": "prettier --write \"**/*.{js,vue,scss,html,md,json}\" --ignore-path .gitignore",
     "test": "echo \"No test specified\" && exit 0",
     "dev": "quasar dev",
-    "build": "quasar build"
+    "minify-fonts": "source venv/bin/activate && python3 minify_fonts.py",
+    "build": "quasar build ",
+    "postbuild": "npm run minify-fonts"
   },
   "dependencies": {
     "@quasar/extras": "^1.16.11",

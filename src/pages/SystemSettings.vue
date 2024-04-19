@@ -62,11 +62,14 @@
       </q-card-section>
       <q-separator />
       <q-card-section>
-        <select v-model="currentPinConfigName" @change="updatePinConfig">
-          <option v-for="name in pinConfigNames" :key="name" :value="name">
-            {{ name }}
-          </option>
-        </select>
+        <q-select
+          class="custom-select"
+          v-model="currentPinConfigName"
+          :options="pinConfigNames"
+          label="Pin configuration"
+          emit-value
+          map-options
+        />
         <!-- Table displaying the current pin configuration -->
         <dataTable :Items="formattedPinConfigData" />
       </q-card-section>
@@ -185,7 +188,7 @@
 </template>
 
 <script>
-import { ref, watchEffect, computed } from "vue";
+import { ref, watchEffect, watch } from "vue";
 
 import { configDataStore } from "src/stores/configDataStore";
 import { controllersStore } from "src/stores/controllersStore.js";
@@ -442,9 +445,9 @@ export default {
       try {
         console.log(
           "loading pin config from ",
-          configData.data.general.pinConfigUrl,
+          configData.data.general.pin_config_url,
         );
-        const response = await fetch(configData.data.general.pinConfigUrl);
+        const response = await fetch(configData.data.general.pin_config_url);
         if (!response.ok) throw new Error("Error loading pin config");
         const jsonData = await response.json();
         pinConfigData.value = jsonData;
@@ -454,7 +457,7 @@ export default {
           error,
         );
         try {
-          const fallbackUrl = `controller.currentController["ip-address"]/config/pinconfig.js`;
+          const fallbackUrl = `controller.currentController["ip-address"]/config/pinconfig.json`;
           const response = await fetch(fallbackUrl);
           if (!response.ok)
             throw new Error("Error loading pin config from fallback URL");
@@ -475,7 +478,7 @@ export default {
     const getPinConfigNames = () => {
       pinConfigNames.value = pinConfigData.value.pinconfigs
         .filter((item) =>
-          configData.data.general.colorModelsSupported
+          configData.data.general.supported_color_models
             .map((model) => model.toLowerCase())
             .includes(item.model.toLowerCase()),
         )
@@ -484,7 +487,7 @@ export default {
     const getCurrentPinConfig = () => {
       if (!currentPinConfigName.value) {
         currentPinConfigName.value =
-          configData.data.general.currentPinConfigName;
+          configData.data.general.current_pin_config_name;
       }
       console.log(
         "getCurrentPinConfig called for config name ",
@@ -499,16 +502,37 @@ export default {
       //currentPinConfig.value = currentPinConfig.value.channels;
     };
 
-    const updatePinConfig = () => {
+    const updatePinConfig = (newPinConfigName) => {
+      currentPinConfigName.value = newPinConfigName;
       console.log("updatePinConfig called");
       console.log("updating pin config");
       configData.updateData(
-        "general.currentPinConfigName",
+        "general.current_pin_config_name",
         currentPinConfigName,
+        false,
       );
 
       getCurrentPinConfig();
+
+      if (currentPinConfig.value.model === "rgbww") {
+        configData.updateData(
+          "general.channels",
+          currentPinConfig.value.channels,
+          false,
+        );
+        const pinConfigString = currentPinConfig.value.channels
+          .map((channel) => channel.pin)
+          .join(",");
+
+        console.log("updated pin config string:", pinConfigString);
+        configData.updateData("general.pin_config", pinConfigString, true);
+      }
     };
+
+    watch(currentPinConfigName, (newVal, oldVal) => {
+      console.log("currentPinConfigName changed", newVal);
+      updatePinConfig(newVal);
+    });
 
     watchEffect(() => {
       if (infoData.status === storeStatus.READY && infoData.data) {
@@ -562,7 +586,6 @@ export default {
       infoData,
       firmwareInfo,
       dialogOpen,
-      countdownDialog,
       startCountdown,
       progress,
       switchROM,
@@ -609,5 +632,9 @@ export default {
   align-items: center;
   text-align: center;
   margin-top: 10px;
+}
+.custom-select {
+  width: 30%; /* Set the width to 30% */
+  min-width: 200px; /* Set the minimum width to 80px */
 }
 </style>
