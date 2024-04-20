@@ -2,7 +2,7 @@
   <MyCard>
     <q-card-section>
       <div class="text-h6">
-        <q-icon name="tune" />
+        <q-icon :name="outlinedTune" />
         HSV
       </div>
     </q-card-section>
@@ -40,7 +40,7 @@
   <MyCard>
     <q-card-section>
       <div class="text-h6">
-        <q-icon name="palette" />
+        <q-icon :name="outlinedPalette" />
         Color
       </div>
     </q-card-section>
@@ -76,7 +76,7 @@
   <MyCard v-if="colorModel === 'RGBWWCW'"
     ><q-card-section>
       <div class="text-h6">
-        <q-icon name="exposure" />
+        <q-icon :name="outlinedExposure" />
         White balance
       </div>
     </q-card-section>
@@ -105,6 +105,11 @@ import { ref, watch, computed, onMounted } from "vue";
 import { configDataStore } from "src/stores/configDataStore";
 import ColorSlider from "src/components/ColorSlider.vue";
 import MyCard from "src/components/myCard.vue";
+import {
+  outlinedPalette,
+  outlinedExposure,
+  outlinedTune,
+} from "@quasar/extras/material-icons-outlined";
 
 export default {
   components: {
@@ -276,6 +281,9 @@ export default {
       updateColorSlider,
       updateTransitionMode,
       configData,
+      outlinedPalette,
+      outlinedExposure,
+      outlinedTune,
     };
   },
   components: {
