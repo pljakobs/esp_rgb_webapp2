@@ -25,7 +25,7 @@
                 {{ props.opt.signal }}
               </q-item-section>
               <q-item-section style="flex: 1">
-                <q-icon :name="getEncryptionIcon(props.opt.encryption)" />
+                <q-icon :name="getSignalIcon(signalStrength, encryption)" />
               </q-item-section>
             </q-item>
           </template>
@@ -177,6 +177,18 @@ import { storeStatus } from "src/stores/storeConstants";
 import systemCommand from "src/services/systemCommands.js";
 
 import MyCard from "src/components/myCard.vue";
+import {
+  outlinedWifi,
+  outlinedNetworkWifi1Bar,
+  outlinedNetworkWifi2Bar,
+  outlinedNetworkWifi3Bar,
+  outlinedNetworkWifi4Bar,
+  outlinedWifiLocked,
+  outlinedNetworkWifi1BarLocked,
+  outlinedNetworkWifi2BarLocked,
+  outlinedNetworkWifi3BarLocked,
+  outlinedNetworkWifi4BarLocked,
+} from "@quasar/extras/material-icons-outlined";
 
 export default {
   components: {
@@ -419,35 +431,33 @@ export default {
       updateWifiData();
     });
 
-    const getSignalIcon = (signalStrength) => {
+    const getSignalIcon = (signalStrength, encryption) => {
       console.log(` strength: ${signalStrength}`);
-      let icon;
-      if (signalStrength >= -50) {
-        icon = "signal_wifi_4_bar";
-      } else if (signalStrength >= -65) {
-        icon = "signal_wifi_3_bar";
-      } else if (signalStrength >= -80) {
-        icon = "signal_wifi_2_bar";
-      } else if (signalStrength >= -90) {
-        icon = "signal_wifi_1_bar";
-      } else {
-        icon = "signal_wifi_0_bar";
-      }
-      // Add '_round' to the icon name to use the filled version
-      icon += "_round";
-      console.log(`Icon: ${icon}`);
-      return icon;
-    };
-    const getEncryptionIcon = (encryption) => {
       switch (encryption) {
         case "WPA":
         case "WPA2_PSK":
-        case "WPA_WPA2_PSK":
-          return "lock";
-        case "WEP":
-          return "lock_outline";
-        default:
-          return "lock_open";
+        case "WPA_WPA2_PSK": {
+          if (signalStrength >= -50) {
+            return outlinedNetworkWifi4BarLocked;
+          } else if (signalStrength >= -65) {
+            return outlinedNetworkWifi3BarLocked;
+          } else if (signalStrength >= -80) {
+            return outlinedNetworkWifi2BarLocked;
+          } else {
+            return outlinedNetworkWifi1BarLocked;
+          }
+        }
+        default: {
+          if (signalStrength >= -50) {
+            return outlinedNetworkWifi4Bar;
+          } else if (signalStrength >= -65) {
+            return outlinedNetworkWifi3Bar;
+          } else if (signalStrength >= -80) {
+            return outlinedNetworkWifi2Bar;
+          } else {
+            return outlinedNetworkWifi1Bar;
+          }
+        }
       }
     };
     /**
@@ -504,7 +514,6 @@ export default {
       networks,
       password,
       ssid,
-      getEncryptionIcon,
       getSignalIcon,
       restartController,
       forgetWifi,
@@ -514,6 +523,16 @@ export default {
       hideDialog,
       countdown,
       log,
+      outlinedWifi,
+      outlinedNetworkWifi1Bar,
+      outlinedNetworkWifi2Bar,
+      outlinedNetworkWifi3Bar,
+      outlinedNetworkWifi4Bar,
+      outlinedWifiLocked,
+      outlinedNetworkWifi1BarLocked,
+      outlinedNetworkWifi2BarLocked,
+      outlinedNetworkWifi3BarLocked,
+      outlinedNetworkWifi4BarLocked,
     };
   },
 };
