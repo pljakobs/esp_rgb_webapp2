@@ -36,12 +36,12 @@ export const configDataStore = defineStore({
       console.log("updating config data: ", this.data);
       const controllers = controllersStore();
 
-      // Make a PUT request to the API endpoint
       const fieldParts = field.split(".");
       let currentObject = this.data;
       for (let i = 0; i < fieldParts.length - 1; i++) {
         currentObject = currentObject[fieldParts[i]];
       }
+
       currentObject[fieldParts[fieldParts.length - 1]] = value;
       if (update) {
         this.updateApi();
@@ -67,6 +67,6 @@ export const configDataStore = defineStore({
         .catch((error) => {
           console.error("There was a problem with the fetch operation:", error);
         });
-    }, // This was missing
+    },
   },
 });

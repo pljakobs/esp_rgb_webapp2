@@ -227,6 +227,10 @@ import {
   outlinedSettings,
   outlinedWifi,
   outlinedMemory,
+  outlinedCheck,
+  outlinedHelp,
+  outlinedClose,
+  outlinedInfo,
 } from "@quasar/extras/material-icons-outlined";
 export default defineComponent({
   name: "MainLayout",
@@ -269,13 +273,13 @@ export default defineComponent({
     const buttonIcon = computed(() => {
       switch (ws.status.value) {
         case wsStatus.CONNECTED:
-          return "check";
+          return outlinedCheck;
         case wsStatus.DISCONNECTED:
-          return "close";
+          return outlinedClose;
         case wsStatus.CONNECTING:
-          return "help";
+          return outlinedHelp;
         default:
-          return "info";
+          return outlinedInfo;
       }
     });
 
@@ -383,6 +387,10 @@ export default defineComponent({
       outlinedMemory,
       outlinedSettings,
       outlinedWifi,
+      outlinedCheck,
+      outlinedHelp,
+      outlinedClose,
+      outlinedInfo,
     };
   },
 });
