@@ -1,2 +1,3 @@
 fontTools
+requests
 brotli

@@ -12,7 +12,7 @@ sed -e "s/Version:.*$/Version:${version}/" <src/layouts/RgbwwLayout.vue >src/lay
 if [ "$1" = "debug" ]
 then
 	echo "deploying debug"
-	npx quasar build -d 
+	npx quasar build -d
 else
 	echo "deploying prod"
 	npx quasar build
@@ -29,12 +29,13 @@ then
 fi
 echo $version >dist/spa/VERSION
 echo "VUE_APP_BUILD_NUMBER=$version" >.env
-echo "deploying " 
+echo "deploying "
 cat dist/spa/VERSION
-ssh devbox "rm -rf ~/devel/esp_rgbww_firmware/spiffs/*"
-rsync -a dist/spa/ devbox:~/devel/esp_rgbww_firmware/spiffs
+ssh devbox "if [ -d ~/devel/esp_rgbww_firmware/webapp ]; then mkdir ~/devel/esp_rgbww_firmware/webapp;fi"
+ssh devbox "rm -rf ~/devel/esp_rgbww_firmware/webapp/*"
+rsync -a dist/spa/ devbox:~/devel/esp_rgbww_firmware/webapp
 if [ "$1" = "debug" -o -f dist/spa/assets/index.js.map.gz ]
-then 
+then
 	echo "parameter: $1"
 	ls -l dist/spa/assets/index.js.map.gz
 	echo "creating debug stype partition layout"
