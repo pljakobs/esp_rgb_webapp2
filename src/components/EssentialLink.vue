@@ -32,7 +32,7 @@ export default defineComponent({
       default: "#",
     },
 
-    icon: {
+    :icon: {
       type: String,
       default: "",
     },

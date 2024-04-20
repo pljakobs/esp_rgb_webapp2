@@ -3,43 +3,15 @@
     <q-card-section>
       <h2>Test Page</h2>
     </q-card-section>
-    <q-card-actions>
-      <q-btn
-        color="secondary"
-        label="show dialog"
-        @click="doShowDialog"
-        style="margin-top: 16px"
-      />
-    </q-card-actions>
     <q-card-section>
-      {{ showDialog }}
+      <h2><q-icon :name="outlinedHome" /></h2>
     </q-card-section>
   </q-card>
-  <div v-if="showDialog === true">
-    <q-card> das wäre ihr Dialog gewesen </q-card>
-  </div>
-  <q-dialog v-model="showDialog">
-    <q-card>
-      <div>
-        <q-card-section>
-          <h4>Connecting to network</h4>
-          {{ showDialog }}
-          <q-spinner />
-        </q-card-section>
-        <q-card-actions>
-          <q-btn
-            color="secondary"
-            label="hide dialog"
-            @click="doHideDialog"
-            style="margin-top: 16px"
-        /></q-card-actions>
-      </div>
-    </q-card>
-  </q-dialog>
 </template>
 
 <script>
 import { ref, watch } from "vue";
+import { outlinedHome } from "@quasar/extras/material-icons-outlined";
 
 export default {
   setup() {
@@ -57,7 +29,7 @@ export default {
     watch(showDialog, (newVal) => {
       console.log("showDialog changed", newVal);
     });
-    return { doShowDialog, doHideDialog, showDialog };
+    return { outlinedHome, doShowDialog, doHideDialog, showDialog };
   },
 };
 </script>
