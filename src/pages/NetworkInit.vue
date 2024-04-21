@@ -21,11 +21,11 @@
               <q-item-section style="flex: 7">
                 {{ props.opt.ssid }}
               </q-item-section>
-              <q-item-section style="flex: 2">
-                {{ props.opt.signal }}
-              </q-item-section>
               <q-item-section style="flex: 1">
-                <q-icon :name="getSignalIcon(signalStrength, encryption)" />
+                <q-icon
+                  class="network-icon-class"
+                  :name="getSignalIcon(props.opt.signal, props.opt.encryption)"
+                />
               </q-item-section>
             </q-item>
           </template>
@@ -177,18 +177,6 @@ import { storeStatus } from "src/stores/storeConstants";
 import systemCommand from "src/services/systemCommands.js";
 
 import MyCard from "src/components/myCard.vue";
-import {
-  outlinedWifi,
-  outlinedNetworkWifi1Bar,
-  outlinedNetworkWifi2Bar,
-  outlinedNetworkWifi3Bar,
-  outlinedNetworkWifi4Bar,
-  outlinedWifiLocked,
-  outlinedNetworkWifi1BarLocked,
-  outlinedNetworkWifi2BarLocked,
-  outlinedNetworkWifi3BarLocked,
-  outlinedNetworkWifi4BarLocked,
-} from "@quasar/extras/material-icons-outlined";
 
 export default {
   components: {
@@ -432,30 +420,33 @@ export default {
     });
 
     const getSignalIcon = (signalStrength, encryption) => {
-      console.log(` strength: ${signalStrength}`);
       switch (encryption) {
         case "WPA":
         case "WPA2_PSK":
         case "WPA_WPA2_PSK": {
           if (signalStrength >= -50) {
-            return outlinedNetworkWifi4BarLocked;
+            return "img:icons/network_wifi_locked_FILL0_wght400_GRAD0_opsz24.svg";
           } else if (signalStrength >= -65) {
-            return outlinedNetworkWifi3BarLocked;
-          } else if (signalStrength >= -80) {
-            return outlinedNetworkWifi2BarLocked;
+            return "img:icons/network_wifi_3_bar_locked_FILL0_wght400_GRAD0_opsz24.svg";
+          } else if (signalStrength >= -750) {
+            return "img:icons/network_wifi_2_bar_locked_FILL0_wght400_GRAD0_opsz24.svg";
+          } else if (signalStrength >= -90) {
+            return "img:icons/network_wifi_1_bar_locked_FILL0_wght400_GRAD0_opsz24.svg";
           } else {
-            return outlinedNetworkWifi1BarLocked;
+            return "img:icons/signal_wifi_statusbar_null_FILL0_wght400_GRAD0_opsz24.svg";
           }
         }
         default: {
           if (signalStrength >= -50) {
-            return outlinedNetworkWifi4Bar;
+            return "img:icons/network_wifi_FILL0_wght400_GRAD0_opsz24.svg";
           } else if (signalStrength >= -65) {
-            return outlinedNetworkWifi3Bar;
-          } else if (signalStrength >= -80) {
-            return outlinedNetworkWifi2Bar;
+            return "img:icons/network_wifi_3_bar_FILL0_wght400_GRAD0_opsz24.svg";
+          } else if (signalStrength >= -750) {
+            return "img:icons/network_wifi_2_bar_FILL0_wght400_GRAD0_opsz24.svg";
+          } else if (signalStrength >= -90) {
+            return "img:icons/network_wifi_1_bar_FILL0_wght400_GRAD0_opsz24.svg";
           } else {
-            return outlinedNetworkWifi1Bar;
+            return "img:icons/signal_wifi_statusbar_null_FILL0_wght400_GRAD0_opsz24.svg";
           }
         }
       }
@@ -523,16 +514,6 @@ export default {
       hideDialog,
       countdown,
       log,
-      outlinedWifi,
-      outlinedNetworkWifi1Bar,
-      outlinedNetworkWifi2Bar,
-      outlinedNetworkWifi3Bar,
-      outlinedNetworkWifi4Bar,
-      outlinedWifiLocked,
-      outlinedNetworkWifi1BarLocked,
-      outlinedNetworkWifi2BarLocked,
-      outlinedNetworkWifi3BarLocked,
-      outlinedNetworkWifi4BarLocked,
     };
   },
 };
@@ -548,7 +529,10 @@ export default {
   backface-visibility: hidden;
   perspective: 1000px;
 }
-
+.network-icon-class {
+  width: 1.5em;
+  height: 1.5em;
+}
 @keyframes shake {
   10%,
   90% {
