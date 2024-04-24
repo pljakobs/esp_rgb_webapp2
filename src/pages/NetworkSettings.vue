@@ -3,7 +3,7 @@
     <MyCard>
       <q-card-section>
         <div class="text-h6">
-          <q-icon name="wifi" />
+          <q-icon :name="outlinedWifi" />
           Connection
         </div>
       </q-card-section>
@@ -12,7 +12,10 @@
         <dataTable :Items="connectionItems" />
       </q-card-section>
       <q-card-section>
-        <div class="text-h6">IP Settings</div>
+        <div class="text-h6">
+          <q-icon :name="outlinedSettings" />
+          IP Settings
+        </div>
         <div>
           IP settings require a restart to take effect. If changed, controller
           will restart automatically.
@@ -50,7 +53,10 @@
     </MyCard>
     <MyCard>
       <q-card-section>
-        <div class="text-h6">MQTT Settings</div>
+        <div class="text-h6">
+          <q-icon :name="outlinedHub" />
+          MQTT Settings
+        </div>
         <div>
           MQTT setings require a restart to take effect. If changed, controller
           will restart automatically
@@ -147,7 +153,11 @@ import { ref, watchEffect, watch } from "vue";
 import { storeStatus } from "src/stores/storeConstants";
 import { infoDataStore } from "src/stores/infoDataStore";
 import { configDataStore } from "src/stores/configDataStore";
-
+import {
+  outlinedWifi,
+  outlinedHub,
+  outlinedSettings,
+} from "@quasar/extras/material-icons-outlined";
 import dataTable from "components/dataTable.vue";
 import MyCard from "components/myCard.vue";
 
@@ -208,6 +218,9 @@ export default {
       infoData,
       configData,
       storeStatus,
+      outlinedWifi,
+      outlinedHub,
+      outlinedSettings,
     };
   },
 };
