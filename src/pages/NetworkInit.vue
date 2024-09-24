@@ -21,11 +21,11 @@
               <q-item-section style="flex: 7">
                 {{ props.opt.ssid }}
               </q-item-section>
-              <q-item-section style="flex: 2">
-                {{ props.opt.signal }}
-              </q-item-section>
               <q-item-section style="flex: 1">
-                <q-icon :name="getEncryptionIcon(props.opt.encryption)" />
+                <q-icon
+                  class="network-icon-class"
+                  :name="getSignalIcon(props.opt.signal, props.opt.encryption)"
+                />
               </q-item-section>
             </q-item>
           </template>
@@ -70,20 +70,22 @@
             <h4>Connection Established</h4>
             <p>Connected to: {{ wifiData.ssid }}</p>
             <table>
-              <tr>
-                <td>Address</td>
-                <td>
-                  <a :href="'http://' + wifiData.ip">{{ wifiData.ip }}</a>
-                </td>
-              </tr>
-              <tr>
-                <td>Netmask</td>
-                <td>{{ wifiData.netmask }}</td>
-              </tr>
-              <tr>
-                <td>Gateway</td>
-                <td>{{ wifiData.gateway }}</td>
-              </tr>
+              <tbody>
+                <tr>
+                  <td>Address</td>
+                  <td>
+                    <a :href="'http://' + wifiData.ip">{{ wifiData.ip }}</a>
+                  </td>
+                </tr>
+                <tr>
+                  <td>Netmask</td>
+                  <td>{{ wifiData.netmask }}</td>
+                </tr>
+                <tr>
+                  <td>Gateway</td>
+                  <td>{{ wifiData.gateway }}</td>
+                </tr>
+              </tbody>
             </table>
           </div>
         </q-card-section>
@@ -419,35 +421,36 @@ export default {
       updateWifiData();
     });
 
-    const getSignalIcon = (signalStrength) => {
-      console.log(` strength: ${signalStrength}`);
-      let icon;
-      if (signalStrength >= -50) {
-        icon = "signal_wifi_4_bar";
-      } else if (signalStrength >= -65) {
-        icon = "signal_wifi_3_bar";
-      } else if (signalStrength >= -80) {
-        icon = "signal_wifi_2_bar";
-      } else if (signalStrength >= -90) {
-        icon = "signal_wifi_1_bar";
-      } else {
-        icon = "signal_wifi_0_bar";
-      }
-      // Add '_round' to the icon name to use the filled version
-      icon += "_round";
-      console.log(`Icon: ${icon}`);
-      return icon;
-    };
-    const getEncryptionIcon = (encryption) => {
+    const getSignalIcon = (signalStrength, encryption) => {
       switch (encryption) {
         case "WPA":
         case "WPA2_PSK":
-        case "WPA_WPA2_PSK":
-          return "lock";
-        case "WEP":
-          return "lock_outline";
-        default:
-          return "lock_open";
+        case "WPA_WPA2_PSK": {
+          if (signalStrength >= -50) {
+            return "img:icons/network_wifi_locked_FILL0_wght400_GRAD0_opsz24.svg";
+          } else if (signalStrength >= -65) {
+            return "img:icons/network_wifi_3_bar_locked_FILL0_wght400_GRAD0_opsz24.svg";
+          } else if (signalStrength >= -750) {
+            return "img:icons/network_wifi_2_bar_locked_FILL0_wght400_GRAD0_opsz24.svg";
+          } else if (signalStrength >= -90) {
+            return "img:icons/network_wifi_1_bar_locked_FILL0_wght400_GRAD0_opsz24.svg";
+          } else {
+            return "img:icons/signal_wifi_statusbar_null_FILL0_wght400_GRAD0_opsz24.svg";
+          }
+        }
+        default: {
+          if (signalStrength >= -50) {
+            return "img:icons/network_wifi_FILL0_wght400_GRAD0_opsz24.svg";
+          } else if (signalStrength >= -65) {
+            return "img:icons/network_wifi_3_bar_FILL0_wght400_GRAD0_opsz24.svg";
+          } else if (signalStrength >= -750) {
+            return "img:icons/network_wifi_2_bar_FILL0_wght400_GRAD0_opsz24.svg";
+          } else if (signalStrength >= -90) {
+            return "img:icons/network_wifi_1_bar_FILL0_wght400_GRAD0_opsz24.svg";
+          } else {
+            return "img:icons/signal_wifi_statusbar_null_FILL0_wght400_GRAD0_opsz24.svg";
+          }
+        }
       }
     };
     /**
@@ -504,7 +507,6 @@ export default {
       networks,
       password,
       ssid,
-      getEncryptionIcon,
       getSignalIcon,
       restartController,
       forgetWifi,
@@ -529,7 +531,10 @@ export default {
   backface-visibility: hidden;
   perspective: 1000px;
 }
-
+.network-icon-class {
+  width: 1.5em;
+  height: 1.5em;
+}
 @keyframes shake {
   10%,
   90% {

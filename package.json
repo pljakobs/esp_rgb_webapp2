@@ -6,16 +6,15 @@
   "author": "Peter Jakobs <pjakobs@mobileme.de>",
   "private": true,
   "scripts": {
-    "setup": "python3 -m venv venv && source venv/bin/activate && pip install -r requirements.txt",
     "lint": "eslint --ext .js,.vue ./",
     "format": "prettier --write \"**/*.{js,vue,scss,html,md,json}\" --ignore-path .gitignore",
     "test": "echo \"No test specified\" && exit 0",
     "dev": "quasar dev",
-    "minify-fonts": "source venv/bin/activate && python3 minify_fonts.py",
-    "build": "quasar build ",
-    "postbuild": "npm run minify-fonts"
+    "build": "quasar build "
   },
   "dependencies": {
+    "@intlify/unplugin-vue-i18n": "^4.0.0",
+    "@material-ui/icons": "^4.11.3",
     "@quasar/extras": "^1.16.11",
     "pinia": "^2.1.7",
     "quasar": "^2.15.2",
@@ -29,7 +28,7 @@
     "@intlify/vite-plugin-vue-i18n": "^7.0.0",
     "@quasar/app-vite": "^1.9.3",
     "autoprefixer": "^10.4.17",
-    "eslint": "^9.4.0",
+    "eslint": "^8.11.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-vue": "^9.26.0",
     "postcss": "^8.4.35",

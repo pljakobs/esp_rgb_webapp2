@@ -6,21 +6,21 @@
           <q-btn
             name="hsv"
             label="HSV"
-            icon="palette"
+            :icon="outlinedPalette"
             :color="carouselPage === 'hsv' ? 'secondary' : 'primary'"
             @click="carouselPage = 'hsv'"
           />
           <q-btn
             name="raw"
             label="Raw"
-            icon="palette"
+            :icon="outlinedPalette"
             :color="carouselPage === 'raw' ? 'secondary' : 'primary'"
             @click="carouselPage = 'raw'"
           />
           <q-btn
             name="presets"
             label="Presets"
-            icon="palette"
+            :icon="outlinedPalette"
             :color="carouselPage === 'presets' ? 'secondary' : 'primary'"
             @click="carouselPage = 'presets'"
           />
@@ -32,7 +32,7 @@
             <q-scroll-area style="height: 100%; width: 100%">
               <q-card-section>
                 <div class="text-h6">
-                  <q-icon name="palette" />
+                  <q-icon :name="outlinedPalette" />
                   HSV
                 </div>
               </q-card-section>
@@ -48,7 +48,7 @@
               </q-card-section>
               <q-card-section class="flex justify-center">
                 <q-btn
-                  icon="star"
+                  :icon="outlinedStar"
                   label="add preset"
                   @click="() => openDialog('hsv')"
                 />
@@ -62,7 +62,7 @@
             <q-scroll-area style="height: 100%; width: 100%">
               <q-card-section>
                 <div class="text-h6">
-                  <q-icon name="palette" />
+                  <q-icon :name="outlinedPalette" />
                   RAW
                 </div>
               </q-card-section>
@@ -94,7 +94,7 @@
               </q-card-section>
               <q-card-section class="flex justify-center">
                 <q-btn
-                  icon="star"
+                  :icon="outlinedStar"
                   label="add preset"
                   @click="() => openDialog('raw')"
                 />
@@ -155,7 +155,7 @@
                   </q-item-section>
                   <q-item-section side>
                     <q-icon
-                      name="star"
+                      :name="outlinedStar"
                       size="2em"
                       :class="{ 'text-yellow': preset.favorite }"
                       @click="toggleFavorite(preset)"
@@ -163,7 +163,7 @@
                   </q-item-section>
                   <q-item-section side>
                     <q-icon
-                      name="delete"
+                      :name="outlinedDelete"
                       size="2em"
                       @click="deletePreset(preset)"
                     />
@@ -214,6 +214,11 @@ import { colorDataStore } from "src/stores/colorDataStore";
 import { presetDataStore } from "src/stores/presetDataStore";
 import ColorSlider from "src/components/ColorSlider.vue";
 import MyCard from "src/components/myCard.vue";
+import {
+  outlinedPalette,
+  outlinedStar,
+  outlinedDelete,
+} from "@quasar/extras/material-icons-outlined";
 
 const { rgbToHsv, hexToRgb, hsvToRgb, rgbToHex } = colors;
 
@@ -484,6 +489,9 @@ export default {
       presetColorModel,
       toggleFavorite,
       deletePreset,
+      outlinedPalette,
+      outlinedStar,
+      outlinedDelete,
     };
   },
   computed: {

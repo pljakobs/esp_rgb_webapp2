@@ -77,7 +77,7 @@
             @click="toggleLeftDrawer"
           >
             <q-avatar>
-              <img src="icons/favicon.ico" />
+              <img src="/icons/favicon.ico" />
             </q-avatar>
           </q-btn>
           <q-toolbar-title> Lightinator Mini </q-toolbar-title>
@@ -105,12 +105,77 @@
 
         <q-list>
           <q-item-label header>main menu</q-item-label>
+          <q-item clickable tag="router-link" to="/ColorPage">
+            <q-item-section class="icon-section"
+              ><q-icon :name="outlinedLightbulb" />
+            </q-item-section>
 
-          <EssentialLink
-            v-for="link in essentialLinks"
-            :key="link.title"
-            v-bind="link"
-          />
+            <q-item-section class="text-section">
+              <q-item-label>Color</q-item-label>
+              <q-item-label caption>Set the current output color</q-item-label>
+            </q-item-section>
+          </q-item>
+
+          <q-item clickable tag="router-link" to="/ColorSettings">
+            <q-item-section class="icon-section"
+              ><q-icon :name="outlinedSettings" />
+            </q-item-section>
+
+            <q-item-section class="text-section">
+              <q-item-label>Color settings</q-item-label>
+              <q-item-label caption
+                >confiure the color model and others</q-item-label
+              >
+            </q-item-section>
+          </q-item>
+
+          <q-item clickable tag="router-link" to="/NetworkSettings">
+            <q-item-section class="icon-section"
+              ><q-icon :name="outlinedWifi" />
+            </q-item-section>
+
+            <q-item-section class="text-section">
+              <q-item-label>Network settings</q-item-label>
+              <q-item-label caption
+                >Configure the network, mqtt and more</q-item-label
+              >
+            </q-item-section>
+          </q-item>
+
+          <q-item clickable tag="router-link" to="/SystemSettings">
+            <q-item-section class="icon-section"
+              ><q-icon :name="outlinedMemory" />
+            </q-item-section>
+
+            <q-item-section class="text-section">
+              <q-item-label>System settings</q-item-label>
+              <q-item-label caption
+                >configure pins, upgrade firmware, backup and restore
+                settings</q-item-label
+              >
+            </q-item-section>
+          </q-item>
+          <q-item clickable tag="router-link" to="/NetworkInit">
+            <q-item-section class="icon-section"
+              ><q-icon :name="outlinedWifi" />
+            </q-item-section>
+
+            <q-item-section class="text-section">
+              <q-item-label>Network init</q-item-label>
+              <q-item-label caption>join or leave a wifi network</q-item-label>
+            </q-item-section>
+          </q-item>
+
+          <q-item clickable tag="router-link" to="/test">
+            <q-item-section class="icon-section"
+              ><q-icon :name="outlinedLightbulb" />
+            </q-item-section>
+
+            <q-item-section class="text-section">
+              <q-item-label>test</q-item-label>
+              <q-item-label caption>developer's playground</q-item-label>
+            </q-item-section>
+          </q-item>
         </q-list>
         Version:
       </q-drawer>
@@ -155,54 +220,20 @@ import { infoDataStore } from "src/stores/infoDataStore";
 import { controllersStore } from "src/stores/controllersStore";
 
 import { storeStatus } from "src/stores/storeConstants";
-import EssentialLink from "components/EssentialLink.vue";
 import useWebSocket, { wsStatus } from "src/services/websocket.js";
 import { useRouter } from "vue-router";
-
-const linksList = [
-  {
-    title: "Color",
-    caption: "Color",
-    icon: "lightbulb",
-    link: "/ColorPage",
-  },
-  {
-    title: "Color Settings",
-    caption: "Color Settings",
-    icon: "settings",
-    link: "/ColorSettings",
-  },
-  {
-    title: "Network Settings",
-    caption: "",
-    icon: "wifi",
-    link: "/NetworkSettings",
-  },
-  {
-    title: "System Settings",
-    caption: "",
-    icon: "memory",
-    link: "/SystemSettings",
-  },
-  {
-    title: "Network Init",
-    caption: "",
-    icon: "wifi",
-    link: "/NetworkInit",
-  },
-  {
-    title: "test",
-    caption: "",
-    icon: "lightbulb",
-    link: "/test",
-  },
-];
+import {
+  outlinedLightbulb,
+  outlinedSettings,
+  outlinedWifi,
+  outlinedMemory,
+  outlinedCheck,
+  outlinedHelp,
+  outlinedClose,
+  outlinedInfo,
+} from "@quasar/extras/material-icons-outlined";
 export default defineComponent({
   name: "MainLayout",
-
-  components: {
-    EssentialLink,
-  },
 
   setup() {
     const leftDrawerOpen = ref(false);
@@ -242,13 +273,13 @@ export default defineComponent({
     const buttonIcon = computed(() => {
       switch (ws.status.value) {
         case wsStatus.CONNECTED:
-          return "check";
+          return outlinedCheck;
         case wsStatus.DISCONNECTED:
-          return "close";
+          return outlinedClose;
         case wsStatus.CONNECTING:
-          return "help";
+          return outlinedHelp;
         default:
-          return "info";
+          return outlinedInfo;
       }
     });
 
@@ -340,7 +371,6 @@ export default defineComponent({
     };
 
     return {
-      essentialLinks: linksList,
       leftDrawerOpen,
       configData,
       infoData,
@@ -353,11 +383,22 @@ export default defineComponent({
       toggleLeftDrawer,
       buttonColor,
       buttonIcon,
+      outlinedLightbulb,
+      outlinedMemory,
+      outlinedSettings,
+      outlinedWifi,
+      outlinedCheck,
+      outlinedHelp,
+      outlinedClose,
+      outlinedInfo,
     };
   },
 });
 </script>
 <style scoped>
+.q-icon {
+  font-size: 2.5em;
+}
 .center-container {
   display: flex;
   justify-content: center;
@@ -371,7 +412,14 @@ export default defineComponent({
 .bg-red {
   background-color: red;
 }
-
+.icon-section {
+  flex: 0.2; /* Adjust this value to control the width */
+  min-width: 0;
+}
+.text-section {
+  flex: 0.8;
+  min-width: 0;
+}
 .bg-orange {
   background-color: orange;
 }
