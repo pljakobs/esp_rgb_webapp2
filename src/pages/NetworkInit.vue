@@ -70,20 +70,22 @@
             <h4>Connection Established</h4>
             <p>Connected to: {{ wifiData.ssid }}</p>
             <table>
-              <tr>
-                <td>Address</td>
-                <td>
-                  <a :href="'http://' + wifiData.ip">{{ wifiData.ip }}</a>
-                </td>
-              </tr>
-              <tr>
-                <td>Netmask</td>
-                <td>{{ wifiData.netmask }}</td>
-              </tr>
-              <tr>
-                <td>Gateway</td>
-                <td>{{ wifiData.gateway }}</td>
-              </tr>
+              <tbody>
+                <tr>
+                  <td>Address</td>
+                  <td>
+                    <a :href="'http://' + wifiData.ip">{{ wifiData.ip }}</a>
+                  </td>
+                </tr>
+                <tr>
+                  <td>Netmask</td>
+                  <td>{{ wifiData.netmask }}</td>
+                </tr>
+                <tr>
+                  <td>Gateway</td>
+                  <td>{{ wifiData.gateway }}</td>
+                </tr>
+              </tbody>
             </table>
           </div>
         </q-card-section>

@@ -136,21 +136,23 @@
         your platform is {{ infoData.data.soc }} with partition layout
         {{ infoData.data.part_layout }}
         <table class="styled-table">
-          <tr>
-            <th></th>
-            <th>installed</th>
-            <th>available</th>
-          </tr>
-          <tr>
-            <td class="label">firmware</td>
-            <td>{{ infoData.data.git_version }}</td>
-            <td>{{ firmware.files.rom.fw_version }}</td>
-          </tr>
-          <tr>
-            <td class="label">webapp</td>
-            <td>{{ infoData.data.webapp_version }}</td>
-            <td>{{ firmware.files.spiffs.webapp_version }}</td>
-          </tr>
+          <tbody>
+            <tr>
+              <th></th>
+              <th>installed</th>
+              <th>available</th>
+            </tr>
+            <tr>
+              <td class="label">firmware</td>
+              <td>{{ infoData.data.git_version }}</td>
+              <td>{{ firmware.files.rom.fw_version }}</td>
+            </tr>
+            <tr>
+              <td class="label">webapp</td>
+              <td>{{ infoData.data.webapp_version }}</td>
+              <td>{{ firmware.files.spiffs.webapp_version }}</td>
+            </tr>
+          </tbody>
         </table>
       </q-card-section>
       <q-card-actions class="action-buttons">

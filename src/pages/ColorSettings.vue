@@ -31,7 +31,7 @@
         @update:model="
           ($event) => {
             console.log('in function:', $event);
-            updateColorSlider(colorGains, $event);
+            updateColorSlider(colorGain, $event);
           }
         "
       />
@@ -241,7 +241,7 @@ export default {
     const updateColorSlider = (slider, value) => {
       console.log("update for", slider);
       console.log("new value", value);
-      store.updateConfigData(slider.label.toLowerCase(), value);
+      configData.updateData(slider.label.toLowerCase(), value);
       //store.dispatch('config/updateConfigData',''
     };
 

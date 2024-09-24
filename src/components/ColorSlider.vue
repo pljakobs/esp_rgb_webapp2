@@ -58,8 +58,9 @@
     </div>
   </div>
 </template>
+
 <script>
-import { ref, defineProps, watch } from "vue";
+import { ref, watch } from "vue";
 
 export default {
   props: {
@@ -90,13 +91,13 @@ export default {
       emit("update:model", internalValue.value);
     };
 
-    watch(internalValue, updateModel);
     watch(
       () => props.value,
       (newValue) => {
         internalValue.value = newValue;
       },
     );
+
     return {
       internalValue,
       updateModel,
