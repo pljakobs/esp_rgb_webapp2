@@ -49,15 +49,17 @@ export const configDataStore = defineStore({
         currentObject = currentObject[fieldParts[i]];
       }
 
-      currentObject[fieldParts[fieldParts.length - 1]] = value;
-
-      // Construct minimal update payload
       const minimalUpdate = {};
       let tempObject = minimalUpdate;
+      currentObject = this.data;
+
       for (let i = 0; i < fieldParts.length - 1; i++) {
-        tempObject[fieldParts[i]] = {};
-        tempObject = tempObject[fieldParts[i]];
+        const key = fieldParts[i];
+        tempObject[key] = Array.isArray(currentObject[key]) ? [] : {};
+        tempObject = tempObject[key];
+        currentObject = currentObject[key];
       }
+
       tempObject[fieldParts[fieldParts.length - 1]] = value;
 
       // Validate the updated state
@@ -72,7 +74,7 @@ export const configDataStore = defineStore({
       }
     },
     updateApi(minimalUpdate) {
-      ColorSlider.log("updateApi called with: ", safeStringify(minimalUpdate));
+      console.log("updateApi called with: ", safeStringify(minimalUpdate));
       const controllers = controllersStore();
       fetch(`http://${controllers.currentController["ip_address"]}/config`, {
         // Use controllers.currentController here
