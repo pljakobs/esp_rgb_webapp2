@@ -476,6 +476,12 @@ export default {
       return colorPickerCard.value ? colorPickerCard.value.$el.offsetWidth : 0;
     });
 
+    onMounted(() => {
+      const rgb = hsvToRgb(colorData.data.hsv);
+      const hex = rgbToHex(rgb);
+      color.value = hex;
+    });
+
     return {
       color,
       carouselPage,
