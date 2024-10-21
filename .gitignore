@@ -36,3 +36,5 @@ yarn-error.log*
 # python venv
 venv
 
+# npm
+package-lock.json
