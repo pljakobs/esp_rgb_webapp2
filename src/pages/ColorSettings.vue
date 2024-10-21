@@ -268,21 +268,28 @@ export default {
 
     // Initialize values from configDataStore when the component is mounted
     onMounted(() => {
-      transitionModel.value =
-        transitionOptions[configData.data.color.hsv.model];
+      // Initialize transitionModel
+      const transitionModelIndex = configData.data.color.hsv.model;
+      if (
+        transitionModelIndex >= 0 &&
+        transitionModelIndex < transitionOptions.length
+      ) {
+        transitionModel.value = transitionOptions[transitionModelIndex];
+      } else {
+        console.error(`Invalid color.hsv.model: ${transitionModelIndex}`);
+        transitionModel.value = transitionOptions[0]; // Default to the first option
+      }
+
+      // Initialize colorOptions and colorModel
       colorOptions.value =
         configData.data.general?.supported_color_models.length > 0
           ? configData.data.general.supported_color_models
           : defaultColorOptions;
-      if (
-        configData.data.color.color_mode >= 0 &&
-        configData.data.color.color_mode < colorOptions.value.length
-      ) {
-        colorModel.value = colorOptions.value[configData.data.color.color_mode];
+      const colorModelIndex = configData.data.color.color_mode;
+      if (colorModelIndex >= 0 && colorModelIndex < colorOptions.value.length) {
+        colorModel.value = colorOptions.value[colorModelIndex];
       } else {
-        console.error(
-          `Invalid color.color_mode: ${configData.data.color.color_mode}`,
-        );
+        console.error(`Invalid color.color_mode: ${colorModelIndex}`);
         colorModel.value = colorOptions.value[0]; // Default to the first option
       }
     });
