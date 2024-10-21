@@ -5,7 +5,7 @@ import {
   maxRetries,
   retryDelay,
 } from "./storeConstants";
-import { safeStringify, fetchApi } from "./storeHelpers";
+import { safeStringify, fetchApi } from "src/stores/storeHelpers";
 import { controllersStore } from "./controllersStore";
 
 export const infoDataStore = defineStore({

@@ -14,7 +14,6 @@
           :options="transitionOptions"
           label="Transition Mode"
           style="width: 200px"
-          @update:model-value="updateTransitionMode"
         />
       </div>
     </q-card-section>
@@ -87,7 +86,7 @@
 </template>
 
 <script>
-import { ref, watch, computed } from "vue";
+import { ref, watch, computed, onMounted } from "vue";
 import { configDataStore } from "src/stores/configDataStore";
 import ColorSlider from "src/components/ColorSlider.vue";
 import MyCard from "src/components/myCard.vue";
@@ -106,9 +105,10 @@ export default {
     const configData = configDataStore();
 
     const transitionOptions = ["Normal", "Spektrum", "Rainbow"];
-    const transitionModel = ref(
-      transitionOptions[configData.data.color.hsv.model],
-    );
+    const transitionModel = ref("");
+    const colorModel = ref("");
+    const defaultColorOptions = ["RGB", "RGBWW", "RGBCW", "RGBWWCW"];
+    const colorOptions = ref([]);
 
     const colorGains = [
       {
@@ -154,14 +154,6 @@ export default {
         color: "#ff0090",
       },
     ];
-
-    const defaultColorOptions = ["RGB", "RGBWW", "RGBCW", "RGBWWCW"];
-    const colorOptions = ref(
-      configData.data.general?.supported_color_models || defaultColorOptions,
-    );
-    const colorModel = ref(
-      colorOptions.value[configData.data.color.outputmode],
-    );
 
     const colorSliders = computed(() => {
       const sliders = [
@@ -272,6 +264,27 @@ export default {
         `Selected color model changed from ${oldColorModel} to ${newColorModel}`,
       );
       updateColorModel(newColorModel);
+    });
+
+    // Initialize values from configDataStore when the component is mounted
+    onMounted(() => {
+      transitionModel.value =
+        transitionOptions[configData.data.color.hsv.model];
+      colorOptions.value =
+        configData.data.general?.supported_color_models.length > 0
+          ? configData.data.general.supported_color_models
+          : defaultColorOptions;
+      if (
+        configData.data.color.color_mode >= 0 &&
+        configData.data.color.color_mode < colorOptions.value.length
+      ) {
+        colorModel.value = colorOptions.value[configData.data.color.color_mode];
+      } else {
+        console.error(
+          `Invalid color.color_mode: ${configData.data.color.color_mode}`,
+        );
+        colorModel.value = colorOptions.value[0]; // Default to the first option
+      }
     });
 
     return {
