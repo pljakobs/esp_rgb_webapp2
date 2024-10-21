@@ -44,9 +44,9 @@ else
 	rsync -a dist/spa/ $DEVBOX:~/devel/esp_rgbww_firmware/webapp
 	if [ "$1" = "OTA" ] 
 	then
-		ssh $DEVBOX "cd devel/esp_rgbww_firmware/;make -j8;./deployOta PART_LAYOUT=v1"
+		ssh $DEVBOX "source ~/.smingrc;cd devel/esp_rgbww_firmware/;make -j8;./deployOta PART_LAYOUT=v1"
 	else
-		ssh $DEVBOX "cd devel/esp_rgbww_firmware/;make -j8 flash PART_LAYOUT=v1"
+		ssh $DEVBOX "source ~/.smingrc;cd devel/esp_rgbww_firmware/;make -j8 flash PART_LAYOUT=v1"
 	fi
 fi
 	
