@@ -177,7 +177,7 @@
             </q-item-section>
           </q-item>
         </q-list>
-        Version:V5-pj-186-g0de1-dirty-[ConfigDB]
+        Version:V5-pj-187-gc453-[ConfigDB]
       </q-drawer>
       <q-btn
         round
