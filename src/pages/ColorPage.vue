@@ -411,9 +411,11 @@ export default {
       if (colorModel === "hsv") {
         presetData
           .addPreset({
-            id: "",
+            //id: "",
             name: presetName,
-            hsv: settings,
+            color: {
+              hsv: settings,
+            },
             favorite: false,
           })
           .catch((error) => {
@@ -422,9 +424,11 @@ export default {
       } else {
         presetData
           .addPreset({
-            id: "",
+            // id: "",
             name: presetName,
-            raw: settings,
+            color: {
+              raw: settings,
+            },
             favorite: false,
           })
           .catch((error) => {
