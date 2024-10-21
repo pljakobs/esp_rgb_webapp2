@@ -3,7 +3,7 @@
     <MyCard>
       <q-card-section>
         <div class="text-h6">
-          <q-icon name="info" />
+          <q-icon :name="outlinedInfo" />
           Information
         </div>
       </q-card-section>
@@ -56,17 +56,28 @@
     <MyCard>
       <q-card-section>
         <div class="text-h6">
-          <q-icon name="memory" />
+          <q-icon :name="outlinedMemory" />
           Controller
         </div>
       </q-card-section>
       <q-separator />
-      <q-card-section> todo: pin configuration goes here </q-card-section>
+      <q-card-section>
+        <q-select
+          class="custom-select"
+          v-model="currentPinConfigName"
+          :options="pinConfigNames"
+          label="Pin configuration"
+          emit-value
+          map-options
+        />
+        <!-- Table displaying the current pin configuration -->
+        <dataTable :Items="formattedPinConfigData" />
+      </q-card-section>
     </MyCard>
     <MyCard>
       <q-card-section>
         <div class="text-h6">
-          <q-icon name="security" />
+          <q-icon :name="outlinedSecurity" />
           security
         </div>
       </q-card-section>
@@ -80,7 +91,7 @@
     <MyCard>
       <q-card-section>
         <div class="text-h6">
-          <q-icon name="system_update" />
+          <q-icon :name="outlinedSystemSecurityUpdate" />
           Firmware update
         </div>
       </q-card-section>
@@ -116,7 +127,7 @@
     >
       <q-card-section>
         <div class="text-h6">
-          <q-icon name="system_update" />
+          <q-icon :name="outlinedSystemSecurityUpdate" />
           Firmware update
         </div>
       </q-card-section>
@@ -125,21 +136,23 @@
         your platform is {{ infoData.data.soc }} with partition layout
         {{ infoData.data.part_layout }}
         <table class="styled-table">
-          <tr>
-            <th></th>
-            <th>installed</th>
-            <th>available</th>
-          </tr>
-          <tr>
-            <td class="label">firmware</td>
-            <td>{{ infoData.data.git_version }}</td>
-            <td>{{ firmware.files.rom.fw_version }}</td>
-          </tr>
-          <tr>
-            <td class="label">webapp</td>
-            <td>{{ infoData.data.webapp_version }}</td>
-            <td>{{ firmware.files.spiffs.webapp_version }}</td>
-          </tr>
+          <tbody>
+            <tr>
+              <th></th>
+              <th>installed</th>
+              <th>available</th>
+            </tr>
+            <tr>
+              <td class="label">firmware</td>
+              <td>{{ infoData.data.git_version }}</td>
+              <td>{{ firmware.files.rom.fw_version }}</td>
+            </tr>
+            <tr>
+              <td class="label">webapp</td>
+              <td>{{ infoData.data.webapp_version }}</td>
+              <td>{{ firmware.files.spiffs.webapp_version }}</td>
+            </tr>
+          </tbody>
         </table>
       </q-card-section>
       <q-card-actions class="action-buttons">
@@ -177,7 +190,7 @@
 </template>
 
 <script>
-import { ref, watchEffect } from "vue";
+import { ref, watchEffect, watch } from "vue";
 
 import { configDataStore } from "src/stores/configDataStore";
 import { controllersStore } from "src/stores/controllersStore.js";
@@ -187,6 +200,13 @@ import { storeStatus } from "src/stores/storeConstants";
 import dataTable from "src/components/dataTable.vue";
 import MyCard from "src/components/myCard.vue";
 import systemCommand from "src/services/systemCommands";
+import {
+  outlinedInfo,
+  outlinedMemory,
+  outlinedReportProblem,
+  outlinedSecurity,
+  outlinedSystemSecurityUpdate,
+} from "@quasar/extras/material-icons-outlined";
 
 import { useQuasar } from "quasar";
 
@@ -195,7 +215,24 @@ export default {
     dataTable,
     MyCard,
   },
+  computed: {
+    formattedPinConfigData() {
+      if (!this.currentPinConfig) {
+        return [];
+      }
+      if (
+        !this.currentPinConfig.channels ||
+        this.currentPinConfig.channels.length === 0
+      ) {
+        return [];
+      }
 
+      return this.currentPinConfig.channels.map((config) => ({
+        label: config.name,
+        value: config.pin,
+      }));
+    },
+  },
   setup() {
     const controllers = controllersStore();
     const configData = configDataStore();
@@ -212,43 +249,15 @@ export default {
 
     const $q = useQuasar();
 
-    watchEffect(() => {
-      if (infoData.status === storeStatus.READY && infoData.data) {
-        firmwareInfo.value = [
-          {
-            label: "active ROM",
-            value: infoData.data.current_rom,
-          },
-          {
-            label: "Firmware",
-            value: infoData.data.git_version,
-          },
-          {
-            label: "Web interface",
-            value: infoData.data.webapp_version,
-          },
-          {
-            label: "SOC",
-            value: infoData.data.soc,
-          },
-          {
-            label: "Partition layout",
-            value: infoData.data.part_layout,
-          },
-          {
-            label: "RGBWW Version",
-            value: infoData.data.rgbww.version,
-          },
-          {
-            label: "Sming version",
-            value: infoData.data.sming,
-          },
-        ];
-      }
-    });
+    const pinConfigData = ref(null);
+    const pinConfigNames = ref([]);
+
+    const currentPinConfigName = ref();
+    const currentPinConfig = ref([]);
 
     console.log("otaUrl", otaUrl.value);
     console.log("infoData: ", infoData.data);
+
     const fetchFirmware = async () => {
       console.log("entering fetchFirmware");
       try {
@@ -266,7 +275,7 @@ export default {
               title: "HTTP error",
               message: `HTTP error! status: ${response.status}`,
               color: "negative",
-              icon: "report_problem",
+              icon: outlinedReportProblem,
             })
               .onOk(() => {
                 console.log("ok");
@@ -337,7 +346,7 @@ export default {
               title: "Firmware missing",
               message: `no matching firmware found for your configuration / controller`,
               color: "negative",
-              icon: "report_problem",
+              icon: outlinedReportProblem,
             })
               .onOk(() => {
                 console.log("ok");
@@ -373,7 +382,7 @@ export default {
             title: "error fetching firmware list",
             message: `There was a problem with the fetch operation: ${error.message}`,
             color: "negative",
-            icon: "report_problem",
+            icon: outlinedReportProblem,
           })
             .onOk(() => {
               console.log("ok");
@@ -396,8 +405,6 @@ export default {
         dialogOpen.value = true;
       }
     };
-
-    //onMounted(checkFirmware);
 
     const updateController = async () => {
       console.log(
@@ -443,6 +450,143 @@ export default {
       }, 7500);
     };
 
+    const loadPinConfigData = async () => {
+      try {
+        console.log(
+          "loading pin config from ",
+          configData.data.general.pin_config_url,
+        );
+        const response = await fetch(configData.data.general.pin_config_url);
+        if (!response.ok) throw new Error("Error loading pin config");
+        const jsonData = await response.json();
+        pinConfigData.value = jsonData;
+      } catch (error) {
+        console.error(
+          "Error loading pin config from pinConfigUrl, trying fallback URL",
+          error,
+        );
+        try {
+          const fallbackUrl = `controller.currentController["ip-address"]/config/pinconfig.json`;
+          const response = await fetch(fallbackUrl);
+          if (!response.ok)
+            throw new Error("Error loading pin config from fallback URL");
+          const jsonData = await response.json();
+          pinConfigData.value = jsonData;
+        } catch (fallbackError) {
+          console.error(
+            "Error loading pin config from fallback URL",
+            fallbackError,
+          );
+        }
+      }
+      getPinConfigNames();
+      getCurrentPinConfig();
+    };
+    // filter only those pinConfigs that are supported by the current controller
+    // this is really mostly future-proofing for controllers with more than five channels
+    const getPinConfigNames = () => {
+      pinConfigNames.value = pinConfigData.value.pinconfigs
+        .filter((item) =>
+          configData.data.general.supported_color_models
+            .map((model) => model.toLowerCase())
+            .includes(item.model.toLowerCase()),
+        )
+        .map((item) => item.name);
+    };
+    const getCurrentPinConfig = () => {
+      if (!currentPinConfigName.value) {
+        currentPinConfigName.value =
+          configData.data.general.current_pin_config_name;
+      }
+      console.log(
+        "getCurrentPinConfig called for config name ",
+        currentPinConfigName.value,
+      );
+
+      currentPinConfig.value = pinConfigData.value.pinconfigs.find(
+        (config) => config.name === currentPinConfigName.value,
+      );
+
+      console.log("updated pinConfig:", currentPinConfig.value);
+      //currentPinConfig.value = currentPinConfig.value.channels;
+    };
+
+    const updatePinConfig = (newPinConfigName) => {
+      currentPinConfigName.value = newPinConfigName;
+      console.log("updatePinConfig called");
+      console.log("updating pin config");
+      configData.updateData(
+        "general.current_pin_config_name",
+        currentPinConfigName,
+        false,
+      );
+
+      getCurrentPinConfig();
+
+      if (currentPinConfig.value.model === "rgbww") {
+        configData.updateData(
+          "general.channels",
+          currentPinConfig.value.channels,
+          false,
+        );
+        const pinConfigString = currentPinConfig.value.channels
+          .map((channel) => channel.pin)
+          .join(",");
+
+        console.log("updated pin config string:", pinConfigString);
+        configData.updateData("general.pin_config", pinConfigString, true);
+      }
+    };
+
+    watch(currentPinConfigName, (newVal, oldVal) => {
+      console.log("currentPinConfigName changed", newVal);
+      updatePinConfig(newVal);
+    });
+
+    watchEffect(() => {
+      if (infoData.status === storeStatus.READY && infoData.data) {
+        firmwareInfo.value = [
+          {
+            label: "active ROM",
+            value: infoData.data.current_rom,
+          },
+          {
+            label: "Firmware",
+            value: infoData.data.git_version,
+          },
+          {
+            label: "Web interface",
+            value: infoData.data.webapp_version,
+          },
+          {
+            label: "SOC",
+            value: infoData.data.soc,
+          },
+          {
+            label: "Partition layout",
+            value: infoData.data.part_layout,
+          },
+          {
+            label: "RGBWW Version",
+            value: infoData.data.rgbww.version,
+          },
+          {
+            label: "Sming version",
+            value: infoData.data.sming,
+          },
+        ];
+      }
+    });
+
+    watchEffect(() => {
+      if (
+        configData.status === storeStatus.READY &&
+        controllers.status === storeStatus.READY
+      ) {
+        loadPinConfigData();
+      }
+    });
+
     return {
       otaUrl,
       updateController,
@@ -451,10 +595,18 @@ export default {
       infoData,
       firmwareInfo,
       dialogOpen,
-      countdownDialog,
       startCountdown,
       progress,
       switchROM,
+      pinConfigData,
+      pinConfigNames,
+      currentPinConfig,
+      currentPinConfigName,
+      updatePinConfig,
+      outlinedInfo,
+      outlinedMemory,
+      outlinedSecurity,
+      outlinedSystemSecurityUpdate,
     };
   },
 };
@@ -493,5 +645,9 @@ export default {
   align-items: center;
   text-align: center;
   margin-top: 10px;
+}
+.custom-select {
+  width: 30%; /* Set the width to 30% */
+  min-width: 200px; /* Set the minimum width to 80px */
 }
 </style>

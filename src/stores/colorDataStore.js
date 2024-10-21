@@ -74,8 +74,8 @@ export const colorDataStore = defineStore({
           this.data.hsv = value;
           console.log("store updateData for hsv, new store: ", this);
         } else if (field === "raw") {
-          console.log("key: ", key, " value: ", val);
           const [[key, val]] = Object.entries(value);
+          console.log("key: ", key, " value: ", val);
           this.data.raw[key] = val;
         }
         console.log(
