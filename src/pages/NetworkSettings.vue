@@ -3,7 +3,7 @@
     <MyCard>
       <q-card-section>
         <div class="text-h6">
-          <q-icon :name="outlinedBadge" />
+          <q-icon name="img:icons/badge-outlined-24.svg" />
           Hostname
         </div>
         <q-input
@@ -21,7 +21,7 @@
     <MyCard>
       <q-card-section>
         <div class="text-h6">
-          <q-icon :name="outlinedWifi" />
+          <q-icon name="img:icons/wifi-outlined-24.svg" />
           Connection
         </div>
       </q-card-section>
@@ -31,7 +31,7 @@
       </q-card-section>
       <q-card-section>
         <div class="text-h6">
-          <q-icon :name="outlinedSettings" />
+          <q-icon name="img:icons/settings-outlined-24.svg" />
           IP Settings
         </div>
         <div>
@@ -90,7 +90,7 @@
     <MyCard>
       <q-card-section>
         <div class="text-h6">
-          <q-icon :name="outlinedHub" />
+          <q-icon name="img:/icons/hub-outlined-24.svg" />
           MQTT Settings
         </div>
         <div>
@@ -169,16 +169,16 @@
             )
           "
         >
-          <template v-slot:append>
+          <template #append>
             <q-icon
               v-if="hidePwd"
-              :name="outlinedVisibility"
+              src="img:icons/visibility-outlined-24.svg"
               class="cursor-pointer"
               @click="togglePasswordVisibility"
             />
             <q-icon
               v-else
-              :name="outlinedVisibilityOff"
+              src="img:icons/visibility-off-outlined-24.svg"
               class="cursor-pointer"
               @click="togglePasswordVisibility"
             />
@@ -243,14 +243,6 @@ import { ref, watchEffect, watch, computed } from "vue";
 import { storeStatus } from "src/stores/storeConstants";
 import { infoDataStore } from "src/stores/infoDataStore";
 import { configDataStore } from "src/stores/configDataStore";
-import {
-  outlinedWifi,
-  outlinedHub,
-  outlinedSettings,
-  outlinedBadge,
-  outlinedVisibility,
-  outlinedVisibilityOff,
-} from "@quasar/extras/material-icons-outlined";
 import dataTable from "components/dataTable.vue";
 import MyCard from "components/myCard.vue";
 
@@ -368,12 +360,6 @@ export default {
       infoData,
       configData,
       storeStatus,
-      outlinedWifi,
-      outlinedHub,
-      outlinedSettings,
-      outlinedBadge,
-      outlinedVisibility,
-      outlinedVisibilityOff,
       clockMasterTopic,
       cmdMasterTopic,
       colorMasterTopic,

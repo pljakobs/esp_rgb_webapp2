@@ -4,7 +4,7 @@
     <MyCard>
       <q-card-section>
         <div class="text-h6">
-          <q-icon :name="outlinedInfo" />
+          <q-icon name="img:icons/info-outlined-24.svg" />
           Information
         </div>
       </q-card-section>
@@ -57,7 +57,7 @@
     <MyCard>
       <q-card-section>
         <div class="text-h6">
-          <q-icon :name="outlinedMemory" />
+          <q-icon name="img:icons/memory-outlined-24.svg" />
           Controller
         </div>
       </q-card-section>
@@ -78,7 +78,7 @@
     <MyCard>
       <q-card-section>
         <div class="text-h6">
-          <q-icon :name="outlinedSecurity" />
+          <q-icon name="img:icons/security-outlined-24.svg" />
           security
         </div>
       </q-card-section>
@@ -92,7 +92,7 @@
     <MyCard>
       <q-card-section>
         <div class="text-h6">
-          <q-icon :name="outlinedSystemSecurityUpdate" />
+          <q-icon name="img:icons/systemsecurityupdate-outlined-24.svg" />
           Firmware update
         </div>
       </q-card-section>
@@ -128,7 +128,7 @@
     >
       <q-card-section>
         <div class="text-h6">
-          <q-icon :name="outlinedSystemSecurityUpdate" />
+          <q-icon name="img:icons/systemsecurityupdate-outlined-24.svg" />
           Firmware update
         </div>
       </q-card-section>
@@ -201,14 +201,6 @@ import { storeStatus } from "src/stores/storeConstants";
 import dataTable from "src/components/dataTable.vue";
 import MyCard from "src/components/myCard.vue";
 import systemCommand from "src/services/systemCommands";
-import {
-  outlinedInfo,
-  outlinedMemory,
-  outlinedReportProblem,
-  outlinedSecurity,
-  outlinedSystemSecurityUpdate,
-} from "@quasar/extras/material-icons-outlined";
-
 import { useQuasar } from "quasar";
 
 export default {
@@ -257,7 +249,7 @@ export default {
             title: "HTTP error",
             message: `HTTP error! status: ${response.status}`,
             color: "negative",
-            icon: outlinedReportProblem,
+            icon: "img:icons/report-problem-outlined-24.svg",
           })
             .onOk(() => {
               console.log("ok");
@@ -326,7 +318,7 @@ export default {
             title: "Firmware missing",
             message: `No matching firmware found for your configuration / controller`,
             color: "negative",
-            icon: outlinedReportProblem,
+            icon: "img:icons/report-problem-outlined-24.svg",
           })
             .onOk(() => {
               console.log("ok");
@@ -359,7 +351,7 @@ export default {
           title: "Error fetching firmware list",
           message: `There was a problem with the fetch operation: ${error.message}`,
           color: "negative",
-          icon: outlinedReportProblem,
+          icon: "img:icons/report-problem-outlined-24.svg",
         })
           .onOk(() => {
             console.log("ok");
@@ -577,10 +569,6 @@ export default {
       currentPinConfig,
       currentPinConfigName,
       updatePinConfig,
-      outlinedInfo,
-      outlinedMemory,
-      outlinedSecurity,
-      outlinedSystemSecurityUpdate,
     };
   },
   computed: {

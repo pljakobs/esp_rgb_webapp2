@@ -172,13 +172,10 @@
 import { ref, onMounted, watch } from "vue";
 //import useWebSocket, { wsStatus } from "../services/websocket";
 import useWebSocket from "../services/websocket";
-
 import { controllersStore } from "src/stores/controllersStore.js";
 import { infoDataStore } from "src/stores/infoDataStore.js";
 import { storeStatus } from "src/stores/storeConstants";
-
 import systemCommand from "src/services/systemCommands.js";
-
 import MyCard from "src/components/myCard.vue";
 
 export default {

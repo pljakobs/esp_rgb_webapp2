@@ -6,181 +6,181 @@
           <q-btn
             name="hsv"
             label="HSV"
-            :icon="outlinedPalette"
+            icon="img:icons/palette-outlined-24.svg"
             :color="carouselPage === 'hsv' ? 'secondary' : 'primary'"
             @click="carouselPage = 'hsv'"
           />
           <q-btn
             name="raw"
             label="Raw"
-            :icon="outlinedPalette"
+            icon="img:icons/palette-outlined-24.svg"
             :color="carouselPage === 'raw' ? 'secondary' : 'primary'"
             @click="carouselPage = 'raw'"
           />
           <q-btn
             name="presets"
             label="Presets"
-            :icon="outlinedPalette"
+            icon="img:icons/star-outlined-24.svg"
             :color="carouselPage === 'presets' ? 'secondary' : 'primary'"
             @click="carouselPage = 'presets'"
           />
         </q-btn-group>
       </div>
+
       <q-carousel v-model="carouselPage" animated>
         <q-carousel-slide name="hsv">
-          <MyCard>
-            <q-scroll-area style="height: 100%; width: 100%">
-              <q-card-section>
-                <div class="text-h6">
-                  <q-icon :name="outlinedPalette" />
-                  HSV
-                </div>
-              </q-card-section>
-              <q-separator />
-              <q-card-section class="flex justify-center">
-                <q-color
-                  v-model="color"
-                  :style="{ height: '$(cardWidth)px' }"
-                  format-model="hex"
-                  no-header
-                  no-footer
-                />
-              </q-card-section>
-              <q-card-section class="flex justify-center">
-                <q-btn
-                  :icon="outlinedStar"
-                  label="add preset"
-                  @click="() => openDialog('hsv')"
-                />
-              </q-card-section>
-            </q-scroll-area>
-          </MyCard>
+          <q-scroll-area style="height: 100%; width: 100%">
+            <q-card-section>
+              <div class="text-h6">
+                <q-icon name="img:icons/palette-outlined-24.svg" />
+                HSV
+              </div>
+            </q-card-section>
+            <q-separator />
+            <q-card-section class="flex justify-center">
+              <q-color
+                v-model="color"
+                :style="{ height: '$(cardWidth)px' }"
+                format-model="hex"
+                no-header
+                no-footer
+              />
+            </q-card-section>
+            <q-card-section class="flex justify-center">
+              <q-btn
+                icon="img:icons/star-outlined-24.svg"
+                label="add preset"
+                @click="() => openDialog('hsv')"
+              />
+            </q-card-section>
+          </q-scroll-area>
         </q-carousel-slide>
 
         <q-carousel-slide name="raw">
-          <q-card>
-            <q-scroll-area style="height: 100%; width: 100%">
-              <q-card-section>
-                <div class="text-h6">
-                  <q-icon :name="outlinedPalette" />
-                  RAW
-                </div>
-              </q-card-section>
-              <q-separator />
-              <q-card-section>
-                raw-r: {{ colorData.data.raw.r }}, raw-g:
-                {{ colorData.data.raw.g }}, raw-b: {{ colorData.data.raw.b }},
-                raw-ww: {{ colorData.data.raw.ww }}, raw-cw:
-                {{ colorData.data.raw.cw }}</q-card-section
-              >
-              <q-card-section>
-                raw sliders
-                <ColorSlider
-                  v-for="colorSlider in colorSliders"
-                  :key="colorSlider.label"
-                  :min="colorSlider.min"
-                  :max="colorSlider.max"
-                  :label="colorSlider.label"
-                  :value="colorSlider.model"
-                  :color="colorSlider.color"
-                  label-on-top
-                  @update:model="
-                    ($event) => {
-                      console.log('in function:', $event);
-                      updateColorSlider(colorSlider, $event);
-                    }
-                  "
-                />
-              </q-card-section>
-              <q-card-section class="flex justify-center">
-                <q-btn
-                  :icon="outlinedStar"
-                  label="add preset"
-                  @click="() => openDialog('raw')"
-                />
-              </q-card-section>
-            </q-scroll-area>
-          </q-card>
+          <q-scroll-area style="height: 100%; width: 100%">
+            <q-card-section>
+              <div class="text-h6">
+                <q-icon name="img:icons/palette-outlined-24.svg" />
+                RAW
+              </div>
+            </q-card-section>
+            <q-separator />
+            <q-card-section>
+              raw-r: {{ colorData.data.raw.r }}, raw-g:
+              {{ colorData.data.raw.g }}, raw-b: {{ colorData.data.raw.b }},
+              raw-ww: {{ colorData.data.raw.ww }}, raw-cw:
+              {{ colorData.data.raw.cw }}</q-card-section
+            >
+            <q-card-section>
+              raw sliders
+              <ColorSlider
+                v-for="colorSlider in colorSliders"
+                :key="colorSlider.label"
+                :min="colorSlider.min"
+                :max="colorSlider.max"
+                :label="colorSlider.label"
+                :value="colorSlider.model"
+                :color="colorSlider.color"
+                label-on-top
+                @update:model="
+                  ($event) => {
+                    console.log('in function:', $event);
+                    updateColorSlider(colorSlider, $event);
+                  }
+                "
+              />
+            </q-card-section>
+            <q-card-section class="flex justify-center">
+              <q-btn
+                icon="img:icons/star-outlined-24.svg"
+                label="add preset"
+                @click="() => openDialog('raw')"
+              />
+            </q-card-section>
+          </q-scroll-area>
         </q-carousel-slide>
 
         <q-carousel-slide name="presets">
-          <MyCard>
-            <q-scroll-area style="height: 100%; width: 100%">
-              <q-list
-                separator
-                style="
-                   {
-                    overflowy: 'auto';
-                    height: 100%;
-                  }
-                "
-              >
-                <q-item
-                  v-for="preset in activePresets"
-                  :key="preset.name"
-                  class="q-my-sm"
-                >
-                  <q-item-section avatar>
-                    <q-badge
-                      :style="{
-                        backgroundColor: preset.raw
-                          ? `rgb(${preset.raw.r}, ${preset.raw.g}, ${preset.raw.b})`
-                          : `rgb(${hsvToRgb(preset.hsv).r}, ${
-                              hsvToRgb(preset.hsv).g
-                            }, ${hsvToRgb(preset.hsv).b})`,
-                        width: '30px',
-                        height: '30px',
-                        borderRadius: '50%',
-                        border: '1px solid black',
-                      }"
-                      round
-                      @click="handlePresetClick(preset)"
-                    />
-                  </q-item-section>
-                  <q-item-section avatar>
-                    <q-badge
-                      style="
-                        background-color: black;
-                        color: white;
-                        font-size: 0.8em;
-                      "
-                      round
-                      @click="handlePresetClick(preset)"
-                    >
-                      {{ preset.raw ? "RAW" : "HSV" }}
-                    </q-badge>
-                  </q-item-section>
-                  <q-item-section @click="handlePresetClick(preset)">
-                    {{ preset.name }}
-                  </q-item-section>
-                  <q-item-section side>
-                    <q-icon
-                      :name="outlinedStar"
-                      size="2em"
-                      :class="{ 'text-yellow': preset.favorite }"
-                      @click="toggleFavorite(preset)"
-                    />
-                  </q-item-section>
-                  <q-item-section side>
-                    <q-icon
-                      :name="outlinedDelete"
-                      size="2em"
-                      @click="deletePreset(preset)"
-                    />
-                  </q-item-section>
+          <q-card-section>
+            <div class="text-h6">
+              <q-icon name="img:icons/star-outlined-24.svg" />
+              Presets
+            </div>
+          </q-card-section>
+          <q-separator />
 
-                  <!--
-              <q-item-section>
-                <div v-if="preset.hsv">{{ hsvToRgb(preset.hsv) }}</div>
-                <div v-else>
-                  {{ preset.raw.r }}, {{ preset.raw.g }}, {{ preset.raw.b }}
-                </div>
-              </q-item-section>
-              -->
-                </q-item>
-              </q-list>
-            </q-scroll-area>
-          </MyCard>
+          <q-card-section>
+            <div v-if="activePresets && activePresets.length > 0">
+              <q-scroll-area style="height: 100%; width: 100%">
+                <q-list separator style="overflow-y: auto; height: 100%">
+                  <template v-if="activePresets.length != 0">
+                    <q-item
+                      v-for="preset in activePresets"
+                      :key="preset.name"
+                      class="q-my-sm"
+                    >
+                      <q-item-section avatar>
+                        <q-badge
+                          :style="{
+                            backgroundColor: preset.raw
+                              ? `rgb(${preset.raw.r}, ${preset.raw.g}, ${preset.raw.b})`
+                              : `rgb(${hsvToRgb(preset.hsv).r}, ${hsvToRgb(preset.hsv).g}, ${hsvToRgb(preset.hsv).b})`,
+                            width: '30px',
+                            height: '30px',
+                            borderRadius: '50%',
+                            border: '1px solid black',
+                          }"
+                          round
+                          @click="handlePresetClick(preset)"
+                        />
+                      </q-item-section>
+                      <q-item-section avatar>
+                        <q-badge
+                          style="
+                            background-color: black;
+                            color: white;
+                            font-size: 0.8em;
+                          "
+                          round
+                          @click="handlePresetClick(preset)"
+                        >
+                          {{ preset.raw ? "RAW" : "HSV" }}
+                        </q-badge>
+                      </q-item-section>
+                      <q-item-section @click="handlePresetClick(preset)">
+                        {{ preset.name }}
+                      </q-item-section>
+                      <q-item-section side>
+                        <q-icon
+                          name="img:icons/star-outlined-24.svg"
+                          size="2em"
+                          :class="{ 'text-yellow': preset.favorite }"
+                          @click="toggleFavorite(preset)"
+                        />
+                      </q-item-section>
+                      <q-item-section side>
+                        <q-icon
+                          name="img:icons/delete-outlined-24.svg"
+                          size="2em"
+                          @click="deletePreset(preset)"
+                        />
+                      </q-item-section>
+                    </q-item>
+                  </template>
+                  <template v-else>
+                    <q-item>
+                      <q-item-section>
+                        <div class="text-center q-pa-md">
+                          No presets available
+                        </div>
+                      </q-item-section>
+                    </q-item>
+                  </template>
+                </q-list>
+              </q-scroll-area>
+            </div>
+            <div v-else>no presets available</div>
+          </q-card-section>
         </q-carousel-slide>
       </q-carousel>
     </MyCard>
@@ -206,6 +206,7 @@
     </q-card>
   </q-dialog>
 </template>
+
 <script>
 import { ref, watch, computed } from "vue";
 import { colors } from "quasar";
@@ -214,11 +215,6 @@ import { colorDataStore } from "src/stores/colorDataStore";
 import { presetDataStore } from "src/stores/presetDataStore";
 import ColorSlider from "src/components/ColorSlider.vue";
 import MyCard from "src/components/myCard.vue";
-import {
-  outlinedPalette,
-  outlinedStar,
-  outlinedDelete,
-} from "@quasar/extras/material-icons-outlined";
 
 const { rgbToHsv, hexToRgb, hsvToRgb, rgbToHex } = colors;
 
@@ -468,16 +464,15 @@ export default {
       presetColorModel,
       toggleFavorite,
       deletePreset,
-      outlinedPalette,
-      outlinedStar,
-      outlinedDelete,
     };
   },
   computed: {
     activePresets() {
-      return this.presetData.data["presets"].filter(
-        (preset) => !preset.deleted,
-      );
+      const presets = this.presetData.data["presets"];
+      if (!presets) {
+        return [];
+      }
+      return presets.filter((preset) => !preset.deleted);
     },
   },
 };
