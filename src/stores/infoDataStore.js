@@ -1,12 +1,6 @@
 import { defineStore } from "pinia";
-import {
-  localhost,
-  storeStatus,
-  maxRetries,
-  retryDelay,
-} from "./storeConstants";
-import { safeStringify, fetchApi } from "src/stores/storeHelpers";
-import { controllersStore } from "./controllersStore";
+import { storeStatus } from "./storeConstants";
+import { fetchApi } from "src/stores/storeHelpers";
 
 export const infoDataStore = defineStore({
   id: "infoDataStore",
@@ -15,9 +9,7 @@ export const infoDataStore = defineStore({
     status: storeStatus.LOADING,
   }),
   actions: {
-    async fetchData(retryCount = 0) {
-      const controllers = controllersStore();
-
+    async fetchData() {
       fetchApi("info").then(({ jsonData, error }) => {
         if (error) {
           console.error("error fetching info data:", error);

@@ -20,7 +20,7 @@ const startTime = Date.now();
 let lostConnectionTimeout = null;
 let reconnectTimeout = null;
 let reconnectAttempts = 0;
-let manualClose = false;
+//let manualClose = false;
 
 export default function useWebSocket() {
   function connect(url) {

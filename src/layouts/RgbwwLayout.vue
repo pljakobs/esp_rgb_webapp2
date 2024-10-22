@@ -92,8 +92,8 @@
         bordered
       >
         <q-select
-          filled
           v-model="controllers.currentController"
+          filled
           :options="controllers.data"
           option-label="hostname"
           option-value="ip_address"
@@ -177,7 +177,7 @@
             </q-item-section>
           </q-item>
         </q-list>
-        Version:V5-pj-187-gc453-[ConfigDB]
+        Version:V5-pj-216-gf399-dirty-[ConfigDB]
       </q-drawer>
       <q-btn
         round
@@ -215,7 +215,7 @@ import {
 } from "vue";
 import { configDataStore } from "src/stores/configDataStore";
 import { colorDataStore } from "src/stores/colorDataStore";
-import { presetDataStore } from "src/stores/presetDataStore";
+//import { presetDataStore } from "src/stores/presetDataStore";
 import { infoDataStore } from "src/stores/infoDataStore";
 import { controllersStore } from "src/stores/controllersStore";
 

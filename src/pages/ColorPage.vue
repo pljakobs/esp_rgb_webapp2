@@ -37,10 +37,10 @@
                 </div>
               </q-card-section>
               <q-separator />
-              <q-card-section class="flex justify-center"
-                ><q-color
-                  :style="{ height: '$(cardWidth)px' }"
+              <q-card-section class="flex justify-center">
+                <q-color
                   v-model="color"
+                  :style="{ height: '$(cardWidth)px' }"
                   format-model="hex"
                   no-header
                   no-footer
@@ -83,7 +83,7 @@
                   :label="colorSlider.label"
                   :value="colorSlider.model"
                   :color="colorSlider.color"
-                  labelOnTop
+                  label-on-top
                   @update:model="
                     ($event) => {
                       console.log('in function:', $event);
@@ -133,8 +133,8 @@
                         borderRadius: '50%',
                         border: '1px solid black',
                       }"
-                      @click="handlePresetClick(preset)"
                       round
+                      @click="handlePresetClick(preset)"
                     />
                   </q-item-section>
                   <q-item-section avatar>
@@ -207,7 +207,7 @@
   </q-dialog>
 </template>
 <script>
-import { ref, watch, computed, onMounted, onUnmounted } from "vue";
+import { ref, watch, computed } from "vue";
 import { colors } from "quasar";
 import { storeStatus } from "src/stores/storeConstants";
 import { colorDataStore } from "src/stores/colorDataStore";
@@ -228,7 +228,6 @@ export default {
     MyCard,
   },
   setup() {
-    const isLoading = ref(true);
     const carouselPage = ref("hsv");
 
     const colorData = colorDataStore();
@@ -277,21 +276,6 @@ export default {
         color: "cyan",
       },
     ]);
-
-    const hsv_c = computed(() => ({
-      h: colorData.data.hsv.h,
-      s: colorData.data.hsv.s,
-      v: colorData.data.hsv.v,
-      ct: colorData.data.hsv.ct,
-    }));
-
-    const raw_c = computed(() => ({
-      r: colorData.data.raw.r,
-      g: colorData.data.raw.g,
-      b: colorData.data.raw.b,
-      ww: colorData.data.raw.ww,
-      cw: colorData.data.raw.cw,
-    }));
 
     watch(
       () => carouselPage,
@@ -467,15 +451,6 @@ export default {
       }
     };
 
-    /*
-     * This is a workaround for the fact that the q-color component does not have a width property.
-     */
-    const colorPickerCard = ref(null);
-    const cardWidth = computed(() => {
-      console.log("colorPickerCard", colorPickerCard.value.$el.offsetWidth);
-      return colorPickerCard.value ? colorPickerCard.value.$el.offsetWidth : 0;
-    });
-
     return {
       color,
       carouselPage,
@@ -504,9 +479,6 @@ export default {
         (preset) => !preset.deleted,
       );
     },
-  },
-  components: {
-    ColorSlider,
   },
 };
 </script>

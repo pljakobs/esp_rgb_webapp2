@@ -1,14 +1,7 @@
 import { defineStore } from "pinia";
-import {
-  localhost,
-  storeStatus,
-  maxRetries,
-  retryDelay,
-} from "./storeConstants";
-import { safeStringify } from "src/stores/storeHelpers";
+import { storeStatus } from "./storeConstants";
 import { controllersStore } from "src/stores/controllersStore";
 import { fetchApi } from "src/stores/storeHelpers";
-import useWebSocket from "src/services/websocket.js";
 
 export const presetDataStore = defineStore({
   id: "presetDataStore",
@@ -21,9 +14,7 @@ export const presetDataStore = defineStore({
   }),
 
   actions: {
-    async fetchData(retryCount = 0) {
-      const controllers = controllersStore();
-
+    async fetchData() {
       fetchApi("info").then(({ jsonData, error }) => {
         if (error) {
           console.error("error fetching info data:", error);
@@ -64,7 +55,7 @@ export const presetDataStore = defineStore({
         console.error("error adding preset:", error);
       }
     },
-    async updatePreset(preset) {},
-    async deletePreset(preset) {},
+    async updatePreset() {},
+    async deletePreset() {},
   },
 });

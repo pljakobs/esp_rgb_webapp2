@@ -8,8 +8,6 @@
 </template>
 
 <script>
-import { ref, watch } from "vue";
-import { outlinedHome } from "@quasar/extras/material-icons-outlined";
 import { infoDataStore } from "src/stores/infoDataStore";
 
 export default {

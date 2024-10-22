@@ -4,8 +4,8 @@
       <q-card-section class="row justify-center">
         <h4>application initialization</h4>
         <q-select
-          filled
           v-model="selectedNetwork"
+          filled
           :options="networks"
           :label="selectedNetwork ? 'Network selected' : 'Select a network'"
           hint="Select a network from the list"
@@ -13,7 +13,7 @@
           option-value="ssid"
           style="width: 80%"
         >
-          <template v-slot:option="props">
+          <template #option="props">
             <q-item
               v-bind="props.itemProps"
               style="display: flex; justify-content: space-between; width: 100%"
@@ -32,17 +32,17 @@
         </q-select>
 
         <q-input
-          filled
           v-model="selectedNetwork.ssid"
+          filled
           :label="selectedNetwork ? 'SSID' : 'Enter SSID'"
           hint="Enter the SSID of the network"
           style="width: 80%"
         />
         <transition name="shake" mode="out-in">
           <q-input
+            v-model="password"
             :class="{ shake: wifiData.message === 'Wrong password' }"
             filled
-            v-model="password"
             label="Password"
             type="password"
             hint="Enter the password for the network"
@@ -95,26 +95,26 @@
         <q-btn
           color="primary"
           label="Connect"
-          @click="connectToNetwork"
           style="margin-top: 16px"
+          @click="connectToNetwork"
         />
         <q-btn
           color="secondary"
           label="forget wifi"
-          @click="forgetWifi"
           style="margin-top: 16px"
+          @click="forgetWifi"
         />
         <q-btn
           color="secondary"
           label="show dialog"
-          @click="sh < owDialog"
           style="margin-top: 16px"
+          @click="sh < owDialog"
         />
         <q-btn
           color="secondary"
           label="hide dialog"
-          @click="hideDialog"
           style="margin-top: 16px"
+          @click="hideDialog"
         />
       </q-card-actions>
     </MyCard>
@@ -169,8 +169,9 @@
 --></template>
 
 <script>
-import { ref, onMounted, watch, watchEffect } from "vue";
-import useWebSocket, { wsStatus } from "../services/websocket";
+import { ref, onMounted, watch } from "vue";
+//import useWebSocket, { wsStatus } from "../services/websocket";
+import useWebSocket from "../services/websocket";
 
 import { controllersStore } from "src/stores/controllersStore.js";
 import { infoDataStore } from "src/stores/infoDataStore.js";
