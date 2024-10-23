@@ -98,10 +98,12 @@
           option-label="hostname"
           option-value="ip_address"
           label="Select a controller"
+          dropdown-icon="img:icons/arrow_drop_down.svg"
           @input="handleControllerSelection"
           @popup-show="() => $nextTick(() => (isSelectOpen.value = true))"
           @popup-hide="() => $nextTick(() => (isSelectOpen.value = false))"
-        />
+        >
+        </q-select>
 
         <q-list>
           <q-item-label header>main menu</q-item-label>
@@ -177,7 +179,7 @@
             </q-item-section>
           </q-item>
         </q-list>
-        Version:V5-pj-217-g6299-dirty-[ConfigDB]
+        Version:V5-pj-218-gb649-[ConfigDB]
       </q-drawer>
       <q-btn
         round

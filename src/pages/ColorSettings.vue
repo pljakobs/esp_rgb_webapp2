@@ -14,7 +14,9 @@
           :options="transitionOptions"
           label="Transition Mode"
           style="width: 200px"
-        />
+          dropdown-icon="img:icons/arrow_drop_down.svg"
+        >
+        </q-select>
       </div>
     </q-card-section>
 
@@ -46,7 +48,16 @@
           :options="colorOptions"
           label="Color Model"
           style="width: 200px"
-        />
+          dropdown-icon="img:icons/arrow_drop_down.svg"
+        >
+          <template #dropdown-icon>
+            <img
+              src="/icons/arrow_drop_down.svg"
+              alt="Dropdown Icon"
+              style="width: 24px; height: 24px"
+            />
+          </template>
+        </q-select>
       </div>
     </q-card-section>
     <q-card-section style="width: 80%">

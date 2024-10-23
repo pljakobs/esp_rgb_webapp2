@@ -70,7 +70,9 @@
           label="Pin configuration"
           emit-value
           map-options
-        />
+          dropdown-icon="img:icons/arrow_drop_down.svg"
+        >
+        </q-select>
         <!-- Table displaying the current pin configuration -->
         <dataTable :Items="formattedPinConfigData" />
       </q-card-section>

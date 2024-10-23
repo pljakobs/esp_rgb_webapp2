@@ -12,6 +12,7 @@
           option-label="ssid"
           option-value="ssid"
           style="width: 80%"
+          dropdown-icon="img:icons/arrow_drop_down.svg"
         >
           <template #option="props">
             <q-item
@@ -451,6 +452,11 @@ export default {
         }
       }
     };
+
+    const handleIconError = (error) => {
+      console.error("===!!! Error loading icon:", error);
+    };
+
     /**
      * Watches the wifiData object for changes and performs actions when the device is connected to the network.
      * Starts a countdown from 10 seconds and restarts the controller after the countdown reaches 0.
@@ -514,6 +520,7 @@ export default {
       hideDialog,
       countdown,
       log,
+      handleIconError,
     };
   },
 };
