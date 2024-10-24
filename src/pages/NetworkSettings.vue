@@ -3,7 +3,7 @@
     <MyCard>
       <q-card-section>
         <div class="text-h6">
-          <q-icon name="img:icons/badge-outlined-24.svg" />
+          <q-icon name="img:icons/badge_outlined.svg" />
           Hostname
         </div>
         <q-input
@@ -21,7 +21,7 @@
     <MyCard>
       <q-card-section>
         <div class="text-h6">
-          <q-icon name="img:icons/wifi-outlined-24.svg" />
+          <q-icon name="img:icons/wifi_outlined.svg" />
           Connection
         </div>
       </q-card-section>
@@ -31,7 +31,7 @@
       </q-card-section>
       <q-card-section>
         <div class="text-h6">
-          <q-icon name="img:icons/settings-outlined-24.svg" />
+          <q-icon name="img:icons/settings_outlined.svg" />
           IP Settings
         </div>
         <div>
@@ -90,7 +90,7 @@
     <MyCard>
       <q-card-section>
         <div class="text-h6">
-          <q-icon name="img:/icons/hub-outlined-24.svg" />
+          <q-icon name="img:/icons/hub_outlined.svg" />
           MQTT Settings
         </div>
         <div>
@@ -172,13 +172,13 @@
           <template #append>
             <q-icon
               v-if="hidePwd"
-              src="img:icons/visibility-outlined-24.svg"
+              src="img:icons/visibility_outlined.svg"
               class="cursor-pointer"
               @click="togglePasswordVisibility"
             />
             <q-icon
               v-else
-              src="img:icons/visibility-off-outlined-24.svg"
+              src="img:icons/visibility-off_outlined.svg"
               class="cursor-pointer"
               @click="togglePasswordVisibility"
             />

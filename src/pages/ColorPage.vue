@@ -6,21 +6,21 @@
           <q-btn
             name="hsv"
             label="HSV"
-            icon="img:icons/palette-outlined-24.svg"
+            icon="img:icons/palette_outlined.svg"
             :color="carouselPage === 'hsv' ? 'secondary' : 'primary'"
             @click="carouselPage = 'hsv'"
           />
           <q-btn
             name="raw"
             label="Raw"
-            icon="img:icons/palette-outlined-24.svg"
+            icon="img:icons/palette_outlined.svg"
             :color="carouselPage === 'raw' ? 'secondary' : 'primary'"
             @click="carouselPage = 'raw'"
           />
           <q-btn
             name="presets"
             label="Presets"
-            icon="img:icons/star-outlined-24.svg"
+            icon="img:icons/star_outlined.svg"
             :color="carouselPage === 'presets' ? 'secondary' : 'primary'"
             @click="carouselPage = 'presets'"
           />
@@ -32,7 +32,7 @@
           <q-scroll-area style="height: 100%; width: 100%">
             <q-card-section>
               <div class="text-h6">
-                <q-icon name="img:icons/palette-outlined-24.svg" />
+                <q-icon name="img:icons/palette_outlined.svg" />
                 HSV
               </div>
             </q-card-section>
@@ -48,7 +48,7 @@
             </q-card-section>
             <q-card-section class="flex justify-center">
               <q-btn
-                icon="img:icons/star-outlined-24.svg"
+                icon="img:icons/star_outlined.svg"
                 label="add preset"
                 @click="() => openDialog('hsv')"
               />
@@ -60,7 +60,7 @@
           <q-scroll-area style="height: 100%; width: 100%">
             <q-card-section>
               <div class="text-h6">
-                <q-icon name="img:icons/palette-outlined-24.svg" />
+                <q-icon name="img:icons/palette_outlined.svg" />
                 RAW
               </div>
             </q-card-section>
@@ -92,7 +92,7 @@
             </q-card-section>
             <q-card-section class="flex justify-center">
               <q-btn
-                icon="img:icons/star-outlined-24.svg"
+                icon="img:icons/star_outlined.svg"
                 label="add preset"
                 @click="() => openDialog('raw')"
               />
@@ -103,7 +103,7 @@
         <q-carousel-slide name="presets">
           <q-card-section>
             <div class="text-h6">
-              <q-icon name="img:icons/star-outlined-24.svg" />
+              <q-icon name="img:icons/star_outlined.svg" />
               Presets
             </div>
           </q-card-section>
@@ -152,7 +152,7 @@
                       </q-item-section>
                       <q-item-section side>
                         <q-icon
-                          name="img:icons/star-outlined-24.svg"
+                          name="img:icons/star_outlined.svg"
                           size="2em"
                           :class="{ 'text-yellow': preset.favorite }"
                           @click="toggleFavorite(preset)"
@@ -160,7 +160,7 @@
                       </q-item-section>
                       <q-item-section side>
                         <q-icon
-                          name="img:icons/delete-outlined-24.svg"
+                          name="img:icons/delete_outlined.svg"
                           size="2em"
                           @click="deletePreset(preset)"
                         />

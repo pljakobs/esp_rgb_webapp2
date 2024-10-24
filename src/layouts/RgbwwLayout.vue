@@ -77,7 +77,7 @@
             @click="toggleLeftDrawer"
           >
             <q-avatar>
-              <img src="/icons/favicon.ico" />
+              <img src="icons/menu_outlined_24.svg" />
             </q-avatar>
           </q-btn>
           <q-toolbar-title> Lightinator Mini </q-toolbar-title>
@@ -109,7 +109,7 @@
           <q-item-label header>main menu</q-item-label>
           <q-item clickable tag="router-link" to="/ColorPage">
             <q-item-section class="icon-section"
-              ><q-icon :name="outlinedLightbulb" />
+              ><q-icon name="img:icons/lightbulb_outlined.svg" />
             </q-item-section>
 
             <q-item-section class="text-section">
@@ -120,7 +120,7 @@
 
           <q-item clickable tag="router-link" to="/ColorSettings">
             <q-item-section class="icon-section"
-              ><q-icon :name="outlinedSettings" />
+              ><q-icon name="img:icons/settings_outlined.svg" />
             </q-item-section>
 
             <q-item-section class="text-section">
@@ -133,7 +133,7 @@
 
           <q-item clickable tag="router-link" to="/NetworkSettings">
             <q-item-section class="icon-section"
-              ><q-icon :name="outlinedWifi" />
+              ><q-icon name="img:icons/wifi_outlined.svg" />
             </q-item-section>
 
             <q-item-section class="text-section">
@@ -146,7 +146,7 @@
 
           <q-item clickable tag="router-link" to="/SystemSettings">
             <q-item-section class="icon-section"
-              ><q-icon :name="outlinedMemory" />
+              ><q-icon name="img:icons/memory_outlined.svg" />
             </q-item-section>
 
             <q-item-section class="text-section">
@@ -159,7 +159,7 @@
           </q-item>
           <q-item clickable tag="router-link" to="/NetworkInit">
             <q-item-section class="icon-section"
-              ><q-icon :name="outlinedWifi" />
+              ><q-icon name="img:icons/wifi_outlined.svg" />
             </q-item-section>
 
             <q-item-section class="text-section">
@@ -170,7 +170,7 @@
 
           <q-item clickable tag="router-link" to="/test">
             <q-item-section class="icon-section"
-              ><q-icon :name="outlinedLightbulb" />
+              ><q-icon name="img:icons/lightbulb_outlined.svg" />
             </q-item-section>
 
             <q-item-section class="text-section">
@@ -179,7 +179,7 @@
             </q-item-section>
           </q-item>
         </q-list>
-        Version:V5-pj-218-gb649-[ConfigDB]
+        Version:V5-pj-227-g8793-dirty-[ConfigDB]
       </q-drawer>
       <q-btn
         round
@@ -224,16 +224,7 @@ import { controllersStore } from "src/stores/controllersStore";
 import { storeStatus } from "src/stores/storeConstants";
 import useWebSocket, { wsStatus } from "src/services/websocket.js";
 import { useRouter } from "vue-router";
-import {
-  outlinedLightbulb,
-  outlinedSettings,
-  outlinedWifi,
-  outlinedMemory,
-  outlinedCheck,
-  outlinedHelp,
-  outlinedClose,
-  outlinedInfo,
-} from "@quasar/extras/material-icons-outlined";
+
 export default defineComponent({
   name: "MainLayout",
 
@@ -275,13 +266,13 @@ export default defineComponent({
     const buttonIcon = computed(() => {
       switch (ws.status.value) {
         case wsStatus.CONNECTED:
-          return outlinedCheck;
+          return "img:icons/check_outlined.svg";
         case wsStatus.DISCONNECTED:
-          return outlinedClose;
+          return "img:icons/close_outlined.svg";
         case wsStatus.CONNECTING:
-          return outlinedHelp;
+          return "ig:icons/help_outlined.svg";
         default:
-          return outlinedInfo;
+          return "img:icons/info_outlined,svg";
       }
     });
 
@@ -385,14 +376,6 @@ export default defineComponent({
       toggleLeftDrawer,
       buttonColor,
       buttonIcon,
-      outlinedLightbulb,
-      outlinedMemory,
-      outlinedSettings,
-      outlinedWifi,
-      outlinedCheck,
-      outlinedHelp,
-      outlinedClose,
-      outlinedInfo,
     };
   },
 });

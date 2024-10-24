@@ -4,7 +4,7 @@
     <MyCard>
       <q-card-section>
         <div class="text-h6">
-          <q-icon name="img:icons/info-outlined-24.svg" />
+          <q-icon name="img:icons/info_outlined.svg" />
           Information
         </div>
       </q-card-section>
@@ -57,7 +57,7 @@
     <MyCard>
       <q-card-section>
         <div class="text-h6">
-          <q-icon name="img:icons/memory-outlined-24.svg" />
+          <q-icon name="img:icons/memory_outlined.svg" />
           Controller
         </div>
       </q-card-section>
@@ -80,7 +80,7 @@
     <MyCard>
       <q-card-section>
         <div class="text-h6">
-          <q-icon name="img:icons/security-outlined-24.svg" />
+          <q-icon name="img:icons/security_outlined.svg" />
           security
         </div>
       </q-card-section>
@@ -94,7 +94,7 @@
     <MyCard>
       <q-card-section>
         <div class="text-h6">
-          <q-icon name="img:icons/systemsecurityupdate-outlined-24.svg" />
+          <q-icon name="img:icons/systemsecurityupdate_outlined.svg" />
           Firmware update
         </div>
       </q-card-section>
@@ -130,7 +130,7 @@
     >
       <q-card-section>
         <div class="text-h6">
-          <q-icon name="img:icons/systemsecurityupdate-outlined-24.svg" />
+          <q-icon name="img:icons/systemsecurityupdate_outlined.svg" />
           Firmware update
         </div>
       </q-card-section>
@@ -251,7 +251,7 @@ export default {
             title: "HTTP error",
             message: `HTTP error! status: ${response.status}`,
             color: "negative",
-            icon: "img:icons/report-problem-outlined-24.svg",
+            icon: "img:icons/report-problem_outlined.svg",
           })
             .onOk(() => {
               console.log("ok");
@@ -320,7 +320,7 @@ export default {
             title: "Firmware missing",
             message: `No matching firmware found for your configuration / controller`,
             color: "negative",
-            icon: "img:icons/report-problem-outlined-24.svg",
+            icon: "img:icons/report-problem_outlined.svg",
           })
             .onOk(() => {
               console.log("ok");
@@ -353,7 +353,7 @@ export default {
           title: "Error fetching firmware list",
           message: `There was a problem with the fetch operation: ${error.message}`,
           color: "negative",
-          icon: "img:icons/report-problem-outlined-24.svg",
+          icon: "img:icons/report-problem_outlined.svg",
         })
           .onOk(() => {
             console.log("ok");

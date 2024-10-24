@@ -2,7 +2,7 @@
   <MyCard>
     <q-card-section>
       <div class="text-h6">
-        <q-icon name="img:icons/tune-outlined-24.svg" />
+        <q-icon name="img:icons/tune_outlined.svg" />
         HSV
       </div>
     </q-card-section>
@@ -36,7 +36,7 @@
   <MyCard>
     <q-card-section>
       <div class="text-h6">
-        <q-icon name="img:icons/palette-outlined-24.svg" />
+        <q-icon name="img:icons/palette_outlined.svg" />
         Color
       </div>
     </q-card-section>
@@ -76,7 +76,7 @@
   <MyCard v-if="colorModel === 'RGBWWCW'">
     <q-card-section>
       <div class="text-h6">
-        <q-icon name="img:icons/exposure-outlined-24.svg" />
+        <q-icon name="img:icons/exposure_outlined.svg" />
         White balance
       </div>
     </q-card-section>

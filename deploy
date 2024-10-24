@@ -25,6 +25,9 @@ echo $version >dist/spa/VERSION
 echo "VUE_APP_BUILD_NUMBER=$version" >.env
 echo "deploying "
 cat dist/spa/VERSION
+
+node generate_icon_list.js >./fileList.h
+
 echo "parameter: $1"
 if [ "$1" == "local" ]
 then
@@ -34,6 +37,7 @@ then
 		mkdir ~/devel/esp_rgbww_firmware/webapp }
 	fi
 	cp -auv dist/spa/* ~/devel/esp_rgbww_firmware/webapp/
+  cp filelist.h ~/devel/esp_rgbww_firmware/
 	cd ~/devel/esp_rgbww_firmware
 	make -j8
 	cd $dir
@@ -42,11 +46,12 @@ else
 	ssh $DEVBOX "if [ ! -d ~/devel/esp_rgbww_firmware/webapp ]; then mkdir ~/devel/esp_rgbww_firmware/webapp;fi"
 	ssh $DEVBOX "rm -rf ~/devel/esp_rgbww_firmware/webapp/*"
 	rsync -a dist/spa/ $DEVBOX:~/devel/esp_rgbww_firmware/webapp
-	if [ "$1" = "OTA" ] 
+  scp fileList.h $DEVBOX:~/devel/esp_rgbww_firmware/app
+	if [ "$1" = "OTA" ]
 	then
 		ssh $DEVBOX "source ~/.smingrc;cd devel/esp_rgbww_firmware/;make -j8;./deployOta PART_LAYOUT=v1"
 	else
 		ssh $DEVBOX "source ~/.smingrc;cd devel/esp_rgbww_firmware/;make -j8 flash PART_LAYOUT=v1"
 	fi
 fi
-	
+
