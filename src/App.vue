@@ -10,23 +10,30 @@ import initializeStores from "src/services/initializeStores";
 export default defineComponent({
   name: "App",
   setup() {
-    const controllers = controllersStore();
+    try {
+      const controllers = controllersStore();
+      console.log("controllers:", controllers);
 
-    const webhost = window.location.hostname;
-    console.log("webhost", webhost);
-    watch(
-      () => controllers.currentController,
-      () => {
-        console.log(
-          "switching to controller",
-          controllers.currentController["hostname"],
-        );
+      const webhost = window.location.hostname;
+      console.log("webhost", webhost);
+
+      watch(
+        () => controllers.currentController,
+        () => {
+          console.log(
+            "switching to controller",
+            controllers.currentController?.hostname,
+          );
+          initializeStores();
+        },
+      );
+
+      onMounted(() => {
         initializeStores();
-      },
-    );
-    onMounted(() => {
-      initializeStores();
-    });
+      });
+    } catch (error) {
+      console.error("Error in setup function:", error);
+    }
   },
 });
 </script>

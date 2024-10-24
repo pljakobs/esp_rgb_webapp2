@@ -1,9 +1,10 @@
+<!-- eslint-disable vue/attribute-hyphenation -->
 <template>
   <div>
     <MyCard>
       <q-card-section>
         <div class="text-h6">
-          <q-icon :name="outlinedInfo" />
+          <q-icon name="img:icons/info_outlined.svg" />
           Information
         </div>
       </q-card-section>
@@ -15,14 +16,14 @@
             <q-btn
               label="export settings"
               color="primary"
-              @click="exportSettings"
               class="q-mt-md"
+              @click="exportSettings"
             />
             <q-btn
               label="import settings"
               color="primary"
-              @click="importSettings"
               class="q-mt-md"
+              @click="importSettings"
             />
           </q-card-actions>
         </div>
@@ -34,20 +35,20 @@
             <q-btn
               label="restart"
               color="primary"
-              @click="restartController"
               class="q-mt-md"
+              @click="restartController"
             />
             <q-btn
               label="reset"
               color="primary"
-              @click="resetController"
               class="q-mt-md"
+              @click="resetController"
             />
             <q-btn
               label="switch ROM"
               color="primary"
-              @click="switchROM"
               class="q-mt-md"
+              @click="switchROM"
             />
           </q-card-actions>
         </div>
@@ -56,20 +57,22 @@
     <MyCard>
       <q-card-section>
         <div class="text-h6">
-          <q-icon :name="outlinedMemory" />
+          <q-icon name="img:icons/memory_outlined.svg" />
           Controller
         </div>
       </q-card-section>
       <q-separator />
       <q-card-section>
         <q-select
-          class="custom-select"
           v-model="currentPinConfigName"
+          class="custom-select"
           :options="pinConfigNames"
           label="Pin configuration"
           emit-value
           map-options
-        />
+          dropdown-icon="img:icons/arrow_drop_down.svg"
+        >
+        </q-select>
         <!-- Table displaying the current pin configuration -->
         <dataTable :Items="formattedPinConfigData" />
       </q-card-section>
@@ -77,7 +80,7 @@
     <MyCard>
       <q-card-section>
         <div class="text-h6">
-          <q-icon :name="outlinedSecurity" />
+          <q-icon name="img:icons/security_outlined.svg" />
           security
         </div>
       </q-card-section>
@@ -91,7 +94,7 @@
     <MyCard>
       <q-card-section>
         <div class="text-h6">
-          <q-icon :name="outlinedSystemSecurityUpdate" />
+          <q-icon name="img:icons/systemsecurityupdate_outlined.svg" />
           Firmware update
         </div>
       </q-card-section>
@@ -108,8 +111,8 @@
         ><q-btn
           label="check firmware"
           color="primary"
-          @click="checkFirmware"
           class="q-mt-md"
+          @click="checkFirmware"
       /></q-card-actions>
       <q-card-section v-if="firmware">
         current: firmware: {{ infoData.data.git_version }} webapp:
@@ -127,7 +130,7 @@
     >
       <q-card-section>
         <div class="text-h6">
-          <q-icon :name="outlinedSystemSecurityUpdate" />
+          <q-icon name="img:icons/systemsecurityupdate_outlined.svg" />
           Firmware update
         </div>
       </q-card-section>
@@ -159,14 +162,14 @@
         <q-btn
           label="cancel"
           color="primary"
-          @click="dialogOpen = false"
           class="q-mt-md"
+          @click="dialogOpen = false"
         />
         <q-btn
           label="update"
           color="primary"
-          @click="updateController"
           class="q-mt-md"
+          @click="updateController"
         />
       </q-card-actions>
     </q-card>
@@ -200,38 +203,12 @@ import { storeStatus } from "src/stores/storeConstants";
 import dataTable from "src/components/dataTable.vue";
 import MyCard from "src/components/myCard.vue";
 import systemCommand from "src/services/systemCommands";
-import {
-  outlinedInfo,
-  outlinedMemory,
-  outlinedReportProblem,
-  outlinedSecurity,
-  outlinedSystemSecurityUpdate,
-} from "@quasar/extras/material-icons-outlined";
-
 import { useQuasar } from "quasar";
 
 export default {
   components: {
     dataTable,
     MyCard,
-  },
-  computed: {
-    formattedPinConfigData() {
-      if (!this.currentPinConfig) {
-        return [];
-      }
-      if (
-        !this.currentPinConfig.channels ||
-        this.currentPinConfig.channels.length === 0
-      ) {
-        return [];
-      }
-
-      return this.currentPinConfig.channels.map((config) => ({
-        label: config.name,
-        value: config.pin,
-      }));
-    },
   },
   setup() {
     const controllers = controllersStore();
@@ -270,24 +247,21 @@ export default {
         console.log("response: ", response);
         if (!response.ok) {
           console.log("response was not ok");
-          function alert() {
-            $q.dialog({
-              title: "HTTP error",
-              message: `HTTP error! status: ${response.status}`,
-              color: "negative",
-              icon: outlinedReportProblem,
+          $q.dialog({
+            title: "HTTP error",
+            message: `HTTP error! status: ${response.status}`,
+            color: "negative",
+            icon: "img:icons/report-problem_outlined.svg",
+          })
+            .onOk(() => {
+              console.log("ok");
             })
-              .onOk(() => {
-                console.log("ok");
-              })
-              .onCancel(() => {
-                console.log("cancel");
-              })
-              .onDismiss(() => {
-                console.log("dismiss");
-              });
-          }
-          alert();
+            .onCancel(() => {
+              console.log("cancel");
+            })
+            .onDismiss(() => {
+              console.log("dismiss");
+            });
           console.error(`HTTP error! status: ${response.status}`);
           throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -309,7 +283,8 @@ export default {
             },
           };
         }
-        //if firmware was found, check if the url is local and convert it to a full url
+
+        // If firmware was found, check if the URL is local and convert it to a full URL
         if (
           firmware.value.files.rom &&
           !firmware.value.files.rom.url.startsWith("http://") &&
@@ -341,29 +316,26 @@ export default {
 
         if (!firmware.value) {
           console.error("No matching firmware found");
-          function alert() {
-            $q.dialog({
-              title: "Firmware missing",
-              message: `no matching firmware found for your configuration / controller`,
-              color: "negative",
-              icon: outlinedReportProblem,
+          $q.dialog({
+            title: "Firmware missing",
+            message: `No matching firmware found for your configuration / controller`,
+            color: "negative",
+            icon: "img:icons/report-problem_outlined.svg",
+          })
+            .onOk(() => {
+              console.log("ok");
             })
-              .onOk(() => {
-                console.log("ok");
-              })
-              .onCancel(() => {
-                console.log("cancel");
-              })
-              .onDismiss(() => {
-                console.log("dismiss");
-              });
-          }
-          alert();
+            .onCancel(() => {
+              console.log("cancel");
+            })
+            .onDismiss(() => {
+              console.log("dismiss");
+            });
         } else {
           console.log("firmware", JSON.stringify(firmware.value));
           firmwareItems.value = [
             {
-              label: "firmware version",
+              label: "Firmware version",
               value: firmware.value.files.rom.fw_version,
             },
             {
@@ -377,24 +349,21 @@ export default {
         }
       } catch (error) {
         console.error("There was a problem with the fetch operation: ", error);
-        function alert() {
-          $q.dialog({
-            title: "error fetching firmware list",
-            message: `There was a problem with the fetch operation: ${error.message}`,
-            color: "negative",
-            icon: outlinedReportProblem,
+        $q.dialog({
+          title: "Error fetching firmware list",
+          message: `There was a problem with the fetch operation: ${error.message}`,
+          color: "negative",
+          icon: "img:icons/report-problem_outlined.svg",
+        })
+          .onOk(() => {
+            console.log("ok");
           })
-            .onOk(() => {
-              console.log("ok");
-            })
-            .onCancel(() => {
-              console.log("cancel");
-            })
-            .onDismiss(() => {
-              console.log("dismiss");
-            });
-        }
-        alert();
+          .onCancel(() => {
+            console.log("cancel");
+          })
+          .onDismiss(() => {
+            console.log("dismiss");
+          });
       }
     };
 
@@ -416,7 +385,7 @@ export default {
         "host: ",
         `http://${controllers.currentController["ip_address"]}`,
       );
-      const postResponse = await fetch(
+      await fetch(
         `http://${controllers.currentController["ip_address"]}/update`,
         {
           method: "POST",
@@ -443,7 +412,7 @@ export default {
     };
 
     const switchROM = () => {
-      console.log("switching ROM, current ${infoData.data.current_rom}");
+      console.log(`switching ROM, current ${infoData.data.current_rom}`);
       systemCommand.switchRom();
       setTimeout(() => {
         location.reload();
@@ -482,8 +451,7 @@ export default {
       getPinConfigNames();
       getCurrentPinConfig();
     };
-    // filter only those pinConfigs that are supported by the current controller
-    // this is really mostly future-proofing for controllers with more than five channels
+
     const getPinConfigNames = () => {
       pinConfigNames.value = pinConfigData.value.pinconfigs
         .filter((item) =>
@@ -493,6 +461,7 @@ export default {
         )
         .map((item) => item.name);
     };
+
     const getCurrentPinConfig = () => {
       if (!currentPinConfigName.value) {
         currentPinConfigName.value =
@@ -508,7 +477,6 @@ export default {
       );
 
       console.log("updated pinConfig:", currentPinConfig.value);
-      //currentPinConfig.value = currentPinConfig.value.channels;
     };
 
     const updatePinConfig = (newPinConfigName) => {
@@ -538,7 +506,7 @@ export default {
       }
     };
 
-    watch(currentPinConfigName, (newVal, oldVal) => {
+    watch(currentPinConfigName, (newVal) => {
       console.log("currentPinConfigName changed", newVal);
       updatePinConfig(newVal);
     });
@@ -603,11 +571,25 @@ export default {
       currentPinConfig,
       currentPinConfigName,
       updatePinConfig,
-      outlinedInfo,
-      outlinedMemory,
-      outlinedSecurity,
-      outlinedSystemSecurityUpdate,
     };
+  },
+  computed: {
+    formattedPinConfigData() {
+      if (!this.currentPinConfig) {
+        return [];
+      }
+      if (
+        !this.currentPinConfig.channels ||
+        this.currentPinConfig.channels.length === 0
+      ) {
+        return [];
+      }
+
+      return this.currentPinConfig.channels.map((config) => ({
+        label: config.name,
+        value: config.pin,
+      }));
+    },
   },
 };
 </script>

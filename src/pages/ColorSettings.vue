@@ -2,7 +2,7 @@
   <MyCard>
     <q-card-section>
       <div class="text-h6">
-        <q-icon :name="outlinedTune" />
+        <q-icon name="img:icons/tune_outlined.svg" />
         HSV
       </div>
     </q-card-section>
@@ -14,8 +14,9 @@
           :options="transitionOptions"
           label="Transition Mode"
           style="width: 200px"
-          @update:model-value="updateTransitionMode"
-        />
+          dropdown-icon="img:icons/arrow_drop_down.svg"
+        >
+        </q-select>
       </div>
     </q-card-section>
 
@@ -26,21 +27,16 @@
         :min="colorGain.min"
         :max="colorGain.max"
         :label="colorGain.label"
-        :value="colorGain.model"
+        :value="getColorGainValue(colorGain.model)"
         :color="colorGain.color"
-        @update:model="
-          ($event) => {
-            console.log('in function:', $event);
-            updateColorSlider(colorGain, $event);
-          }
-        "
+        @update:model="updateColorGain(colorGain.model, $event)"
       />
     </q-card-section>
   </MyCard>
   <MyCard>
     <q-card-section>
       <div class="text-h6">
-        <q-icon :name="outlinedPalette" />
+        <q-icon name="img:icons/palette_outlined.svg" />
         Color
       </div>
     </q-card-section>
@@ -52,7 +48,16 @@
           :options="colorOptions"
           label="Color Model"
           style="width: 200px"
-        />
+          dropdown-icon="img:icons/arrow_drop_down.svg"
+        >
+          <template #dropdown-icon>
+            <img
+              src="/icons/arrow_drop_down.svg"
+              alt="Dropdown Icon"
+              style="width: 24px; height: 24px"
+            />
+          </template>
+        </q-select>
       </div>
     </q-card-section>
     <q-card-section style="width: 80%">
@@ -62,21 +67,16 @@
         :min="colorSlider.min"
         :max="colorSlider.max"
         :label="colorSlider.label"
-        :value="colorSlider.model"
+        :value="getColorSliderValue(colorSlider.model)"
         :color="colorSlider.color"
-        @update:model="
-          ($event) => {
-            console.log('in function:', $event);
-            updateColorSlider(colorSlider, $event);
-          }
-        "
+        @update:model="updateColorSlider(colorSlider.model, $event)"
       />
     </q-card-section>
   </MyCard>
-  <MyCard v-if="colorModel === 'RGBWWCW'"
-    ><q-card-section>
+  <MyCard v-if="colorModel === 'RGBWWCW'">
+    <q-card-section>
       <div class="text-h6">
-        <q-icon :name="outlinedExposure" />
+        <q-icon name="img:icons/exposure_outlined.svg" />
         White balance
       </div>
     </q-card-section>
@@ -88,28 +88,19 @@
         :min="colorTemperature.min"
         :max="colorTemperature.max"
         :label="colorTemperature.label"
-        :value="colorTemperature.model"
+        :value="getColorTemperatureValue(colorTemperature.model)"
         :color="colorTemperature.color"
-        @update:model="
-          ($event) => {
-            console.log('in function:', $event);
-            updateColorSlider(colorTemperature, $event);
-          }
-        "
+        @update:model="updateColorTemperature(colorTemperature.model, $event)"
       />
     </q-card-section>
   </MyCard>
 </template>
+
 <script>
 import { ref, watch, computed, onMounted } from "vue";
 import { configDataStore } from "src/stores/configDataStore";
 import ColorSlider from "src/components/ColorSlider.vue";
 import MyCard from "src/components/myCard.vue";
-import {
-  outlinedPalette,
-  outlinedExposure,
-  outlinedTune,
-} from "@quasar/extras/material-icons-outlined";
 
 export default {
   components: {
@@ -120,78 +111,75 @@ export default {
     const configData = configDataStore();
 
     const transitionOptions = ["Normal", "Spektrum", "Rainbow"];
-    const transitionModel = ref(
-      transitionOptions[configData.data.color.hsv.model],
-    );
-    console.log("transition mode:", configData.data.color.hsv.model);
+    const transitionModel = ref("");
+    const colorModel = ref("");
+    const defaultColorOptions = ["RGB", "RGBWW", "RGBCW", "RGBWWCW"];
+    const colorOptions = ref([]);
 
     const colorGains = [
       {
         label: "Red",
-        model: configData.data.color.hsv.red,
+        model: "color.hsv.red",
         min: -30,
         max: 30,
         color: "red",
       },
       {
         label: "Yellow",
-        model: configData.data.color.hsv.yellow,
+        model: "color.hsv.yellow",
         min: -30,
         max: 30,
         color: "yellow",
       },
       {
         label: "Green",
-        model: configData.data.color.hsv.green,
+        model: "color.hsv.green",
         min: -30,
         max: 30,
         color: "green",
       },
       {
         label: "Cyan",
-        model: configData.data.color.hsv.cyan,
+        model: "color.hsv.cyan",
         min: -30,
         max: 30,
         color: "cyan",
       },
       {
         label: "Blue",
-        model: configData.data.color.hsv.blue,
+        model: "color.hsv.blue",
         min: -30,
         max: 30,
         color: "blue",
       },
       {
         label: "Magenta",
-        model: configData.data.color.hsv.magenta,
+        model: "color.hsv.magenta",
         min: -30,
         max: 30,
         color: "#ff0090",
       },
     ];
 
-    const colorModel = ref("RGB");
-    const colorOptions = ["RGB", "RGBWW", "RGBCW", "RGBWWCW"];
     const colorSliders = computed(() => {
-      // Define the sliders based on the selected model
       const sliders = [
         {
           label: "Red",
-          model: configData.data.color.brightness.red,
+          model: "color.brightness.red",
           min: 0,
           max: 100,
           color: "red",
         },
         {
           label: "Green",
-          model: configData.data.color.brightness.green,
+          model: "color.brightness.green",
           min: 0,
           max: 100,
           color: "green",
         },
         {
           label: "Blue",
-          model: configData.data.color.brightness.blue,
+          model: "color.brightness.blue",
           min: 0,
           max: 100,
           color: "blue",
@@ -201,7 +189,7 @@ export default {
       if (colorModel.value === "RGBWW" || colorModel.value === "RGBWWCW") {
         sliders.push({
           label: "Warm White",
-          model: configData.data.color.brightness.ww,
+          model: "color.brightness.ww",
           min: 0,
           max: 100,
           color: "yellow",
@@ -211,7 +199,7 @@ export default {
       if (colorModel.value === "RGBCW" || colorModel.value === "RGBWWCW") {
         sliders.push({
           label: "Cold White",
-          model: configData.data.color.brightness.cw,
+          model: "color.brightness.cw",
           min: 0,
           max: 100,
           color: "cyan",
@@ -224,51 +212,93 @@ export default {
     const colorTemperatures = [
       {
         label: "warm white",
-        model: configData.data.color.colortemp.ww,
+        model: "color.colortemp.ww",
         min: 2500,
         max: 8000,
         color: "yellow",
       },
       {
         label: "cold white",
-        model: configData.data.color.colortemp.cw,
+        model: "color.colortemp.cw",
         min: 2500,
         max: 8000,
         color: "cyan",
       },
     ];
 
-    const updateColorSlider = (slider, value) => {
-      console.log("update for", slider);
-      console.log("new value", value);
-      configData.updateData(slider.label.toLowerCase(), value);
-      //store.dispatch('config/updateConfigData',''
+    const getColorGainValue = (model) => {
+      return model.split(".").reduce((o, i) => o[i], configData.data);
+    };
+
+    const updateColorGain = (model, value) => {
+      configData.updateData(model, value);
+    };
+
+    const getColorSliderValue = (model) => {
+      return model.split(".").reduce((o, i) => o[i], configData.data);
+    };
+
+    const updateColorSlider = (model, value) => {
+      configData.updateData(model, value);
+    };
+
+    const getColorTemperatureValue = (model) => {
+      return model.split(".").reduce((o, i) => o[i], configData.data);
+    };
+
+    const updateColorTemperature = (model, value) => {
+      configData.updateData(model, value);
     };
 
     const updateTransitionMode = (newTransitionModel) => {
-      console.log(
-        `from update trigger: \nTransition model changed to ${newTransitionModel}`,
-      );
-      console.log(
-        "old transition model:",
-        configData.data.color.hsv.model,
-        " new transition model: ",
-        transitionOptions.indexOf(newTransitionModel),
-      );
-      configData.data.color.hsv.model =
-        transitionOptions.indexOf(newTransitionModel);
+      const modelIndex = transitionOptions.indexOf(newTransitionModel);
+      configData.updateData("color.hsv.model", modelIndex);
     };
 
-    watch(
-      () => colorModel,
-      (oldColorModel, newColorModel) => {
-        // Triggered when selectedModel changes
-        // You can update the colorSliders array here if needed
-        console.log(
-          "Selected color model changed:, from ${oldColorModel} to ${newColorModel}",
-        );
-      },
-    );
+    const updateColorModel = (newColorModel) => {
+      const modelIndex = colorOptions.value.indexOf(newColorModel);
+      configData.updateData("color.outputmode", modelIndex);
+      colorModel.value = newColorModel; // Ensure the ref is updated
+    };
+
+    watch(transitionModel, (newTransitionModel) => {
+      updateTransitionMode(newTransitionModel);
+    });
+
+    watch(colorModel, (newColorModel, oldColorModel) => {
+      console.log(
+        `Selected color model changed from ${oldColorModel} to ${newColorModel}`,
+      );
+      updateColorModel(newColorModel);
+    });
+
+    // Initialize values from configDataStore when the component is mounted
+    onMounted(() => {
+      // Initialize transitionModel
+      const transitionModelIndex = configData.data.color.hsv.model;
+      if (
+        transitionModelIndex >= 0 &&
+        transitionModelIndex < transitionOptions.length
+      ) {
+        transitionModel.value = transitionOptions[transitionModelIndex];
+      } else {
+        console.error(`Invalid color.hsv.model: ${transitionModelIndex}`);
+        transitionModel.value = transitionOptions[0]; // Default to the first option
+      }
+
+      // Initialize colorOptions and colorModel
+      colorOptions.value =
+        configData.data.general?.supported_color_models.length > 0
+          ? configData.data.general.supported_color_models
+          : defaultColorOptions;
+      const colorModelIndex = configData.data.color.color_mode;
+      if (colorModelIndex >= 0 && colorModelIndex < colorOptions.value.length) {
+        colorModel.value = colorOptions.value[colorModelIndex];
+      } else {
+        console.error(`Invalid color.color_mode: ${colorModelIndex}`);
+        colorModel.value = colorOptions.value[0]; // Default to the first option
+      }
+    });
 
     return {
       transitionModel,
@@ -278,17 +308,16 @@ export default {
       colorSliders,
       colorOptions,
       colorTemperatures,
+      getColorGainValue,
+      updateColorGain,
+      getColorSliderValue,
       updateColorSlider,
+      getColorTemperatureValue,
+      updateColorTemperature,
       updateTransitionMode,
+      updateColorModel,
       configData,
-      outlinedPalette,
-      outlinedExposure,
-      outlinedTune,
     };
-  },
-  components: {
-    ColorSlider,
-    MyCard,
   },
 };
 </script>
