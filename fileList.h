@@ -33,7 +33,7 @@
 	XX(signal_wifi_statusbar_null_FILL0_wght400_GRAD0_opsz24_svg, "icons/signal_wifi_statusbar_null_FILL0_wght400_GRAD0_opsz24.svg.gz") \
 	XX(star_outlined_svg, "icons/star_outlined.svg.gz") \
 	XX(systemsecurityupdate_outlined_24_svg, "icons/systemsecurityupdate-outlined-24.svg.gz") \
-	XX(tune_outlined_24_svg, "icons/tune-outlined-24.svg.gz") \
+	XX(tune_outlined_svg, "icons/tune_outlined.svg.gz") \
 	XX(visibility_outlined_24_svg, "icons/visibility-outlined-24.svg.gz") \
 	XX(visibility_off_outlined_svg, "icons/visibility_off_outlined.svg.gz") \
 	XX(wb_incandescent_outline_24_svg, "icons/wb_incandescent_outline_24.svg.gz") \

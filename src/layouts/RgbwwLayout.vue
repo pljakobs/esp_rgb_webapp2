@@ -179,7 +179,7 @@
             </q-item-section>
           </q-item>
         </q-list>
-        Version:V5-pj-227-g8793-dirty-[ConfigDB]
+        Version:V5-pj-228-g123e-dirty-[ConfigDB]
       </q-drawer>
       <q-btn
         round
