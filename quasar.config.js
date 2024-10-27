@@ -44,13 +44,14 @@ module.exports = configure(function (/* ctx */) {
       // 'roboto-font-latin-ext', // this or either 'roboto-font', NEVER both!
       // "roboto-font", // optional, you are not bound to it
       // "material-icons", // optional, you are not bound to it
+      // "material-icons-outlined",
     ],
 
     // Full list of options: https://v2.quasar.dev/quasar-cli-vite/quasar-config-js#build
     build: {
       target: {
         browser: ["es2019", "edge88", "firefox78", "chrome87", "safari13.1"],
-        node: "node16",
+        node: "node18",
       },
       useFilenameHashes: false /* disable cache busting */,
 
@@ -99,8 +100,7 @@ module.exports = configure(function (/* ctx */) {
 
     // https://v2.quasar.dev/quasar-cli-vite/quasar-config-js#framework
     framework: {
-      all: true,
-      iconSet: "svg-material-icons",
+      //iconSet: "material-icons-outlined",
       config: {
         brand: {
           font: "sans-serif", // Use a generic sans-serif font
@@ -110,7 +110,6 @@ module.exports = configure(function (/* ctx */) {
       // Quasar plugins
       plugins: [],
       lang: "en-US",
-      extras: ["svg-material-icons"],
     },
 
     // animations: 'all', // --- includes all animations

@@ -1,6 +1,6 @@
 import { defineStore } from "pinia";
 import { storeStatus } from "./storeConstants";
-import { safeStringify, fetchApi } from "./storeHelpers";
+import { fetchApi } from "./storeHelpers";
 import { controllersStore } from "./controllersStore";
 import useWebSocket from "src/services/websocket.js";
 
@@ -15,7 +15,7 @@ export const colorDataStore = defineStore({
     change_by: "load",
   }),
   actions: {
-    async fetchData(retryCount = 0) {
+    async fetchData() {
       const ws = useWebSocket();
       console.log("colorDataStore before fetch:", this);
 
@@ -50,8 +50,6 @@ export const colorDataStore = defineStore({
         if (params.mode === "hsv") {
           console.log("updating hsv color data", JSON.stringify(params.hsv));
           console.log("old hsv color          ", JSON.stringify(this.data.hsv));
-          //console.log("colorDataStore.data.hsv: ", JSON.stringify(colorData));
-          //console.log("params.hsv: ", params.Shsv);
           this.data.hsv = params.hsv;
           console.log("new hsv color          ", JSON.stringify(this.data.hsv));
         } else if (params.mode === "raw") {
@@ -82,17 +80,7 @@ export const colorDataStore = defineStore({
           "store updateData for hsv, before creating payload: ",
           this.data,
         );
-        /* I can't even remember what this was supposed to do
-        *****************************************************************************+
-        const path = field.split(".");
-        let current = this;
 
-        for (let i = 0; i < path.length - 1; i++) {
-          current = current[path[i]];
-        }
-
-        current[path[path.length - 1]] = value;
-        */
         let payload = {};
         payload[field] = value;
         console.log("color update payload: ", JSON.stringify(payload));
@@ -115,7 +103,7 @@ export const colorDataStore = defineStore({
             }
             return response.json();
           })
-          .then((data) => {})
+          .then(() => {})
           .catch((error) => {
             console.error(
               "There was a problem with the fetch operation:",
