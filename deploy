@@ -11,7 +11,8 @@ version=$(git describe --abbrev=4 --dirty --always --tags)"-["$(git rev-parse --
 rm dist/spa/* -rf
 sed -e "s/Version:.*$/Version:${version}/" <src/layouts/RgbwwLayout.vue >src/layouts/RgbwwLayout.vue.1 && \
 	mv src/layouts/RgbwwLayout.vue src/layouts/RgbwwLayout.vue.2 && \
-	cp src/layouts/RgbwwLayout.vue.1 src/layouts/RgbwwLayout.vue
+	mv src/layouts/RgbwwLayout.vue.1 src/layouts/RgbwwLayout.vue && \
+  rm src/layouts/RgbwwLayout.vue.2
 	echo "deploying prod"
 	npx quasar build
 

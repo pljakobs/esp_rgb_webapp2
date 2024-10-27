@@ -117,9 +117,6 @@
       <q-card-section v-if="firmware">
         current: firmware: {{ infoData.data.git_version }} webapp:
         {{ infoData.data.webapp_version }}
-
-        available: firmware: {{ firmware.files.rom.fw_version }} webapp:
-        {{ firmware.files.spiffs.webapp_version }}
       </q-card-section>
     </MyCard>
   </div>
@@ -136,8 +133,7 @@
       </q-card-section>
       <q-separator />
       <q-card-section class="centered-content">
-        your platform is {{ infoData.data.soc }} with partition layout
-        {{ infoData.data.part_layout }}
+        your platform is {{ infoData.data.soc }}
         <table class="styled-table">
           <tbody>
             <tr>
@@ -149,11 +145,6 @@
               <td class="label">firmware</td>
               <td>{{ infoData.data.git_version }}</td>
               <td>{{ firmware.files.rom.fw_version }}</td>
-            </tr>
-            <tr>
-              <td class="label">webapp</td>
-              <td>{{ infoData.data.webapp_version }}</td>
-              <td>{{ firmware.files.spiffs.webapp_version }}</td>
             </tr>
           </tbody>
         </table>
@@ -271,15 +262,12 @@ export default {
 
         if (data.firmware && data.firmware.length > 0) {
           firmware.value = data.firmware.find(
-            (item) =>
-              item.partitioning === infoData.data.part_layout &&
-              item.soc === infoData.data.soc,
+            (item) => item.soc === infoData.data.soc,
           );
         } else {
           firmware.value = {
             files: {
               rom: data.rom,
-              spiffs: data.spiffs,
             },
           };
         }
@@ -297,20 +285,6 @@ export default {
           console.log(
             "firmware.value.files.rom.url",
             firmware.value.files.rom.url,
-          );
-        }
-        if (
-          firmware.value.files.spiffs &&
-          !firmware.value.files.spiffs.url.startsWith("http://") &&
-          !firmware.value.files.spiffs.url.startsWith("https://")
-        ) {
-          const baseUrl = otaUrl.value.replace("version.json", "");
-          const path = firmware.value.files.spiffs.url.replace("./", "");
-
-          firmware.value.files.spiffs.url = new URL(path, baseUrl).href;
-          console.log(
-            "firmware.value.files.spiffs.url",
-            firmware.value.files.spiffs.url,
           );
         }
 
@@ -338,10 +312,6 @@ export default {
               label: "Firmware version",
               value: firmware.value.files.rom.fw_version,
             },
-            {
-              label: "Webapp version",
-              value: firmware.value.files.spiffs.webapp_version,
-            },
           ];
           console.log("firmwareItems", firmwareItems.value);
           console.log("updating configData.data.ota.url", otaUrl.value);
@@ -368,10 +338,20 @@ export default {
     };
 
     const checkFirmware = async () => {
-      configData.updateData("ota.url", otaUrl.value);
-      await fetchFirmware();
-      if (firmware.value) {
-        dialogOpen.value = true;
+      try {
+        configData.updateData("ota.url", otaUrl.value);
+        await fetchFirmware();
+        if (firmware.value) {
+          dialogOpen.value = true;
+        }
+      } catch (error) {
+        console.error("Error in checkFirmware, error");
+        $q.error({
+          title: "Error checking firmware",
+          message: `An error occurred while checking firmware: ${error.message}`,
+          color: "negative",
+          icon: "img:icons/report-problem_outlined.svg",
+        });
       }
     };
 
@@ -529,10 +509,6 @@ export default {
           {
             label: "SOC",
             value: infoData.data.soc,
-          },
-          {
-            label: "Partition layout",
-            value: infoData.data.part_layout,
           },
           {
             label: "RGBWW Version",
