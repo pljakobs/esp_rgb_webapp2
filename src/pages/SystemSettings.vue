@@ -73,8 +73,27 @@
           dropdown-icon="img:icons/arrow_drop_down.svg"
         >
         </q-select>
+      </q-card-section>
+      <q-card-section>
         <!-- Table displaying the current pin configuration -->
-        <dataTable :Items="formattedPinConfigData" />
+        <div v-if="showManualConfig">
+          <!-- List of configurable pins -->
+          <q-list>
+            <q-item v-for="(pin, index) in configurablePins" :key="index">
+              <q-item-section>
+                <q-select
+                  v-model="pin.value"
+                  :label="pin.name"
+                  :options="availablePinsOptions"
+                  emit-value
+                  map-options
+                  dropdown-icon="img:icons/arrow_drop_down.svg"
+                />
+              </q-item-section>
+            </q-item>
+          </q-list>
+        </div>
+        <dataTable v-else :Items="formattedPinConfigData" />
       </q-card-section>
     </MyCard>
     <MyCard>
@@ -184,7 +203,7 @@
 </template>
 
 <script>
-import { ref, watchEffect, watch } from "vue";
+import { ref, watchEffect, watch, computed } from "vue";
 
 import { configDataStore } from "src/stores/configDataStore";
 import { controllersStore } from "src/stores/controllersStore.js";
@@ -222,6 +241,69 @@ export default {
 
     const currentPinConfigName = ref();
     const currentPinConfig = ref([]);
+
+    const showManualConfig = ref(false);
+
+    const configurablePins = [
+      { name: "red", value: "" },
+      { name: "green", value: "" },
+      { name: "blue", value: "" },
+      { name: "white", value: "" },
+      { name: "cold white", value: "" },
+      { name: "warm white", value: "" },
+    ];
+    const availablePins = [
+      {
+        SoC: "esp8266",
+        pins: [
+          "3",
+          "4",
+          "5",
+          "6",
+          "7",
+          "8",
+          "9",
+          "10",
+          "11",
+          "12",
+          "13",
+          "14",
+          "15",
+          "16",
+        ],
+      },
+      {
+        SoC: "esp32",
+        pins: [
+          "4",
+          "5",
+          "12",
+          "13",
+          "16",
+          "17",
+          "18",
+          "19",
+          "21",
+          "22",
+          "23",
+          "25",
+          "26",
+          "27",
+          "32",
+          "33",
+        ],
+      },
+    ];
+
+    const availablePinsOptions = computed(() => {
+      const soc = infoData.data.soc.toLowerCase();
+      const socPins = availablePins.find(
+        (item) => item.SoC.toLowerCase() === soc,
+      );
+      console.log("availablePinsOptions soc", soc);
+      console.log("availablePins", socPins);
+      return socPins ? socPins.pins : [];
+    });
 
     console.log("otaUrl", otaUrl.value);
     console.log("infoData: ", infoData.data);
@@ -440,6 +522,7 @@ export default {
             .includes(item.model.toLowerCase()),
         )
         .map((item) => item.name);
+      pinConfigNames.value.push("manual");
     };
 
     const getCurrentPinConfig = () => {
@@ -456,6 +539,11 @@ export default {
         (config) => config.name === currentPinConfigName.value,
       );
 
+      if (currentPinConfigName.value !== "manual") {
+        showManualConfig.value = false;
+      } else {
+        showManualConfig.value = true;
+      }
       console.log("updated pinConfig:", currentPinConfig.value);
     };
 
@@ -488,7 +576,12 @@ export default {
 
     watch(currentPinConfigName, (newVal) => {
       console.log("currentPinConfigName changed", newVal);
-      updatePinConfig(newVal);
+      if (newVal !== "manual") {
+        showManualConfig.value = false;
+        updatePinConfig(newVal);
+      } else {
+        showManualConfig.value = true;
+      }
     });
 
     watchEffect(() => {
@@ -546,6 +639,9 @@ export default {
       pinConfigNames,
       currentPinConfig,
       currentPinConfigName,
+      showManualConfig,
+      configurablePins,
+      availablePinsOptions,
       updatePinConfig,
     };
   },
