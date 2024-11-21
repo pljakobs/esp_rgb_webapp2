@@ -71,6 +71,7 @@
           emit-value
           map-options
           dropdown-icon="img:icons/arrow_drop_down.svg"
+          @update:model-value="handlePinConfigChange"
         >
         </q-select>
       </q-card-section>
@@ -203,23 +204,13 @@
 </template>
 
 <script>
-import { ref, watchEffect, watch, computed } from "vue";
-
-import { configDataStore } from "src/stores/configDataStore";
-import { controllersStore } from "src/stores/controllersStore.js";
-import { infoDataStore } from "src/stores/infoDataStore";
-import { storeStatus } from "src/stores/storeConstants";
-
-import dataTable from "src/components/dataTable.vue";
-import MyCard from "src/components/myCard.vue";
-import systemCommand from "src/services/systemCommands";
+import { ref, onMounted, computed } from "vue";
 import { useQuasar } from "quasar";
+import { controllersStore } from "src/stores/controllersStore";
+import { configDataStore } from "src/stores/configDataStore";
+import { infoDataStore } from "src/stores/infoDataStore";
 
 export default {
-  components: {
-    dataTable,
-    MyCard,
-  },
   setup() {
     const controllers = controllersStore();
     const configData = configDataStore();
@@ -238,75 +229,23 @@ export default {
 
     const pinConfigData = ref(null);
     const pinConfigNames = ref([]);
-
     const currentPinConfigName = ref();
     const currentPinConfig = ref([]);
-
     const showManualConfig = ref(false);
-
-    const configurablePins = [
-      { name: "red", value: "" },
-      { name: "green", value: "" },
-      { name: "blue", value: "" },
-      { name: "white", value: "" },
-      { name: "cold white", value: "" },
-      { name: "warm white", value: "" },
-    ];
-    const availablePins = [
-      {
-        SoC: "esp8266",
-        pins: [
-          "3",
-          "4",
-          "5",
-          "6",
-          "7",
-          "8",
-          "9",
-          "10",
-          "11",
-          "12",
-          "13",
-          "14",
-          "15",
-          "16",
-        ],
-      },
-      {
-        SoC: "esp32",
-        pins: [
-          "4",
-          "5",
-          "12",
-          "13",
-          "16",
-          "17",
-          "18",
-          "19",
-          "21",
-          "22",
-          "23",
-          "25",
-          "26",
-          "27",
-          "32",
-          "33",
-        ],
-      },
-    ];
+    const configurablePins = ref([]);
+    const formattedPinConfigData = ref([]);
 
     const availablePinsOptions = computed(() => {
       const soc = infoData.data.soc.toLowerCase();
-      const socPins = availablePins.find(
-        (item) => item.SoC.toLowerCase() === soc,
+      const socPins = configData.data.hardware["available-pins"].find(
+        (item) => item.soc.toLowerCase() === soc,
       );
-      console.log("availablePinsOptions soc", soc);
-      console.log("availablePins", socPins);
-      return socPins ? socPins.pins : [];
+      return socPins
+        ? socPins.pins.map((pin) => ({ label: pin, value: pin }))
+        : [];
     });
 
-    console.log("otaUrl", otaUrl.value);
-    console.log("infoData: ", infoData.data);
+    console.log("availablePinsOptions", availablePinsOptions.value);
 
     const fetchFirmware = async () => {
       console.log("entering fetchFirmware");
@@ -325,206 +264,66 @@ export default {
             message: `HTTP error! status: ${response.status}`,
             color: "negative",
             icon: "img:icons/report-problem_outlined.svg",
-          })
-            .onOk(() => {
-              console.log("ok");
-            })
-            .onCancel(() => {
-              console.log("cancel");
-            })
-            .onDismiss(() => {
-              console.log("dismiss");
-            });
-          console.error(`HTTP error! status: ${response.status}`);
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const data = await response.json();
-        console.log("data", data);
-
-        if (data.firmware && data.firmware.length > 0) {
-          firmware.value = data.firmware.find(
-            (item) => item.soc === infoData.data.soc,
-          );
-        } else {
-          firmware.value = {
-            files: {
-              rom: data.rom,
-            },
-          };
-        }
-
-        // If firmware was found, check if the URL is local and convert it to a full URL
-        if (
-          firmware.value.files.rom &&
-          !firmware.value.files.rom.url.startsWith("http://") &&
-          !firmware.value.files.rom.url.startsWith("https://")
-        ) {
-          const baseUrl = otaUrl.value.replace("version.json", "");
-          const path = firmware.value.files.rom.url.replace("./", "");
-
-          firmware.value.files.rom.url = new URL(path, baseUrl).href;
-          console.log(
-            "firmware.value.files.rom.url",
-            firmware.value.files.rom.url,
-          );
-        }
-
-        if (!firmware.value) {
-          console.error("No matching firmware found");
-          $q.dialog({
-            title: "Firmware missing",
-            message: `No matching firmware found for your configuration / controller`,
-            color: "negative",
-            icon: "img:icons/report-problem_outlined.svg",
-          })
-            .onOk(() => {
-              console.log("ok");
-            })
-            .onCancel(() => {
-              console.log("cancel");
-            })
-            .onDismiss(() => {
-              console.log("dismiss");
-            });
-        } else {
-          console.log("firmware", JSON.stringify(firmware.value));
-          firmwareItems.value = [
-            {
-              label: "Firmware version",
-              value: firmware.value.files.rom.fw_version,
-            },
-          ];
-          console.log("firmwareItems", firmwareItems.value);
-          console.log("updating configData.data.ota.url", otaUrl.value);
-          configData.data.ota.url = otaUrl;
-        }
-      } catch (error) {
-        console.error("There was a problem with the fetch operation: ", error);
-        $q.dialog({
-          title: "Error fetching firmware list",
-          message: `There was a problem with the fetch operation: ${error.message}`,
-          color: "negative",
-          icon: "img:icons/report-problem_outlined.svg",
-        })
-          .onOk(() => {
-            console.log("ok");
-          })
-          .onCancel(() => {
-            console.log("cancel");
-          })
-          .onDismiss(() => {
-            console.log("dismiss");
           });
-      }
-    };
-
-    const checkFirmware = async () => {
-      try {
-        configData.updateData("ota.url", otaUrl.value);
-        await fetchFirmware();
-        if (firmware.value) {
-          dialogOpen.value = true;
+          return;
         }
+        const data = await response.json();
+        firmware.value = data;
+        firmwareItems.value = data.items;
+        firmwareInfo.value = data.info;
       } catch (error) {
-        console.error("Error in checkFirmware, error");
-        $q.error({
-          title: "Error checking firmware",
-          message: `An error occurred while checking firmware: ${error.message}`,
+        console.error("Error fetching firmware:", error);
+        $q.dialog({
+          title: "Error",
+          message: `Error fetching firmware: ${error.message}`,
           color: "negative",
           icon: "img:icons/report-problem_outlined.svg",
         });
       }
     };
 
-    const updateController = async () => {
-      console.log(
-        "update controller:",
-        controllers.currentController["ip_address"],
-      );
-      console.log("updating firmware", firmware.value);
-      console.log(
-        "host: ",
-        `http://${controllers.currentController["ip_address"]}`,
-      );
-      await fetch(
-        `http://${controllers.currentController["ip_address"]}/update`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(firmware.value["files"]),
-        },
-      );
-      dialogOpen.value = false;
-      startCountdown();
-    };
-
-    const startCountdown = () => {
-      countdownDialog.value = true;
-      progress.value = 1;
-      const interval = setInterval(() => {
-        progress.value -= 1 / 30;
-        if (progress.value <= 0) {
-          clearInterval(interval);
-          location.reload();
-        }
-      }, 1000);
-    };
-
-    const switchROM = () => {
-      console.log(`switching ROM, current ${infoData.data.current_rom}`);
-      systemCommand.switchRom();
-      setTimeout(() => {
-        location.reload();
-      }, 7500);
-    };
-
+    // Load pin configuration data
     const loadPinConfigData = async () => {
       try {
-        console.log(
-          "loading pin config from ",
-          configData.data.general.pin_config_url,
-        );
+        console.log("loading pin config from configData store");
+
         const response = await fetch(configData.data.general.pin_config_url);
-        if (!response.ok) throw new Error("Error loading pin config");
-        const jsonData = await response.json();
-        pinConfigData.value = jsonData;
-      } catch (error) {
-        console.error(
-          "Error loading pin config from pinConfigUrl, trying fallback URL",
-          error,
-        );
-        try {
-          const fallbackUrl = `controller.currentController["ip-address"]/config/pinconfig.json`;
-          const response = await fetch(fallbackUrl);
-          if (!response.ok)
-            throw new Error("Error loading pin config from fallback URL");
-          const jsonData = await response.json();
-          pinConfigData.value = jsonData;
-        } catch (fallbackError) {
-          console.error(
-            "Error loading pin config from fallback URL",
-            fallbackError,
-          );
+        if (!response.ok) throw new Error("Error loading pin config from URL");
+        const remotePinConfigData = await response.json();
+        const remoteVersion = remotePinConfigData.version;
+
+        if (remoteVersion > configData.data.hardware.version) {
+          console.log("Updating local pin config data with remote data");
+          configData.data.hardware.pinconfigs = remotePinConfigData.pinconfigs;
+          configData.data.hardware.version = remoteVersion;
         }
+
+        pinConfigData.value = configData.data.hardware.pinconfigs.filter(
+          (config) =>
+            config.soc.toLowerCase() === infoData.data.soc.toLowerCase(),
+        );
+      } catch (error) {
+        console.error("Error loading pin config:", error);
       }
       getPinConfigNames();
       getCurrentPinConfig();
     };
 
+    // Get pin configuration names
     const getPinConfigNames = () => {
-      pinConfigNames.value = pinConfigData.value.pinconfigs
+      pinConfigNames.value = pinConfigData.value
         .filter((item) =>
           configData.data.general.supported_color_models
             .map((model) => model.toLowerCase())
             .includes(item.model.toLowerCase()),
         )
         .map((item) => item.name);
+
+      // Add "manual" to pinConfigNames
       pinConfigNames.value.push("manual");
     };
 
+    // Get current pin configuration
     const getCurrentPinConfig = () => {
       if (!currentPinConfigName.value) {
         currentPinConfigName.value =
@@ -535,7 +334,7 @@ export default {
         currentPinConfigName.value,
       );
 
-      currentPinConfig.value = pinConfigData.value.pinconfigs.find(
+      currentPinConfig.value = pinConfigData.value.find(
         (config) => config.name === currentPinConfigName.value,
       );
 
@@ -547,121 +346,71 @@ export default {
       console.log("updated pinConfig:", currentPinConfig.value);
     };
 
-    const updatePinConfig = (newPinConfigName) => {
-      currentPinConfigName.value = newPinConfigName;
-      console.log("updatePinConfig called");
-      console.log("updating pin config");
-      configData.updateData(
-        "general.current_pin_config_name",
-        currentPinConfigName,
-        false,
-      );
-
-      getCurrentPinConfig();
-
-      if (currentPinConfig.value.model === "rgbww") {
-        configData.updateData(
-          "general.channels",
-          currentPinConfig.value.channels,
-          false,
-        );
-        const pinConfigString = currentPinConfig.value.channels
-          .map((channel) => channel.pin)
-          .join(",");
-
-        console.log("updated pin config string:", pinConfigString);
-        configData.updateData("general.pin_config", pinConfigString, true);
+    // Handle pin configuration change
+    const handlePinConfigChange = (value) => {
+      if (value !== "manual") {
+        // Update the store/API with the selected pin configuration
+        configData.data.general.current_pin_config_name = value;
+        configData.data.general.channels = pinConfigData.value.find(
+          (config) => config.name === value,
+        ).channels;
+        formattedPinConfigData.value = configData.data.general.channels;
+        // Call the API to update the configuration
+        //updatePinConfig();
       }
     };
 
-    watch(currentPinConfigName, (newVal) => {
-      console.log("currentPinConfigName changed", newVal);
-      if (newVal !== "manual") {
-        showManualConfig.value = false;
-        updatePinConfig(newVal);
-      } else {
-        showManualConfig.value = true;
-      }
-    });
+    // Set manual configuration
+    const setManualConfig = () => {
+      const manualConfig = configurablePins.value.reduce((acc, pin) => {
+        acc[pin.name] = pin.value;
+        return acc;
+      }, {});
+      configData.data.general.channels = manualConfig;
+      configData.data.general.current_pin_config_name = "manual";
+      // Call the API to update the configuration
+      //updatePinConfig();
+    };
 
-    watchEffect(() => {
-      if (infoData.status === storeStatus.READY && infoData.data) {
-        firmwareInfo.value = [
-          {
-            label: "active ROM",
-            value: infoData.data.current_rom,
-          },
-          {
-            label: "Firmware",
-            value: infoData.data.git_version,
-          },
-          {
-            label: "Web interface",
-            value: infoData.data.webapp_version,
-          },
-          {
-            label: "SOC",
-            value: infoData.data.soc,
-          },
-          {
-            label: "RGBWW Version",
-            value: infoData.data.rgbww.version,
-          },
-          {
-            label: "Sming version",
-            value: infoData.data.sming,
-          },
-        ];
-      }
-    });
-
-    watchEffect(() => {
-      if (
-        configData.status === storeStatus.READY &&
-        controllers.status === storeStatus.READY
-      ) {
-        loadPinConfigData();
-      }
+    // Fetch firmware and map pinConfig on component mount
+    onMounted(() => {
+      fetchFirmware();
+      loadPinConfigData();
     });
 
     return {
-      otaUrl,
-      updateController,
-      firmware,
-      checkFirmware,
+      controllers,
+      configData,
       infoData,
-      firmwareInfo,
+      otaUrl,
       dialogOpen,
-      startCountdown,
+      countdownDialog,
       progress,
-      switchROM,
+      firmware,
+      firmwareItems,
+      firmwareInfo,
       pinConfigData,
       pinConfigNames,
-      currentPinConfig,
       currentPinConfigName,
-      showManualConfig,
+      currentPinConfig,
       configurablePins,
       availablePinsOptions,
-      updatePinConfig,
+      fetchFirmware,
+      loadPinConfigData,
+      getPinConfigNames,
+      getCurrentPinConfig,
+      handlePinConfigChange,
+      setManualConfig,
+      formattedPinConfigData: computed(() => {
+        if (!currentPinConfig.value || !currentPinConfig.value.channels) {
+          return [];
+        }
+        return currentPinConfig.value.channels.map((config) => ({
+          label: config.name,
+          value: config.pin,
+        }));
+      }),
     };
-  },
-  computed: {
-    formattedPinConfigData() {
-      if (!this.currentPinConfig) {
-        return [];
-      }
-      if (
-        !this.currentPinConfig.channels ||
-        this.currentPinConfig.channels.length === 0
-      ) {
-        return [];
-      }
-
-      return this.currentPinConfig.channels.map((config) => ({
-        label: config.name,
-        value: config.pin,
-      }));
-    },
   },
 };
 </script>
