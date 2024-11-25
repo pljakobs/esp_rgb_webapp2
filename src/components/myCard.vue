@@ -8,7 +8,8 @@
         round
         dense
         icon="img:icons/arrow_drop_down.svg"
-        class="q-ml-auto"
+        class="q-ml-auto rotate-icon"
+        :class="{ 'rotate-up': !collapsed, 'rotate-down': collapsed }"
         @click="toggleCollapse"
       />
     </q-card-section>
@@ -46,6 +47,13 @@ export default {
 </script>
 
 <style scoped>
-.my-card {
+.rotate-icon {
+  transition: transform 0.3s ease;
+}
+.rotate-up {
+  transform: rotate(180deg);
+}
+.rotate-down {
+  transform: rotate(0deg);
 }
 </style>
