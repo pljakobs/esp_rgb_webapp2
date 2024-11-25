@@ -1,12 +1,5 @@
 <template>
-  <MyCard>
-    <q-card-section>
-      <div class="text-h6">
-        <q-icon name="img:icons/memory_outlined.svg" />
-        Controller
-      </div>
-    </q-card-section>
-    <q-separator />
+  <MyCard icon="img:icons/memory_outlined.svg" title="Controller">
     <q-card-section>
       <q-select
         v-model="currentPinConfigName"
