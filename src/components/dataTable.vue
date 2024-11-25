@@ -1,7 +1,7 @@
 <template>
   <div class="table-container">
     <q-list>
-      <q-item v-for="item in Items" :key="item.label" class="table-item">
+      <q-item v-for="item in items" :key="item.label" class="table-item">
         <q-item-section>
           <q-item-label class="field-label">{{ item.label }}</q-item-label>
         </q-item-section>
@@ -16,7 +16,7 @@
 <script>
 export default {
   props: {
-    Items: {
+    items: {
       type: Array,
       required: true,
     },

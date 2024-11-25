@@ -80,7 +80,7 @@
         White balance
       </div>
     </q-card-section>
-    <q-separator />
+    <q-searator />
     <q-card-section>
       <ColorSlider
         v-for="colorTemperature in colorTemperatures"
