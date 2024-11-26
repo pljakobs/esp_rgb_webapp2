@@ -62,7 +62,7 @@ export const colorDataStore = defineStore({
       });
     },
     updateData(field, value) {
-      console.log("updatData called, change by: ", this.change_by);
+      console.log("updatData called, change by: ", this.change_by, field);
       if (this.change_by != "websocket" && this.change_by != "load") {
         const controllers = controllersStore();
 

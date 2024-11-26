@@ -1,32 +1,28 @@
 <template>
   <q-scroll-area style="height: 100%; width: 100%">
     <q-card-section class="flex justify-center no-padding">
-      <q-color
-        :value="color"
-        format-model="hex"
-        no-header
-        no-footer
-        @input="updateColor"
-      />
+      <q-color v-model="color" format-model="hex" no-header no-footer />
     </q-card-section>
     <q-card-section class="flex justify-center">
       <q-btn
         icon="img:icons/star_outlined.svg"
         label="Add Preset"
-        @click="openDialog('hsv')"
+        @click="() => openDialog('hsv')"
       />
     </q-card-section>
   </q-scroll-area>
 </template>
 
 <script>
+import { ref, watch } from "vue";
+import { colors } from "quasar";
+import { colorDataStore } from "src/stores/colorDataStore";
+
+const { hexToRgb, rgbToHsv, rgbToHex, hsvToRgb } = colors;
+
 export default {
   name: "HsvSection",
   props: {
-    color: {
-      type: String,
-      required: true,
-    },
     cardHeight: {
       type: String,
       default: "300px",
@@ -36,12 +32,48 @@ export default {
       required: true,
     },
   },
-  methods: {
-    updateColor(newColor) {
-      this.$emit("update:color", newColor);
-    },
+  setup() {
+    const colorData = colorDataStore();
+    const color = ref("#000000");
+
+    // Watch for changes in the colorDataStore's hsv property
+    watch(
+      () => colorData.data.hsv,
+      (val) => {
+        if (val !== undefined) {
+          const rgb = hsvToRgb(val);
+          const hex = rgbToHex(rgb);
+          color.value = hex;
+        }
+      },
+      { immediate: true },
+    );
+
+    watch(color, (val) => {
+      //color is the q-color component
+      console.log("color picker changed:", val);
+      const rgb = hexToRgb(val);
+      const hsv = rgbToHsv(rgb);
+      console.log("hsv", hsv);
+
+      colorData.change_by = "color picker";
+      console.log(
+        "colorPage picker watcher color store:",
+        JSON.stringify(colorData.data),
+      );
+      colorData.updateData("hsv", hsv);
+    });
+
+    return {
+      color,
+    };
   },
 };
 </script>
 
-<style scoped></style>
+<style scoped>
+.no-padding {
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+</style>

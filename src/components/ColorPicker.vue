@@ -35,12 +35,7 @@
     <q-card-section>
       <q-carousel v-model="carouselPage" animated>
         <q-carousel-slide name="hsv">
-          <HsvSection
-            :color="color"
-            :card-height="cardHeight"
-            :open-dialog="openDialog"
-            @update:color="updateColor"
-          />
+          <HsvSection :card-height="cardHeight" :open-dialog="openDialog" />
         </q-carousel-slide>
         <q-carousel-slide name="raw">
           <RawSection :open-dialog="openDialog" />
@@ -55,16 +50,12 @@
 
 <script>
 import { ref, watch } from "vue";
-import { colors } from "quasar";
-import { colorDataStore } from "src/stores/colorDataStore";
 import { presetDataStore } from "src/stores/presetDataStore";
 import { storeStatus } from "src/stores/storeConstants";
 import HsvSection from "src/components/HsvSection.vue";
 import RawSection from "src/components/RawSection.vue";
 import PresetSection from "src/components/PresetSection.vue";
 import MyCard from "src/components/myCard.vue";
-
-const { hsvToRgb, hexToRgb, rgbToHsv, rgbToHex } = colors;
 
 export default {
   name: "ColorPicker",
@@ -90,8 +81,6 @@ export default {
   },
   setup() {
     const carouselPage = ref("hsv");
-    const color = ref("#000000");
-    const colorData = colorDataStore();
     const presetData = presetDataStore();
     const showDialog = ref(false);
     const presetColorModel = ref("");
@@ -108,55 +97,18 @@ export default {
       },
     );
 
-    watch(
-      () => colorData.data.hsv,
-      (val) => {
-        if (val !== undefined) {
-          //goes undefined when raw has changed
-          //colorData is the store
-          console.log("colorPage watcher Color Store hsv changed:", val);
-          console.log("color store:", JSON.stringify(colorData.data));
-          const rgb = hsvToRgb(val);
-          const hex = rgbToHex(rgb);
-          console.log("updated color, hex", hex);
-          color.value = hex;
-        }
-      },
-    );
-
-    watch(color, (val) => {
-      //color is the q-color component
-      console.log("color picker changed:", val);
-      const rgb = hexToRgb(val);
-      const hsv = rgbToHsv(rgb);
-      console.log("hsv", hsv);
-
-      colorData.change_by = "color picker";
-      console.log(
-        "colorPage picker watcher color store:",
-        JSON.stringify(colorData.data),
-      );
-      colorData.updateData("hsv", hsv);
-    });
-
     const openDialog = (colorModel) => {
       presetColorModel.value = colorModel;
       showDialog.value = true;
     };
 
-    const updateColor = (newColor) => {
-      color.value = newColor;
-    };
-
     return {
       carouselPage,
-      color,
       openDialog,
-      colorData,
+      presetData,
       storeStatus,
       showDialog,
       presetColorModel,
-      updateColor,
     };
   },
 };
@@ -170,7 +122,12 @@ export default {
   justify-content: center;
 }
 
+.no-padding {
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+
 .wider-btn-group {
-  width: 110%;
+  width: 100%;
 }
 </style>

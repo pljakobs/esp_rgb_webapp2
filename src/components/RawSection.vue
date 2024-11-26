@@ -1,12 +1,6 @@
 <template>
   <q-scroll-area style="height: 100%; width: 100%">
     <q-card-section>
-      raw-r: {{ colorData.data.raw.r }}, raw-g: {{ colorData.data.raw.g }},
-      raw-b: {{ colorData.data.raw.b }}, raw-ww: {{ colorData.data.raw.ww }},
-      raw-cw: {{ colorData.data.raw.cw }}
-    </q-card-section>
-    <q-card-section>
-      raw sliders
       <ColorSlider
         v-for="colorSlider in colorSliders"
         :key="colorSlider.label"
@@ -18,6 +12,11 @@
         label-on-top
         @update:model="($event) => updateColorSlider(colorSlider, $event)"
       />
+    </q-card-section>
+    <q-card-section>
+      raw-r: {{ colorData.data.raw.r }}, raw-g: {{ colorData.data.raw.g }},
+      raw-b: {{ colorData.data.raw.b }}, raw-ww: {{ colorData.data.raw.ww }},
+      raw-cw: {{ colorData.data.raw.cw }}
     </q-card-section>
     <q-card-section class="flex justify-center">
       <q-btn
@@ -87,8 +86,6 @@ export default {
     ]);
 
     const updateColorSlider = (slider, value) => {
-      console.log("update for", slider);
-      console.log("new value", value);
       const colorMap = {
         Red: "r",
         Green: "g",
@@ -97,17 +94,11 @@ export default {
         "Cold White": "cw",
       };
 
-      // Get the raw color key
       const rawColorKey = colorMap[slider.label];
 
       if (rawColorKey) {
         let raw = {};
         raw[rawColorKey] = value;
-
-        // Convert the object to a JSON string
-        //const raw = JSON.stringify(finalObject);
-        console.log("raw:", raw);
-        colorData.change_by = "raw slider";
         colorData.updateData("raw", raw);
       }
     };
