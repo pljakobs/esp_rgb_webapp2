@@ -1,7 +1,7 @@
 <template>
   <MyCard :icon="icon" :title="title">
     <q-card-section class="row justify-center no-padding">
-      <q-btn-group class="btn-group no-padding">
+      <q-btn-group class="btn-group w-100">
         <q-btn
           name="hsv"
           label="HSV"
@@ -127,7 +127,7 @@ export default {
   padding-bottom: 0 !important;
 }
 
-.wider-btn-group {
+.w-100 {
   width: 100%;
 }
 </style>

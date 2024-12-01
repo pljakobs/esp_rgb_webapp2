@@ -181,20 +181,14 @@
         </q-list>
         Version:V5-pj-233-gd187-[devel]
       </q-drawer>
-      <q-btn
-        round
-        :style="{ position: 'fixed', right: '20px', bottom: '20px' }"
-        :color="buttonColor"
-        :icon="buttonIcon"
-      />
       <q-page-container>
-        <div id="q-app" class="bg-blue-grey-2" style="min-height: 100vh">
+        <div id="q-app" class="bg-blue-grey-2 full-width full-height no-gutter">
           <div
             id="parent"
-            class="fit row wrap justify-center items-start content-start"
+            class="fit row wrap justify-center items-start content-start no-gutter with-bottom-padding"
           >
             <div
-              class="col-xs-12 col-sm-6 col-md-7 col-lg-5 q-gutter-md"
+              class="col-xs-12 col-sm-6 col-md-7 col-lg-5 no-gutter"
               justify-center
             >
               <RouterView></RouterView>
@@ -202,6 +196,16 @@
           </div>
         </div>
       </q-page-container>
+      <q-footer class="bg-primary text-white">
+        <q-toolbar>
+          <q-btn
+            round
+            class="ws-status-btn"
+            :color="buttonColor"
+            :icon="buttonIcon"
+          />
+        </q-toolbar>
+      </q-footer>
     </q-layout>
   </div>
 </template>
@@ -270,7 +274,7 @@ export default defineComponent({
         case wsStatus.DISCONNECTED:
           return "img:icons/close_outlined.svg";
         case wsStatus.CONNECTING:
-          return "ig:icons/help_outlined.svg";
+          return "img:icons/help_outlined.svg";
         default:
           return "img:icons/info_outlined.svg";
       }
@@ -380,6 +384,7 @@ export default defineComponent({
   },
 });
 </script>
+
 <style scoped>
 .q-icon {
   font-size: 2.5em;
@@ -407,5 +412,21 @@ export default defineComponent({
 }
 .bg-orange {
   background-color: orange;
+}
+.no-gutter {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+.with-bottom-padding {
+  padding-bottom: 60px; /* Adjust this value to ensure enough space for the buttonIcon */
+}
+.full-width {
+  width: 100%;
+}
+.full-height {
+  height: 100%;
+}
+.ws-status-btn {
+  margin-left: auto;
 }
 </style>

@@ -1,5 +1,5 @@
 <template>
-  <q-card class="shadow-8 col-auto fit q-gutter-md q-ma-md">
+  <q-card class="full-width full-height no-gutter">
     <q-card-section class="row items-center">
       <q-icon :name="icon" class="q-mr-sm" />
       <div class="text-h6">{{ title }}</div>
@@ -55,5 +55,9 @@ export default {
 }
 .rotate-down {
   transform: rotate(0deg);
+}
+.no-gutter {
+  padding: 0 !important;
+  margin: 0 !important;
 }
 </style>
