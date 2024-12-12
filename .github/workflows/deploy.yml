@@ -1,0 +1,49 @@
+name: Build and Deploy Quasar App
+
+on:
+  push:
+    branches:
+      - develop # Change this to your default branch
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: "18" # Use the Node.js version compatible with your project
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build Quasar App
+        run: npx quasar build
+
+      - name: Run minifyFontnames.sh
+        run: ./minifyFontnames.sh
+
+      - name: Run gzipSPA.sh
+        run: ./gzipSPA.sh
+
+      - name: Generate icon list
+        run: node generate_icon_list.js > ./fileList.h
+
+      - name: Create VERSION file
+        run: echo $(git describe --abbrev=4 --dirty --always --tags)-[$(git rev-parse --abbrev-ref HEAD)] > dist/spa/VERSION
+
+      - name: Upload SPA files to GitHub
+        uses: actions/upload-artifact@v2
+        with:
+          name: spa-files
+          path: dist/spa/
+
+      - name: Upload fileList.h to GitHub
+        uses: actions/upload-artifact@v2
+        with:
+          name: fileList.h
+          path: ./fileList.h
