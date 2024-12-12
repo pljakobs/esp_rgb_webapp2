@@ -38,7 +38,7 @@ jobs:
         run: echo $(git describe --abbrev=4 --dirty --always --tags)-[$(git rev-parse --abbrev-ref HEAD)] > dist/spa/VERSION
 
       - name: Upload SPA files to GitHub
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: spa-files
           path: dist/spa/
