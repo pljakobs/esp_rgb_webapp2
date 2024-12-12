@@ -9,12 +9,13 @@ fi
 
 version=$(git describe --abbrev=4 --dirty --always --tags)"-["$(git rev-parse --abbrev-ref HEAD)"]"
 rm dist/spa/* -rf
-sed -e "s/Version:.*$/Version:${version}/" <src/layouts/RgbwwLayout.vue >src/layouts/RgbwwLayout.vue.1 && \
-	mv src/layouts/RgbwwLayout.vue src/layouts/RgbwwLayout.vue.2 && \
-	mv src/layouts/RgbwwLayout.vue.1 src/layouts/RgbwwLayout.vue && \
-  rm src/layouts/RgbwwLayout.vue.2
-	echo "deploying prod"
-	npx quasar build
+# sed -e "s/Version:.*$/Version:${version}/" <src/layouts/RgbwwLayout.vue >src/layouts/RgbwwLayout.vue.1 && \
+#	mv src/layouts/RgbwwLayout.vue src/layouts/RgbwwLayout.vue.2 && \
+#	mv src/layouts/RgbwwLayout.vue.1 src/layouts/RgbwwLayout.vue && \
+#  rm src/layouts/RgbwwLayout.vue.2
+
+echo "deploying prod"
+npx quasar build
 
 cd $dir
 #pwd
@@ -38,7 +39,7 @@ then
 		mkdir ~/devel/esp_rgbww_firmware/webapp }
 	fi
 	cp -auv dist/spa/* ~/devel/esp_rgbww_firmware/webapp/
-  cp filelist.h ~/devel/esp_rgbww_firmware/
+	cp fileList.h ~/devel/esp_rgbww_firmware/include
 	cd ~/devel/esp_rgbww_firmware
 	make -j8
 	cd $dir
@@ -47,7 +48,7 @@ else
 	ssh $DEVBOX "if [ ! -d ~/devel/esp_rgbww_firmware/webapp ]; then mkdir ~/devel/esp_rgbww_firmware/webapp;fi"
 	ssh $DEVBOX "rm -rf ~/devel/esp_rgbww_firmware/webapp/*"
 	rsync -a dist/spa/ $DEVBOX:~/devel/esp_rgbww_firmware/webapp
-  scp fileList.h $DEVBOX:~/devel/esp_rgbww_firmware/app
+	scp fileList.h $DEVBOX:~/devel/esp_rgbww_firmware/include
 	if [ "$1" = "OTA" ]
 	then
 		ssh $DEVBOX "source ~/.smingrc;cd devel/esp_rgbww_firmware/;make -j8;./deployOta PART_LAYOUT=v1"
