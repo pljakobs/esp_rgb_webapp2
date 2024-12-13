@@ -17,7 +17,7 @@ rm dist/spa/* -rf
 echo "deploying prod"
 npx quasar build
 
-cd $dir
+cd $dir || exit
 #pwd
 # ./minifyFontnames.sh
 #pwd
@@ -36,13 +36,13 @@ then
 	echo "deploying locally"
 	if [ ! -d ~/devel/esp_rgbww_firmware/webapp ]
 	then
-		mkdir ~/devel/esp_rgbww_firmware/webapp }
+		mkdir ~/devel/esp_rgbww_firmware/webapp
 	fi
 	cp -auv dist/spa/* ~/devel/esp_rgbww_firmware/webapp/
 	cp fileList.h ~/devel/esp_rgbww_firmware/include
-	cd ~/devel/esp_rgbww_firmware
+	cd ~/devel/esp_rgbww_firmware || exit
 	make -j8
-	cd $dir
+	cd $dir || exit
 else
 	echo "deplyoing to $DEVBOX"
 	ssh $DEVBOX "if [ ! -d ~/devel/esp_rgbww_firmware/webapp ]; then mkdir ~/devel/esp_rgbww_firmware/webapp;fi"

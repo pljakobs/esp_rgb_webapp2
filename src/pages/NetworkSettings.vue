@@ -27,7 +27,7 @@
       </q-card-section>
       <q-separator />
       <q-card-section>
-        <dataTable :Items="connectionItems" />
+        <dataTable :items="connectionItems" />
       </q-card-section>
       <q-card-section>
         <div class="text-h6">
