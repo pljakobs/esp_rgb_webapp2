@@ -3,7 +3,7 @@ name: Build and Deploy Quasar App
 on:
   push:
     branches:
-      - develop
+      - devel
       - feature/newVueComponents
 
 jobs:
