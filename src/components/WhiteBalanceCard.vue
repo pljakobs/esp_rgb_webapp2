@@ -1,6 +1,7 @@
 <template>
   <MyCard icon="img:icons/exposure_outlined.svg" title="White balance">
     <q-card-section>
+      select color temperature
       <ColorSlider
         v-for="colorTemperature in colorTemperatures"
         :key="colorTemperature.label"

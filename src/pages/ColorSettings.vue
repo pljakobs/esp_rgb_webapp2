@@ -1,7 +1,7 @@
 <template>
   <TransitionModeCard />
-  <ColorModelCard />
-  <WhiteBalanceCard v-if="colorMode.value === 3" />
+  <ColorModelCard @update:color-model="handleColorModelUpdate" />
+  <WhiteBalanceCard v-if="colorMode === 3" />
 </template>
 
 <script>
@@ -22,11 +22,23 @@ export default {
 
     const colorMode = ref(configData.data.color.color_mode || 0);
 
+    const handleColorModelUpdate = (newColorModel) => {
+      console.log(
+        "handleColorModelUpdate triggered: colorModel changed to ",
+        newColorModel,
+      );
+      colorMode.value = newColorModel;
+    };
+
     watch(
       () => configData.data.color.color_mode,
       (newMode) => {
         console.log("Watcher triggered: colorMode changed to ", newMode);
         colorMode.value = newMode;
+        console.log(
+          "%cChanged colorMode: " + colorMode.value,
+          "color: red; font-weight: bold;",
+        );
       },
       { deep: true },
     );
@@ -34,7 +46,10 @@ export default {
     onMounted(() => {
       // Initialize color mode
       colorMode.value = configData.data.color.color_mode || 0;
-      console.log("Mounted ColorSettings with colorMode:", colorMode.value);
+      console.log(
+        "%cMounted ColorSettings with colorMode: " + colorMode.value,
+        "color: green; font-weight: bold;",
+      );
     });
 
     return {
@@ -42,6 +57,7 @@ export default {
       TransitionModeCard,
       ColorModelCard,
       WhiteBalanceCard,
+      handleColorModelUpdate,
     };
   },
 };

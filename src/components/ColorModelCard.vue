@@ -8,6 +8,7 @@
           label="Color Model"
           style="width: 200px"
           dropdown-icon="img:icons/arrow_drop_down.svg"
+          @update:model-value="emitColorModel"
         >
           <template #dropdown-icon>
             <img
@@ -45,7 +46,8 @@ export default {
     MyCard,
     ColorSlider,
   },
-  setup() {
+  emits: ["update:colorModel"],
+  setup(props, { emit }) {
     const configData = configDataStore();
 
     const colorModel = ref("");
@@ -108,17 +110,18 @@ export default {
       configData.updateData(model, value);
     };
 
-    const updateColorModel = (newColorModel) => {
+    const emitColorModel = (newColorModel) => {
       const modelIndex = colorOptions.value.indexOf(newColorModel);
-      configData.updateData("color.color_mode", modelIndex);
+      configData.updateData("color.outputmode", modelIndex);
       colorModel.value = newColorModel; // Ensure the ref is updated
+      emit("update:colorModel", modelIndex);
     };
 
     watch(colorModel, (newColorModel, oldColorModel) => {
       console.log(
         `Selected color model changed from ${oldColorModel} to ${newColorModel}`,
       );
-      updateColorModel(newColorModel);
+      emitColorModel(newColorModel);
     });
 
     // Initialize values from configDataStore when the component is mounted
@@ -143,7 +146,7 @@ export default {
       colorSliders,
       getColorSliderValue,
       updateColorSlider,
-      updateColorModel,
+      emitColorModel,
     };
   },
 };
