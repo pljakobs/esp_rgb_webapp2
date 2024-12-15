@@ -37,6 +37,10 @@ $warning: #f2c037;
   --field-value-color-dark: #ffffff;
   --icon-color-light: #000000;
   --icon-color-dark: #d3d3d3; /* Light grey for dark mode */
+  --background-color-light: #f5f5f5;
+  --background-color-dark: #2e2e2e;
+  --shadow-color-light: rgba(0, 0, 0, 0.2);
+  --shadow-color-dark: rgba(0, 0, 139, 0.5); /* Dark blue for dark mode */
 }
 
 [data-theme="light"] {
@@ -46,6 +50,8 @@ $warning: #f2c037;
   --field-label-color: var(--field-label-color-light);
   --field-value-color: var(--field-value-color-light);
   --icon-color: var(--icon-color-light);
+  --background-color: var(--background-color-light);
+  --shadow-color: var(--shadow-color-light);
 }
 
 [data-theme="dark"] {
@@ -55,4 +61,6 @@ $warning: #f2c037;
   --field-label-color: var(--field-label-color-dark);
   --field-value-color: var(--field-value-color-dark);
   --icon-color: var(--icon-color-dark);
+  --background-color: var(--background-color-dark);
+  --shadow-color: var(--shadow-color-dark);
 }

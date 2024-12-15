@@ -49,3 +49,7 @@ export default defineComponent({
   },
 });
 </script>
+
+<style>
+/* Add any necessary global styles here */
+</style>
