@@ -12,14 +12,47 @@
 // to match your app's branding.
 // Tip: Use the "Theme Builder" on Quasar's documentation website.
 
-$primary   : #1976D2;
-$secondary : #26A69A;
-$accent    : #9C27B0;
+$primary: #1976d2;
+$secondary: #26a69a;
+$accent: #9c27b0;
 
-$dark      : #1D1D1D;
-$dark-page : #121212;
+$dark: #1d1d1d;
+$dark-page: #121212;
 
-$positive  : #21BA45;
-$negative  : #C10015;
-$info      : #31CCEC;
-$warning   : #F2C037;
+$positive: #21ba45;
+$negative: #c10015;
+$info: #31ccec;
+$warning: #f2c037;
+
+:root {
+  --table-bg-light: #ffffff;
+  --table-bg-dark: #1e1e1e;
+  --table-item-bg-light: #e8f4f8;
+  --table-item-bg-dark: #333333;
+  --table-item-bg-alt-light: transparent;
+  --table-item-bg-alt-dark: #2a2a2a;
+  --field-label-color-light: #000000;
+  --field-label-color-dark: #ffffff;
+  --field-value-color-light: #000000;
+  --field-value-color-dark: #ffffff;
+  --icon-color-light: #000000;
+  --icon-color-dark: #d3d3d3; /* Light grey for dark mode */
+}
+
+[data-theme="light"] {
+  --table-bg: var(--table-bg-light);
+  --table-item-bg: var(--table-item-bg-light);
+  --table-item-bg-alt: var(--table-item-bg-alt-light);
+  --field-label-color: var(--field-label-color-light);
+  --field-value-color: var(--field-value-color-light);
+  --icon-color: var(--icon-color-light);
+}
+
+[data-theme="dark"] {
+  --table-bg: var(--table-bg-dark);
+  --table-item-bg: var(--table-item-bg-dark);
+  --table-item-bg-alt: var(--table-item-bg-alt-dark);
+  --field-label-color: var(--field-label-color-dark);
+  --field-value-color: var(--field-value-color-dark);
+  --icon-color: var(--icon-color-dark);
+}
