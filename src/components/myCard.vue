@@ -1,7 +1,7 @@
 <template>
   <q-card class="full-width full-height no-gutter">
     <q-card-section class="row items-center">
-      <q-icon :name="icon" class="q-mr-sm" />
+      <q-icon :name="icon" class="q-mr-sm icon" />
       <div class="text-h6">{{ title }}</div>
       <q-btn
         flat
@@ -59,5 +59,8 @@ export default {
 .no-gutter {
   padding: 0 !important;
   margin: 0 !important;
+}
+.icon {
+  color: var(--icon-color);
 }
 </style>

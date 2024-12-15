@@ -11,7 +11,7 @@
           marginRight: '5px',
         }"
       ></span>
-      <span style="color: black">{{ label }}</span>
+      <span :style="{ color: 'var(--label-color)' }">{{ label }}</span>
     </div>
     <q-slider
       v-model="internalValue"
@@ -44,7 +44,7 @@
             marginRight: '5px',
           }"
         ></span>
-        <span style="color: black">{{ label }}</span>
+        <span :style="{ color: 'var(--label-color)' }">{{ label }}</span>
       </div>
       <q-slider
         v-model="internalValue"

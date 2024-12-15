@@ -64,7 +64,7 @@
             @click="toggleLeftDrawer"
           >
             <q-avatar>
-              <img src="icons/menu_outlined_24.svg" />
+              <img src="icons/menu_outlined_24.svg" class="icon" />
             </q-avatar>
           </q-btn>
           <q-toolbar-title> Lightinator Mini </q-toolbar-title>
@@ -96,7 +96,7 @@
           <q-item-label header>main menu</q-item-label>
           <q-item clickable tag="router-link" to="/ColorPage">
             <q-item-section class="icon-section"
-              ><q-icon name="img:icons/lightbulb_outlined.svg" />
+              ><q-icon name="img:icons/lightbulb_outlined.svg" class="icon" />
             </q-item-section>
 
             <q-item-section class="text-section">
@@ -107,7 +107,7 @@
 
           <q-item clickable tag="router-link" to="/ColorSettings">
             <q-item-section class="icon-section"
-              ><q-icon name="img:icons/settings_outlined.svg" />
+              ><q-icon name="img:icons/settings_outlined.svg" class="icon" />
             </q-item-section>
 
             <q-item-section class="text-section">
@@ -120,7 +120,7 @@
 
           <q-item clickable tag="router-link" to="/NetworkSettings">
             <q-item-section class="icon-section"
-              ><q-icon name="img:icons/wifi_outlined.svg" />
+              ><q-icon name="img:icons/wifi_outlined.svg" class="icon" />
             </q-item-section>
 
             <q-item-section class="text-section">
@@ -133,7 +133,7 @@
 
           <q-item clickable tag="router-link" to="/SystemSettings">
             <q-item-section class="icon-section"
-              ><q-icon name="img:icons/memory_outlined.svg" />
+              ><q-icon name="img:icons/memory_outlined.svg" class="icon" />
             </q-item-section>
 
             <q-item-section class="text-section">
@@ -146,7 +146,7 @@
           </q-item>
           <q-item clickable tag="router-link" to="/NetworkInit">
             <q-item-section class="icon-section"
-              ><q-icon name="img:icons/wifi_outlined.svg" />
+              ><q-icon name="img:icons/wifi_outlined.svg" class="icon" />
             </q-item-section>
 
             <q-item-section class="text-section">
@@ -157,7 +157,7 @@
 
           <q-item clickable tag="router-link" to="/test">
             <q-item-section class="icon-section"
-              ><q-icon name="img:icons/lightbulb_outlined.svg" />
+              ><q-icon name="img:icons/lightbulb_outlined.svg" class="icon" />
             </q-item-section>
 
             <q-item-section class="text-section">
@@ -172,7 +172,7 @@
             <q-toggle
               v-model="isDarkMode"
               label="Dark Mode"
-              rigt-label
+              left-label
               @update:model-value="toggleDarkMode"
             />
           </q-item-section>
@@ -458,6 +458,10 @@ export default defineComponent({
 
 .page-container {
   background-color: var(--background-color);
+}
+
+.icon {
+  color: var(--icon-color);
 }
 
 @keyframes pulsate {

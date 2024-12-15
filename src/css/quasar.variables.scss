@@ -41,6 +41,8 @@ $warning: #f2c037;
   --background-color-dark: #2e2e2e;
   --shadow-color-light: rgba(0, 0, 0, 0.2);
   --shadow-color-dark: rgba(0, 0, 139, 0.5); /* Dark blue for dark mode */
+  --label-color-light: #000000;
+  --label-color-dark: #d3d3d3;
 }
 
 [data-theme="light"] {
@@ -52,6 +54,7 @@ $warning: #f2c037;
   --icon-color: var(--icon-color-light);
   --background-color: var(--background-color-light);
   --shadow-color: var(--shadow-color-light);
+  --label-color: var(--label-color-light);
 }
 
 [data-theme="dark"] {
@@ -63,4 +66,5 @@ $warning: #f2c037;
   --icon-color: var(--icon-color-dark);
   --background-color: var(--background-color-dark);
   --shadow-color: var(--shadow-color-dark);
+  --label-color: var(--label-color-dark);
 }
