@@ -29,7 +29,7 @@ export default {
         { label: "Device ID", value: infoData.data.deviceid },
         { label: "Current ROM", value: infoData.data.current_rom },
         { label: "Git Version", value: infoData.data.git_version },
-        { label: "Build Type", value: infoData.data["build type"] },
+        { label: "Build Type", value: infoData.data["build_type"] },
         { label: "Git Date", value: infoData.data.git_date },
         { label: "Webapp Version", value: infoData.data.webapp_version },
         { label: "Sming Version", value: infoData.data.sming },

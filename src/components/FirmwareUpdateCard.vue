@@ -121,6 +121,7 @@ import { ref } from "vue";
 import { useQuasar } from "quasar";
 import { configDataStore } from "src/stores/configDataStore";
 import { infoDataStore } from "src/stores/infoDataStore";
+import { controllersStore } from "src/stores/controllersStore";
 import MyCard from "src/components/myCard.vue";
 
 export default {
@@ -130,6 +131,7 @@ export default {
   setup() {
     const configData = configDataStore();
     const infoData = infoDataStore();
+    const controllers = controllersStore();
 
     const otaUrl = ref(configData.data.ota.url);
     const dialogOpen = ref(false);
@@ -196,7 +198,43 @@ export default {
 
       console.log("Selected firmware:", selectedFirmware);
 
-      dialogOpen.value = false;
+      try {
+        const postResponse = await fetch(
+          `http://${controllers.currentController["ip_address"]}/update`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(selectedFirmware.files),
+          },
+        );
+
+        if (!postResponse.ok) {
+          console.log("postResponse was not ok");
+          $q.dialog({
+            title: "Update failed",
+            message: `Update failed! status: ${postResponse.status}`,
+            color: "negative",
+            icon: "img:icons/report-problem_outlined.svg",
+          });
+          return;
+        }
+
+        dialogOpen.value = false;
+        startCountdown();
+      } catch (error) {
+        console.error("Error updating firmware:", error);
+        $q.dialog({
+          title: "Error",
+          message: `Error updating firmware: ${error.message}`,
+          color: "negative",
+          icon: "img:icons/report-problem_outlined.svg",
+        });
+      }
+    };
+
+    const startCountdown = () => {
       countdownDialog.value = true;
       progress.value = 1;
       const interval = setInterval(() => {
