@@ -61,6 +61,10 @@ export default {
   margin: 0 !important;
 }
 .icon {
-  color: var(--icon-color);
+  color: var(--icon-color) !important;
+  font-size: var(--icon-font-size) !important;
+  fill: var(--icon-color) !important;
+  width: var(--icon-font-size) !important;
+  height: var(--icon-font-size) !important;
 }
 </style>

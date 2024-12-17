@@ -10,6 +10,7 @@
 	XX(badge_outlined_svg, "icons/badge_outlined.svg.gz") \
 	XX(check_outlined_svg, "icons/check_outlined.svg.gz") \
 	XX(close_outlined_svg, "icons/close_outlined.svg.gz") \
+	XX(description_svg, "icons/description.svg.gz") \
 	XX(exposure_outlined_svg, "icons/exposure_outlined.svg.gz") \
 	XX(favicon, "icons/favicon.ico") \
 	XX(help_outlined_svg, "icons/help_outlined.svg.gz") \

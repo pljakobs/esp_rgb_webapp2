@@ -39,5 +39,8 @@ export default {
 </script>
 
 <style scoped>
-/* Add any necessary styles here */
+.icon {
+  color: var(--icon-color);
+  fill: var(--icon-color);
+}
 </style>

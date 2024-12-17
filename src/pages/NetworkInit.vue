@@ -1,8 +1,7 @@
 <template>
   <div>
-    <MyCard class="full-height">
+    <MyCard title="connect to Network" icon="img:icons/wifi_outlined.svg">
       <q-card-section class="row justify-center">
-        <h4>application initialization</h4>
         <q-select
           v-model="selectedNetwork"
           filled
@@ -39,17 +38,31 @@
           hint="Enter the SSID of the network"
           style="width: 80%"
         />
+
         <transition name="shake" mode="out-in">
           <q-input
             v-model="password"
+            :type="isPwd ? 'password' : 'text'"
+            :label="selectedNetwork ? 'SSID' : 'Enter SSID'"
+            hint="Enter the SSID of the network"
             :class="{ shake: wifiData.message === 'Wrong password' }"
             filled
-            label="Password"
-            type="password"
-            hint="Enter the password for the network"
             style="width: 80%"
-          />
+          >
+            <template #append>
+              <q-icon
+                :name="
+                  isPwd
+                    ? 'img:icons/visibility_off_outlined.svg'
+                    : 'img:icons/visibility-outlined-24.svg'
+                "
+                class="cursor-pointer"
+                @click="isPwd = !isPwd"
+              />
+            </template>
+          </q-input>
         </transition>
+
         {{ wifiData.message }}
         <div v-if="wifiData.message === 'Wrong password'">
           <p>password authentication failed, please try again</p>
@@ -60,38 +73,35 @@
           </p>
         </div>
       </q-card-section>
-      <!--<div v-if="wifiData.message !== ''">-->
-      <div>
-        <q-card-section>
-          {{ wifiData.message }}
-          <div v-if="wifiData.message === 'Connecting to network'">
-            {{ wifiData.message }} <q-spinner />
-          </div>
-          <div v-if="wifiData.connected">
-            <h4>Connection Established</h4>
-            <p>Connected to: {{ wifiData.ssid }}</p>
-            <table>
-              <tbody>
-                <tr>
-                  <td>Address</td>
-                  <td>
-                    <a :href="'http://' + wifiData.ip">{{ wifiData.ip }}</a>
-                  </td>
-                </tr>
-                <tr>
-                  <td>Netmask</td>
-                  <td>{{ wifiData.netmask }}</td>
-                </tr>
-                <tr>
-                  <td>Gateway</td>
-                  <td>{{ wifiData.gateway }}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </q-card-section>
+    </MyCard>
+    <MyCard title="network status" icon="img:icons/description.svg">
+      {{ wifiData.message }}
+      <q-spinner v-if="!wifiData.connected" />
+      <div v-if="wifiData.connected">
+        <h4>Connection Established</h4>
+        <p>Connected to: {{ wifiData.ssid }}</p>
+        <table>
+          <tbody>
+            <tr>
+              <td>Address</td>
+              <td>
+                <a :href="'http://' + wifiData.ip">{{ wifiData.ip }}</a>
+              </td>
+            </tr>
+            <tr>
+              <td>Netmask</td>
+              <td>{{ wifiData.netmask }}</td>
+            </tr>
+            <tr>
+              <td>Gateway</td>
+              <td>{{ wifiData.gateway }}</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
+    </MyCard>
 
+    <MyCard title="Network Actions" icon="img:icons/wifi_outlined.svg">
       <q-card-actions>
         <q-btn
           color="primary"
@@ -119,10 +129,7 @@
         />
       </q-card-actions>
     </MyCard>
-    <MyCard class="full-height">
-      <q-card-section>
-        <div class="text-h6">Wifi Data</div>
-      </q-card-section>
+    <MyCard title="Nework Log" icon="img:icons/description.svg">
       <q-card-section>
         <div>Connected:{{ wifiData.connected }}</div>
         messages:
@@ -207,6 +214,7 @@ export default {
     const retryDelay = 1000;
     const ws = useWebSocket();
     const log = ref([]);
+    const isPwd = ref(true);
 
     /**
 
@@ -521,6 +529,7 @@ export default {
       countdown,
       log,
       handleIconError,
+      isPwd,
     };
   },
 };

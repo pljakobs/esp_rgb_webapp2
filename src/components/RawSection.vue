@@ -112,4 +112,9 @@ export default {
 };
 </script>
 
-<style scoped></style>
+<style scoped>
+.icon {
+  color: var(--icon-color);
+  fill: var(--icon-color);
+}
+</style>

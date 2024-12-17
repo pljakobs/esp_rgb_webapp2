@@ -115,6 +115,11 @@ export default {
 </script>
 
 <style scoped>
+.icon {
+  color: var(--icon-color);
+  fill: var(--icon-color);
+}
+
 .equal-btn {
   flex: 1;
   display: flex;

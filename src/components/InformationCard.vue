@@ -1,12 +1,5 @@
 <template>
-  <MyCard>
-    <q-card-section>
-      <div class="text-h6">
-        <q-icon name="img:icons/info_outlined.svg" />
-        System Information
-      </div>
-    </q-card-section>
-    <q-separator />
+  <MyCard title="System Information" icon="img:icons/info_outlined.svg">
     <q-card-section>
       <dataTable :items="systemInfoData" />
     </q-card-section>
@@ -52,3 +45,9 @@ export default {
   },
 };
 </script>
+<style scoped>
+.icon {
+  color: var(--icon-color);
+  fill: var(--icon-color);
+}
+</style>
