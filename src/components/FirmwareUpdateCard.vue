@@ -43,7 +43,7 @@
               <tbody>
                 <tr>
                   <td class="label">Build type:</td>
-                  <td>{{ infoData.data.build_type }}</td>
+                  <td>{{ infoDabuildta.data.build_type }}</td>
                 </tr>
                 <tr>
                   <td class="label">Version:</td>

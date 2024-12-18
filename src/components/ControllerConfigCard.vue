@@ -10,137 +10,57 @@
         map-options
         dropdown-icon="img:icons/arrow_drop_down.svg"
         @update:model-value="handlePinConfigChange"
-      >
-      </q-select>
-    </q-card-section>
-    <q-card-section>
-      <!-- Table displaying the current pin configuration -->
-      <div v-if="showManualConfig">
-        <!-- List of configurable pins -->
-        <q-list>
-          <q-item v-for="(pin, index) in configurablePins" :key="index">
-            <q-item-section>
-              <q-select
-                v-model="pin.value"
-                :label="pin.name"
-                :options="availablePinsOptions"
-                emit-value
-                map-options
-                dropdown-icon="img:icons/arrow_drop_down.svg"
-              />
-            </q-item-section>
-          </q-item>
-        </q-list>
-        <q-btn label="Set" color="primary" @click="setManualConfig" />
-      </div>
-      <dataTable v-else :items="formattedPinConfigData" />
+      ></q-select>
+      <q-btn
+        label="Update Configuration"
+        color="primary"
+        class="q-mt-md"
+        @click="updatePinConfig"
+      />
     </q-card-section>
   </MyCard>
 </template>
 
 <script>
-import { ref, computed, watch, onMounted } from "vue";
+import { ref, onMounted, watch } from "vue";
 import { useQuasar } from "quasar";
 import { configDataStore } from "src/stores/configDataStore";
 import { infoDataStore } from "src/stores/infoDataStore";
-import dataTable from "components/dataTable.vue";
 import MyCard from "src/components/myCard.vue";
 
 export default {
+  name: "ControllerConfigCard",
   components: {
     MyCard,
-    dataTable,
   },
   setup() {
     const configData = configDataStore();
     const infoData = infoDataStore();
-
-    const pinConfigData = ref(null);
-    const pinConfigNames = ref([]);
-    const currentPinConfigName = ref();
-    const currentPinConfig = ref([]);
+    const pinConfigData = ref([]);
+    const currentPinConfigName = ref(
+      configData.data.general.current_pin_config_name,
+    );
     const showManualConfig = ref(false);
-    const configurablePins = ref([
-      { name: "Pin 1", value: "" },
-      { name: "Pin 2", value: "" },
-      // Add more configurable pins as needed
-    ]);
-
-    const availablePinsOptions = computed(() => {
-      const soc = infoData.data.soc.toLowerCase();
-      const socPins = configData.data.hardware["available-pins"].find(
-        (item) => item.soc.toLowerCase() === soc,
-      );
-      return socPins
-        ? socPins.pins.map((pin) => ({ label: pin, value: pin }))
-        : [];
-    });
-
-    const formattedPinConfigData = computed(() => {
-      if (!currentPinConfig.value || !currentPinConfig.value.channels) {
-        return [];
-      }
-      return currentPinConfig.value.channels.map((config) => ({
-        label: config.name,
-        value: config.pin,
-      }));
-    });
+    const pinConfigNames = ref([]);
 
     const getPinConfigNames = () => {
-      pinConfigNames.value = pinConfigData.value
-        .filter((item) =>
-          configData.data.general.supported_color_models
-            .map((model) => model.toLowerCase())
-            .includes(item.model.toLowerCase()),
-        )
-        .map((item) => item.name);
-
-      // Add "manual" to pinConfigNames
-      pinConfigNames.value.push("manual");
+      pinConfigNames.value = configData.data.hardware.pinconfigs.map(
+        (config) => config.name,
+      );
     };
 
     const getCurrentPinConfig = () => {
-      if (!currentPinConfigName.value) {
-        currentPinConfigName.value =
-          configData.data.general.current_pin_config_name;
-      }
-      currentPinConfig.value = pinConfigData.value.find(
+      const currentConfig = configData.data.hardware.pinconfigs.find(
         (config) => config.name === currentPinConfigName.value,
       );
-
-      if (currentPinConfigName.value !== "manual") {
-        showManualConfig.value = false;
-      } else {
-        showManualConfig.value = true;
+      if (currentConfig) {
+        pinConfigData.value = currentConfig.channels;
       }
     };
 
-    const handlePinConfigChange = (value) => {
-      if (value !== "manual") {
-        // Update the store with the selected pin configuration
-        configData.updateData("general.current_pin_config_name", value, false);
-        const selectedConfig = pinConfigData.value.find(
-          (config) => config.name === value,
-        );
-        configData.updateData(
-          "general.channels",
-          selectedConfig.channels,
-          false,
-        );
-        // Call the API to update the configuration
-        updatePinConfig();
-      }
-    };
-
-    const setManualConfig = () => {
-      const manualConfig = configurablePins.value.reduce((acc, pin) => {
-        acc[pin.name] = pin.value;
-        return acc;
-      }, {});
-      configData.data.general.channels = manualConfig;
-      configData.data.general.current_pin_config_name = "manual";
-      // Call the API to update the configuration
-      updatePinConfig();
+    const handlePinConfigChange = (newConfigName) => {
+      currentPinConfigName.value = newConfigName;
+      getCurrentPinConfig();
     };
 
     const updatePinConfig = async () => {
@@ -168,10 +88,6 @@ export default {
       }
     };
 
-    onMounted(() => {
-      loadPinConfigData();
-    });
-
     const loadPinConfigData = async () => {
       try {
         const response = await fetch(configData.data.general.pin_config_url);
@@ -195,6 +111,10 @@ export default {
       getCurrentPinConfig();
     };
 
+    onMounted(() => {
+      loadPinConfigData();
+    });
+
     watch(currentPinConfigName, (newVal) => {
       if (newVal === "manual") {
         showManualConfig.value = true;
@@ -212,16 +132,15 @@ export default {
       getPinConfigNames,
       getCurrentPinConfig,
       loadPinConfigData,
-      availablePinsOptions,
-      formattedPinConfigData,
-      setManualConfig,
+      pinConfigNames,
+      infoData,
     };
   },
 };
 </script>
+
 <style scoped>
-.icon {
-  color: var(--icon-color);
-  fill: var(--icon-color);
+.q-mt-md {
+  margin-top: 16px;
 }
 </style>
