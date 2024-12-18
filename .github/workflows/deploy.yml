@@ -1,4 +1,4 @@
-name: Build and Deploy Quasar App
+name: Build and Deploy RGBWW Frontend App
 
 on:
   push:
