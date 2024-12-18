@@ -7,6 +7,13 @@ export const configDataStore = defineStore({
   id: "configDataStore",
   state: () => ({
     status: storeStatus.LOADING,
+    data: {
+      color: {
+        color_mode: 0,
+        // other properties...
+      },
+      // other properties...
+    },
   }),
   actions: {
     async fetchData() {
@@ -36,6 +43,8 @@ export const configDataStore = defineStore({
       for (let i = 0; i < fieldParts.length - 1; i++) {
         currentObject = currentObject[fieldParts[i]];
       }
+
+      currentObject[fieldParts[fieldParts.length - 1]] = value;
 
       const minimalUpdate = {};
       let tempObject = minimalUpdate;

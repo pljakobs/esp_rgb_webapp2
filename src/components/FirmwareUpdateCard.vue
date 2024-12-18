@@ -1,12 +1,8 @@
 <template>
-  <MyCard>
-    <q-card-section>
-      <div class="text-h6">
-        <q-icon name="img:icons/systemsecurityupdate_outlined.svg" />
-        Firmware update
-      </div>
-    </q-card-section>
-    <q-separator />
+  <MyCard
+    title="Firmware update"
+    icon="img:icons/systemsecurityupdate_outlined.svg"
+  >
     <q-card-section>
       <q-input
         v-model="otaUrl"
@@ -31,7 +27,7 @@
     <q-dialog v-model="dialogOpen">
       <q-card
         class="shadow-4 col-auto fit q-gutter-md q-pa-md"
-        style="max-width: 450px; max-height: 480px"
+        style="max-width: 450px; max-height: 640px"
       >
         <q-card-section>
           <div class="text-h6">
@@ -41,18 +37,44 @@
         </q-card-section>
         <q-separator />
         <q-card-section class="centered-content">
-          your platform is {{ infoData.data.soc }}
+          <div>
+            <p>Currently running firmware:</p>
+            <table class="styled-table">
+              <tbody>
+                <tr>
+                  <td class="label">Build type:</td>
+                  <td>{{ infoData.data.build_type }}</td>
+                </tr>
+                <tr>
+                  <td class="label">Version:</td>
+                  <td>{{ infoData.data.git_version }}</td>
+                </tr>
+                <tr>
+                  <td class="label">Webapp version:</td>
+                  <td>{{ infoData.data.webapp_version }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
           <table class="styled-table">
-            <tbody>
+            <thead>
               <tr>
-                <th></th>
-                <th>installed</th>
-                <th>available</th>
+                <th>Select</th>
+                <th>Build Type</th>
+                <th>Version</th>
               </tr>
-              <tr>
-                <td class="label">firmware</td>
-                <td>{{ infoData.data.git_version }}</td>
-                <td>{{ firmware.files.rom.fw_version }}</td>
+            </thead>
+            <tbody>
+              <tr v-for="fw in availableFirmware" :key="fw.url">
+                <td>
+                  <q-radio
+                    v-model="selectedFirmware"
+                    :val="fw"
+                    :label="fw.fw_version"
+                  />
+                </td>
+                <td>{{ fw.type }}</td>
+                <td>{{ fw.fw_version }}</td>
               </tr>
             </tbody>
           </table>
@@ -68,7 +90,7 @@
             label="update"
             color="primary"
             class="q-mt-md"
-            @click="updateController"
+            @click="() => updateController(selectedFirmware)"
           />
         </q-card-actions>
       </q-card>
@@ -99,6 +121,7 @@ import { ref } from "vue";
 import { useQuasar } from "quasar";
 import { configDataStore } from "src/stores/configDataStore";
 import { infoDataStore } from "src/stores/infoDataStore";
+import { controllersStore } from "src/stores/controllersStore";
 import MyCard from "src/components/myCard.vue";
 
 export default {
@@ -108,6 +131,7 @@ export default {
   setup() {
     const configData = configDataStore();
     const infoData = infoDataStore();
+    const controllers = controllersStore();
 
     const otaUrl = ref(configData.data.ota.url);
     const dialogOpen = ref(false);
@@ -115,6 +139,8 @@ export default {
     const progress = ref(0);
 
     const firmware = ref();
+    const availableFirmware = ref([]);
+    const selectedFirmware = ref(null);
     const $q = useQuasar();
 
     const fetchFirmware = async () => {
@@ -139,6 +165,15 @@ export default {
         }
         const data = await response.json();
         firmware.value = data;
+
+        // Filter available firmware based on current SoC
+        availableFirmware.value = data.firmware.filter(
+          (fw) => fw.soc === infoData.data.soc,
+        );
+        console.log("available firmware: ", availableFirmware.value);
+
+        // Open the dialog to show available firmware
+        dialogOpen.value = true;
       } catch (error) {
         console.error("Error fetching firmware:", error);
         $q.dialog({
@@ -150,8 +185,56 @@ export default {
       }
     };
 
-    const updateController = async () => {
-      dialogOpen.value = false;
+    const updateController = async (selectedFirmware) => {
+      if (!selectedFirmware) {
+        $q.dialog({
+          title: "Error",
+          message: "Please select a firmware version to update.",
+          color: "negative",
+          icon: "img:icons/report-problem_outlined.svg",
+        });
+        return;
+      }
+
+      console.log("Selected firmware:", selectedFirmware);
+
+      try {
+        const postResponse = await fetch(
+          `http://${controllers.currentController["ip_address"]}/update`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(selectedFirmware.files),
+          },
+        );
+
+        if (!postResponse.ok) {
+          console.log("postResponse was not ok");
+          $q.dialog({
+            title: "Update failed",
+            message: `Update failed! status: ${postResponse.status}`,
+            color: "negative",
+            icon: "img:icons/report-problem_outlined.svg",
+          });
+          return;
+        }
+
+        dialogOpen.value = false;
+        startCountdown();
+      } catch (error) {
+        console.error("Error updating firmware:", error);
+        $q.dialog({
+          title: "Error",
+          message: `Error updating firmware: ${error.message}`,
+          color: "negative",
+          icon: "img:icons/report-problem_outlined.svg",
+        });
+      }
+    };
+
+    const startCountdown = () => {
       countdownDialog.value = true;
       progress.value = 1;
       const interval = setInterval(() => {
@@ -166,6 +249,8 @@ export default {
     return {
       otaUrl,
       firmware,
+      availableFirmware,
+      selectedFirmware,
       fetchFirmware,
       dialogOpen,
       countdownDialog,
@@ -178,6 +263,11 @@ export default {
 </script>
 
 <style scoped>
+.icon {
+  color: var(--icon-color);
+  fill: var(--icon-color);
+}
+
 .styled-table {
   border-collapse: separate;
   border-spacing: 10px;
@@ -189,7 +279,7 @@ export default {
 }
 
 .styled-table td {
-  text-align: center;
+  text-align: left;
 }
 
 .styled-table .label {

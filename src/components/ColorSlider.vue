@@ -11,17 +11,17 @@
           marginRight: '5px',
         }"
       ></span>
-      <span style="color: black">{{ label }}</span>
+      <span :style="{ color: 'var(--label-color)' }">{{ label }}</span>
     </div>
     <q-slider
+      v-model="internalValue"
       :min="min"
       :max="max"
       track-size="5px"
       display-value="always"
       label
-      v-model="internalValue"
-      @update:model-value="updateModel"
       style="padding-left: 10px"
+      @update:model-value="updateModel"
     />
   </div>
   <div v-else>
@@ -44,15 +44,15 @@
             marginRight: '5px',
           }"
         ></span>
-        <span style="color: black">{{ label }}</span>
+        <span :style="{ color: 'var(--label-color)' }">{{ label }}</span>
       </div>
       <q-slider
+        v-model="internalValue"
         :min="min"
         :max="max"
         track-size="5px"
         display-value="always"
         label
-        v-model="internalValue"
         @update:model-value="updateModel"
       />
     </div>
@@ -68,8 +68,14 @@ export default {
       type: Number,
       default: 0,
     },
-    color: String,
-    label: String,
+    color: {
+      type: String,
+      default: "#000000", // Provide a default color value
+    },
+    label: {
+      type: String,
+      default: "Label", // Provide a default label value
+    },
     min: {
       type: Number,
       default: -30,
@@ -83,6 +89,7 @@ export default {
       default: false,
     },
   },
+  emits: ["update:model"],
   setup(props, { emit }) {
     const internalValue = ref(props.value);
 
@@ -106,4 +113,9 @@ export default {
 };
 </script>
 
-<style scoped></style>
+<style scoped>
+.icon {
+  color: var(--icon-color);
+  fill: var(--icon-color);
+}
+</style>

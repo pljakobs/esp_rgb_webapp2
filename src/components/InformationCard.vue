@@ -1,12 +1,5 @@
 <template>
-  <MyCard>
-    <q-card-section>
-      <div class="text-h6">
-        <q-icon name="img:icons/info_outlined.svg" />
-        System Information
-      </div>
-    </q-card-section>
-    <q-separator />
+  <MyCard title="System Information" icon="img:icons/info_outlined.svg">
     <q-card-section>
       <dataTable :items="systemInfoData" />
     </q-card-section>
@@ -36,7 +29,7 @@ export default {
         { label: "Device ID", value: infoData.data.deviceid },
         { label: "Current ROM", value: infoData.data.current_rom },
         { label: "Git Version", value: infoData.data.git_version },
-        { label: "Build Type", value: infoData.data["build type"] },
+        { label: "Build Type", value: infoData.data["build_type"] },
         { label: "Git Date", value: infoData.data.git_date },
         { label: "Webapp Version", value: infoData.data.webapp_version },
         { label: "Sming Version", value: infoData.data.sming },
@@ -52,3 +45,9 @@ export default {
   },
 };
 </script>
+<style scoped>
+.icon {
+  color: var(--icon-color);
+  fill: var(--icon-color);
+}
+</style>

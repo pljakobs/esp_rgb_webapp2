@@ -1,5 +1,5 @@
 <template>
-  <MyCard icon="img:icons/memory_outlined.svg" title="Controller">
+  <MyCard icon="img:icons/memory_outlined.svg" title="Controller config">
     <q-card-section>
       <q-select
         v-model="currentPinConfigName"
@@ -219,3 +219,9 @@ export default {
   },
 };
 </script>
+<style scoped>
+.icon {
+  color: var(--icon-color);
+  fill: var(--icon-color);
+}
+</style>

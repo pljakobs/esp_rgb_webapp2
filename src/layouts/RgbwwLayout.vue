@@ -47,25 +47,12 @@
           />
           <span v-else class="text-danger">❌ {{ colorData.error }}</span
           ><br />
-          <!--
-          Groups:
-          <span
-            v-if="groupsData.status === storeStatus.READY"
-            class="text-success"
-            >✔️</span
-          >
-          <q-spinner
-            v-else-if="groupsData.status === storeStatus.LOADING"
-            color="light-blue"
-          />
-          <span v-else class="text-danger">❌ {{ groupsData.error }}</span>
-          -->
         </div>
       </div>
     </div>
   </div>
   <div v-else>
-    <q-layout view="hHh lpR fFf">
+    <q-layout view="hHh lpR fFf" class="main-layout">
       <q-header elevated class="bg-primary text-white">
         <q-toolbar>
           <q-btn
@@ -77,7 +64,7 @@
             @click="toggleLeftDrawer"
           >
             <q-avatar>
-              <img src="icons/menu_outlined_24.svg" />
+              <img src="icons/menu_outlined_24.svg" class="icon" />
             </q-avatar>
           </q-btn>
           <q-toolbar-title> Lightinator Mini </q-toolbar-title>
@@ -109,7 +96,7 @@
           <q-item-label header>main menu</q-item-label>
           <q-item clickable tag="router-link" to="/ColorPage">
             <q-item-section class="icon-section"
-              ><q-icon name="img:icons/lightbulb_outlined.svg" />
+              ><q-icon name="img:icons/lightbulb_outlined.svg" class="icon" />
             </q-item-section>
 
             <q-item-section class="text-section">
@@ -120,7 +107,7 @@
 
           <q-item clickable tag="router-link" to="/ColorSettings">
             <q-item-section class="icon-section"
-              ><q-icon name="img:icons/settings_outlined.svg" />
+              ><q-icon name="img:icons/settings_outlined.svg" class="icon" />
             </q-item-section>
 
             <q-item-section class="text-section">
@@ -133,7 +120,7 @@
 
           <q-item clickable tag="router-link" to="/NetworkSettings">
             <q-item-section class="icon-section"
-              ><q-icon name="img:icons/wifi_outlined.svg" />
+              ><q-icon name="img:icons/wifi_outlined.svg" class="icon" />
             </q-item-section>
 
             <q-item-section class="text-section">
@@ -146,7 +133,7 @@
 
           <q-item clickable tag="router-link" to="/SystemSettings">
             <q-item-section class="icon-section"
-              ><q-icon name="img:icons/memory_outlined.svg" />
+              ><q-icon name="img:icons/memory_outlined.svg" class="icon" />
             </q-item-section>
 
             <q-item-section class="text-section">
@@ -159,7 +146,7 @@
           </q-item>
           <q-item clickable tag="router-link" to="/NetworkInit">
             <q-item-section class="icon-section"
-              ><q-icon name="img:icons/wifi_outlined.svg" />
+              ><q-icon name="img:icons/wifi_outlined.svg" class="icon" />
             </q-item-section>
 
             <q-item-section class="text-section">
@@ -170,7 +157,7 @@
 
           <q-item clickable tag="router-link" to="/test">
             <q-item-section class="icon-section"
-              ><q-icon name="img:icons/lightbulb_outlined.svg" />
+              ><q-icon name="img:icons/lightbulb_outlined.svg" class="icon" />
             </q-item-section>
 
             <q-item-section class="text-section">
@@ -179,10 +166,21 @@
             </q-item-section>
           </q-item>
         </q-list>
+        <q-separator />
+        <q-item>
+          <q-item-section>
+            <q-toggle
+              v-model="isDarkMode"
+              label="Dark Mode"
+              left-label
+              @update:model-value="toggleDarkMode"
+            />
+          </q-item-section>
+        </q-item>
         Version:V5-pj-233-gd187-[devel]
       </q-drawer>
-      <q-page-container>
-        <div id="q-app" class="bg-blue-grey-2 full-width full-height no-gutter">
+      <q-page-container class="page-container">
+        <div id="q-app" class="full-width full-height no-gutter">
           <div
             id="parent"
             class="fit row wrap justify-center items-start content-start no-gutter with-bottom-padding"
@@ -228,159 +226,182 @@ import { controllersStore } from "src/stores/controllersStore";
 import { storeStatus } from "src/stores/storeConstants";
 import useWebSocket, { wsStatus } from "src/services/websocket.js";
 import { useRouter } from "vue-router";
+import { Dark } from "quasar";
 
 export default defineComponent({
   name: "MainLayout",
 
   setup() {
-    const leftDrawerOpen = ref(false);
+    try {
+      const leftDrawerOpen = ref(false);
 
-    const controllers = controllersStore();
-    const configData = configDataStore();
-    const infoData = infoDataStore();
-    const colorData = colorDataStore();
-    //const groupsData = groupsDataStore();
-    const intervalId = ref(null);
-    const ws = useWebSocket();
+      const controllers = controllersStore();
+      const configData = configDataStore();
+      const infoData = infoDataStore();
+      const colorData = colorDataStore();
+      //const groupsData = groupsDataStore();
+      const intervalId = ref(null);
+      const ws = useWebSocket();
 
-    const isSelectOpen = ref(false);
+      const isSelectOpen = ref(false);
 
-    const router = useRouter();
+      const router = useRouter();
 
-    const isSmallScreen = ref(window.innerWidth <= 1024); // Change 600 to your small breakpoint
+      const isSmallScreen = ref(window.innerWidth <= 1024); // Change 600 to your small breakpoint
 
-    const updateIsSmallScreen = () => {
-      isSmallScreen.value = window.innerWidth <= 1024; // Change 600 to your small breakpoint
-    };
+      const updateIsSmallScreen = () => {
+        isSmallScreen.value = window.innerWidth <= 1024; // Change 600 to your small breakpoint
+      };
 
-    const buttonColor = computed(() => {
-      console.log("=> websocket ws.status.value", ws.status.value);
-      switch (ws.status.value) {
-        case wsStatus.CONNECTED:
-          return "green";
-        case wsStatus.DISCONNECTED:
-          return "red";
-        case wsStatus.CONNECTING:
-          return "yellow";
-        default:
-          return "grey";
+      const isDarkMode = ref(Dark.isActive);
+
+      const toggleDarkMode = (value) => {
+        Dark.set(value);
+        console.log("setting dark mode to", value ? "true" : "false");
+        localStorage.setItem("darkMode", value);
+        configData.updateData("general.UI.dark_mode", value, true);
+      };
+
+      // Load user preference from local storage
+      const savedDarkMode = localStorage.getItem("darkMode");
+      if (savedDarkMode !== null) {
+        Dark.set(savedDarkMode === "true");
+        isDarkMode.value = savedDarkMode === "true";
       }
-    });
 
-    const buttonIcon = computed(() => {
-      switch (ws.status.value) {
-        case wsStatus.CONNECTED:
-          return "img:icons/check_outlined.svg";
-        case wsStatus.DISCONNECTED:
-          return "img:icons/close_outlined.svg";
-        case wsStatus.CONNECTING:
-          return "img:icons/help_outlined.svg";
-        default:
-          return "img:icons/info_outlined.svg";
-      }
-    });
-
-    onMounted(() => {
-      window.addEventListener("resize", updateIsSmallScreen);
-    });
-
-    onUnmounted(() => {
-      window.removeEventListener("resize", updateIsSmallScreen);
-    });
-
-    const handleControllerSelection = (event) => {
-      console.log(
-        "===============================\nhandleControllerSelection",
-        event,
-      );
-      controllers.selectController(event);
-    };
-
-    const checkControllerConfigured = () => {
-      console.log("infoData.status changed to", infoData.status);
-      console.log("check if this is an unconfigured controller");
-      console.log(
-        "connected:",
-        infoData.data.connection.connected ? "true" : "false",
-      );
-      console.log("ssid:", infoData.data.connection.ssid);
-
-      if (
-        !infoData.data.connection.connected &&
-        infoData.data.connection.ssid === ""
-      ) {
-        // the controller has no configured ssid wsand is not connected to a wifi network
-        // we are therefore talking to a controller in AP mode, trigger the controler config
-        // section
-        console.log("new controller, redirecting to /networkinit");
-        router.push("/networkinit");
-      } else {
-        console.log("controller is configured, not redirecting");
-      }
-    };
-
-    // close the left drawer when the current controller changes
-    // that should only ever happen by selecting a controller from
-    // the controllers dropdown list *in* the left drawer.
-    watch(
-      () => infoData.status === storeStatus.READY,
-      () => {
-        checkControllerConfigured();
-      },
-    );
-
-    if (infoData.status === storeStatus.READY) {
-      checkControllerConfigured();
-    }
-
-    watch(
-      () => controllers.currentController,
-      () => {
-        toggleLeftDrawer();
-      },
-    );
-
-    watch(
-      () => isSelectOpen.value,
-      (isSelectOpen) => {
-        if (isSelectOpen) {
-          controllers.fetchData(); //re-fetch neighbours when opening drawer
-          // Start interval when drawer is opened
-          intervalId.value = setInterval(() => {
-            //console.log("re-feching controllers");
-            controllers.fetchData();
-          }, 15000);
-        } else {
-          // Clear interval when drawer is closed
-          if (intervalId.value) {
-            clearInterval(intervalId.value);
-            intervalId.value = null;
-          }
+      const buttonColor = computed(() => {
+        console.log("=> websocket ws.status.value", ws.status.value);
+        switch (ws.status.value) {
+          case wsStatus.CONNECTED:
+            return "green";
+          case wsStatus.DISCONNECTED:
+            return "red";
+          case wsStatus.CONNECTING:
+            return "yellow";
+          default:
+            return "grey";
         }
-      },
-      { immediate: true },
-    );
+      });
 
-    const toggleLeftDrawer = () => {
-      if (isSmallScreen.value) {
-        leftDrawerOpen.value = !leftDrawerOpen.value;
+      const buttonIcon = computed(() => {
+        switch (ws.status.value) {
+          case wsStatus.CONNECTED:
+            return "img:icons/check_outlined.svg";
+          case wsStatus.DISCONNECTED:
+            return "img:icons/close_outlined.svg";
+          case wsStatus.CONNECTING:
+            return "img:icons/help_outlined.svg";
+          default:
+            return "img:icons/info_outlined.svg";
+        }
+      });
+
+      onMounted(() => {
+        window.addEventListener("resize", updateIsSmallScreen);
+      });
+
+      onUnmounted(() => {
+        window.removeEventListener("resize", updateIsSmallScreen);
+      });
+
+      const handleControllerSelection = (event) => {
+        console.log(
+          "===============================\nhandleControllerSelection",
+          event,
+        );
+        controllers.selectController(event);
+      };
+
+      const checkControllerConfigured = () => {
+        console.log("infoData.status changed to", infoData.status);
+        console.log("check if this is an unconfigured controller");
+        console.log(
+          "connected:",
+          infoData.data.connection.connected ? "true" : "false",
+        );
+        console.log("ssid:", infoData.data.connection.ssid);
+
+        if (
+          !infoData.data.connection.connected &&
+          infoData.data.connection.ssid === ""
+        ) {
+          // the controller has no configured ssid wsand is not connected to a wifi network
+          // we are therefore talking to a controller in AP mode, trigger the controler config
+          // section
+          console.log("new controller, redirecting to /networkinit");
+          router.push("/networkinit");
+        } else {
+          console.log("controller is configured, not redirecting");
+        }
+      };
+
+      // close the left drawer when the current controller changes
+      // that should only ever happen by selecting a controller from
+      // the controllers dropdown list *in* the left drawer.
+      watch(
+        () => infoData.status === storeStatus.READY,
+        () => {
+          checkControllerConfigured();
+        },
+      );
+
+      if (infoData.status === storeStatus.READY) {
+        checkControllerConfigured();
       }
-    };
 
-    return {
-      leftDrawerOpen,
-      configData,
-      infoData,
-      colorData,
-      //groupsData,
-      controllers,
-      storeStatus,
-      isSelectOpen,
-      handleControllerSelection,
-      toggleLeftDrawer,
-      buttonColor,
-      buttonIcon,
-    };
+      watch(
+        () => controllers.currentController,
+        () => {
+          toggleLeftDrawer();
+        },
+      );
+
+      watch(
+        () => isSelectOpen.value,
+        (isSelectOpen) => {
+          if (isSelectOpen) {
+            controllers.fetchData(); //re-fetch neighbours when opening drawer
+            // Start interval when drawer is opened
+            intervalId.value = setInterval(() => {
+              //console.log("re-feching controllers");
+              controllers.fetchData();
+            }, 15000);
+          } else {
+            // Clear interval when drawer is closed
+            if (intervalId.value) {
+              clearInterval(intervalId.value);
+              intervalId.value = null;
+            }
+          }
+        },
+        { immediate: true },
+      );
+
+      const toggleLeftDrawer = () => {
+        if (isSmallScreen.value) {
+          leftDrawerOpen.value = !leftDrawerOpen.value;
+        }
+      };
+
+      return {
+        leftDrawerOpen,
+        configData,
+        infoData,
+        colorData,
+        //groupsData,
+        controllers,
+        storeStatus,
+        isSelectOpen,
+        handleControllerSelection,
+        toggleLeftDrawer,
+        buttonColor,
+        buttonIcon,
+        isDarkMode,
+        toggleDarkMode,
+      };
+    } catch (error) {
+      console.error("Error in setup function:", error);
+    }
   },
 });
 </script>
@@ -428,5 +449,30 @@ export default defineComponent({
 }
 .ws-status-btn {
   margin-left: auto;
+}
+.main-layout {
+  background-color: var(--background-color);
+  box-shadow: 0 4px 8px 0 var(--shadow-color);
+  animation: pulsate 2s infinite;
+}
+
+.page-container {
+  background-color: var(--background-color);
+}
+
+.icon {
+  color: var(--icon-color);
+}
+
+@keyframes pulsate {
+  0% {
+    box-shadow: 0 4px 8px 0 var(--shadow-color);
+  }
+  50% {
+    box-shadow: 0 4px 16px 0 var(--shadow-color);
+  }
+  100% {
+    box-shadow: 0 4px 8px 0 var(--shadow-color);
+  }
 }
 </style>
