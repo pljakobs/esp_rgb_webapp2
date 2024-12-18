@@ -1,6 +1,6 @@
 <template>
   <MyCard
-    title="Debug Functions"
+    title="Debuging Functions"
     icon="img:icons/systemsecurityupdate_outlined.svg"
   >
     <q-card-section>
