@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - devel
-      - feature/newVueComponents
 
 jobs:
   build:
@@ -62,5 +61,7 @@ jobs:
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
-          GH_PAT: ${{ secrets.GH_PAT }}
+          personal_token: ${{ secrets.GH_PAT }}
           publish_dir: ./dist/download
+          publish_branch: gh-pages
+          force_orphan: true
