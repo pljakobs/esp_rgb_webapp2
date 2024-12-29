@@ -79,6 +79,7 @@
         bordered
       >
         <q-select
+          v-if="controllers.status === storeStatus.READY"
           v-model="controllers.currentController"
           filled
           :options="controllers.data"

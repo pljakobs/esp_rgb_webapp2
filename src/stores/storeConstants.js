@@ -2,7 +2,7 @@ export const localhost = {
   hostname: "localhost",
   ip_address:
     process.env.NODE_ENV === "development"
-      ? "led-so1.fritz.box"
+      ? "192.168.29.101"
       : window.location.hostname,
 };
 

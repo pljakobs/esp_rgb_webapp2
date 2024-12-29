@@ -24,7 +24,7 @@ export default async function initializeStores() {
     webSocket.connect(url);
 
     try {
-      await controllers.fetchData();
+      //await controllers.fetchData();
       await colorStore.fetchData();
       await configStore.fetchData();
       await infoStore.fetchData();

@@ -7,6 +7,7 @@ export const infoDataStore = defineStore({
   state: () => ({
     data: null,
     status: storeStatus.LOADING,
+    http_response_status: null,
   }),
   actions: {
     async fetchData() {

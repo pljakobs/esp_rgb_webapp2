@@ -11,6 +11,7 @@ export const presetDataStore = defineStore({
       presets: [],
     },
     status: storeStatus.LOADING,
+    http_response_status: null,
   }),
 
   actions: {

@@ -7,6 +7,7 @@ export const configDataStore = defineStore({
   id: "configDataStore",
   state: () => ({
     status: storeStatus.LOADING,
+    http_response_status: null,
     data: {
       color: {
         color_mode: 0,

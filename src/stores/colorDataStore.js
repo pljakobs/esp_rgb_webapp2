@@ -12,6 +12,7 @@ export const colorDataStore = defineStore({
       hsv: { h: 0, s: 0, v: 0, ct: 0 },
     },
     status: storeStatus.LOADING,
+    http_response_status: null,
     change_by: "load",
   }),
   actions: {

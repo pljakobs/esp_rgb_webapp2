@@ -8,6 +8,7 @@ export const controllersStore = defineStore({
   state: () => ({
     status: storeStatus.LOADING,
     currentController: localhost,
+    http_response_status: null,
     data: [localhost],
   }),
 
@@ -28,11 +29,11 @@ export const controllersStore = defineStore({
             };
           }); // Removing leading and trailing whitespaces from the IP address
         this.status = storeStatus.READY;
-        console.log("hosts data fetched: ", JSON.stringify(this.data));
+        console.log("controllers data fetched: ", JSON.stringify(this.data));
       } catch (error) {
         this.status = storeStatus.ERROR;
         this.error = error;
-        console.error("Error fetching hosts data:", error);
+        console.error("Error fetching controllers data:", error);
       }
     },
 
