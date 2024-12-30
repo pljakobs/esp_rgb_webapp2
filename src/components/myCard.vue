@@ -1,7 +1,7 @@
 <template>
   <q-card class="full-width full-height no-gutter">
     <q-card-section class="row items-center">
-      <q-icon :name="icon" class="q-mr-sm icon" />
+      <q-icon :name="icon" :color="iconColor" class="q-mr-sm icon" />
       <div class="text-h6">{{ title }}</div>
       <q-btn
         flat
@@ -38,6 +38,11 @@ export default {
       collapsed: false,
     };
   },
+  computed: {
+    iconColor() {
+      return this.$q.dark.isActive ? "white" : "black";
+    },
+  },
   methods: {
     toggleCollapse() {
       this.collapsed = !this.collapsed;
@@ -61,9 +66,7 @@ export default {
   margin: 0 !important;
 }
 .icon {
-  color: var(--icon-color) !important;
   font-size: var(--icon-font-size) !important;
-  fill: var(--icon-color) !important;
   width: var(--icon-font-size) !important;
   height: var(--icon-font-size) !important;
 }

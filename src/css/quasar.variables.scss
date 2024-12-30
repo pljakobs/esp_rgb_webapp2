@@ -35,14 +35,14 @@ $warning: #f2c037;
   --field-label-color-dark: #ffffff;
   --field-value-color-light: #000000;
   --field-value-color-dark: #ffffff;
-  --icon-color-light: #000000;
-  --icon-color-dark: #d3d3d3; /* Light grey for dark mode */
   --background-color-light: #f5f5f5;
   --background-color-dark: #2e2e2e;
   --shadow-color-light: rgba(0, 0, 0, 0.2);
   --shadow-color-dark: rgba(0, 0, 139, 0.5); /* Dark blue for dark mode */
   --label-color-light: #000000;
   --label-color-dark: #d3d3d3;
+  --icon-color-light: #040404; /* Dark color for light mode */
+  --icon-color-dark: #e0e0e0; /* Light color for dark mode */
   --icon-font-size: 1.5em;
 }
 
