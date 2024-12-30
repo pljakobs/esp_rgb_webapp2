@@ -2,7 +2,7 @@ name: Trigger Firmware Build
 
 on:
   workflow_run:
-    workflows: ["Build and Deploy RGBWW Frontend App"]
+    workflows: ["frontendBuild"]
     types:
       - completed
 

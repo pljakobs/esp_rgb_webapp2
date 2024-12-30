@@ -1,4 +1,4 @@
-name: Build and Deploy RGBWW Frontend App
+name: frontendBuild
 
 on:
   push:
