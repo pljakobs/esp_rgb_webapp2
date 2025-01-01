@@ -199,6 +199,22 @@ export default {
       console.log("Selected firmware:", selectedFirmware);
 
       try {
+        const baseUrl = otaUrl.value.substring(
+          0,
+          otaUrl.value.lastIndexOf("/") + 1,
+        );
+        const relativeUrl = selectedFirmware.files.rom.url;
+        const fullUrl = baseUrl + relativeUrl;
+
+        console.log("baseUrl:", baseUrl, "\nrelativeUrl: ", relativeUrl);
+        console.log("fullUrl: ", fullUrl);
+
+        selectedFirmware.files.rom.url = fullUrl;
+
+        console.log(
+          "firmwarre structure:",
+          JSON.stringify(selectedFirmware.files),
+        );
         const postResponse = await fetch(
           `http://${controllers.currentController["ip_address"]}/update`,
           {
