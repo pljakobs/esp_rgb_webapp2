@@ -1,7 +1,13 @@
 <template>
   <q-scroll-area style="height: 100%; width: 100%">
     <q-card-section class="flex justify-center no-padding">
-      <q-color v-model="color" format-model="hex" no-header no-footer />
+      <q-color
+        v-model="color"
+        format-model="hex"
+        no-header
+        no-footer
+        class="scaled-color"
+      />
     </q-card-section>
     <q-card-section class="flex justify-center">
       <q-btn
@@ -79,5 +85,9 @@ export default {
 .icon {
   color: var(--icon-color);
   fill: var(--icon-color);
+}
+.scaled-color {
+  width: 150%;
+  height: 150%;
 }
 </style>

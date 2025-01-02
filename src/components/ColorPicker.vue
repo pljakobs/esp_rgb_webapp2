@@ -32,13 +32,13 @@
       </q-btn-group>
     </q-card-section>
     <q-separator />
-    <q-card-section>
-      <q-carousel v-model="carouselPage" animated>
+    <q-card-section :style="{ height: cardHeight }">
+      <q-carousel v-model="carouselPage" animated :style="{ height: '100%' }">
         <q-carousel-slide name="hsv">
           <HsvSection :card-height="cardHeight" :open-dialog="openDialog" />
         </q-carousel-slide>
         <q-carousel-slide name="raw">
-          <RawSection :open-dialog="openDialog" />
+          <RawSection :card-height="cardHeight" :open-dialog="openDialog" />
         </q-carousel-slide>
         <q-carousel-slide name="presets">
           <PresetSection />
@@ -76,7 +76,7 @@ export default {
     },
     cardHeight: {
       type: String,
-      default: "300px",
+      default: "600px",
     },
   },
   setup() {
