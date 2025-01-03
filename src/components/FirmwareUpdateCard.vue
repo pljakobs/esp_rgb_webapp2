@@ -199,8 +199,8 @@ export default {
       console.log("Selected firmware:", selectedFirmware);
 
       try {
-        const baseUrl;
-        const fullUrl;
+        let baseUrl;
+        let fullUrl;
         const relativeUrl = selectedFirmware.files.rom.url;
         if (relativeUrl.substring(0, 4) !== "http") {
           // relative URL is server relative (has no scheme)
@@ -209,7 +209,7 @@ export default {
             otaUrl.value.lastIndexOf("/") + 1,
           );
           fullUrl = baseUrl + relativeUrl;
-        }else{
+        } else {
           // relative URL is not really relative, thus has the host portion
           fullUrl = relativeUrl;
         }
