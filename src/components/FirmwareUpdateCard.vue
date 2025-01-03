@@ -199,13 +199,14 @@ export default {
       console.log("Selected firmware:", selectedFirmware);
 
       try {
-        const baseUrl = otaUrl.value.substring(
-          0,
-          otaUrl.value.lastIndexOf("/") + 1,
-        );
         const relativeUrl = selectedFirmware.files.rom.url;
-        const fullUrl = baseUrl + relativeUrl;
-
+        if (relativeUrl..substring(0, 4) !== "http") {
+          const baseUrl = otaUrl.value.substring(
+            0,
+            otaUrl.value.lastIndexOf("/") + 1,
+          );
+          const fullUrl = baseUrl + relativeUrl;
+        }
         console.log("baseUrl:", baseUrl, "\nrelativeUrl: ", relativeUrl);
         console.log("fullUrl: ", fullUrl);
 
