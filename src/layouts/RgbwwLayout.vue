@@ -178,7 +178,6 @@
             />
           </q-item-section>
         </q-item>
-        Version:V5-pj-233-gd187-[devel]
       </q-drawer>
       <q-page-container class="page-container">
         <div id="q-app" class="full-width full-height no-gutter">
