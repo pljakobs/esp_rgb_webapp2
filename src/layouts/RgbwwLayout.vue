@@ -67,7 +67,7 @@
               <img src="icons/menu_outlined_24.svg" class="icon" />
             </q-avatar>
           </q-btn>
-          <q-toolbar-title> Lightinator Mini </q-toolbar-title>
+          <q-toolbar-title> Lightinator 5 </q-toolbar-title>
         </q-toolbar>
       </q-header>
       <q-drawer
@@ -248,10 +248,10 @@ export default defineComponent({
 
       const router = useRouter();
 
-      const isSmallScreen = ref(window.innerWidth <= 1024); // Change 600 to your small breakpoint
+      const isSmallScreen = ref(window.innerWidth <= 1024);
 
       const updateIsSmallScreen = () => {
-        isSmallScreen.value = window.innerWidth <= 1024; // Change 600 to your small breakpoint
+        isSmallScreen.value = window.innerWidth <= 1024;
       };
 
       const isDarkMode = ref(Dark.isActive);
@@ -363,6 +363,7 @@ export default defineComponent({
           if (isSelectOpen) {
             controllers.fetchData(); //re-fetch neighbours when opening drawer
             // Start interval when drawer is opened
+            console.log("controllers: ", JSON.stringify(controllers.data));
             intervalId.value = setInterval(() => {
               //console.log("re-feching controllers");
               controllers.fetchData();
