@@ -83,7 +83,7 @@
           v-model="controllers.currentController"
           filled
           :options="controllers.data"
-          option-label="name"
+          option-label="hostname"
           option-value="ip_address"
           label="Select a controller"
           dropdown-icon="img:icons/arrow_drop_down.svg"
