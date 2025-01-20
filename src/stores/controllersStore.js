@@ -28,6 +28,7 @@ export const controllersStore = defineStore({
               ip_address: host.ip_address.trim(),
             };
           }); // Removing leading and trailing whitespaces from the IP address
+        console.log("store: ", JSON.stringify(this.data));
         this.status = storeStatus.READY;
         console.log("controllers data fetched: ", JSON.stringify(this.data));
       } catch (error) {
