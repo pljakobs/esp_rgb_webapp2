@@ -1,3 +1,4 @@
+// filepath: /home/pjakobs/devel/esp_rgb_webapp2/src/stores/presetDataStore.js
 import { defineStore } from "pinia";
 import { storeStatus } from "./storeConstants";
 import { controllersStore } from "src/stores/controllersStore";

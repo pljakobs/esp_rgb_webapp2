@@ -1,3 +1,4 @@
+<!-- filepath: /home/pjakobs/devel/esp_rgb_webapp2/src/components/RawSection.vue -->
 <template>
   <q-scroll-area style="height: 100%; width: 100%">
     <q-card-section>
@@ -26,17 +27,25 @@
       />
     </q-card-section>
   </q-scroll-area>
+  <AddPresetDialog
+    :isOpen="isDialogOpen"
+    presetType="raw"
+    :presetData="presetData"
+    @close="isDialogOpen = false"
+  />
 </template>
 
 <script>
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import { colorDataStore } from "src/stores/colorDataStore";
 import ColorSlider from "src/components/ColorSlider.vue";
+import AddPresetDialog from "src/components/AddPresetDialog.vue";
 
 export default {
   name: "RawSection",
   components: {
     ColorSlider,
+    AddPresetDialog,
   },
   props: {
     openDialog: {
@@ -46,6 +55,7 @@ export default {
   },
   setup() {
     const colorData = colorDataStore();
+    const isDialogOpen = ref(false);
 
     const colorSliders = computed(() => [
       {
@@ -85,6 +95,20 @@ export default {
       },
     ]);
 
+    const presetData = computed(() => {
+      return {
+        r: colorData.data.raw.r,
+        g: colorData.data.raw.g,
+        b: colorData.data.raw.b,
+        ww: colorData.data.raw.ww,
+        cw: colorData.data.raw.cw,
+      };
+    });
+
+    const openDialog = () => {
+      isDialogOpen.value = true;
+    };
+
     const updateColorSlider = (slider, value) => {
       const colorMap = {
         Red: "r",
@@ -107,14 +131,12 @@ export default {
       colorData,
       colorSliders,
       updateColorSlider,
+      isDialogOpen,
+      openDialog,
+      presetData,
     };
   },
 };
 </script>
 
-<style scoped>
-.icon {
-  color: var(--icon-color);
-  fill: var(--icon-color);
-}
-</style>
+<style scoped></style>

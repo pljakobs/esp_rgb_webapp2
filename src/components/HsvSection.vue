@@ -1,3 +1,4 @@
+<!-- filepath: /home/pjakobs/devel/esp_rgb_webapp2/src/components/HsvSection.vue -->
 <template>
   <q-scroll-area style="height: 100%; width: 100%">
     <q-card-section class="flex justify-center no-padding">
@@ -13,21 +14,31 @@
       <q-btn
         icon="img:icons/star_outlined.svg"
         label="Add Preset"
-        @click="() => openDialog('hsv')"
+        @click="openDialog('hsv')"
       />
     </q-card-section>
   </q-scroll-area>
+  <AddPresetDialog
+    :isOpen="isDialogOpen"
+    presetType="hsv"
+    :presetData="presetData"
+    @close="isDialogOpen = false"
+  />
 </template>
 
 <script>
-import { ref, watch } from "vue";
+import { ref, watch, computed } from "vue";
 import { colors } from "quasar";
 import { colorDataStore } from "src/stores/colorDataStore";
+import AddPresetDialog from "src/components/AddPresetDialog.vue";
 
 const { hexToRgb, rgbToHsv, rgbToHex, hsvToRgb } = colors;
 
 export default {
   name: "HsvSection",
+  components: {
+    AddPresetDialog,
+  },
   props: {
     cardHeight: {
       type: String,
@@ -41,6 +52,17 @@ export default {
   setup() {
     const colorData = colorDataStore();
     const color = ref("#000000");
+    const isDialogOpen = ref(false);
+
+    const presetData = computed(() => {
+      const rgb = hexToRgb(color.value);
+      const hsv = rgbToHsv(rgb);
+      return hsv;
+    });
+
+    const openDialog = () => {
+      isDialogOpen.value = true;
+    };
 
     // Watch for changes in the colorDataStore's hsv property
     watch(
@@ -72,22 +94,12 @@ export default {
 
     return {
       color,
+      isDialogOpen,
+      openDialog,
+      presetData,
     };
   },
 };
 </script>
 
-<style scoped>
-.no-padding {
-  padding-top: 0 !important;
-  padding-bottom: 0 !important;
-}
-.icon {
-  color: var(--icon-color);
-  fill: var(--icon-color);
-}
-.scaled-color {
-  width: 150%;
-  height: 150%;
-}
-</style>
+<style scoped></style>
