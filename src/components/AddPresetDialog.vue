@@ -1,98 +1,101 @@
-<!-- filepath: /home/pjakobs/devel/esp_rgb_webapp2/src/components/AddPresetDialog.vue -->
 <template>
-  <q-dialog v-model="localIsOpen">
-    <q-card>
-      <q-card-section>
-        <div class="text-h6">Add Preset</div>
-      </q-card-section>
-
-      <q-card-section>
-        <q-input v-model="presetName" label="Preset Name" filled autofocus />
-      </q-card-section>
-
-      <q-card-actions align="right">
-        <q-btn flat label="Cancel" color="primary" @click="closeDialog" />
-        <q-btn flat label="Save" color="primary" @click="savePreset" />
-      </q-card-actions>
-    </q-card>
-  </q-dialog>
+  <q-scroll-area style="height: 100%; width: 100%">
+    <q-card-section class="flex justify-center no-padding">
+      <q-color
+        v-model="color"
+        format-model="hex"
+        no-header
+        no-footer
+        class="scaled-color"
+      />
+    </q-card-section>
+    <q-card-section class="flex justify-center">
+      <q-btn
+        icon="img:icons/star_outlined.svg"
+        label="Add Preset"
+        @click="openDialog"
+      />
+    </q-card-section>
+  </q-scroll-area>
+  <AddPresetDialog
+    :modelValue="isDialogOpen"
+    presetType="hsv"
+    :presetData="presetData"
+    @update:modelValue="isDialogOpen = $event"
+    @close="isDialogOpen = false"
+  />
 </template>
 
 <script>
-import { ref, watch } from "vue";
-import { presetDataStore } from "src/stores/presetDataStore";
+import { ref, watch, computed } from "vue";
+import { colors } from "quasar";
+import { colorDataStore } from "src/stores/colorDataStore";
+import AddPresetDialog from "src/components/AddPresetDialog.vue";
+
+const { hexToRgb, rgbToHsv, rgbToHex, hsvToRgb } = colors;
 
 export default {
-  name: "AddPresetDialog",
+  name: "HsvSection",
+  components: {
+    AddPresetDialog,
+  },
   props: {
-    modelValue: {
-      type: Boolean,
-      required: true,
-    },
-    presetType: {
+    cardHeight: {
       type: String,
-      required: true,
-    },
-    presetData: {
-      type: Object,
-      required: true,
+      default: "300px",
     },
   },
-  emits: ["update:modelValue", "close"],
-  setup(props, { emit }) {
-    const presetName = ref("");
-    const presetsStore = presetDataStore();
-    const localIsOpen = ref(props.modelValue);
+  setup() {
+    const colorData = colorDataStore();
+    const color = ref("#000000");
+    const isDialogOpen = ref(false);
 
-    watch(
-      () => props.modelValue,
-      (newVal) => {
-        localIsOpen.value = newVal;
-      },
-    );
+    const presetData = computed(() => {
+      const rgb = hexToRgb(color.value);
+      const hsv = rgbToHsv(rgb);
+      return hsv;
+    });
 
-    watch(
-      () => localIsOpen.value,
-      (newVal) => {
-        emit("update:modelValue", newVal);
-      },
-    );
-
-    const closeDialog = () => {
-      emit("close");
-      localIsOpen.value = false;
+    const openDialog = () => {
+      isDialogOpen.value = true;
     };
 
-    const savePreset = async () => {
-      const existingPreset = presetsStore.data.presets.find(
-        (preset) => preset.name === presetName.value,
-      );
-
-      if (existingPreset) {
-        const overwrite = confirm(
-          `Preset "${presetName.value}" already exists. Do you want to overwrite it?`,
-        );
-        if (!overwrite) {
-          return;
+    // Watch for changes in the colorDataStore's hsv property
+    watch(
+      () => colorData.data.hsv,
+      (val) => {
+        if (val !== undefined) {
+          const rgb = hsvToRgb(val);
+          const hex = rgbToHex(rgb);
+          color.value = hex;
         }
-      }
+      },
+      { immediate: true },
+    );
 
-      const newPreset = {
-        name: presetName.value,
-        type: props.presetType,
-        data: props.presetData,
-      };
+    watch(color, (val) => {
+      //color is the q-color component
+      console.log("color picker changed:", val);
+      const rgb = hexToRgb(val);
+      const hsv = rgbToHsv(rgb);
+      console.log("hsv", hsv);
 
-      await presetsStore.addPreset(newPreset);
-      closeDialog();
-    };
+      colorData.change_by = "color picker";
+      console.log(
+        "colorPage picker watcher color store:",
+        JSON.stringify(colorData.data),
+      );
+      colorData.updateData("hsv", hsv);
+    });
 
     return {
-      presetName,
-      localIsOpen,
-      closeDialog,
-      savePreset,
+      color,
+      isDialogOpen,
+      openDialog,
+      presetData,
     };
   },
 };
 </script>
+
+<style scoped></style>

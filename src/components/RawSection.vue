@@ -1,4 +1,3 @@
-<!-- filepath: /home/pjakobs/devel/esp_rgb_webapp2/src/components/RawSection.vue -->
 <template>
   <q-scroll-area style="height: 100%; width: 100%">
     <q-card-section>
