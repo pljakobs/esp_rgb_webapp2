@@ -1,5 +1,5 @@
 <template>
-  <MyCard icon="img:icons/settings_outlined.svg" title="IP Settings">
+  <MyCard icon="'settings_outlined'" title="IP Settings">
     <q-card-section>
       <div>
         IP settings require a restart to take effect. If changed, controller

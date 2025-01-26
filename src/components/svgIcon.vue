@@ -49,7 +49,14 @@ export default {
   height: 1em;
   fill: var(--icon-color);
 }
-
+.svg-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2em;
+  height: 2em;
+  fill: var(--icon-color);
+}
 .selected {
   fill: var(--icon-select-color);
 }

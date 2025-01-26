@@ -3,15 +3,13 @@
     <q-card-section class="row items-center">
       <svgIcon :name="icon" />
       <div class="text-h6">{{ title }}</div>
-      <q-btn
-        flat
-        round
-        dense
-        icon="img:icons/arrow_drop_down.svg"
+      <div
         class="q-ml-auto rotate-icon"
         :class="{ 'rotate-up': !collapsed, 'rotate-down': collapsed }"
         @click="toggleCollapse"
-      />
+      >
+        <svgIcon name="arrow_drop_down" />
+      </div>
     </q-card-section>
     <q-separator />
     <q-card-section v-show="!collapsed">
@@ -54,6 +52,8 @@ export default {
 <style scoped>
 .rotate-icon {
   transition: transform 0.3s ease;
+  cursor: pointer;
+  transform-origin: center center;
 }
 .rotate-up {
   transform: rotate(180deg);
@@ -69,5 +69,7 @@ export default {
   font-size: var(--icon-font-size) !important;
   width: var(--icon-font-size) !important;
   height: var(--icon-font-size) !important;
+  border: 1px solid var(--icon-color); /* Hairline bounding box */
+  box-sizing: border-box; /* Ensure the border is included in the element's dimensions */
 }
 </style>
