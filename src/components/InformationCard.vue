@@ -1,5 +1,5 @@
 <template>
-  <MyCard title="System Information" icon="'info_outlined'">
+  <MyCard title="System Information" icon="info_outlined">
     <q-card-section>
       <dataTable :items="systemInfoData" />
     </q-card-section>

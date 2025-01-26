@@ -1,5 +1,5 @@
 <template>
-  <MyCard icon="'tune_outlined.svg'" title="Transition Mode">
+  <MyCard icon="tune_outlined.svg" title="Transition Mode">
     <q-card-section>
       <div class="text-h6 col-auto self-center q-gutter-md">
         <q-select

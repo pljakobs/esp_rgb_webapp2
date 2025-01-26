@@ -108,7 +108,7 @@
           <q-item-label header>main menu</q-item-label>
           <q-item clickable tag="router-link" to="/ColorPage">
             <q-item-section class="icon-section"
-              ><q-icon name="img:icons/lightbulb_outlined.svg" class="icon" />
+              ><svgIcon name="img:icons/lightbulb_outlined" class="icon" />
             </q-item-section>
 
             <q-item-section class="text-section">
@@ -119,7 +119,7 @@
 
           <q-item clickable tag="router-link" to="/ColorSettings">
             <q-item-section class="icon-section"
-              ><q-icon name="img:icons/settings_outlined.svg" class="icon" />
+              ><svgIcon name="settings_outlined" class="icon" />
             </q-item-section>
 
             <q-item-section class="text-section">
@@ -132,7 +132,7 @@
 
           <q-item clickable tag="router-link" to="/NetworkSettings">
             <q-item-section class="icon-section"
-              ><q-icon name="img:icons/wifi_outlined.svg" class="icon" />
+              ><svgIcon name="wifi_outlined" class="icon" />
             </q-item-section>
 
             <q-item-section class="text-section">
@@ -145,20 +145,20 @@
 
           <q-item clickable tag="router-link" to="/SystemSettings">
             <q-item-section class="icon-section"
-              ><q-icon name="img:icons/memory_outlined.svg" class="icon" />
+              ><svgIcon name="memory_outlined" class="icon" />
             </q-item-section>
 
             <q-item-section class="text-section">
               <q-item-label>System settings</q-item-label>
               <q-item-label caption
-                >configure pins, upgrade firmware, backup and restore
-                settings</q-item-label
-              >
+                >configure pins, upgrade firmware, backup and restore settings
+              </q-item-label>
             </q-item-section>
           </q-item>
+
           <q-item clickable tag="router-link" to="/NetworkInit">
             <q-item-section class="icon-section"
-              ><q-icon name="img:icons/wifi_outlined.svg" class="icon" />
+              ><svgIcon name="wifi_outlined" class="icon" />
             </q-item-section>
 
             <q-item-section class="text-section">
@@ -169,7 +169,7 @@
 
           <q-item clickable tag="router-link" to="/test">
             <q-item-section class="icon-section"
-              ><q-icon name="img:icons/lightbulb_outlined.svg" class="icon" />
+              ><svgIcon name="lightbulb_outlined" class="icon" />
             </q-item-section>
 
             <q-item-section class="text-section">
