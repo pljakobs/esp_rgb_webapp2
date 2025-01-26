@@ -10,9 +10,9 @@
           <q-item-section avatar>
             <q-badge
               :style="{
-                backgroundColor: preset.raw
-                  ? `rgb(${preset.raw.r}, ${preset.raw.g}, ${preset.raw.b})`
-                  : `rgb(${hsvToRgb(preset.hsv).r}, ${hsvToRgb(preset.hsv).g}, ${hsvToRgb(preset.hsv).b})`,
+                backgroundColor: preset.color.raw
+                  ? `rgb(${preset.color.raw.r}, ${preset.color.raw.g}, ${preset.color.raw.b})`
+                  : `rgb(${hsvToRgb(preset.color.hsv).r}, ${hsvToRgb(preset.color.hsv).g}, ${hsvToRgb(preset.color.hsv).b})`,
                 width: '30px',
                 height: '30px',
                 borderRadius: '50%',
@@ -28,22 +28,32 @@
               round
               @click="handlePresetClick(preset)"
             >
-              {{ preset.raw ? "RAW" : "HSV" }}
+              {{ preset.color.raw ? "RAW" : "HSV" }}
             </q-badge>
           </q-item-section>
           <q-item-section @click="handlePresetClick(preset)">
             {{ preset.name }}
           </q-item-section>
           <q-item-section side>
-            <q-icon
-              name="star"
-              size="2em"
-              :class="{ 'text-yellow': preset.favorite }"
-              @click="toggleFavorite(preset)"
-            />
+            <div class="icon-wrapper" @click="() => toggleFavorite(preset)">
+              <svgIcon
+                :src="
+                  preset.favorite
+                    ? 'icons/star_filled.svg'
+                    : 'icons/star_outlined.svg'
+                "
+                :iconClass="
+                  preset.favorite ? 'icon-favorite' : 'icon-favorite-outline'
+                "
+              />
+            </div>
           </q-item-section>
           <q-item-section side>
-            <q-icon name="delete" size="2em" @click="deletePreset(preset)" />
+            <q-icon
+              name="img:icons/delete.svg"
+              size="2em"
+              @click="deletePreset(preset)"
+            />
           </q-item-section>
         </q-item>
       </template>
@@ -59,7 +69,7 @@
 </template>
 
 <script>
-import { computed } from "vue";
+import { computed, onMounted } from "vue";
 import { colors } from "quasar";
 import { presetDataStore } from "src/stores/presetDataStore";
 import { colorDataStore } from "src/stores/colorDataStore";
@@ -72,8 +82,13 @@ export default {
     const presetData = presetDataStore();
     const colorData = colorDataStore();
 
+    // Fetch presets data on component mount
+    onMounted(() => {
+      presetData.fetchData();
+    });
+
     const activePresets = computed(() => {
-      const presets = presetData.data["presets"];
+      const presets = presetData.data.presets;
       if (!presets) {
         return [];
       }
@@ -83,23 +98,64 @@ export default {
     const handlePresetClick = (preset) => {
       console.log("preset selected", preset);
 
-      if (preset.raw) {
+      if (preset.color.raw) {
         colorData.change_by = "preset";
-        colorData.updateData("raw", preset.raw);
+        colorData.updateData("raw", preset.color.raw);
       } else {
         colorData.change_by = "preset";
-        colorData.updateData("hsv", preset.hsv);
+        colorData.updateData("hsv", preset.color.hsv);
       }
     };
 
-    const toggleFavorite = (preset) => {
-      preset.favorite = !preset.favorite;
-      presetData.updatePreset(preset);
+    const toggleFavorite = async (preset) => {
+      console.log("toggle Favorite", JSON.stringify(preset));
+      try {
+        preset.favorite = !preset.favorite;
+        let payload = { "presets[]": [preset] };
+        const controllers = controllersStore();
+        const response = await fetch(
+          `http://${controllers.currentController["ip_address"]}/presets`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(payload),
+          },
+        );
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        console.log("toggled favorite for preset", preset.name);
+      } catch (error) {
+        console.error("Error toggling favorite:", error);
+      }
     };
 
-    const deletePreset = (preset) => {
-      // Remove the preset from presetData.data['presets']
-      presetData.deletePreset(preset);
+    const deletePreset = async (preset) => {
+      try {
+        let payload = { "presets[]": [preset] };
+        const controllers = controllersStore();
+        const response = await fetch(
+          `http://${controllers.currentController["ip_address"]}/presets`,
+          {
+            method: "DELETE",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(payload),
+          },
+        );
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        presetData.data.presets = presetData.data.presets.filter(
+          (p) => p.id !== preset.id,
+        );
+        console.log("deleted preset", preset.name);
+      } catch (error) {
+        console.error("Error deleting preset:", error);
+      }
     };
 
     return {
@@ -114,8 +170,16 @@ export default {
 </script>
 
 <style scoped>
-.icon {
-  color: var(--icon-color);
-  fill: var(--icon-color);
+.icon-wrapper {
+  cursor: pointer;
+}
+.icon-favorite {
+  color: yellow;
+}
+.icon-favorite-outline {
+  color: gray;
+}
+.icon-delete {
+  color: red;
 }
 </style>

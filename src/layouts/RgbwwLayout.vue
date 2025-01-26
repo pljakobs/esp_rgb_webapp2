@@ -47,6 +47,17 @@
           />
           <span v-else class="text-danger">❌ {{ colorData.error }}</span
           ><br />
+          Presets and Scenes:
+          <span
+            v-if="presetsData.status === storeStatus.READY"
+            class="text-success"
+            >✔️</span
+          >
+          <q-spinner
+            v-else-if="presetsData.status === storeStatus.LOADING"
+            color="light-blue"
+          />
+          <span v-else class="text-danger">❌ {{ presetsData.error }}</span>
         </div>
       </div>
     </div>
@@ -219,7 +230,7 @@ import {
 } from "vue";
 import { configDataStore } from "src/stores/configDataStore";
 import { colorDataStore } from "src/stores/colorDataStore";
-//import { presetDataStore } from "src/stores/presetDataStore";
+import { presetDataStore } from "src/stores/presetDataStore";
 import { infoDataStore } from "src/stores/infoDataStore";
 import { controllersStore } from "src/stores/controllersStore";
 
@@ -239,7 +250,7 @@ export default defineComponent({
       const configData = configDataStore();
       const infoData = infoDataStore();
       const colorData = colorDataStore();
-      //const groupsData = groupsDataStore();
+      const presetsData = presetDataStore();
       const intervalId = ref(null);
       const ws = useWebSocket();
 
@@ -389,7 +400,7 @@ export default defineComponent({
         configData,
         infoData,
         colorData,
-        //groupsData,
+        presetsData,
         controllers,
         storeStatus,
         isSelectOpen,
