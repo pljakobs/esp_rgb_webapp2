@@ -243,6 +243,8 @@ export default defineComponent({
   name: "MainLayout",
 
   setup() {
+    const isDarkMode = ref(Dark.isActive);
+
     try {
       const leftDrawerOpen = ref(false);
 
@@ -264,20 +266,27 @@ export default defineComponent({
         isSmallScreen.value = window.innerWidth <= 1024;
       };
 
-      const isDarkMode = ref(Dark.isActive);
-
       const toggleDarkMode = (value) => {
         Dark.set(value);
         console.log("setting dark mode to", value ? "true" : "false");
         localStorage.setItem("darkMode", value);
         configData.updateData("general.UI.dark_mode", value, true);
+        document.documentElement.setAttribute(
+          "data-theme",
+          value ? "dark" : "light",
+        );
       };
 
       // Load user preference from local storage
       const savedDarkMode = localStorage.getItem("darkMode");
       if (savedDarkMode !== null) {
-        Dark.set(savedDarkMode === "true");
-        isDarkMode.value = savedDarkMode === "true";
+        const isDark = savedDarkMode === "true";
+        Dark.set(isDark);
+        isDarkMode.value = isDark;
+        document.documentElement.setAttribute(
+          "data-theme",
+          isDark ? "dark" : "light",
+        );
       }
 
       const buttonColor = computed(() => {

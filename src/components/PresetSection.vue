@@ -36,24 +36,13 @@
           </q-item-section>
           <q-item-section side>
             <div class="icon-wrapper" @click="() => toggleFavorite(preset)">
-              <svgIcon
-                :src="
-                  preset.favorite
-                    ? 'icons/star_filled.svg'
-                    : 'icons/star_outlined.svg'
-                "
-                :iconClass="
-                  preset.favorite ? 'icon-favorite' : 'icon-favorite-outline'
-                "
-              />
+              <svgIcon :name="'star_outlined'" :isSelected="preset.favorite" />
             </div>
           </q-item-section>
           <q-item-section side>
-            <q-icon
-              name="img:icons/delete.svg"
-              size="2em"
-              @click="deletePreset(preset)"
-            />
+            <div class="icon-wrapper" @click="() => deletePreset(preset)">
+              <svgIcon :name="'delete'" />
+            </div>
           </q-item-section>
         </q-item>
       </template>

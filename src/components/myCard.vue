@@ -1,7 +1,7 @@
 <template>
   <q-card class="full-width full-height no-gutter">
     <q-card-section class="row items-center">
-      <q-icon :name="icon" :color="iconColor" class="q-mr-sm icon" />
+      <svgIcon :name="icon" />
       <div class="text-h6">{{ title }}</div>
       <q-btn
         flat
