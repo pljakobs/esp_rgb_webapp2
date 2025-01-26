@@ -45,7 +45,7 @@ export default {
   },
   setup() {
     const colorData = colorDataStore();
-    const isDarkMode = ref(Dark.isActive);
+
     const colorSliders = computed(() => [
       {
         label: "Red",

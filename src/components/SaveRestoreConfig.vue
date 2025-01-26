@@ -1,8 +1,5 @@
 <template>
-  <MyCard
-    icon="img:icons/save_outlined.svg"
-    title="save / restore configuration"
-  >
+  <MyCard icon="'save_outlined.svg'" title="save / restore configuration">
     <q-card-section>
       <div class="button-group">
         <q-btn

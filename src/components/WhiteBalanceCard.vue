@@ -1,5 +1,5 @@
 <template>
-  <MyCard icon="img:icons/exposure_outlined.svg" title="White balance">
+  <MyCard icon="'exposure_outlined'" title="White balance">
     <q-card-section>
       select color temperature
       <ColorSlider
