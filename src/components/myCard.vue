@@ -46,6 +46,14 @@ export default {
       this.collapsed = !this.collapsed;
     },
   },
+  mounted() {
+    console.log("Icon name passed to MyCard:", this.icon);
+  },
+  watch: {
+    icon(newVal) {
+      this.$emit("update: icon", newVal);
+    },
+  },
 };
 </script>
 
@@ -69,7 +77,5 @@ export default {
   font-size: var(--icon-font-size) !important;
   width: var(--icon-font-size) !important;
   height: var(--icon-font-size) !important;
-  border: 1px solid var(--icon-color); /* Hairline bounding box */
-  box-sizing: border-box; /* Ensure the border is included in the element's dimensions */
 }
 </style>

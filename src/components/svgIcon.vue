@@ -24,6 +24,7 @@ export default {
     };
   },
   async mounted() {
+    console.log("trying to fetch icon", this.name);
     try {
       const response = await fetch(`icons/${this.name}.svg`);
       if (!response.ok) {

@@ -1,5 +1,5 @@
 <template>
-  <MyCard title="Hostname" icon="img:icons/badge_outlined.svg">
+  <MyCard title="Hostname" icon="badge_outlined">
     <q-card-section>
       <q-input
         v-model="configData.data.general.device_name"
