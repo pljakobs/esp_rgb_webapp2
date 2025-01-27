@@ -1,5 +1,5 @@
 <template>
-  <MyCard icon="img:icons/tune_outlined.svg" title="Transition Mode">
+  <MyCard icon="tune_outlined" title="Transition Mode">
     <q-card-section>
       <div class="text-h6 col-auto self-center q-gutter-md">
         <q-select
@@ -7,9 +7,12 @@
           :options="transitionOptions"
           label="Transition Mode"
           style="width: 200px"
-          dropdown-icon="img:icons/arrow_drop_down.svg"
           @update:model-value="updateTransitionMode"
-        />
+        >
+        <template v-slot:dopdown-icon>
+          <svgIcon name="arrow_drop_down">
+        </template>
+      </q-select>
       </div>
     </q-card-section>
 

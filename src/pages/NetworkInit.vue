@@ -1,6 +1,6 @@
 <template>
   <div>
-    <MyCard title="connect to Network" icon="img:icons/wifi_outlined.svg">
+    <MyCard title="connect to Network" icon="wifi_outlined">
       <q-card-section class="row justify-center">
         <q-select
           v-model="selectedNetwork"
@@ -74,7 +74,7 @@
         </div>
       </q-card-section>
     </MyCard>
-    <MyCard title="network status" icon="img:icons/description.svg">
+    <MyCard title="network status" icon="description">
       {{ wifiData.message }}
       <q-spinner v-if="!wifiData.connected" />
       <div v-if="wifiData.connected">
@@ -101,7 +101,7 @@
       </div>
     </MyCard>
 
-    <MyCard title="Network Actions" icon="img:icons/wifi_outlined.svg">
+    <MyCard title="Network Actions" icon="wifi_outlined">
       <q-card-actions>
         <q-btn
           color="primary"
@@ -129,7 +129,7 @@
         />
       </q-card-actions>
     </MyCard>
-    <MyCard title="Nework Log" icon="img:icons/description.svg">
+    <MyCard title="Nework Log" icon="description">
       <q-card-section>
         <div>Connected:{{ wifiData.connected }}</div>
         messages:

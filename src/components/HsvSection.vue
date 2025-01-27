@@ -10,11 +10,12 @@
       />
     </q-card-section>
     <q-card-section class="flex justify-center">
-      <q-btn
-        icon="img:icons/star_outlined.svg"
-        label="Add Preset"
-        @click="() => openDialog('hsv')"
-      />
+      <q-btn @click="() => openDialog('hsv')">
+        <template v-slot:default>
+          <svgIcon name="star_outlined" />
+          <span>add Preset</span>
+        </template>
+      </q-btn>
     </q-card-section>
   </q-scroll-area>
 </template>

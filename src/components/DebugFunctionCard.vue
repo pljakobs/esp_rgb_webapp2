@@ -1,8 +1,5 @@
 <template>
-  <MyCard
-    title="Debuging Functions"
-    icon="img:icons/systemsecurityupdate_outlined.svg"
-  >
+  <MyCard title="Debuging Functions" icon="systemsecurityupdate_outlined">
     <q-card-section>
       <q-btn-group>
         <q-btn

@@ -1,5 +1,5 @@
 <template>
-  <MyCard icon="img:icons/settings_outlined.svg" title="MQTT Settings">
+  <MyCard icon="settings_outlined" title="MQTT Settings">
     <q-card-section>
       <div>
         MQTT settings require a restart to take effect. If changed, controller

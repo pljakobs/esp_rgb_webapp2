@@ -1,34 +1,43 @@
 <template>
-  <MyCard :icon="icon" :title="title">
+  <MyCard :icon="'palette_outlined'" :title="title">
     <q-card-section class="row justify-center no-padding">
       <q-btn-group class="btn-group w-100">
         <q-btn
           name="hsv"
-          label="HSV"
-          icon="img:icons/palette_outlined.svg"
           :color="carouselPage === 'hsv' ? 'secondary' : 'primary'"
           class="equal-btn"
           no-caps
           @click="carouselPage = 'hsv'"
-        />
+        >
+          <template v-slot:default>
+            <svgIcon name="palette_outlined" />
+            <span>HSV</span>
+          </template>
+        </q-btn>
         <q-btn
           name="raw"
-          label="Raw"
-          icon="img:icons/palette_outlined.svg"
           :color="carouselPage === 'raw' ? 'secondary' : 'primary'"
           class="equal-btn"
           no-caps
           @click="carouselPage = 'raw'"
-        />
+        >
+          <template v-slot:default>
+            <svgIcon name="palette_outlined" />
+            <span>RAW</span>
+          </template>
+        </q-btn>
         <q-btn
           name="presets"
-          label="Presets"
-          icon="img:icons/star_outlined.svg"
           :color="carouselPage === 'presets' ? 'secondary' : 'primary'"
           class="equal-btn"
           no-caps
           @click="carouselPage = 'presets'"
-        />
+        >
+          <template v-slot:default>
+            <svgIcon name="star_outlined" />
+            <span>Presets</span>
+          </template>
+        </q-btn>
       </q-btn-group>
     </q-card-section>
     <q-separator />

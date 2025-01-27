@@ -1,5 +1,5 @@
 <template>
-  <MyCard icon="img:icons/palette_outlined.svg" title="Color">
+  <MyCard icon="palette_outlined" title="Color">
     <q-card-section>
       <div class="text-h6 col-auto self-center q-gutter-md">
         <q-select

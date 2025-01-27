@@ -1,5 +1,5 @@
 <template>
-  <MyCard icon="img:icons/wifi_outlined.svg" title="Connection">
+  <MyCard icon="wifi_outlined" title="Connection">
     <q-card-section>
       <dataTable :items="connectionItems" />
     </q-card-section>

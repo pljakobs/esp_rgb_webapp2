@@ -1,8 +1,5 @@
 <template>
-  <MyCard
-    title="Firmware update"
-    icon="img:icons/systemsecurityupdate_outlined.svg"
-  >
+  <MyCard title="Firmware update" icon="systemsecurityupdate_outlined">
     <q-card-section>
       <q-input
         v-model="otaUrl"

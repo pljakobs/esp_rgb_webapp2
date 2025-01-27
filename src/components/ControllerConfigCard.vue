@@ -1,5 +1,5 @@
 <template>
-  <MyCard icon="img:icons/memory_outlined.svg" title="Controller config">
+  <MyCard icon="memory_outlined" title="Controller config">
     <q-card-section>
       <q-select
         v-model="currentPinConfigName"

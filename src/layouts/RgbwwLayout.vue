@@ -47,6 +47,17 @@
           />
           <span v-else class="text-danger">❌ {{ colorData.error }}</span
           ><br />
+          Presets and Scenes:
+          <span
+            v-if="presetsData.status === storeStatus.READY"
+            class="text-success"
+            >✔️</span
+          >
+          <q-spinner
+            v-else-if="presetsData.status === storeStatus.LOADING"
+            color="light-blue"
+          />
+          <span v-else class="text-danger">❌ {{ presetsData.error }}</span>
         </div>
       </div>
     </div>
@@ -97,7 +108,7 @@
           <q-item-label header>main menu</q-item-label>
           <q-item clickable tag="router-link" to="/ColorPage">
             <q-item-section class="icon-section"
-              ><q-icon name="img:icons/lightbulb_outlined.svg" class="icon" />
+              ><svgIcon name="lightbulb_outlined" class="icon" />
             </q-item-section>
 
             <q-item-section class="text-section">
@@ -108,7 +119,7 @@
 
           <q-item clickable tag="router-link" to="/ColorSettings">
             <q-item-section class="icon-section"
-              ><q-icon name="img:icons/settings_outlined.svg" class="icon" />
+              ><svgIcon name="settings_outlined" class="icon" />
             </q-item-section>
 
             <q-item-section class="text-section">
@@ -121,7 +132,7 @@
 
           <q-item clickable tag="router-link" to="/NetworkSettings">
             <q-item-section class="icon-section"
-              ><q-icon name="img:icons/wifi_outlined.svg" class="icon" />
+              ><svgIcon name="wifi_outlined" class="icon" />
             </q-item-section>
 
             <q-item-section class="text-section">
@@ -134,20 +145,20 @@
 
           <q-item clickable tag="router-link" to="/SystemSettings">
             <q-item-section class="icon-section"
-              ><q-icon name="img:icons/memory_outlined.svg" class="icon" />
+              ><svgIcon name="memory_outlined" class="icon" />
             </q-item-section>
 
             <q-item-section class="text-section">
               <q-item-label>System settings</q-item-label>
               <q-item-label caption
-                >configure pins, upgrade firmware, backup and restore
-                settings</q-item-label
-              >
+                >configure pins, upgrade firmware, backup and restore settings
+              </q-item-label>
             </q-item-section>
           </q-item>
+
           <q-item clickable tag="router-link" to="/NetworkInit">
             <q-item-section class="icon-section"
-              ><q-icon name="img:icons/wifi_outlined.svg" class="icon" />
+              ><svgIcon name="wifi_outlined" class="icon" />
             </q-item-section>
 
             <q-item-section class="text-section">
@@ -158,7 +169,7 @@
 
           <q-item clickable tag="router-link" to="/test">
             <q-item-section class="icon-section"
-              ><q-icon name="img:icons/lightbulb_outlined.svg" class="icon" />
+              ><svgIcon name="lightbulb_outlined" class="icon" />
             </q-item-section>
 
             <q-item-section class="text-section">
@@ -219,7 +230,7 @@ import {
 } from "vue";
 import { configDataStore } from "src/stores/configDataStore";
 import { colorDataStore } from "src/stores/colorDataStore";
-//import { presetDataStore } from "src/stores/presetDataStore";
+import { presetDataStore } from "src/stores/presetDataStore";
 import { infoDataStore } from "src/stores/infoDataStore";
 import { controllersStore } from "src/stores/controllersStore";
 
@@ -232,6 +243,8 @@ export default defineComponent({
   name: "MainLayout",
 
   setup() {
+    const isDarkMode = ref(Dark.isActive);
+
     try {
       const leftDrawerOpen = ref(false);
 
@@ -239,7 +252,7 @@ export default defineComponent({
       const configData = configDataStore();
       const infoData = infoDataStore();
       const colorData = colorDataStore();
-      //const groupsData = groupsDataStore();
+      const presetsData = presetDataStore();
       const intervalId = ref(null);
       const ws = useWebSocket();
 
@@ -253,20 +266,27 @@ export default defineComponent({
         isSmallScreen.value = window.innerWidth <= 1024;
       };
 
-      const isDarkMode = ref(Dark.isActive);
-
       const toggleDarkMode = (value) => {
         Dark.set(value);
         console.log("setting dark mode to", value ? "true" : "false");
         localStorage.setItem("darkMode", value);
         configData.updateData("general.UI.dark_mode", value, true);
+        document.documentElement.setAttribute(
+          "data-theme",
+          value ? "dark" : "light",
+        );
       };
 
       // Load user preference from local storage
       const savedDarkMode = localStorage.getItem("darkMode");
       if (savedDarkMode !== null) {
-        Dark.set(savedDarkMode === "true");
-        isDarkMode.value = savedDarkMode === "true";
+        const isDark = savedDarkMode === "true";
+        Dark.set(isDark);
+        isDarkMode.value = isDark;
+        document.documentElement.setAttribute(
+          "data-theme",
+          isDark ? "dark" : "light",
+        );
       }
 
       const buttonColor = computed(() => {
@@ -389,7 +409,7 @@ export default defineComponent({
         configData,
         infoData,
         colorData,
-        //groupsData,
+        presetsData,
         controllers,
         storeStatus,
         isSelectOpen,
