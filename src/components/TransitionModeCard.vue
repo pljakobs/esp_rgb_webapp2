@@ -9,10 +9,10 @@
           style="width: 200px"
           @update:model-value="updateTransitionMode"
         >
-        <template v-slot:dopdown-icon>
-          <svgIcon name="arrow_drop_down">
-        </template>
-      </q-select>
+          <template v-slot:dropdown-icon>
+            <svgIcon name="arrow_drop_down" />
+          </template>
+        </q-select>
       </div>
     </q-card-section>
 

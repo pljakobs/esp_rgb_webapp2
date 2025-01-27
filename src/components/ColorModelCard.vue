@@ -7,15 +7,10 @@
           :options="colorOptions"
           label="Color Model"
           style="width: 200px"
-          dropdown-icon="img:icons/arrow_drop_down.svg"
           @update:model-value="emitColorModel"
         >
-          <template #dropdown-icon>
-            <img
-              src="/icons/arrow_drop_down.svg"
-              alt="Dropdown Icon"
-              style="width: 24px; height: 24px"
-            />
+          <template v-slot:dropdown-icon>
+            <svgIcon name="arrow_drop_down"/>
           </template>
         </q-select>
       </div>
@@ -153,8 +148,5 @@ export default {
 </script>
 
 <style scoped>
-.icon {
-  color: var(--icon-color);
-  fill: var(--icon-color);
-}
+
 </style>
