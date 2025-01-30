@@ -9,6 +9,7 @@
           style="width: 200px"
           dropdown-icon="img:icons/arrow_drop_down.svg"
           @update:model-value="updateTransitionMode"
+          dropdown-icon="img:icons/arrow_drop_down.svg"
         >
         </q-select>
       </div>

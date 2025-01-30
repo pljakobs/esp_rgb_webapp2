@@ -1,4 +1,5 @@
 <!-- filepath: /home/pjakobs/devel/esp_rgb_webapp2/src/components/ColorPicker.vue -->
+<!-- filepath: /home/pjakobs/devel/esp_rgb_webapp2/src/components/ColorPicker.vue -->
 <template>
   <MyCard :icon="icon" :title="title">
     <q-card-section class="row justify-center no-padding">
@@ -37,8 +38,10 @@
       <q-carousel v-model="carouselPage" animated :style="{ height: '100%' }">
         <q-carousel-slide name="hsv">
           <HsvSection :card-height="cardHeight" :add-preset="addPreset" />
+          <HsvSection :card-height="cardHeight" :add-preset="addPreset" />
         </q-carousel-slide>
         <q-carousel-slide name="raw">
+          <RawSection :card-height="cardHeight" :add-preset="addPreset" />
           <RawSection :card-height="cardHeight" :add-preset="addPreset" />
         </q-carousel-slide>
         <q-carousel-slide name="presets">
@@ -51,6 +54,7 @@
 
 <script>
 import { ref, watch } from "vue";
+import { Dialog } from "quasar";
 import { Dialog } from "quasar";
 import { presetDataStore } from "src/stores/presetDataStore";
 import { storeStatus } from "src/stores/storeConstants";
@@ -148,6 +152,7 @@ export default {
 
     return {
       carouselPage,
+      addPreset,
       addPreset,
       presetData,
       storeStatus,
