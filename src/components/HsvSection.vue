@@ -1,3 +1,4 @@
+<!-- filepath: /home/pjakobs/devel/esp_rgb_webapp2/src/components/HsvSection.vue -->
 <template>
   <q-scroll-area style="height: 100%; width: 100%">
     <q-card-section class="flex justify-center no-padding">
@@ -10,11 +11,12 @@
       />
     </q-card-section>
     <q-card-section class="flex justify-center">
-      <q-btn
-        icon="img:icons/star_outlined.svg"
-        label="Add Preset"
-        @click="openDialog('hsv')"
-      />
+      <q-btn @click="handleAddPreset">
+        <template v-slot:default>
+          <svgIcon name="star_outlined" />
+          <span>Add Preset</span>
+        </template>
+      </q-btn>
     </q-card-section>
   </q-scroll-area>
   <AddPresetDialog
@@ -43,25 +45,15 @@ export default {
       type: String,
       default: "300px",
     },
-    openDialog: {
+    addPreset: {
       type: Function,
       required: true,
     },
   },
-  setup() {
+  setup(props) {
     const colorData = colorDataStore();
     const color = ref("#000000");
-    const isDialogOpen = ref(false);
-
-    const presetData = computed(() => {
-      const rgb = hexToRgb(color.value);
-      const hsv = rgbToHsv(rgb);
-      return hsv;
-    });
-
-    const openDialog = () => {
-      isDialogOpen.value = true;
-    };
+    const hsvColor = ref(null);
 
     // Watch for changes in the colorDataStore's hsv property
     watch(
@@ -77,12 +69,13 @@ export default {
     );
 
     watch(color, (val) => {
-      //color is the q-color component
+      // color is the q-color component
       console.log("color picker changed:", val);
       const rgb = hexToRgb(val);
       const hsv = rgbToHsv(rgb);
       console.log("hsv", hsv);
 
+      hsvColor.value = hsv; // Store the HSV value
       colorData.change_by = "color picker";
       console.log(
         "colorPage picker watcher color store:",
@@ -91,11 +84,19 @@ export default {
       colorData.updateData("hsv", hsv);
     });
 
+    const handleAddPreset = () => {
+      console.log("handleAddPreset called");
+      try {
+        props.addPreset(hsvColor.value);
+        console.log("Preset added with color:", hsvColor.value);
+      } catch (error) {
+        console.error("Error adding preset:", error);
+      }
+    };
+
     return {
       color,
-      isDialogOpen,
-      openDialog,
-      presetData,
+      handleAddPreset,
     };
   },
 };

@@ -92,14 +92,26 @@ export default {
       }
     };
 
-    const toggleFavorite = (preset) => {
-      preset.favorite = !preset.favorite;
-      presetData.updatePreset(preset);
+    const toggleFavorite = async (preset) => {
+      console.log("toggle Favorite", JSON.stringify(preset));
+      try {
+        preset.favorite = !preset.favorite;
+        await presetData.updatePreset(preset.name, {
+          favorite: preset.favorite,
+        });
+        console.log("toggled favorite for preset", preset.name);
+      } catch (error) {
+        console.error("Error toggling favorite:", error);
+      }
     };
 
-    const deletePreset = (preset) => {
-      // Remove the preset from presetData.data['presets']
-      presetData.deletePreset(preset);
+    const deletePreset = async (preset) => {
+      try {
+        await presetData.deletePreset(preset.name);
+        console.log("deleted preset", preset.name);
+      } catch (error) {
+        console.error("Error deleting preset:", error);
+      }
     };
 
     return {

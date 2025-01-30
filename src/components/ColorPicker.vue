@@ -1,3 +1,4 @@
+<!-- filepath: /home/pjakobs/devel/esp_rgb_webapp2/src/components/ColorPicker.vue -->
 <template>
   <MyCard :icon="icon" :title="title">
     <q-card-section class="row justify-center no-padding">
@@ -35,10 +36,10 @@
     <q-card-section :style="{ height: cardHeight }">
       <q-carousel v-model="carouselPage" animated :style="{ height: '100%' }">
         <q-carousel-slide name="hsv">
-          <HsvSection :card-height="cardHeight" :open-dialog="openDialog" />
+          <HsvSection :card-height="cardHeight" :add-preset="addPreset" />
         </q-carousel-slide>
         <q-carousel-slide name="raw">
-          <RawSection :card-height="cardHeight" :open-dialog="openDialog" />
+          <RawSection :card-height="cardHeight" :add-preset="addPreset" />
         </q-carousel-slide>
         <q-carousel-slide name="presets">
           <PresetSection />
@@ -50,6 +51,7 @@
 
 <script>
 import { ref, watch } from "vue";
+import { Dialog } from "quasar";
 import { presetDataStore } from "src/stores/presetDataStore";
 import { storeStatus } from "src/stores/storeConstants";
 import HsvSection from "src/components/HsvSection.vue";
@@ -82,8 +84,6 @@ export default {
   setup() {
     const carouselPage = ref("hsv");
     const presetData = presetDataStore();
-    const showDialog = ref(false);
-    const presetColorModel = ref("");
 
     watch(
       () => carouselPage.value,
@@ -97,18 +97,60 @@ export default {
       },
     );
 
-    const openDialog = (colorModel) => {
-      presetColorModel.value = colorModel;
-      showDialog.value = true;
+    const addPreset = async (color) => {
+      console.log("addPreset called with color:", color);
+      try {
+        const { value: name } = await Dialog.create({
+          title: "Add Preset",
+          message: "Enter a name for the new preset:",
+          prompt: {
+            model: "",
+            type: "text",
+          },
+          cancel: true,
+          persistent: true,
+        });
+
+        if (name) {
+          console.log("Preset name entered:", name);
+          const existingPreset = presetData.data.presets.find(
+            (p) => p.name === name,
+          );
+          if (existingPreset) {
+            console.log("Preset with this name already exists:", name);
+            Dialog.create({
+              title: "Error",
+              message: "A preset with this name already exists.",
+              ok: true,
+              persistent: true,
+            });
+          } else {
+            const newPreset = {
+              name,
+              color,
+              favorite: false,
+            };
+            console.log("Adding new preset:", newPreset);
+            await presetData.addPreset(newPreset);
+            console.log("Preset added successfully:", newPreset);
+            Dialog.create({
+              title: "Success",
+              message: "Preset added successfully.",
+              ok: true,
+              persistent: true,
+            });
+          }
+        }
+      } catch (error) {
+        console.error("Error adding preset:", error);
+      }
     };
 
     return {
       carouselPage,
-      openDialog,
+      addPreset,
       presetData,
       storeStatus,
-      showDialog,
-      presetColorModel,
     };
   },
 };

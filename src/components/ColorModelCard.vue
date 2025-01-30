@@ -10,13 +10,6 @@
           dropdown-icon="img:icons/arrow_drop_down.svg"
           @update:model-value="emitColorModel"
         >
-          <template #dropdown-icon>
-            <img
-              src="/icons/arrow_drop_down.svg"
-              alt="Dropdown Icon"
-              style="width: 24px; height: 24px"
-            />
-          </template>
         </q-select>
       </div>
     </q-card-section>
@@ -152,9 +145,4 @@ export default {
 };
 </script>
 
-<style scoped>
-.icon {
-  color: var(--icon-color);
-  fill: var(--icon-color);
-}
-</style>
+<style scoped></style>
