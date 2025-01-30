@@ -55,7 +55,6 @@
 <script>
 import { ref, watch } from "vue";
 import { Dialog } from "quasar";
-import { Dialog } from "quasar";
 import { presetDataStore } from "src/stores/presetDataStore";
 import { storeStatus } from "src/stores/storeConstants";
 import HsvSection from "src/components/HsvSection.vue";
