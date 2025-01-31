@@ -7,10 +7,17 @@ import { onMounted, watch, defineComponent } from "vue";
 import { controllersStore } from "src/stores/controllersStore";
 import initializeStores from "src/services/initializeStores";
 import { Dark } from "quasar";
+import { useRouter } from "vue-router";
+import { createPinia } from "pinia";
 
 export default defineComponent({
   name: "App",
   setup() {
+    const router = useRouter();
+    const store = createPinia();
+
+    console.log("App setup");
+
     try {
       const controllers = controllersStore();
       console.log("controllers:", controllers);
@@ -30,11 +37,17 @@ export default defineComponent({
       );
 
       onMounted(() => {
+        console.log("App mounted.");
         initializeStores();
       });
     } catch (error) {
       console.error("Error in setup function:", error);
     }
+
+    return {
+      router,
+      store,
+    };
   },
   watch: {
     "$q.dark.isActive": {
