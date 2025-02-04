@@ -1,19 +1,17 @@
+// filepath: /home/pjakobs/devel/esp_rgb_webapp2/src/stores/presetDataStore.js
 import { defineStore } from "pinia";
-import { storeStatus } from "./storeConstants";
-import { controllersStore } from "src/stores/controllersStore";
 import { fetchApi } from "src/stores/storeHelpers";
+import { controllersStore } from "src/stores/controllersStore";
+import { storeStatus } from "src/stores/storeConstants";
 
-export const presetDataStore = defineStore({
-  id: "presetDataStore",
-
+export const presetDataStore = defineStore("presetData", {
   state: () => ({
     data: {
       lastColor: {},
       presets: [],
       scenes: [],
     },
-    status: storeStatus.LOADING,
-    http_response_status: null,
+    status: storeStatus.IDLE,
   }),
 
   actions: {
@@ -139,7 +137,7 @@ export const presetDataStore = defineStore({
         const response = await fetch(
           `http://${controllers.currentController["ip_address"]}/presets`,
           {
-            method: "DELETE",
+            method: "POST",
             headers: {
               "Content-Type": "application/json",
             },
@@ -153,6 +151,70 @@ export const presetDataStore = defineStore({
         console.log("deleted preset", preset.name);
       } catch (error) {
         console.error("error deleting preset:", error);
+      }
+    },
+    async updateScene(name, partialScene) {
+      const controllers = controllersStore();
+      let payload = { [`scenes[name=${name}]`]: partialScene };
+      console.log("updateScene payload: ", JSON.stringify(payload));
+      try {
+        console.log(
+          "scene uri: ",
+          `http://${controllers.currentController["ip_address"]}/presets`,
+        );
+        console.log("scene payload: ", JSON.stringify(payload));
+        const response = await fetch(
+          `http://${controllers.currentController["ip_address"]}/presets`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(payload),
+          },
+        );
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const sceneIndex = this.data.scenes.findIndex((s) => s.name === name);
+        if (sceneIndex !== -1) {
+          this.data.scenes[sceneIndex] = {
+            ...this.data.scenes[sceneIndex],
+            ...partialScene,
+          };
+          console.log("updated scene", name);
+        }
+      } catch (error) {
+        console.error("error updating scene:", error);
+      }
+    },
+    async deleteScene(name) {
+      const controllers = controllersStore();
+      let payload = { [`scenes[name=${name}]`]: [] };
+      console.log("deleteScene payload: ", JSON.stringify(payload));
+      try {
+        console.log(
+          "scene uri: ",
+          `http://${controllers.currentController["ip_address"]}/presets`,
+        );
+        console.log("scene payload: ", JSON.stringify(payload));
+        const response = await fetch(
+          `http://${controllers.currentController["ip_address"]}/presets`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(payload),
+          },
+        );
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        this.data.scenes = this.data.scenes.filter((s) => s.name !== name);
+        console.log("deleted scene", name);
+      } catch (error) {
+        console.error("error deleting scene:", error);
       }
     },
   },
