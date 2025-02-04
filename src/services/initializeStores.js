@@ -15,7 +15,7 @@ export default async function initializeStores() {
   const configStore = configDataStore();
   const colorStore = colorDataStore();
   const infoStore = infoDataStore();
-  const presets = presetDataStore();
+  const presetStore = presetDataStore();
   const webSocket = useWebSocket();
 
   if (controllers.currentController) {
@@ -28,7 +28,7 @@ export default async function initializeStores() {
       await colorStore.fetchData();
       await configStore.fetchData();
       await infoStore.fetchData();
-      await presets.fetchData();
+      await presetStore.fetchData();
       await controllers.fetchData();
     } catch (error) {
       console.log("error initializing stores: ", error);
