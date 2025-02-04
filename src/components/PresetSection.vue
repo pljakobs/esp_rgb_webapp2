@@ -1,3 +1,4 @@
+<!-- filepath: /home/pjakobs/devel/esp_rgb_webapp2/src/components/PresetSection.vue -->
 <template>
   <q-scroll-area style="height: 100%; width: 100%">
     <q-list separator style="overflow-y: auto; height: 100%">
@@ -10,6 +11,9 @@
           <q-item-section avatar>
             <q-badge
               :style="{
+                backgroundColor: preset.color.raw
+                  ? `rgb(${preset.color.raw.r}, ${preset.color.raw.g}, ${preset.color.raw.b})`
+                  : `rgb(${hsvToRgb(preset.color.hsv).r}, ${hsvToRgb(preset.color.hsv).g}, ${hsvToRgb(preset.color.hsv).b})`,
                 backgroundColor: preset.color.raw
                   ? `rgb(${preset.color.raw.r}, ${preset.color.raw.g}, ${preset.color.raw.b})`
                   : `rgb(${hsvToRgb(preset.color.hsv).r}, ${hsvToRgb(preset.color.hsv).g}, ${hsvToRgb(preset.color.hsv).b})`,
@@ -29,15 +33,18 @@
               @click="handlePresetClick(preset)"
             >
               {{ preset.color.raw ? "RAW" : "HSV" }}
+              {{ preset.color.raw ? "RAW" : "HSV" }}
             </q-badge>
           </q-item-section>
           <q-item-section @click="handlePresetClick(preset)">
             {{ preset.name }}
           </q-item-section>
           <q-item-section side>
-            <div class="icon-wrapper" @click="() => toggleFavorite(preset)">
-              <svgIcon :name="'star_outlined'" :isSelected="preset.favorite" />
-            </div>
+            <svgIcon
+              name="star-outliend"
+              :class="{ 'text-yellow': preset.favorite }"
+              @click="toggleFavorite(preset)"
+            />
           </q-item-section>
           <q-item-section side>
             <div class="icon-wrapper" @click="() => deletePreset(preset)">
@@ -81,17 +88,21 @@ export default {
       if (!presets) {
         return [];
       }
-      return presets.filter((preset) => !preset.deleted);
+      console.log("activePresets", JSON.stringify(presets));
+      return presets;
     });
 
     const handlePresetClick = (preset) => {
       console.log("preset selected", preset);
 
       if (preset.color.raw) {
+      if (preset.color.raw) {
         colorData.change_by = "preset";
+        colorData.updateData("raw", preset.color.raw);
         colorData.updateData("raw", preset.color.raw);
       } else {
         colorData.change_by = "preset";
+        colorData.updateData("hsv", preset.color.hsv);
         colorData.updateData("hsv", preset.color.hsv);
       }
     };
@@ -130,16 +141,11 @@ export default {
 </script>
 
 <style scoped>
-.icon-wrapper {
-  cursor: pointer;
+.icon {
+  color: var(--icon-color);
+  fill: var(--icon-color);
 }
-.icon-favorite {
+.text-yellow {
   color: yellow;
-}
-.icon-favorite-outline {
-  color: gray;
-}
-.icon-delete {
-  color: red;
 }
 </style>
