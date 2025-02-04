@@ -100,21 +100,9 @@ export default {
       console.log("toggle Favorite", JSON.stringify(preset));
       try {
         preset.favorite = !preset.favorite;
-        let payload = { "presets[]": [preset] };
-        const controllers = controllersStore();
-        const response = await fetch(
-          `http://${controllers.currentController["ip_address"]}/presets`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(payload),
-          },
-        );
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
+        await presetData.updatePreset(preset.name, {
+          favorite: preset.favorite,
+        });
         console.log("toggled favorite for preset", preset.name);
       } catch (error) {
         console.error("Error toggling favorite:", error);
@@ -123,24 +111,7 @@ export default {
 
     const deletePreset = async (preset) => {
       try {
-        let payload = { "presets[]": [preset] };
-        const controllers = controllersStore();
-        const response = await fetch(
-          `http://${controllers.currentController["ip_address"]}/presets`,
-          {
-            method: "DELETE",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(payload),
-          },
-        );
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        presetData.data.presets = presetData.data.presets.filter(
-          (p) => p.id !== preset.id,
-        );
+        await presetData.deletePreset(preset.name);
         console.log("deleted preset", preset.name);
       } catch (error) {
         console.error("Error deleting preset:", error);
