@@ -16,16 +16,13 @@ export const presetDataStore = defineStore("presetData", {
 
   actions: {
     async fetchData() {
-      try {
-        const { jsonData, error } = await fetchApi("presets");
+      fetchApi("presets").then(({ jsonData, error }) => {
         if (error) {
           console.error("error fetching presets data:", error);
           this.status = storeStatus.ERROR;
         } else {
-          console.log("presets data fetched: ", JSON.stringify(jsonData));
-          this.data.lastColor = jsonData["last-color"];
-          this.data.presets = jsonData.presets;
-          this.data.scenes = jsonData.scenes;
+          console.log("preset data fetched: ", JSON.stringify(jsonData));
+          this.data = jsonData;
           this.status = storeStatus.READY;
 
           console.log("lastColor data: ", JSON.stringify(this.data.lastColor));
