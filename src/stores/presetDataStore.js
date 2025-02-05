@@ -1,4 +1,3 @@
-// filepath: /home/pjakobs/devel/esp_rgb_webapp2/src/stores/presetDataStore.js
 import { defineStore } from "pinia";
 import { fetchApi } from "src/stores/storeHelpers";
 import { controllersStore } from "src/stores/controllersStore";
@@ -16,7 +15,8 @@ export const presetDataStore = defineStore("presetData", {
 
   actions: {
     async fetchData() {
-      fetchApi("presets").then(({ jsonData, error }) => {
+      try {
+        const { jsonData, error } = await fetchApi("presets");
         if (error) {
           console.error("error fetching presets data:", error);
           this.status = storeStatus.ERROR;
@@ -123,7 +123,7 @@ export const presetDataStore = defineStore("presetData", {
     },
     async deletePreset(preset) {
       const controllers = controllersStore();
-      let payload = { "presets[]": [preset] };
+      let payload = { [`presets[name=${preset.name}]`]: [] };
       console.log("deletePreset payload: ", JSON.stringify(payload));
       try {
         console.log(
