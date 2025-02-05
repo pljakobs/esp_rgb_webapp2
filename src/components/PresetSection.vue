@@ -14,9 +14,6 @@
                 backgroundColor: preset.color.raw
                   ? `rgb(${preset.color.raw.r}, ${preset.color.raw.g}, ${preset.color.raw.b})`
                   : `rgb(${hsvToRgb(preset.color.hsv).r}, ${hsvToRgb(preset.color.hsv).g}, ${hsvToRgb(preset.color.hsv).b})`,
-                backgroundColor: preset.color.raw
-                  ? `rgb(${preset.color.raw.r}, ${preset.color.raw.g}, ${preset.color.raw.b})`
-                  : `rgb(${hsvToRgb(preset.color.hsv).r}, ${hsvToRgb(preset.color.hsv).g}, ${hsvToRgb(preset.color.hsv).b})`,
                 width: '30px',
                 height: '30px',
                 borderRadius: '50%',
@@ -33,7 +30,6 @@
               @click="handlePresetClick(preset)"
             >
               {{ preset.color.raw ? "RAW" : "HSV" }}
-              {{ preset.color.raw ? "RAW" : "HSV" }}
             </q-badge>
           </q-item-section>
           <q-item-section @click="handlePresetClick(preset)">
@@ -41,14 +37,14 @@
           </q-item-section>
           <q-item-section side>
             <svgIcon
-              name="star-outliend"
-              :class="{ 'text-yellow': preset.favorite }"
+              name="star_outlined"
+              :isSelected="preset.favorite"
               @click="toggleFavorite(preset)"
             />
           </q-item-section>
           <q-item-section side>
-            <div class="icon-wrapper" @click="() => deletePreset(preset)">
-              <svgIcon :name="'delete'" />
+            <div class="icon-wrapper" @click="deletePreset(preset)">
+              <svgIcon name="delete" />
             </div>
           </q-item-section>
         </q-item>
@@ -96,13 +92,10 @@ export default {
       console.log("preset selected", preset);
 
       if (preset.color.raw) {
-      if (preset.color.raw) {
         colorData.change_by = "preset";
-        colorData.updateData("raw", preset.color.raw);
         colorData.updateData("raw", preset.color.raw);
       } else {
         colorData.change_by = "preset";
-        colorData.updateData("hsv", preset.color.hsv);
         colorData.updateData("hsv", preset.color.hsv);
       }
     };
@@ -122,8 +115,8 @@ export default {
 
     const deletePreset = async (preset) => {
       try {
-        await presetData.deletePreset(preset.name);
-        console.log("deleted preset", preset.name);
+        await presetData.deletePreset(preset);
+        console.log("deleted preset", preset);
       } catch (error) {
         console.error("Error deleting preset:", error);
       }
