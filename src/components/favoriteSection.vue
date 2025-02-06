@@ -6,7 +6,7 @@
           v-for="preset in favoritePresets"
           :key="preset.name"
           class="color-swatch"
-          @click="selectPreset(preset)"
+          @click="setColor(preset)"
         >
           <div
             class="swatch"
@@ -26,6 +26,7 @@
 import { ref, computed } from "vue";
 import { colors } from "quasar";
 import { presetDataStore } from "src/stores/presetDataStore";
+import { colorDataStore } from "src/stores/colorDataStore";
 
 const { hsvToRgb } = colors;
 
@@ -33,10 +34,12 @@ export default {
   name: "favoriteSection",
   setup() {
     const presetData = presetDataStore();
+    const colorData = colorDataStore();
+
     const cols = ref(3); // Number of columns in the grid
 
     const favoritePresets = computed(() =>
-      presetData.data.presets.filter((preset) => preset.favorite)
+      presetData.data.presets.filter((preset) => preset.favorite),
     );
 
     const selectPreset = (preset) => {
@@ -44,10 +47,17 @@ export default {
       // Handle preset selection here
     };
 
+    const setColor = (preset) => {
+      // Set the color in the colorDataStore
+      console.log("Setting color to:", JSON.stringify(preset));
+      colorData.change_by = "preset";
+      colorData.updateData("hsv", preset.color.hsv);
+    };
     return {
       favoritePresets,
       cols,
       selectPreset,
+      setColor,
       hsvToRgb,
     };
   },
