@@ -50,8 +50,14 @@ export const colorDataStore = defineStore({
         console.log("existing color data: ", this);
         if (params.mode === "hsv") {
           console.log("updating hsv color data", JSON.stringify(params.hsv));
+          let value = {
+            h: Math.round(params.hsv.h * 100) / 100,
+            s: Math.round(params.hsv.s * 100) / 100,
+            v: Math.round(params.hsv.v * 100) / 100,
+          };
+          console.log("rounded hsv color:     ", JSON.stringify(value));
           console.log("old hsv color          ", JSON.stringify(this.data.hsv));
-          this.data.hsv = params.hsv;
+          this.data.hsv = value;
           console.log("new hsv color          ", JSON.stringify(this.data.hsv));
         } else if (params.mode === "raw") {
           console.log("updating raw color data", params.raw);
@@ -66,53 +72,78 @@ export const colorDataStore = defineStore({
       console.log("updatData called, change by: ", this.change_by, field);
       if (this.change_by != "websocket" && this.change_by != "load") {
         const controllers = controllersStore();
-
-        console.log("color update for field: ", field, "value: ", value);
-        console.log("old colorData(this): ", this);
-        if (field === "hsv") {
-          this.data.hsv = value;
-          console.log("store updateData for hsv, new store: ", this);
-        } else if (field === "raw") {
-          const [[key, val]] = Object.entries(value);
-          console.log("key: ", key, " value: ", val);
-          this.data.raw[key] = val;
-        }
         console.log(
-          "store updateData for hsv, before creating payload: ",
-          this.data,
+          "updateData for field: ",
+          field,
+          "value: ",
+          JSON.stringify(value),
         );
+        try {
+          if (field === "hsv") {
+            console.log("processing hsv update");
 
-        let payload = {};
-        payload[field] = value;
-        console.log("color update payload: ", JSON.stringify(payload));
-        console.log(
-          "sending update to controller: ",
-          controllers.currentController["ip_address"],
-        );
-        console.log("store updateData for hsv, before api call: ", this);
-        fetch(`http://${controllers.currentController["ip_address"]}/color`, {
-          // Use controllers.currentController here
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(payload),
-        })
-          .then((response) => {
-            if (!response.ok) {
-              throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            return response.json();
-          })
-          .then(() => {})
-          .catch((error) => {
-            console.error(
-              "There was a problem with the fetch operation:",
-              error,
+            value = {
+              h: Math.round(value.h * 100) / 100,
+              s: Math.round(value.s * 100) / 100,
+              v: Math.round(value.v * 100) / 100,
+            };
+
+            console.log("updateData sanitized hsv", JSON.stringify(value));
+
+            this.data.hsv = value;
+
+            console.log(
+              "store updateData for hsv, new store: ",
+              JSON.stringify(this.data),
             );
-          });
-        console.log("color update request sent");
-        console.log("store updateData for hsv, after api call: ", this);
+          } else if (field === "raw") {
+            console.log("processing raw update");
+            const [[key, val]] = Object.entries(value);
+            console.log("key: ", key, " value: ", val);
+            this.data.raw[key] = val;
+          } else {
+            console.error("Invalid field in updateData: ", field);
+          }
+
+          let payload = {};
+          payload[field] = value;
+          console.log("color update payload: ", JSON.stringify(payload));
+          console.log(
+            "sending update to controller: ",
+            controllers.currentController["ip_address"],
+          );
+          console.log("store updateData for hsv, before api call: ", this);
+          fetch(`http://${controllers.currentController["ip_address"]}/color`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(payload),
+          })
+            .then((response) => {
+              if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+              }
+              return response.json();
+            })
+            .then(() => {
+              console.log("color update request sent");
+            })
+            .catch((error) => {
+              console.error(
+                "There was a problem with the fetch operation:",
+                error,
+              );
+            });
+          console.log(
+            "store updateData for hsv, before creating payload: ",
+            this.data,
+          );
+
+          console.log("store updateData for hsv, after api call: ", this);
+        } catch (error) {
+          console.error("Error in updateData method:", error);
+        }
       }
     },
   },
