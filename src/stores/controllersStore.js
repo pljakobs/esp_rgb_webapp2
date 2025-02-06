@@ -1,10 +1,6 @@
 import { defineStore } from "pinia";
-import {
-  maxRetries,
-  retryDelay,
-  localhost,
-  storeStatus,
-} from "./storeConstants";
+import { localhost, storeStatus } from "./storeConstants";
+import { fetchApi } from "./storeHelpers";
 
 export const controllersStore = defineStore({
   id: "controllersStore",
@@ -12,17 +8,18 @@ export const controllersStore = defineStore({
   state: () => ({
     status: storeStatus.LOADING,
     currentController: localhost,
-
+    http_response_status: null,
     data: [localhost],
   }),
+
   actions: {
     async fetchData(retryCount = 0) {
       try {
         console.log("controllers start fetching data");
-        const response = await fetch(`http://${localhost["ip_address"]}/hosts`);
-        const jsonData = await response.json();
-        this.data = jsonData["hosts"];
-        console.log("controllers data fetched: ", jsonData["hosts"]);
+        const { jsonData, error } = await fetchApi("hosts", retryCount);
+        if (error) {
+          throw error;
+        }
         this.data = jsonData["hosts"]
           .filter((host) => host.ip_address)
           .map((host) => {
@@ -30,22 +27,24 @@ export const controllersStore = defineStore({
               ...host,
               ip_address: host.ip_address.trim(),
             };
-          }); //removing leading and trailing whitespaces from the ip address
+          }); // Removing leading and trailing whitespaces from the IP address
+        console.log("store: ", JSON.stringify(this.data));
         this.status = storeStatus.READY;
-        console.log("hosts data fetched: ", JSON.stringify(this.data));
+        console.log("controllers data fetched: ", JSON.stringify(this.data));
       } catch (error) {
         this.status = storeStatus.ERROR;
         this.error = error;
-        console.error("Error fetching preset data:", error);
+        console.error("Error fetching controllers data:", error);
       }
     },
+
     selectController(controller) {
       this.currentController = controller;
       console.log(
         "selected controller: ",
-        currentController["hostname"],
-        "with ip address ",
-        currentController["ip_address"]
+        controller["hostname"],
+        "with IP address ",
+        controller["ip_address"],
       );
     },
   },

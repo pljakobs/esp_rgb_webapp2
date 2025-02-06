@@ -1,3 +1,4 @@
+#!/bin/bash
 font1_long=flUhRq6tzZclQEJ-Vdg-IuiaDsNa.woff
 font1_short=font1.woff
 

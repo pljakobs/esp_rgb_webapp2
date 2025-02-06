@@ -1,26 +1,32 @@
 import { controllersStore } from "src/stores/controllersStore";
-import { storeStatus } from "src/stores/storeConstants";
 import initializeStores from "./initializeStores";
 
-const sysCmd = async (command, additionalBody = {}) => {
+const sysCmd = async (cmd, data) => {
   const controllers = controllersStore();
-  console.log(`Sending command: ${command}`);
-  console.log("Additional body:", additionalBody);
-  const body = JSON.stringify({ cmd: command, ...additionalBody });
-  const response = await fetch(
-    `http://${controllers.currentController.ip_address}/system`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
+  console.log(`Sending command: ${cmd}`);
+  console.log("Additional body:", data);
+  try {
+    const response = await fetch(
+      `http://${controllers.currentController.ip_address}/system`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ cmd, ...data }),
       },
-      body: body,
-    },
-  );
-  if (response.ok) {
-    console.log(`Command ${command} executed successfully`);
-  } else {
-    console.log(`Failed to execute command: ${command}`);
+    );
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const result = await response.json();
+    console.log("Command result:", result);
+    return result;
+  } catch (error) {
+    console.error("Error executing system command:", error);
+    throw error;
   }
 };
 
@@ -73,9 +79,8 @@ const systemCommand = {
     sysCmd("switch_rom");
     setTimeout(initializeStores, 5000);
   },
-
   debug: (enable) => {
-    sysCmd("debug", enable.toString());
+    sysCmd("debug", { enable });
   },
 };
 

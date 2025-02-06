@@ -1,19 +1,19 @@
 <template>
   <div>
-    <MyCard class="full-height">
+    <MyCard title="connect to Network" icon="wifi_outlined">
       <q-card-section class="row justify-center">
-        <h4>application initialization</h4>
         <q-select
-          filled
           v-model="selectedNetwork"
+          filled
           :options="networks"
           :label="selectedNetwork ? 'Network selected' : 'Select a network'"
           hint="Select a network from the list"
           option-label="ssid"
           option-value="ssid"
           style="width: 80%"
+          dropdown-icon="img:icons/arrow_drop_down.svg"
         >
-          <template v-slot:option="props">
+          <template #option="props">
             <q-item
               v-bind="props.itemProps"
               style="display: flex; justify-content: space-between; width: 100%"
@@ -32,23 +32,37 @@
         </q-select>
 
         <q-input
-          filled
           v-model="selectedNetwork.ssid"
+          filled
           :label="selectedNetwork ? 'SSID' : 'Enter SSID'"
           hint="Enter the SSID of the network"
           style="width: 80%"
         />
+
         <transition name="shake" mode="out-in">
           <q-input
+            v-model="password"
+            :type="isPwd ? 'password' : 'text'"
+            :label="selectedNetwork ? 'SSID' : 'Enter SSID'"
+            hint="Enter the SSID of the network"
             :class="{ shake: wifiData.message === 'Wrong password' }"
             filled
-            v-model="password"
-            label="Password"
-            type="password"
-            hint="Enter the password for the network"
             style="width: 80%"
-          />
+          >
+            <template #append>
+              <q-icon
+                :name="
+                  isPwd
+                    ? 'img:icons/visibility_off_outlined.svg'
+                    : 'img:icons/visibility-outlined-24.svg'
+                "
+                class="cursor-pointer"
+                @click="isPwd = !isPwd"
+              />
+            </template>
+          </q-input>
         </transition>
+
         {{ wifiData.message }}
         <div v-if="wifiData.message === 'Wrong password'">
           <p>password authentication failed, please try again</p>
@@ -59,69 +73,63 @@
           </p>
         </div>
       </q-card-section>
-      <!--<div v-if="wifiData.message !== ''">-->
-      <div>
-        <q-card-section>
-          {{ wifiData.message }}
-          <div v-if="wifiData.message === 'Connecting to network'">
-            {{ wifiData.message }} <q-spinner />
-          </div>
-          <div v-if="wifiData.connected">
-            <h4>Connection Established</h4>
-            <p>Connected to: {{ wifiData.ssid }}</p>
-            <table>
-              <tbody>
-                <tr>
-                  <td>Address</td>
-                  <td>
-                    <a :href="'http://' + wifiData.ip">{{ wifiData.ip }}</a>
-                  </td>
-                </tr>
-                <tr>
-                  <td>Netmask</td>
-                  <td>{{ wifiData.netmask }}</td>
-                </tr>
-                <tr>
-                  <td>Gateway</td>
-                  <td>{{ wifiData.gateway }}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </q-card-section>
+    </MyCard>
+    <MyCard title="network status" icon="description">
+      {{ wifiData.message }}
+      <q-spinner v-if="!wifiData.connected" />
+      <div v-if="wifiData.connected">
+        <h4>Connection Established</h4>
+        <p>Connected to: {{ wifiData.ssid }}</p>
+        <table>
+          <tbody>
+            <tr>
+              <td>Address</td>
+              <td>
+                <a :href="'http://' + wifiData.ip">{{ wifiData.ip }}</a>
+              </td>
+            </tr>
+            <tr>
+              <td>Netmask</td>
+              <td>{{ wifiData.netmask }}</td>
+            </tr>
+            <tr>
+              <td>Gateway</td>
+              <td>{{ wifiData.gateway }}</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
+    </MyCard>
 
+    <MyCard title="Network Actions" icon="wifi_outlined">
       <q-card-actions>
         <q-btn
           color="primary"
           label="Connect"
-          @click="connectToNetwork"
           style="margin-top: 16px"
+          @click="connectToNetwork"
         />
         <q-btn
           color="secondary"
           label="forget wifi"
-          @click="forgetWifi"
           style="margin-top: 16px"
+          @click="forgetWifi"
         />
         <q-btn
           color="secondary"
           label="show dialog"
-          @click="sh < owDialog"
           style="margin-top: 16px"
+          @click="sh < owDialog"
         />
         <q-btn
           color="secondary"
           label="hide dialog"
-          @click="hideDialog"
           style="margin-top: 16px"
+          @click="hideDialog"
         />
       </q-card-actions>
     </MyCard>
-    <MyCard class="full-height">
-      <q-card-section>
-        <div class="text-h6">Wifi Data</div>
-      </q-card-section>
+    <MyCard title="Nework Log" icon="description">
       <q-card-section>
         <div>Connected:{{ wifiData.connected }}</div>
         messages:
@@ -169,15 +177,13 @@
 --></template>
 
 <script>
-import { ref, onMounted, watch, watchEffect } from "vue";
-import useWebSocket, { wsStatus } from "../services/websocket";
-
+import { ref, onMounted, watch } from "vue";
+//import useWebSocket, { wsStatus } from "../services/websocket";
+import useWebSocket from "../services/websocket";
 import { controllersStore } from "src/stores/controllersStore.js";
 import { infoDataStore } from "src/stores/infoDataStore.js";
 import { storeStatus } from "src/stores/storeConstants";
-
 import systemCommand from "src/services/systemCommands.js";
-
 import MyCard from "src/components/myCard.vue";
 
 export default {
@@ -208,6 +214,7 @@ export default {
     const retryDelay = 1000;
     const ws = useWebSocket();
     const log = ref([]);
+    const isPwd = ref(true);
 
     /**
 
@@ -453,6 +460,11 @@ export default {
         }
       }
     };
+
+    const handleIconError = (error) => {
+      console.error("===!!! Error loading icon:", error);
+    };
+
     /**
      * Watches the wifiData object for changes and performs actions when the device is connected to the network.
      * Starts a countdown from 10 seconds and restarts the controller after the countdown reaches 0.
@@ -516,6 +528,8 @@ export default {
       hideDialog,
       countdown,
       log,
+      handleIconError,
+      isPwd,
     };
   },
 };

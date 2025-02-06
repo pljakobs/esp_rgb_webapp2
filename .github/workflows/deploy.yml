@@ -1,0 +1,67 @@
+name: frontendBuild
+
+on:
+  push:
+    branches:
+      - devel
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+        with:
+          token: ${{ secrets.GH_PAT }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: "18"
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build Quasar App
+        run: npx quasar build
+
+      - name: Run minifyFontnames.sh
+        run: ./minifyFontnames.sh
+
+      - name: Run gzipSPA.sh
+        run: ./gzipSPA.sh
+
+      - name: Generate icon list
+        run: node generate_icon_list.js > ./fileList.h
+
+      - name: Create VERSION file
+        run: echo $(git describe --abbrev=4 --dirty --always --tags)-[$(git rev-parse --abbrev-ref HEAD)] > dist/spa/VERSION
+
+      - name: Upload SPA files to GitHub
+        uses: actions/upload-artifact@v4
+        with:
+          name: spa-files
+          path: dist/spa/
+
+      - name: Upload fileList.h to GitHub
+        uses: actions/upload-artifact@v4
+        with:
+          name: fileList.h
+          path: ./fileList.h
+
+      - name: Create download page
+        run: |
+          mkdir -p dist/download
+          echo "<html><body><h1>Download Artifacts</h1><ul>" > dist/download/index.html
+          echo "<li><a href='spa-files.zip'>Download SPA Files</a></li>" >> dist/download/index.html
+          echo "<li><a href='fileList.h'>Download fileList.h</a></li>" >> dist/download/index.html
+          echo "</ul></body></html>" >> dist/download/index.html
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          personal_token: ${{ secrets.GH_PAT }}
+          publish_dir: ./dist/download
+          publish_branch: gh-pages
+          force_orphan: true

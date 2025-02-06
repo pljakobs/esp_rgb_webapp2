@@ -1,160 +1,223 @@
 import { defineStore } from "pinia";
-import {
-  localhost,
-  storeStatus,
-  maxRetries,
-  retryDelay,
-} from "./storeConstants";
-import { safeStringify } from "./storeHelpers";
-import { controllersStore } from "./controllersStore";
-import useWebSocket from "src/services/websocket.js";
+import { fetchApi } from "src/stores/storeHelpers";
+import { controllersStore } from "src/stores/controllersStore";
+import { storeStatus } from "src/stores/storeConstants";
 
-export const presetDataStore = defineStore({
-  id: "presetDataStore",
-
+export const presetDataStore = defineStore("presetData", {
   state: () => ({
     data: {
+      lastColor: {},
       presets: [],
+      scenes: [],
     },
-    status: storeStatus.LOADING,
+    status: storeStatus.IDLE,
   }),
 
   actions: {
-    async fetchData(retryCount = 0) {
-      const controllers = controllersStore();
-      const ws = useWebSocket();
+    async fetchData() {
       try {
-        console.log("preset start fetching data");
-        console.log(
-          `http://${controllers.currentController["ip_address"]}/object?type=p`
-        );
-        const response = await fetch(
-          `http://${controllers.currentController["ip_address"]}/object?type=p`
-        );
-        const presetsArray = await response.json();
-        console.log("presetsArray: ", presetsArray);
-        for (const id of presetsArray["presets"]) {
-          console.log("fetching preset with id: ", id);
-          const response = await fetch(
-            `http://${controllers.currentController["ip_address"]}/object?type=p&id=${id}`
-          );
-          const preset = await response.json();
-          console.log("preset fetched: ", preset);
-          console.log("preset data: ", this.data);
-          if (
-            !preset.deleted &&
-            !this.data["presets"].some((p) => p.id === preset.id)
-          ) {
-            this.data["presets"].push(preset);
-          } else {
-            console.log("preset already exists in store or is deleted");
-          }
-        }
-        this.status = storeStatus.READY;
-        console.log("preset data fetched: ", JSON.stringify(this.data));
-      } catch (error) {
-        this.status = storeStatus.ERROR;
-        this.error = error;
-        console.error("Error fetching preset data:", error);
-      }
-      ws.onJson("preset", (params) => {
-        this.change_by = "websocket";
-        console.log("updating preset by websocket, params: ", params);
-
-        const existingPresetIndex = this.data.presets.findIndex(
-          (p) => p.id === params.id
-        );
-        console.log("this.data.presets: ", this.data.presets);
-        if (existingPresetIndex !== -1) {
-          // Overwrite existing preset
-          this.data.presets[existingPresetIndex] = params;
-          console.log("Preset overwritten: ", params);
+        const { jsonData, error } = await fetchApi("presets");
+        if (error) {
+          console.error("error fetching presets data:", error);
+          this.status = storeStatus.ERROR;
         } else {
-          // Create new preset
-          this.data.presets.push(params);
-          console.log("New preset created: ", params);
-        }
+          console.log("preset data fetched: ", JSON.stringify(jsonData));
+          this.data = jsonData;
+          this.status = storeStatus.READY;
 
-        this.change_by = null;
-      });
+          console.log("lastColor data: ", JSON.stringify(this.data.lastColor));
+          console.log("presets data: ", JSON.stringify(this.data.presets));
+          console.log("scenes data: ", JSON.stringify(this.data.scenes));
+        }
+      } catch (error) {
+        console.error("error fetching presets data:", error);
+        this.status = storeStatus.ERROR;
+      }
     },
     async addPreset(preset) {
       const controllers = controllersStore();
-      let payload = preset;
+      let payload = { "presets[]": [preset] };
       console.log("addPreset payload: ", JSON.stringify(payload));
       try {
+        console.log(
+          "preset uri: ",
+          `http://${controllers.currentController["ip_address"]}/presets`,
+        );
+        console.log("preset payload: ", JSON.stringify(payload));
         const response = await fetch(
-          `http://${controllers.currentController["ip_address"]}/object?type=p`,
+          `http://${controllers.currentController["ip_address"]}/presets`,
           {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
             },
             body: JSON.stringify(payload),
-          }
+          },
         );
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
-        const responseData = await response.json();
-        console.log("response: ", JSON.stringify(responseData));
-        console.log("Preset added successfully");
-        preset.id = responseData.id;
-        this.data["presets"].push(preset);
+        this.data.presets.push(preset);
         console.log("added preset", preset.name, "with id", preset.id);
       } catch (error) {
-        console.error("Error adding preset:", error);
+        console.error("error adding preset:", error);
       }
     },
-    async updatePreset(preset) {
+    async addScene(scene) {
       const controllers = controllersStore();
-      let payload = preset;
-      console.log("updatePreset payload: ", JSON.stringify(payload));
+      let payload = { "scenes[]": [scene] };
+      console.log("addScene payload: ", JSON.stringify(payload));
       try {
+        console.log(
+          "scene uri: ",
+          `http://${controllers.currentController["ip_address"]}/presets`,
+        );
+        console.log("scene payload: ", JSON.stringify(payload));
         const response = await fetch(
-          `http://${controllers.currentController["ip_address"]}/object?type=p&id=${preset.id}`,
+          `http://${controllers.currentController["ip_address"]}/presets`,
           {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
             },
             body: JSON.stringify(payload),
-          }
+          },
         );
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
-        const presetToUpdate = this.data["presets"].find(
-          (p) => p.id === preset.id
-        );
-        if (presetToUpdate) {
-          Object.assign(presetToUpdate, preset);
-        }
-        console.log("updated preset", preset.name, "with id", preset.id);
+        this.data.scenes.push(scene);
+        console.log("added scene", scene.name, "with id", scene.id);
       } catch (error) {
-        console.error("Error updating preset:", error);
+        console.error("error adding scene:", error);
       }
     },
-    async deletePreset(preset) {
+
+    async toggleFavorite(preset) {
       const controllers = controllersStore();
-      let payload = { id: preset.id, type: "p", deleted: "true" };
+      preset.favorite = !preset.favorite;
+      let payload = {
+        [`presets[name=${preset.name}]`]: { favorite: preset.favorite },
+      };
+      console.log("toggleFavorite payload: ", JSON.stringify(payload));
       try {
+        console.log(
+          "preset uri: ",
+          `http://${controllers.currentController["ip_address"]}/presets`,
+        );
+        console.log("preset payload: ", JSON.stringify(payload));
         const response = await fetch(
-          `http://${controllers.currentController["ip_address"]}/object?type=p&id=${preset.id}`,
+          `http://${controllers.currentController["ip_address"]}/presets`,
           {
             method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
             body: JSON.stringify(payload),
-          }
+          },
         );
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
-        this.data["presets"] = this.data["presets"].filter(
-          (p) => p.id !== preset.id
-        );
-        console.log("deleted preset", preset.name, "with id", preset.id);
+        console.log("toggled favorite for preset", preset.name);
       } catch (error) {
-        console.error("Error deleting preset:", error);
+        console.error("error toggling favorite:", error);
+      }
+    },
+
+    async deletePreset(preset) {
+      const controllers = controllersStore();
+      let payload = { [`presets[name=${preset.name}]`]: [] };
+      console.log("deletePreset payload: ", JSON.stringify(payload));
+      try {
+        console.log(
+          "preset uri: ",
+          `http://${controllers.currentController["ip_address"]}/presets`,
+        );
+        console.log("preset payload: ", JSON.stringify(payload));
+        const response = await fetch(
+          `http://${controllers.currentController["ip_address"]}/presets`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(payload),
+          },
+        );
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        this.data.presets = this.data.presets.filter(
+          (p) => p.name !== preset.name,
+        );
+        console.log("deleted preset", preset.name);
+      } catch (error) {
+        console.error("error deleting preset:", error);
+      }
+    },
+    async updateScene(name, partialScene) {
+      const controllers = controllersStore();
+      let payload = { [`scenes[name=${name}]`]: partialScene };
+      console.log("updateScene payload: ", JSON.stringify(payload));
+      try {
+        console.log(
+          "scene uri: ",
+          `http://${controllers.currentController["ip_address"]}/presets`,
+        );
+        console.log("scene payload: ", JSON.stringify(payload));
+        const response = await fetch(
+          `http://${controllers.currentController["ip_address"]}/presets`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(payload),
+          },
+        );
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const sceneIndex = this.data.scenes.findIndex((s) => s.name === name);
+        if (sceneIndex !== -1) {
+          this.data.scenes[sceneIndex] = {
+            ...this.data.scenes[sceneIndex],
+            ...partialScene,
+          };
+          console.log("updated scene", name);
+        }
+      } catch (error) {
+        console.error("error updating scene:", error);
+      }
+    },
+    async deleteScene(name) {
+      const controllers = controllersStore();
+      let payload = { [`scenes[name=${name}]`]: [] };
+      console.log("deleteScene payload: ", JSON.stringify(payload));
+      try {
+        console.log(
+          "scene uri: ",
+          `http://${controllers.currentController["ip_address"]}/presets`,
+        );
+        console.log("scene payload: ", JSON.stringify(payload));
+        const response = await fetch(
+          `http://${controllers.currentController["ip_address"]}/presets`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(payload),
+          },
+        );
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        this.data.scenes = this.data.scenes.filter((s) => s.name !== name);
+        console.log("deleted scene", name);
+      } catch (error) {
+        console.error("error deleting scene:", error);
       }
     },
   },

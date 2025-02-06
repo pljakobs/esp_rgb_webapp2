@@ -1,7 +1,26 @@
 {
+  "version": 3,
+  "available_pins": [
+    {
+      "soc": "esp8266",
+      "pins": [0, 1, 2, 3, 4, 5, 12, 13, 14, 15, 16]
+    },
+    {
+      "soc": "esp32",
+      "pins": [
+        0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
+        21, 22, 23, 25, 26, 27, 32, 33, 34, 35, 36, 39
+      ]
+    },
+    {
+      "soc": "esp32c3",
+      "pins": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 18, 19, 20, 21]
+    }
+  ],
   "pinconfigs": [
     {
       "name": "mrpj",
+      "soc": "esp8266",
       "model": "rgbww",
       "channels": [
         { "name": "red", "pin": "13" },
@@ -12,7 +31,20 @@
       ]
     },
     {
+      "name": "Lightinator mini",
+      "soc": "esp32c3",
+      "model": "rgbww",
+      "channels": [
+        { "name": "red", "pin": "7" },
+        { "name": "green", "pin": "6" },
+        { "name": "blue", "pin": "5" },
+        { "name": "warmwhite", "pin": "4" },
+        { "name": "coldwhite", "pin": "0" }
+      ]
+    },
+    {
       "name": "Shojo PCB (WemosD1 mini)",
+      "soc": "esp8266",
       "model": "rgbww",
       "channels": [
         { "name": "red", "pin": "14" },
@@ -24,6 +56,7 @@
     },
     {
       "name": "test",
+      "soc": "esp8266",
       "model": "rgbww",
       "channels": [
         { "name": "red", "pin": "14" },

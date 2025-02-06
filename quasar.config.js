@@ -8,10 +8,10 @@
 // Configuration for your app
 // https://v2.quasar.dev/quasar-cli-vite/quasar-config-js
 
-const { configure } = require("quasar/wrappers");
-const path = require("path");
+import { configure } from "quasar/wrappers";
+import path from "path";
 
-module.exports = configure(function (/* ctx */) {
+export default configure(function (/* ctx */) {
   return {
     eslint: {
       // fix: true,
@@ -28,7 +28,7 @@ module.exports = configure(function (/* ctx */) {
     // app boot file (/src/boot)
     // --> boot files are part of "main.js"
     // https://v2.quasar.dev/quasar-cli-vite/boot-files
-    boot: ["i18n"],
+    boot: ["i18n", "registerSvgIcon.js"],
 
     // https://v2.quasar.dev/quasar-cli-vite/quasar-config-js#css
     css: ["app.scss"],
@@ -44,13 +44,14 @@ module.exports = configure(function (/* ctx */) {
       // 'roboto-font-latin-ext', // this or either 'roboto-font', NEVER both!
       // "roboto-font", // optional, you are not bound to it
       // "material-icons", // optional, you are not bound to it
+      // "material-icons-outlined",
     ],
 
     // Full list of options: https://v2.quasar.dev/quasar-cli-vite/quasar-config-js#build
     build: {
       target: {
         browser: ["es2019", "edge88", "firefox78", "chrome87", "safari13.1"],
-        node: "node16",
+        node: "node18",
       },
       useFilenameHashes: false /* disable cache busting */,
 
@@ -76,7 +77,6 @@ module.exports = configure(function (/* ctx */) {
 
       vitePlugins: [
         [
-          "@intlify/vite-plugin-vue-i18n",
           {
             // if you want to use Vue I18n Legacy API, you need to set `compositionOnly: false`
             // compositionOnly: false,
@@ -86,7 +86,7 @@ module.exports = configure(function (/* ctx */) {
             // runtimeOnly: false,
 
             // you need to set i18n resource including paths !
-            include: path.resolve(__dirname, "./src/i18n/**"),
+            include: path.resolve("./src/i18n/**"),
           },
         ],
       ],
@@ -99,8 +99,7 @@ module.exports = configure(function (/* ctx */) {
 
     // https://v2.quasar.dev/quasar-cli-vite/quasar-config-js#framework
     framework: {
-      all: true,
-      iconSet: "svg-material-icons",
+      //iconSet: "material-icons-outlined",
       config: {
         brand: {
           font: "sans-serif", // Use a generic sans-serif font
@@ -110,7 +109,6 @@ module.exports = configure(function (/* ctx */) {
       // Quasar plugins
       plugins: [],
       lang: "en-US",
-      extras: ["svg-material-icons"],
     },
 
     // animations: 'all', // --- includes all animations

@@ -1,25 +1,23 @@
 import { defineStore } from "pinia";
-//import Ajv from "ajv";
-//import { configDataSchema } from "src/stores/app-data-cfbdb.json";
 import { storeStatus } from "src/stores/storeConstants";
 import { controllersStore } from "src/stores/controllersStore";
-import { fetchApi } from "src/stores/storeHelpers";
-import { safeStringify } from "src/stores/storeHelpers";
-import ColorSlider from "src/components/ColorSlider.vue";
-
-// Initialize AJV and compile the schema
-//const ajv = new Ajv();
-//const validate = ajv.compile(configDataSchema);
+import { fetchApi, safeStringify } from "src/stores/storeHelpers";
 
 export const configDataStore = defineStore({
   id: "configDataStore",
   state: () => ({
     status: storeStatus.LOADING,
+    http_response_status: null,
+    data: {
+      color: {
+        color_mode: 0,
+        // other properties...
+      },
+      // other properties...
+    },
   }),
   actions: {
-    async fetchData(retryCount = 0) {
-      const controllers = controllersStore();
-
+    async fetchData() {
       fetchApi("config").then(({ jsonData, error }) => {
         if (error) {
           console.error("error fetching config data:", error);
@@ -27,7 +25,6 @@ export const configDataStore = defineStore({
         } else {
           console.log("config data fetched: ", JSON.stringify(jsonData));
           this.data = jsonData;
-          // add the pinConfigUrl - that will be provided by the api from the controller later
           this.status = storeStatus.READY;
           console.log("new configData(this): ", this);
         }
@@ -41,13 +38,14 @@ export const configDataStore = defineStore({
         value,
       );
       console.log("updating config data: ", this.data);
-      const controllers = controllersStore();
 
       const fieldParts = field.split(".");
       let currentObject = this.data;
       for (let i = 0; i < fieldParts.length - 1; i++) {
         currentObject = currentObject[fieldParts[i]];
       }
+
+      currentObject[fieldParts[fieldParts.length - 1]] = value;
 
       const minimalUpdate = {};
       let tempObject = minimalUpdate;
@@ -62,12 +60,6 @@ export const configDataStore = defineStore({
 
       tempObject[fieldParts[fieldParts.length - 1]] = value;
 
-      // Validate the updated state
-      //    if (!validate(this.$state)) {
-      //      console.error("Invalid state update:", validate.errors);
-      //      return;
-      //    }
-
       console.log("minimalUpdate: ", safeStringify(minimalUpdate));
       if (update) {
         this.updateApi(minimalUpdate);
@@ -77,7 +69,6 @@ export const configDataStore = defineStore({
       console.log("updateApi called with: ", safeStringify(minimalUpdate));
       const controllers = controllersStore();
       fetch(`http://${controllers.currentController["ip_address"]}/config`, {
-        // Use controllers.currentController here
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -90,7 +81,7 @@ export const configDataStore = defineStore({
           }
           return response.json();
         })
-        .then((data) => {})
+        .then(() => {})
         .catch((error) => {
           console.error("There was a problem with the fetch operation:", error);
         });
