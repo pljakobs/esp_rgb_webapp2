@@ -3,6 +3,19 @@
     <q-card-section class="row justify-center no-padding">
       <q-btn-group class="btn-group w-100">
         <q-btn
+          v-if="hasFavorites"
+          name="Favorites"
+          :color="carouselPage === 'favorites' ? 'secondary' : 'primary'"
+          class="equal-btn"
+          no-caps
+          @click="carouselPage = 'favorites'"
+        >
+          <template v-slot:default>
+            <svgIcon name="palette_outlined" />
+            <span>Favorites</span>
+          </template>
+        </q-btn>
+        <q-btn
           name="hsv"
           :color="carouselPage === 'hsv' ? 'secondary' : 'primary'"
           class="equal-btn"
@@ -43,6 +56,9 @@
     <q-separator />
     <q-card-section :style="{ height: cardHeight }">
       <q-carousel v-model="carouselPage" animated :style="{ height: '100%' }">
+        <q-carousel-slide v-if="hasFavorites" name="favorites">
+          <favoriteSection :card-height="cardHeight" />
+        </q-carousel-slide>
         <q-carousel-slide name="hsv">
           <HsvSection :card-height="cardHeight" :open-dialog="openDialog" />
         </q-carousel-slide>
@@ -58,9 +74,10 @@
 </template>
 
 <script>
-import { ref, watch } from "vue";
+import { ref, watch, computed } from "vue";
 import { presetDataStore } from "src/stores/presetDataStore";
 import { storeStatus } from "src/stores/storeConstants";
+import favoriteSection from "src/components/favoriteSection.vue";
 import HsvSection from "src/components/HsvSection.vue";
 import RawSection from "src/components/RawSection.vue";
 import PresetSection from "src/components/PresetSection.vue";
@@ -70,6 +87,7 @@ export default {
   name: "ColorPicker",
   components: {
     MyCard,
+    favoriteSection,
     HsvSection,
     RawSection,
     PresetSection,
@@ -93,6 +111,10 @@ export default {
     const presetData = presetDataStore();
     const showDialog = ref(false);
     const presetColorModel = ref("");
+
+    const hasFavorites = computed(() =>
+      presetData.data.presets.some((preset) => preset.favorite),
+    );
 
     watch(
       () => carouselPage.value,
@@ -118,6 +140,7 @@ export default {
       storeStatus,
       showDialog,
       presetColorModel,
+      hasFavorites,
     };
   },
 };
