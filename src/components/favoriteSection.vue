@@ -39,8 +39,6 @@ export default {
       presetData.data.presets.filter((preset) => preset.favorite)
     );
 
-  console.log("Favorite presets:", JSON.stringify(favoritePresets));
-
     const selectPreset = (preset) => {
       console.log("Selected preset:", preset);
       // Handle preset selection here
