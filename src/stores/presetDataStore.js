@@ -92,10 +92,13 @@ export const presetDataStore = defineStore("presetData", {
         console.error("error adding scene:", error);
       }
     },
+
     async toggleFavorite(preset) {
       const controllers = controllersStore();
       preset.favorite = !preset.favorite;
-      let payload = { "presets[]": [preset] };
+      let payload = {
+        [`presets[name=${preset.name}]`]: { favorite: preset.favorite },
+      };
       console.log("toggleFavorite payload: ", JSON.stringify(payload));
       try {
         console.log(
@@ -121,6 +124,7 @@ export const presetDataStore = defineStore("presetData", {
         console.error("error toggling favorite:", error);
       }
     },
+
     async deletePreset(preset) {
       const controllers = controllersStore();
       let payload = { [`presets[name=${preset.name}]`]: [] };
@@ -144,7 +148,9 @@ export const presetDataStore = defineStore("presetData", {
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
-        this.data.presets = this.data.presets.filter((p) => p.id !== preset.id);
+        this.data.presets = this.data.presets.filter(
+          (p) => p.name !== preset.name,
+        );
         console.log("deleted preset", preset.name);
       } catch (error) {
         console.error("error deleting preset:", error);

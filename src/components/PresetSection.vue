@@ -101,6 +101,10 @@ export default {
     };
 
     const toggleFavorite = async (preset) => {
+      presetData.toggleFavorite(preset);
+    };
+    /*
+    const toggleFavorite = async (preset) => {
       console.log("toggle Favorite", JSON.stringify(preset));
       try {
         preset.favorite = !preset.favorite;
@@ -112,6 +116,9 @@ export default {
         console.error("Error toggling favorite:", error);
       }
     };
+
+
+  */
 
     const deletePreset = async (preset) => {
       try {
