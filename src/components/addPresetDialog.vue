@@ -23,15 +23,40 @@
       </q-card-section>
       <q-card-actions align="right">
         <q-btn flat label="Cancel" color="primary" @click="closeDialog" />
-        <q-btn flat label="Save" color="primary" @click="savePreset" />
+        <q-btn flat label="Save" color="primary" @click="verifyPresetName" />
       </q-card-actions>
     </q-card>
+    <q-dialog v-model="overwriteDialogOpen">
+      <q-card>
+        <q-card-section>
+          <div class="text-h6">Preset Name Conflict</div>
+        </q-card-section>
+        <q-card-section>
+          A preset with this name already exists. Do you want to overwrite it?
+        </q-card-section>
+        <q-card-actions align="right">
+          <q-btn
+            flat
+            label="Cancel"
+            color="primary"
+            @click="closeOverwriteDialog"
+          />
+          <q-btn
+            flat
+            label="Overwrite"
+            color="primary"
+            @click="overwritePreset"
+          />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
   </q-dialog>
 </template>
 
 <script>
 import { ref } from "vue";
 import { colors } from "quasar";
+import { presetDataStore } from "src/stores/presetDataStore";
 
 const { hsvToRgb } = colors;
 
@@ -54,10 +79,27 @@ export default {
   emits: ["close", "save", "update:isOpen"],
   setup(props, { emit }) {
     const presetName = ref("");
+    const overwriteDialogOpen = ref(false);
+    const presetData = presetDataStore();
 
     const closeDialog = () => {
       emit("close");
       emit("update:isOpen", false);
+    };
+
+    const closeOverwriteDialog = () => {
+      overwriteDialogOpen.value = false;
+    };
+
+    const verifyPresetName = () => {
+      const existingPreset = presetData.data.presets.find(
+        (preset) => preset.name === presetName.value,
+      );
+      if (existingPreset) {
+        overwriteDialogOpen.value = true;
+      } else {
+        savePreset();
+      }
     };
 
     const savePreset = () => {
@@ -70,14 +112,29 @@ export default {
       closeDialog();
     };
 
+    const overwritePreset = () => {
+      const existingPreset = presetData.data.presets.find(
+        (preset) => preset.name === presetName.value,
+      );
+      if (existingPreset) {
+        presetData.deletePreset(existingPreset);
+      }
+      savePreset();
+      closeOverwriteDialog();
+    };
+
     const updateIsOpen = (value) => {
       emit("update:isOpen", value);
     };
 
     return {
       presetName,
+      overwriteDialogOpen,
       closeDialog,
+      closeOverwriteDialog,
+      verifyPresetName,
       savePreset,
+      overwritePreset,
       updateIsOpen,
       hsvToRgb,
     };
