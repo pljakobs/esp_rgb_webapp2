@@ -107,7 +107,8 @@ export default {
     },
   },
   setup() {
-    const carouselPage = ref("hsv");
+    const carouselPage = ref();
+
     const presetData = presetDataStore();
     const showDialog = ref(false);
     const presetColorModel = ref("");
@@ -115,6 +116,10 @@ export default {
     const hasFavorites = computed(() =>
       presetData.data.presets.some((preset) => preset.favorite),
     );
+
+    hasFavorites
+      ? (carouselPage.value = "favorites")
+      : (carouselPage.value = "hsv");
 
     watch(
       () => carouselPage.value,
