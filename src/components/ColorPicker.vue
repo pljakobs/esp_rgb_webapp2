@@ -107,7 +107,7 @@ export default {
     },
   },
   setup() {
-    const carouselPage = ref();
+    const carouselPage = ref("hsv");
 
     const presetData = presetDataStore();
     const showDialog = ref(false);
@@ -117,9 +117,17 @@ export default {
       presetData.data.presets.some((preset) => preset.favorite),
     );
 
-    hasFavorites
-      ? (carouselPage.value = "favorites")
-      : (carouselPage.value = "hsv");
+    watch(
+      () => hasFavorites.value,
+      (newVal) => {
+        if (newVal) {
+          carouselPage.value = "favorites";
+        } else {
+          carouselPage.value = "hsv";
+        }
+      },
+      { immediate: true },
+    );
 
     watch(
       () => carouselPage.value,
