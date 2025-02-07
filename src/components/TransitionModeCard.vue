@@ -8,10 +8,8 @@
           label="Transition Mode"
           style="width: 200px"
           @update:model-value="updateTransitionMode"
+          dropdown-icon="img:icons/arrow_drop_down.svg"
         >
-          <template v-slot:dropdown-icon>
-            <svgIcon name="arrow_drop_down" />
-          </template>
         </q-select>
       </div>
     </q-card-section>

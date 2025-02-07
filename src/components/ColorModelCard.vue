@@ -8,10 +8,8 @@
           label="Color Model"
           style="width: 200px"
           @update:model-value="emitColorModel"
+          dropdown-icon="img:icons/arrow_drop_down.svg"
         >
-          <template v-slot:dropdown-icon>
-            <svgIcon name="arrow_drop_down"/>
-          </template>
         </q-select>
       </div>
     </q-card-section>
@@ -147,6 +145,4 @@ export default {
 };
 </script>
 
-<style scoped>
-
-</style>
+<style scoped></style>
