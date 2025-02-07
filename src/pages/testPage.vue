@@ -1,39 +1,68 @@
 <template>
-  <div>
-    <div v-if="isLoading">
-      <q-spinner> </q-spinner>
-      -&gt;{{ isLoading }}&lt;-
-    </div>
-    <div v-else>
-      <q-toggle
-        v-model="sync.color_master_enabled.value"
-        label="Color Master"
-        left-label
-      />
-      <q-toggle
-        v-model="network.connection.dhcp.value"
-        label="dhcp"
-        left-label
-      />
-    </div>
-  </div>
+  <q-page>
+    <q-card>
+      <q-card-section>
+        <h2>Test Page</h2>
+      </q-card-section>
+      <q-card-section>
+        free heap: {{ infoData.data.heap_free }}<br />
+        <button @click="refreshData">Refresh Data</button>
+      </q-card-section>
+      <q-card-section>
+        <q-toggle
+          v-model="isDarkMode"
+          label="Dark Mode"
+          left-label
+          @update:model-value="toggleDarkMode"
+        />
+      </q-card-section>
+    </q-card>
+  </q-page>
 </template>
 
 <script>
-import { computed } from "vue";
-import { configDataStore, createComputedProperties } from "src/store";
+import { ref, onMounted } from "vue";
+import { Dark } from "quasar";
+import { infoDataStore } from "src/stores/infoDataStore";
 
 export default {
   setup() {
-    const store = configDataStore();
+    const infoData = infoDataStore();
+    const isDarkMode = ref(Dark.isActive);
 
-    const fields = ["sync.color_master_enabled", "network.connection.dhcp"];
-    const computedProperties = createComputedProperties(store, fields);
+    // Function to refresh data
+    const refreshData = () => {
+      infoData.fetchData();
+    };
+
+    // Function to toggle dark mode
+    const toggleDarkMode = (value) => {
+      Dark.set(value);
+      localStorage.setItem("darkMode", value);
+    };
+
+    // Load user preference from local storage
+    const savedDarkMode = localStorage.getItem("darkMode");
+    if (savedDarkMode !== null) {
+      Dark.set(savedDarkMode === "true");
+      isDarkMode.value = savedDarkMode === "true";
+    }
+
+    // Fetch data when the component is mounted
+    onMounted(() => {
+      refreshData();
+    });
 
     return {
-      ...computedProperties, // Spread the computed properties into the returned object
-      isLoading: computed(() => store.isLoading),
+      infoData,
+      refreshData,
+      isDarkMode,
+      toggleDarkMode,
     };
   },
 };
 </script>
+
+<style scoped>
+/* Add any necessary styles here */
+</style>

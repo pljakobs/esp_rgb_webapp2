@@ -1,81 +1,56 @@
 <template>
-  <q-card bordered class="my-card shadow-4 col-auto fit q-gutter-md">
-    <q-card-section>
-      <div class="text-h6">
-        <q-icon name="palette" />
-        Color
-      </div>
-    </q-card-section>
-    <q-separator />
-    <q-card-section>
-      <q-color v-model="color" format-model="hex" no-header no-footer />
-      <div class="q-pa-md q-gutter-md">selected {{ hsv }}</div>
-      <!--<q-btn @click="showValue">show color</q-btn>-->
-    </q-card-section>
-  </q-card>
+  <div>
+    <ColorPicker />
+    <q-dialog v-model="showDialog">
+      <q-card
+        class="shadow-4 col-auto fit q-gutter-md q-pa-md"
+        style="max-width: 400px; max-height: 300px"
+      >
+        <q-card-section>
+          <div class="text-h6">Save as {{ presetColorModel }} preset</div>
+        </q-card-section>
+        <q-card-section>
+          <q-input v-model="presetName" label="Preset name" />
+        </q-card-section>
+        <q-card-actions align="right">
+          <q-btn flat label="Cancel" @click="showDialog = false" />
+          <q-btn
+            label="Save"
+            @click="() => savePreset(presetName, presetColorModel)"
+          />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+  </div>
 </template>
 
 <script>
-import { ref, watch, computed, onMounted } from "vue";
-import { colors } from "quasar";
-import { colorDataStore, createComputedProperties } from "src/store"; // replace with the correct import paths
-import ColorSlider from "src/components/ColorSlider.vue";
-
-const { rgbToHsv, hexToRgb } = colors;
+import { ref } from "vue";
+import ColorPicker from "src/components/ColorPicker.vue";
 
 export default {
+  components: {
+    ColorPicker,
+  },
   setup() {
-    const colorStore = colorDataStore();
-    const color = ref("#000000");
-    const fields = [
-      "raw.r",
-      "raw.g",
-      "raw.b",
-      "raw.ww",
-      "raw.cw",
-      "hsv.h",
-      "hsv.s",
-      "hsv.v",
-      "hsv.ct",
-    ];
-    const computedProperties = createComputedProperties(colorStore, fields);
+    const showDialog = ref(false);
+    const presetName = ref("");
+    const presetColorModel = ref("");
 
-    const hsv_c = computed(() => ({
-      h: computedProperties.hsv.h,
-      s: computedProperties.hsv.s,
-      v: computedProperties.hsv.v,
-      ct: computedProperties.hsv.ct,
-    }));
-
-    const raw_c = computed(() => ({
-      r: computedProperties.raw.r,
-      g: computedProperties.raw.g,
-      b: computedProperties.raw.b,
-      ww: computedProperties.raw.ww,
-      cw: computedProperties.raw.cw,
-    }));
-
-    watch(computedProperties.hsv, (val) => {
-      console.log("hsv changed:", val);
-      const rgb = hsvToRgb(val);
-      const hex = rgbToHex(rgb);
-      console.log("hex", hex);
-      color.value = hex;
-    });
-
-    watch(color, (val) => {
-      color.value - console.log("color changed:", val);
-      console.log("color changed:", val);
-      const rgb = hexToRgb(val);
-      const hsv = rgbToHsv(rgb);
-      console.log("hsv", hsv);
-      colorStore.updateData("hsv", hsv);
-    });
+    const savePreset = (presetName, colorModel) => {
+      // Logic to save preset
+      console.log(`Saving preset: ${presetName} with model: ${colorModel}`);
+      showDialog.value = false;
+    };
 
     return {
-      ...computedProperties,
-      color,
+      showDialog,
+      presetName,
+      presetColorModel,
+      savePreset,
     };
   },
 };
 </script>
+
+<style scoped></style>

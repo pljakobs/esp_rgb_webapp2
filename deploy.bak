@@ -1,0 +1,55 @@
+#!/bin/bash
+DEVBOX=192.168.29.10
+echo $1
+dir=$(pwd)
+if [[ -f ./index.html.gz ]]
+then
+	gunzip *.gz
+fi
+
+version=$(git describe --abbrev=4 --dirty --always --tags)"-["$(git rev-parse --abbrev-ref HEAD)"]"
+rm dist/spa/* -rf
+sed -e "s/Version:.*$/Version:${version}/" <src/layouts/RgbwwLayout.vue >src/layouts/RgbwwLayout.vue.1&&mv src/layouts/RgbwwLayout.vue src/layouts/RgbwwLayout.vue.1 && cp src/layouts/RgbwwLayout.vue.1 src/layouts/RgbwwLayout.vue
+if [ "$1" = "debug" ]
+then
+	echo "deploying debug"
+	npx quasar build -d
+else
+	echo "deploying prod"
+	npx quasar build
+fi
+cd $dir
+pwd
+# npm run minify-fonts
+# ./minifyFontnames.sh
+pwd
+./gzipSPA.sh
+if [ "$1" = "debug" ]
+then
+	version=$version"-debug"
+fi
+echo $version >dist/spa/VERSION
+echo "VUE_APP_BUILD_NUMBER=$version" >.env
+echo "deploying "
+cat dist/spa/VERSION
+ssh $DEVBOX "if [ -d ~/devel/esp_rgbww_firmware/webapp ]; then mkdir ~/devel/esp_rgbww_firmware/webapp;fi"
+ssh $DEVBOX "rm -rf ~/devel/esp_rgbww_firmware/webapp/*"
+rsync -a dist/spa/ $DEVBOX:~/devel/esp_rgbww_firmware/webapp
+if [ "$1" = "debug" -o -f dist/spa/assets/index.js.map.gz ]
+then
+	echo "parameter: $1"
+	ls -l dist/spa/assets/index.js.map.gz
+	echo "creating debug stype partition layout"
+	ssh $DEVBOX "cd devel/esp_rgbww_firmware;cp hwconfig.debug hwconfig.hw"
+else
+	echo "creating production style partition layout"
+	ssh $DEVBOX "cd devel/esp_rgbww_firmware;cp hwconfig.prod hwconfig.hw"
+fi
+#ssh $DEVBOX "cd devel/esp_rgbww_firmware/;make clean;make -j8 flash PART=spiffs0"
+if [ "$1" = "OTA" ]
+then
+	ssh $DEVBOX "cd devel/esp_rgbww_firmware/;make -j8;./deployOta PART_LAYOUT=v1"
+else
+	ssh $DEVBOX "cd devel/esp_rgbww_firmware/;make -j8 flash PART_LAYOUT=v1"
+fi
+

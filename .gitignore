@@ -30,4 +30,15 @@ yarn-error.log*
 *.sln
 
 # local .env files
-.env.local*
+.env
+.local*
+
+# python venv
+venv
+
+# npm
+package-lock.json
+
+# deploy fragments
+src/layouts/RgbwwLayout.vue.1
+src/layouts/RgbwwLayout.vue.2
