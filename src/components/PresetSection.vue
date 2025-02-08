@@ -36,6 +36,9 @@
             {{ preset.name }}
           </q-item-section>
           <q-item-section side>
+            <svgIcon name="arrow_forward" @click="sendPreset(preset)" />
+          </q-item-section>
+          <q-item-section side>
             <svgIcon
               name="star_outlined"
               :isSelected="preset.favorite"
@@ -58,21 +61,32 @@
       </template>
     </q-list>
   </q-scroll-area>
+  <send-to-controllers
+    :dialog="showSendDialog"
+    @update:dialog="showSendDialog = $event"
+    @confirm="handleSendPreset"
+  />
 </template>
 
 <script>
-import { computed, onMounted } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { colors } from "quasar";
 import { presetDataStore } from "src/stores/presetDataStore";
 import { colorDataStore } from "src/stores/colorDataStore";
+import sendToControllers from "src/components/sendToControllers.vue";
 
 const { hsvToRgb } = colors;
 
 export default {
   name: "PresetSection",
+  components: {
+    sendToControllers,
+  },
   setup() {
     const presetData = presetDataStore();
     const colorData = colorDataStore();
+    const showSendDialog = ref(false);
+    const selectedPreset = ref(null);
 
     // Fetch presets data on component mount
     onMounted(() => {
@@ -100,25 +114,26 @@ export default {
       }
     };
 
+    const sendPreset = (preset) => {
+      selectedPreset.value = preset;
+      showSendDialog.value = true;
+    };
+
+    const handleSendPreset = (selectedControllers) => {
+      console.log("Sending preset to controllers:", selectedControllers);
+      // Implement the logic to send the selectedPreset to the selectedControllers
+      // Example:
+      selectedControllers.forEach((controller) => {
+        console.log(
+          `Sending preset ${selectedPreset.value.name} to controller ${controller}`,
+        );
+        // Add your logic to send the preset to the controller here
+      });
+    };
+
     const toggleFavorite = async (preset) => {
       presetData.toggleFavorite(preset);
     };
-    /*
-    const toggleFavorite = async (preset) => {
-      console.log("toggle Favorite", JSON.stringify(preset));
-      try {
-        preset.favorite = !preset.favorite;
-        await presetData.updatePreset(preset.name, {
-          favorite: preset.favorite,
-        });
-        console.log("toggled favorite for preset", preset.name);
-      } catch (error) {
-        console.error("Error toggling favorite:", error);
-      }
-    };
-
-
-  */
 
     const deletePreset = async (preset) => {
       try {
@@ -135,6 +150,9 @@ export default {
       toggleFavorite,
       deletePreset,
       hsvToRgb,
+      showSendDialog,
+      selectedPreset,
+      sendPreset,
     };
   },
 };
