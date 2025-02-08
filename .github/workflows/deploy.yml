@@ -53,11 +53,17 @@ jobs:
           name: fileList.h
           path: ./fileList.h
 
-      - name: Copy artifacts to download directory
-        run: |
-          mkdir -p dist/download
-          cp dist/spa/* dist/download/
-          cp ./fileList.h dist/download/
+      - name: Download SPA files artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: spa-files
+          path: ./dist/download
+
+      - name: Download fileList.h artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: fileList.h
+          path: ./dist/download
 
       - name: Create download page
         run: |
