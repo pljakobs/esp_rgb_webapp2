@@ -1,4 +1,3 @@
-<!-- filepath: /home/pjakobs/devel/esp_rgb_webapp2/src/components/PresetSection.vue -->
 <template>
   <q-scroll-area style="height: 100%; width: 100%">
     <q-list separator style="overflow-y: auto; height: 100%">
@@ -37,6 +36,7 @@
           </q-item-section>
           <q-item-section side>
             <svgIcon name="arrow_forward" @click="sendPreset(preset)" />
+            <q-tooltip>Send Preset to other controllers</q-tooltip>
           </q-item-section>
           <q-item-section side>
             <svgIcon
@@ -44,11 +44,15 @@
               :isSelected="preset.favorite"
               @click="toggleFavorite(preset)"
             />
+            <q-tooltip>{{
+              preset.favorite ? "Remove from favorites" : "Add to favorites"
+            }}</q-tooltip>
           </q-item-section>
           <q-item-section side>
             <div class="icon-wrapper" @click="deletePreset(preset)">
               <svgIcon name="delete" />
             </div>
+            <q-tooltip>Delete Preset</q-tooltip>
           </q-item-section>
         </q-item>
       </template>
@@ -73,6 +77,7 @@ import { ref, computed, onMounted } from "vue";
 import { colors } from "quasar";
 import { presetDataStore } from "src/stores/presetDataStore";
 import { colorDataStore } from "src/stores/colorDataStore";
+import { controllersStore } from "src/stores/controllersStore";
 import sendToControllers from "src/components/sendToControllers.vue";
 
 const { hsvToRgb } = colors;
@@ -85,54 +90,88 @@ export default {
   setup() {
     const presetData = presetDataStore();
     const colorData = colorDataStore();
+    const controllers = controllersStore();
     const showSendDialog = ref(false);
     const selectedPreset = ref(null);
 
     // Fetch presets data on component mount
     onMounted(() => {
-      presetData.fetchData();
+      try {
+        console.log("Fetching preset data...");
+        presetData.fetchData();
+      } catch (error) {
+        console.error("Error fetching preset data:", error);
+      }
     });
 
     const activePresets = computed(() => {
-      const presets = presetData.data.presets;
-      if (!presets) {
+      try {
+        const presets = presetData.data.presets;
+        if (!presets) {
+          return [];
+        }
+        console.log("activePresets", JSON.stringify(presets));
+        return presets;
+      } catch (error) {
+        console.error("Error computing activePresets:", error);
         return [];
       }
-      console.log("activePresets", JSON.stringify(presets));
-      return presets;
     });
 
     const handlePresetClick = (preset) => {
-      console.log("preset selected", preset);
+      try {
+        console.log("preset selected", preset);
 
-      if (preset.color.raw) {
-        colorData.change_by = "preset";
-        colorData.updateData("raw", preset.color.raw);
-      } else {
-        colorData.change_by = "preset";
-        colorData.updateData("hsv", preset.color.hsv);
+        if (preset.color.raw) {
+          colorData.change_by = "preset";
+          colorData.updateData("raw", preset.color.raw);
+        } else {
+          colorData.change_by = "preset";
+          colorData.updateData("hsv", preset.color.hsv);
+        }
+      } catch (error) {
+        console.error("Error handling preset click:", error);
       }
     };
 
     const sendPreset = (preset) => {
-      selectedPreset.value = preset;
-      showSendDialog.value = true;
+      try {
+        console.log("sendPreset called with preset:", preset);
+        selectedPreset.value = preset;
+        showSendDialog.value = true;
+      } catch (error) {
+        console.error("Error sending preset:", error);
+      }
     };
 
     const handleSendPreset = (selectedControllers) => {
-      console.log("Sending preset to controllers:", selectedControllers);
-      // Implement the logic to send the selectedPreset to the selectedControllers
-      // Example:
-      selectedControllers.forEach((controller) => {
-        console.log(
-          `Sending preset ${selectedPreset.value.name} to controller ${controller}`,
-        );
-        // Add your logic to send the preset to the controller here
-      });
+      try {
+        selectedControllers.forEach((controllerId) => {
+          console.log("finding controller with id", controllerId);
+
+          const controller = controllers.data.find(
+            (ctrl) => String(ctrl.id) === String(controllerId),
+          );
+          if (controller) {
+            console.log(
+              `Sending preset ${selectedPreset.value.name} to controller ${controller.hostname} at IP ${controller.ip_address}`,
+            );
+            // Add your logic to send the preset to the controller here
+          } else {
+            console.error(`Controller with ID ${controllerId} not found`);
+          }
+        });
+      } catch (error) {
+        console.error("Error handling send preset:", error);
+      }
     };
 
     const toggleFavorite = async (preset) => {
-      presetData.toggleFavorite(preset);
+      try {
+        presetData.toggleFavorite(preset);
+      } catch (error) {
+        console.error("Error toggling favorite:", error);
+      }
     };
 
     const deletePreset = async (preset) => {
@@ -153,6 +192,7 @@ export default {
       showSendDialog,
       selectedPreset,
       sendPreset,
+      handleSendPreset,
     };
   },
 };

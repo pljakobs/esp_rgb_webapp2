@@ -1,8 +1,8 @@
 <template>
   <q-scroll-area style="height: 100%; width: 100%">
     <q-card-section class="q-pa-md">
-      <q-grid :cols="cols" class="q-gutter-md">
-        <q-grid-item
+      <div class="flex-container">
+        <div
           v-for="preset in favoritePresets"
           :key="preset.name"
           class="color-swatch"
@@ -16,8 +16,8 @@
           >
             <div class="swatch-name">{{ preset.name }}</div>
           </div>
-        </q-grid-item>
-      </q-grid>
+        </div>
+      </div>
     </q-card-section>
   </q-scroll-area>
 </template>
@@ -65,8 +65,22 @@ export default {
 </script>
 
 <style scoped>
+.flex-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
 .color-swatch {
   cursor: pointer;
+  flex: 1 1 100%; /* Adjust the width and gap as needed */
+  box-sizing: border-box;
+}
+
+@media (min-width: 400px) {
+  .color-swatch {
+    flex: 1 1 calc(50% - 10px); /* Two swatches per row with a 10px gap */
+  }
 }
 
 .swatch {
