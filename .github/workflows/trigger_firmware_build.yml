@@ -5,6 +5,8 @@ on:
     workflows: ["frontendBuild"]
     types:
       - completed
+    branches:
+      - devel
 
 jobs:
   dispatch:
