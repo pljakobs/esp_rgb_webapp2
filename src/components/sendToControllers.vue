@@ -64,8 +64,6 @@ export default {
       try {
         const controllers = store.data;
         const localDeviceId = infoData.data.deviceid;
-        console.log("controllers from store:", controllers); // Debugging log
-        console.log("local device id:", localDeviceId); // Debugging log
         if (!controllers) {
           return [];
         }
