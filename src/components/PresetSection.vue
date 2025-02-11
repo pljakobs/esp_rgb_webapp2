@@ -144,23 +144,38 @@ export default {
       }
     };
 
-    const handleSendPreset = (selectedControllers) => {
+    const handleSendPreset = async (selectedControllers) => {
+      let payload = { "presets[]": [selectedPreset.value] };
       try {
-        selectedControllers.forEach((controllerId) => {
+        for (const controllerId of selectedControllers) {
           console.log("finding controller with id", controllerId);
 
           const controller = controllers.data.find(
-            (ctrl) => String(ctrl.id) === String(controllerId),
+            (controller) => String(controller.id) === String(controllerId),
           );
           if (controller) {
             console.log(
               `Sending preset ${selectedPreset.value.name} to controller ${controller.hostname} at IP ${controller.ip_address}`,
             );
-            // Add your logic to send the preset to the controller here
+            const response = await fetch(
+              `http://${controller.ip_address}/presets`,
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify(payload),
+              },
+            );
+            if (!response.ok) {
+              console.error(
+                `Failed to send preset to controller ${controller.hostname}`,
+              );
+            }
           } else {
             console.error(`Controller with ID ${controllerId} not found`);
           }
-        });
+        }
       } catch (error) {
         console.error("Error handling send preset:", error);
       }
