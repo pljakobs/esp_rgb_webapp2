@@ -9,11 +9,22 @@
           @click="setColor(preset)"
         >
           <div
+            v-if="preset.color.hsv"
             class="swatch"
             :style="{
               backgroundColor: `rgb(${hsvToRgb(preset.color.hsv).r}, ${hsvToRgb(preset.color.hsv).g}, ${hsvToRgb(preset.color.hsv).b})`,
             }"
           >
+            <div class="swatch-name">{{ preset.name }}</div>
+          </div>
+          <div
+            v-else
+            class="swatch"
+            :style="{
+              backgroundColor: `rgb(150,127,127)`,
+            }"
+          >
+            <RawBadge :color="preset.color" class="raw-badge" />
             <div class="swatch-name">{{ preset.name }}</div>
           </div>
         </div>
@@ -27,11 +38,15 @@ import { ref, computed } from "vue";
 import { colors } from "quasar";
 import { useAppDataStore } from "src/stores/appDataStore";
 import { colorDataStore } from "src/stores/colorDataStore";
+import RawBadge from "src/components/RawBadge.vue";
 
 const { hsvToRgb } = colors;
 
 export default {
   name: "favoriteSection",
+  components: {
+    RawBadge,
+  },
   setup() {
     const presetData = useAppDataStore();
     const colorData = colorDataStore();
@@ -84,6 +99,7 @@ export default {
 }
 
 .swatch {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -92,7 +108,11 @@ export default {
   color: white;
   text-shadow: 1px 1px 2px black;
 }
-
+.raw-badge {
+  position: absolute;
+  top: 35%;
+  left: 5%;
+}
 .swatch-name {
   text-align: center;
   font-weight: bold;
