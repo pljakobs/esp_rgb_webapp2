@@ -25,7 +25,7 @@
 <script>
 import { ref, computed } from "vue";
 import { colors } from "quasar";
-import { presetDataStore } from "src/stores/presetDataStore";
+import { useAppDataStore } from "src/stores/appDataStore";
 import { colorDataStore } from "src/stores/colorDataStore";
 
 const { hsvToRgb } = colors;
@@ -33,7 +33,7 @@ const { hsvToRgb } = colors;
 export default {
   name: "favoriteSection",
   setup() {
-    const presetData = presetDataStore();
+    const presetData = useAppDataStore();
     const colorData = colorDataStore();
 
     const cols = ref(3); // Number of columns in the grid

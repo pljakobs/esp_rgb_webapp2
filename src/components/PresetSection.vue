@@ -75,7 +75,7 @@
 <script>
 import { ref, computed, onMounted } from "vue";
 import { colors } from "quasar";
-import { presetDataStore } from "src/stores/presetDataStore";
+import { useAppDataStore } from "src/stores/appDataStore";
 import { colorDataStore } from "src/stores/colorDataStore";
 import { controllersStore } from "src/stores/controllersStore";
 import sendToControllers from "src/components/sendToControllers.vue";
@@ -88,7 +88,7 @@ export default {
     sendToControllers,
   },
   setup() {
-    const presetData = presetDataStore();
+    const presetData = useAppDataStore();
     const colorData = colorDataStore();
     const controllers = controllersStore();
     const showSendDialog = ref(false);
@@ -158,7 +158,7 @@ export default {
               `Sending preset ${selectedPreset.value.name} to controller ${controller.hostname} at IP ${controller.ip_address}`,
             );
             const response = await fetch(
-              `http://${controller.ip_address}/presets`,
+              `http://${controller.ip_address}/data`,
               {
                 method: "POST",
                 headers: {

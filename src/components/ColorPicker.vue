@@ -75,7 +75,7 @@
 
 <script>
 import { ref, watch, computed } from "vue";
-import { presetDataStore } from "src/stores/presetDataStore";
+import { useAppDataStore } from "src/stores/appDataStore";
 import { storeStatus } from "src/stores/storeConstants";
 import favoriteSection from "src/components/favoriteSection.vue";
 import HsvSection from "src/components/HsvSection.vue";
@@ -109,7 +109,7 @@ export default {
   setup() {
     const carouselPage = ref("hsv");
 
-    const presetData = presetDataStore();
+    const presetData = useAppDataStore();
     const showDialog = ref(false);
     const presetColorModel = ref("");
 

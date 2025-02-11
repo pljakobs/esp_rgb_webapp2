@@ -1,6 +1,6 @@
 import { configDataStore } from "src/stores/configDataStore";
 import { colorDataStore } from "src/stores/colorDataStore";
-import { presetDataStore } from "src/stores/presetDataStore";
+import { useAppDataStore } from "src/stores/appDataStore";
 import { infoDataStore } from "src/stores/infoDataStore";
 import { controllersStore } from "src/stores/controllersStore";
 import useWebSocket from "src/services/websocket.js";
@@ -15,7 +15,7 @@ export default async function initializeStores() {
   const configStore = configDataStore();
   const colorStore = colorDataStore();
   const infoStore = infoDataStore();
-  const presetStore = presetDataStore();
+  const presetStore = useAppDataStore();
   const webSocket = useWebSocket();
 
   if (controllers.currentController) {

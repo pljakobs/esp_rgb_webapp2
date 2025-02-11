@@ -51,7 +51,7 @@
 <script>
 import { ref, computed } from "vue";
 import { colors } from "quasar";
-import { presetDataStore } from "src/stores/presetDataStore";
+import { useAppDataStore } from "src/stores/appDataStore";
 
 const { hsvToRgb } = colors;
 
@@ -75,7 +75,7 @@ export default {
   setup(props, { emit }) {
     const presetName = ref("");
     const overwriteDialogOpen = ref(false);
-    const presetData = presetDataStore();
+    const presetData = useAppDataStore();
 
     const badgeStyle = computed(() => {
       console.log("entering badgeStyle");

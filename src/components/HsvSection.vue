@@ -31,7 +31,7 @@
 import { ref, watch } from "vue";
 import { colors } from "quasar";
 import { colorDataStore } from "src/stores/colorDataStore";
-import { presetDataStore } from "src/stores/presetDataStore";
+import { useAppDataStore } from "src/stores/appDataStore";
 import addPresetDialog from "./addPresetDialog.vue";
 
 const { hexToRgb, rgbToHsv, rgbToHex, hsvToRgb } = colors;
@@ -53,7 +53,7 @@ export default {
   },
   setup() {
     const colorData = colorDataStore();
-    const presetData = presetDataStore();
+    const presetData = useAppDataStore();
     const color = ref("#000000");
     const isDialogOpen = ref(false);
 

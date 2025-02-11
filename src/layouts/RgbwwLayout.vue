@@ -230,7 +230,7 @@ import {
 } from "vue";
 import { configDataStore } from "src/stores/configDataStore";
 import { colorDataStore } from "src/stores/colorDataStore";
-import { presetDataStore } from "src/stores/presetDataStore";
+import { useAppDataStore } from "src/stores/appDataStore";
 import { infoDataStore } from "src/stores/infoDataStore";
 import { controllersStore } from "src/stores/controllersStore";
 
@@ -252,7 +252,7 @@ export default defineComponent({
       const configData = configDataStore();
       const infoData = infoDataStore();
       const colorData = colorDataStore();
-      const presetsData = presetDataStore();
+      const presetsData = useAppDataStore();
       const intervalId = ref(null);
       const ws = useWebSocket();
 
