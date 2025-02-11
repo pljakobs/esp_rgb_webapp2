@@ -16,9 +16,9 @@ export const useAppDataStore = defineStore("appData", {
   actions: {
     async fetchData() {
       try {
-        const { jsonData, error } = await fetchApi("presets");
+        const { jsonData, error } = await fetchApi("data");
         if (error) {
-          console.error("error fetching presets data:", error);
+          console.error("error fetching app-data:", error);
           this.status = storeStatus.ERROR;
         } else {
           console.log("preset data fetched: ", JSON.stringify(jsonData));
@@ -30,7 +30,7 @@ export const useAppDataStore = defineStore("appData", {
           console.log("scenes data: ", JSON.stringify(this.data.scenes));
         }
       } catch (error) {
-        console.error("error fetching presets data:", error);
+        console.error("error fetching app-data:", error);
         this.status = storeStatus.ERROR;
       }
     },

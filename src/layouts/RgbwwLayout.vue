@@ -48,16 +48,14 @@
           <span v-else class="text-danger">❌ {{ colorData.error }}</span
           ><br />
           Presets and Scenes:
-          <span
-            v-if="presetsData.status === storeStatus.READY"
-            class="text-success"
+          <span v-if="appData.status === storeStatus.READY" class="text-success"
             >✔️</span
           >
           <q-spinner
-            v-else-if="presetsData.status === storeStatus.LOADING"
+            v-else-if="appData.status === storeStatus.LOADING"
             color="light-blue"
           />
-          <span v-else class="text-danger">❌ {{ presetsData.error }}</span>
+          <span v-else class="text-danger">❌ {{ appData.error }}</span>
         </div>
       </div>
     </div>
@@ -252,7 +250,7 @@ export default defineComponent({
       const configData = configDataStore();
       const infoData = infoDataStore();
       const colorData = colorDataStore();
-      const presetsData = useAppDataStore();
+      const appData = useAppDataStore();
       const intervalId = ref(null);
       const ws = useWebSocket();
 
@@ -409,7 +407,7 @@ export default defineComponent({
         configData,
         infoData,
         colorData,
-        presetsData,
+        appData,
         controllers,
         storeStatus,
         isSelectOpen,
