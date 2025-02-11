@@ -78,11 +78,7 @@ export default {
     const presetData = useAppDataStore();
 
     const badgeStyle = computed(() => {
-      console.log("entering badgeStyle");
-      console.log("preset type:", props.presetType);
-      console.log("preset data:", JSON.stringify(props.presetData));
       if (props.presetType === "hsv") {
-        console.log("hsvToRgb:", hsvToRgb(props.presetData));
         const { r, g, b } = hsvToRgb(props.presetData);
         return {
           backgroundColor: `rgb(${r}, ${g}, ${b})`,
