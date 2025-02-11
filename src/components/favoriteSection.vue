@@ -21,7 +21,7 @@
             v-else
             class="swatch"
             :style="{
-              backgroundColor: `rgb(150,127,127)`,
+              backgroundColor: `rgb(140,127,127)`,
             }"
           >
             <RawBadge :color="preset.color" class="raw-badge" />
@@ -66,7 +66,9 @@ export default {
       // Set the color in the colorDataStore
       console.log("Setting color to:", JSON.stringify(preset));
       colorData.change_by = "preset";
-      colorData.updateData("hsv", preset.color.hsv);
+      preset.color.hsv
+        ? colorData.updateData("hsv", preset.color.hsv)
+        : colorData.updateData("raw", preset.color.raw);
     };
     return {
       favoritePresets,
