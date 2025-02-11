@@ -8,19 +8,25 @@
           class="q-my-sm"
         >
           <q-item-section avatar>
-            <q-badge
-              :style="{
-                backgroundColor: preset.color.raw
-                  ? `rgb(${preset.color.raw.r}, ${preset.color.raw.g}, ${preset.color.raw.b})`
-                  : `rgb(${hsvToRgb(preset.color.hsv).r}, ${hsvToRgb(preset.color.hsv).g}, ${hsvToRgb(preset.color.hsv).b})`,
-                width: '30px',
-                height: '30px',
-                borderRadius: '50%',
-                border: '1px solid black',
-              }"
-              round
-              @click="handlePresetClick(preset)"
-            />
+            <div v-if="preset.color.hsv">
+              <q-badge
+                :style="{
+                  backgroundColor: `rgb(${hsvToRgb(preset.color.hsv).r}, ${hsvToRgb(preset.color.hsv).g}, ${hsvToRgb(preset.color.hsv).b})`,
+                  width: '30px',
+                  height: '30px',
+                  borderRadius: '50%',
+                  border: '1px solid black',
+                }"
+                round
+                @click="handlePresetClick(preset)"
+              />
+            </div>
+            <div v-else>
+              <RawBadge
+                :color="preset.color"
+                @click="handlePresetClick(preset)"
+              />
+            </div>
           </q-item-section>
           <q-item-section avatar>
             <q-badge
@@ -57,11 +63,9 @@
         </q-item>
       </template>
       <template v-else>
-        <q-item>
-          <q-item-section>
-            <div class="text-center q-pa-md">No presets available</div>
-          </q-item-section>
-        </q-item>
+        <div class="no-presets-container">
+          <div class="no-presets-message">No presets available</div>
+        </div>
       </template>
     </q-list>
   </q-scroll-area>
@@ -79,6 +83,8 @@ import { useAppDataStore } from "src/stores/appDataStore";
 import { colorDataStore } from "src/stores/colorDataStore";
 import { controllersStore } from "src/stores/controllersStore";
 import sendToControllers from "src/components/sendToControllers.vue";
+import RawBadge from "src/components/RawBadge.vue";
+import addPresetDialog from "./addPresetDialog.vue";
 
 const { hsvToRgb } = colors;
 
@@ -86,6 +92,8 @@ export default {
   name: "PresetSection",
   components: {
     sendToControllers,
+    RawBadge,
+    addPresetDialog,
   },
   setup() {
     const presetData = useAppDataStore();
@@ -220,5 +228,19 @@ export default {
 }
 .text-yellow {
   color: yellow;
+}
+.no-presets-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  width: 100%;
+}
+.no-presets-message {
+  background-color: #f0f0f0;
+  padding: 20px;
+  border-radius: 10px;
+  text-align: center;
+  color: #333;
 }
 </style>

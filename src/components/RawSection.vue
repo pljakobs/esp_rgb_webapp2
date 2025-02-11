@@ -18,33 +18,52 @@
       raw-b: {{ colorData.data.raw.b }}, raw-ww: {{ colorData.data.raw.ww }},
       raw-cw: {{ colorData.data.raw.cw }}
     </q-card-section>
-    <q-card-section>
-      <q-btn @click="() => openDialog('hsv')">
-        <svgIcon name="star_outlined" />
-        <span>add Preset</span>
+    <q-card-section class="flex justify-center">
+      <q-btn @click="openDialog">
+        <template v-slot:default>
+          <svgIcon name="star_outlined" />
+          <span>Add Preset</span>
+        </template>
       </q-btn>
     </q-card-section>
+    <addPresetDialog
+      :presetType="'raw'"
+      :presetData="colorData.data.raw"
+      :isOpen="isDialogOpen"
+      @close="handleClose"
+      @save="handleSave"
+    />
   </q-scroll-area>
 </template>
 
 <script>
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import { colorDataStore } from "src/stores/colorDataStore";
+import { useAppDataStore } from "src/stores/appDataStore";
 import ColorSlider from "src/components/ColorSlider.vue";
+import addPresetDialog from "src/components/addPresetDialog.vue";
 
 export default {
   name: "RawSection",
   components: {
     ColorSlider,
+    addPresetDialog,
   },
   props: {
+    cardHeight: {
+      type: String,
+      default: "300px",
+    },
     openDialog: {
       type: Function,
       required: true,
     },
   },
+
   setup() {
     const colorData = colorDataStore();
+    const appData = useAppDataStore();
+    const isDialogOpen = ref(false);
 
     const colorSliders = computed(() => [
       {
@@ -102,10 +121,39 @@ export default {
       }
     };
 
+    const openDialog = () => {
+      console.log("raw section openDialog");
+      isDialogOpen.value = true;
+    };
+
+    const handleClose = () => {
+      isDialogOpen.value = false;
+    };
+
+    const handleSave = (preset) => {
+      console.log("preset", JSON.stringify(preset));
+      const newPreset = {
+        name: preset.name,
+        color: {
+          raw: preset.data,
+        },
+        ts: Date.now(),
+        favorite: false,
+      };
+      console.log("saving Preset:", JSON.stringify(newPreset));
+      appData.addPreset(newPreset);
+      // Handle saving the preset here
+      isDialogOpen.value = false;
+    };
+
     return {
       colorData,
       colorSliders,
       updateColorSlider,
+      openDialog,
+      handleClose,
+      handleSave,
+      isDialogOpen,
     };
   },
 };
