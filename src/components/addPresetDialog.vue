@@ -3,23 +3,18 @@
     <q-card>
       <q-card-section>
         <div class="text-h6">
-          <q-badge
-            :style="{
-              backgroundColor: presetData.hsv
-                ? `rgb(${hsvToRgb(presetData.hsv).r}, ${hsvToRgb(presetData.hsv).g}, ${hsvToRgb(presetData.hsv).b})`
-                : `rgb(${presetData.r}, ${presetData.g}, ${presetData.b})`,
-              width: '30px',
-              height: '30px',
-              borderRadius: '50%',
-              border: '1px solid black',
-            }"
-            round
-          />
+          <q-badge :style="badgeStyle" round />
           Add Preset
         </div>
       </q-card-section>
       <q-card-section>
-        <q-input v-model="presetName" label="Preset Name" filled autofocus />
+        <q-input
+          v-model="presetName"
+          label="Preset Name"
+          filled
+          autofocus
+          @keyup.enter="verifyPresetName"
+        />
       </q-card-section>
       <q-card-actions align="right">
         <q-btn flat label="Cancel" color="primary" @click="closeDialog" />
@@ -54,7 +49,7 @@
 </template>
 
 <script>
-import { ref } from "vue";
+import { ref, computed } from "vue";
 import { colors } from "quasar";
 import { presetDataStore } from "src/stores/presetDataStore";
 
@@ -81,6 +76,41 @@ export default {
     const presetName = ref("");
     const overwriteDialogOpen = ref(false);
     const presetData = presetDataStore();
+
+    const badgeStyle = computed(() => {
+      console.log("entering badgeStyle");
+      console.log("preset type:", props.presetType);
+      console.log("preset data:", JSON.stringify(props.presetData));
+      if (props.presetType === "hsv") {
+        console.log("hsvToRgb:", hsvToRgb(props.presetData));
+        const { r, g, b } = hsvToRgb(props.presetData);
+        return {
+          backgroundColor: `rgb(${r}, ${g}, ${b})`,
+          width: "30px",
+          height: "30px",
+          borderRadius: "50%",
+          border: "1px solid black",
+        };
+      } else {
+        const { r, g, b } = props.presetData;
+        if (r !== undefined && g !== undefined && b !== undefined) {
+          return {
+            backgroundColor: `rgb(${r}, ${g}, ${b})`,
+            width: "30px",
+            height: "30px",
+            borderRadius: "50%",
+            border: "1px solid black",
+          };
+        }
+      }
+      return {
+        backgroundColor: "transparent",
+        width: "30px",
+        height: "30px",
+        borderRadius: "50%",
+        border: "1px solid black",
+      };
+    });
 
     const closeDialog = () => {
       emit("close");
@@ -137,6 +167,7 @@ export default {
       overwritePreset,
       updateIsOpen,
       hsvToRgb,
+      badgeStyle,
     };
   },
 };
