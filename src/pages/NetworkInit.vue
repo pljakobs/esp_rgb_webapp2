@@ -179,7 +179,7 @@
 <script>
 import { ref, onMounted, watch } from "vue";
 //import useWebSocket, { wsStatus } from "../services/websocket";
-import useWebSocket from "../services/websocket";
+import useWebSocket from "src/services/websocket";
 import { controllersStore } from "src/stores/controllersStore.js";
 import { infoDataStore } from "src/stores/infoDataStore.js";
 import { storeStatus } from "src/stores/storeConstants";

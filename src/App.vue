@@ -6,7 +6,11 @@
 import { onMounted, watch, defineComponent } from "vue";
 import { controllersStore } from "src/stores/controllersStore";
 import initializeStores from "src/services/initializeStores";
+import initializeNotifications from "src/services/notifications";
+import initizalizeAppCommands from "src/services/appCommands";
 import { Dark } from "quasar";
+import initializeAppCommands from "src/services/appCommands";
+import initializeLogService from "src/services/logServices";
 
 export default defineComponent({
   name: "App",
@@ -31,6 +35,9 @@ export default defineComponent({
 
       onMounted(() => {
         initializeStores();
+        initializeNotifications();
+        initializeAppCommands();
+        initializeLogService();
       });
     } catch (error) {
       console.error("Error in setup function:", error);
