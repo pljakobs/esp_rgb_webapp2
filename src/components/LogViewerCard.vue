@@ -3,7 +3,11 @@
     <q-card-section class="row justify-center no-padding">
       <div class="log-viewer">
         <div v-for="(log, index) in logs" :key="index" class="log-line">
-          {{ log }}
+          <span class="log-timestamp">{{ log.time }}</span>
+          <span class="log-location" v-if="log.location"
+            >[{{ log.location }}]</span
+          ><br />
+          <span class="log-message">{{ log.message }}</span>
         </div>
       </div>
     </q-card-section>
@@ -24,7 +28,9 @@ export default {
   },
   setup() {
     const downloadLogFile = () => {
-      const logContent = logStore.logs.join("\n");
+      const logContent = logStore.logs
+        .map((log) => JSON.stringify(log))
+        .join("\n");
       const blob = new Blob([logContent], { type: "text/plain" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -43,6 +49,7 @@ export default {
   },
 };
 </script>
+
 <style scoped>
 .log-viewer {
   padding: 20px;
@@ -56,6 +63,20 @@ export default {
 .log-line {
   margin-bottom: 10px;
   font-family: monospace;
-  white-space: pre-wrap; /* Preserve whitespace and wrap long lines */
+  white-space: nowrap; /* Prevent log lines from wrapping */
+}
+
+.log-timestamp {
+  color: blue;
+  margin-right: 5px;
+}
+
+.log-location {
+  color: black;
+  margin-right: 5px;
+}
+
+.log-message {
+  color: white;
 }
 </style>
