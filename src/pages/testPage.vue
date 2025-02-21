@@ -17,6 +17,8 @@
         />
       </q-card-section>
     </q-card>
+
+    <groupsCard />
   </q-page>
 </template>
 
@@ -24,8 +26,12 @@
 import { ref, onMounted } from "vue";
 import { Dark } from "quasar";
 import { infoDataStore } from "src/stores/infoDataStore";
+import groupsCard from "src/components/cards/groupsCard.vue";
 
 export default {
+  components: {
+    groupsCard,
+  },
   setup() {
     const infoData = infoDataStore();
     const isDarkMode = ref(Dark.isActive);

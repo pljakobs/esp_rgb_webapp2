@@ -69,44 +69,38 @@
       </template>
     </q-list>
   </q-scroll-area>
-  <send-to-controllers
-    :dialog="showSendDialog"
-    @update:dialog="showSendDialog = $event"
-    @confirm="handleSendPreset"
-  />
 </template>
 
 <script>
 import { ref, computed, onMounted } from "vue";
-import { colors } from "quasar";
+import { colors, Dialog } from "quasar";
 import { useAppDataStore } from "src/stores/appDataStore";
 import { colorDataStore } from "src/stores/colorDataStore";
 import { controllersStore } from "src/stores/controllersStore";
-import sendToControllers from "src/components/sendToControllers.vue";
 import RawBadge from "src/components/RawBadge.vue";
-import addPresetDialog from "./addPresetDialog.vue";
+import addPresetDialog from "src/components/addPresetDialog.vue";
+import sendToControllers from "src/components/sendToControllers.vue";
 
 const { hsvToRgb } = colors;
 
 export default {
   name: "PresetSection",
   components: {
-    sendToControllers,
     RawBadge,
     addPresetDialog,
+    sendToControllers,
   },
   setup() {
-    const presetData = useAppDataStore();
+    const appData = useAppDataStore();
     const colorData = colorDataStore();
     const controllers = controllersStore();
-    const showSendDialog = ref(false);
     const selectedPreset = ref(null);
 
     // Fetch presets data on component mount
     onMounted(() => {
       try {
         console.log("Fetching preset data...");
-        presetData.fetchData();
+        appData.fetchData();
       } catch (error) {
         console.error("Error fetching preset data:", error);
       }
@@ -114,7 +108,7 @@ export default {
 
     const activePresets = computed(() => {
       try {
-        const presets = presetData.data.presets;
+        const presets = appData.data.presets;
         if (!presets) {
           return [];
         }
@@ -146,10 +140,17 @@ export default {
       try {
         console.log("sendPreset called with preset:", preset);
         selectedPreset.value = preset;
-        showSendDialog.value = true;
+        showSendDialog();
       } catch (error) {
         console.error("Error sending preset:", error);
       }
+    };
+
+    const showSendDialog = () => {
+      Dialog.create({
+        component: sendToControllers,
+        onOk: handleSendPreset,
+      });
     };
 
     const handleSendPreset = async (selectedControllers) => {
@@ -191,7 +192,7 @@ export default {
 
     const toggleFavorite = async (preset) => {
       try {
-        presetData.toggleFavorite(preset);
+        appData.toggleFavorite(preset);
       } catch (error) {
         console.error("Error toggling favorite:", error);
       }
@@ -199,7 +200,7 @@ export default {
 
     const deletePreset = async (preset) => {
       try {
-        await presetData.deletePreset(preset);
+        await appData.deletePreset(preset);
         console.log("deleted preset", preset);
       } catch (error) {
         console.error("Error deleting preset:", error);
@@ -212,7 +213,6 @@ export default {
       toggleFavorite,
       deletePreset,
       hsvToRgb,
-      showSendDialog,
       selectedPreset,
       sendPreset,
       handleSendPreset,

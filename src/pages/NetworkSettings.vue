@@ -8,10 +8,10 @@
 </template>
 
 <script>
-import HostnameCard from "src/components/HostnameCard.vue";
-import ConnectionCard from "src/components/ConnectionCard.vue";
-import IpSettingsCard from "src/components/IpSettingsCard.vue";
-import MqttSettingsCard from "src/components/MqttSettingsCard.vue";
+import HostnameCard from "src/components/cards/HostnameCard.vue";
+import ConnectionCard from "src/components/cards/ConnectionCard.vue";
+import IpSettingsCard from "src/components/cards/IpSettingsCard.vue";
+import MqttSettingsCard from "src/components/cards/MqttSettingsCard.vue";
 
 export default {
   components: {

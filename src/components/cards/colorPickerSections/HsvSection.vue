@@ -32,7 +32,7 @@ import { ref, watch } from "vue";
 import { colors } from "quasar";
 import { colorDataStore } from "src/stores/colorDataStore";
 import { useAppDataStore } from "src/stores/appDataStore";
-import addPresetDialog from "./addPresetDialog.vue";
+import addPresetDialog from "src/components/addPresetDialog.vue";
 
 const { hexToRgb, rgbToHsv, rgbToHex, hsvToRgb } = colors;
 
