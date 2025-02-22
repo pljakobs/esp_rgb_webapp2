@@ -1,26 +1,24 @@
 <template>
-  <q-dialog :model-value="isOpen" @update:model-value="updateIsOpen">
-    <q-card>
-      <q-card-section>
-        <div class="text-h6">
-          <q-badge :style="badgeStyle" round />
-          Add Preset
-        </div>
-      </q-card-section>
-      <q-card-section>
-        <q-input
-          v-model="presetName"
-          label="Preset Name"
-          filled
-          autofocus
-          @keyup.enter="verifyPresetName"
-        />
-      </q-card-section>
-      <q-card-actions align="right">
-        <q-btn flat label="Cancel" color="primary" @click="closeDialog" />
-        <q-btn flat label="Save" color="primary" @click="verifyPresetName" />
-      </q-card-actions>
-    </q-card>
+  <q-card>
+    <q-card-section>
+      <div class="text-h6">
+        <q-badge :style="badgeStyle" round />
+        Add Preset
+      </div>
+    </q-card-section>
+    <q-card-section>
+      <q-input
+        v-model="presetName"
+        label="Preset Name"
+        filled
+        autofocus
+        @keyup.enter="verifyPresetName"
+      />
+    </q-card-section>
+    <q-card-actions align="right">
+      <q-btn flat label="Cancel" color="primary" @click="closeDialog" />
+      <q-btn flat label="Save" color="primary" @click="verifyPresetName" />
+    </q-card-actions>
     <q-dialog v-model="overwriteDialogOpen">
       <q-card>
         <q-card-section>
@@ -45,7 +43,7 @@
         </q-card-actions>
       </q-card>
     </q-dialog>
-  </q-dialog>
+  </q-card>
 </template>
 
 <script>
@@ -62,24 +60,24 @@ export default {
       type: String,
       required: true,
     },
-    presetData: {
+    preset: {
       type: Object,
       required: true,
     },
-    isOpen: {
-      type: Boolean,
-      required: true,
-    },
   },
-  emits: ["close", "save", "update:isOpen"],
+  emits: ["close", "save"],
   setup(props, { emit }) {
     const presetName = ref("");
     const overwriteDialogOpen = ref(false);
     const presetData = useAppDataStore();
 
+    onMounted(() => {
+      console.log("addPresetDialog mounted with props:", props);
+    });
+
     const badgeStyle = computed(() => {
       if (props.presetType === "hsv") {
-        const { r, g, b } = hsvToRgb(props.presetData);
+        const { r, g, b } = hsvToRgb(props.preset);
         return {
           backgroundColor: `rgb(${r}, ${g}, ${b})`,
           width: "30px",
@@ -88,7 +86,7 @@ export default {
           border: "1px solid black",
         };
       } else {
-        const { r, g, b } = props.presetData;
+        const { r, g, b } = props.preset;
         if (r !== undefined && g !== undefined && b !== undefined) {
           return {
             backgroundColor: `rgb(${r}, ${g}, ${b})`,
@@ -110,7 +108,6 @@ export default {
 
     const closeDialog = () => {
       emit("close");
-      emit("update:isOpen", false);
     };
 
     const closeOverwriteDialog = () => {
@@ -132,7 +129,7 @@ export default {
       const newPreset = {
         name: presetName.value,
         type: props.presetType,
-        data: props.presetData,
+        data: props.preset,
       };
       emit("save", newPreset);
       closeDialog();
@@ -149,10 +146,6 @@ export default {
       closeOverwriteDialog();
     };
 
-    const updateIsOpen = (value) => {
-      emit("update:isOpen", value);
-    };
-
     return {
       presetName,
       overwriteDialogOpen,
@@ -161,8 +154,6 @@ export default {
       verifyPresetName,
       savePreset,
       overwritePreset,
-      updateIsOpen,
-      hsvToRgb,
       badgeStyle,
     };
   },

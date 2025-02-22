@@ -17,19 +17,12 @@
         </template>
       </q-btn>
     </q-card-section>
-    <addPresetDialog
-      :presetType="'hsv'"
-      :presetData="colorData.data.hsv"
-      :isOpen="isDialogOpen"
-      @close="handleClose"
-      @save="handleSave"
-    />
   </q-scroll-area>
 </template>
 
 <script>
 import { ref, watch } from "vue";
-import { colors } from "quasar";
+import { colors, Dialog } from "quasar";
 import { colorDataStore } from "src/stores/colorDataStore";
 import { useAppDataStore } from "src/stores/appDataStore";
 import addPresetDialog from "src/components/addPresetDialog.vue";
@@ -46,16 +39,11 @@ export default {
       type: String,
       default: "300px",
     },
-    openDialog: {
-      type: Function,
-      required: true,
-    },
   },
   setup() {
     const colorData = colorDataStore();
     const presetData = useAppDataStore();
     const color = ref("#000000");
-    const isDialogOpen = ref(false);
 
     // Watch for changes in the colorDataStore's hsv property
     watch(
@@ -100,11 +88,24 @@ export default {
 
     const openDialog = () => {
       console.log("hsv section openDialog");
-      isDialogOpen.value = true;
-    };
-
-    const handleClose = () => {
-      isDialogOpen.value = false;
+      console.log("preset type:", "hsv");
+      console.log("colorData.data.hsv", colorData.data.hsv);
+      Dialog.create({
+        component: addPresetDialog,
+        componentProps: {
+          presetType: "hsv",
+          preset: colorData.data.hsv,
+        },
+      })
+        .onOk((preset) => {
+          handleSave(preset);
+        })
+        .onCancel(() => {
+          console.log("Dialog canceled");
+        })
+        .onDismiss(() => {
+          console.log("Dialog dismissed");
+        });
     };
 
     const handleSave = (preset) => {
@@ -129,10 +130,8 @@ export default {
 
     return {
       color,
-      isDialogOpen,
       colorData,
       openDialog,
-      handleClose,
       handleSave,
     };
   },

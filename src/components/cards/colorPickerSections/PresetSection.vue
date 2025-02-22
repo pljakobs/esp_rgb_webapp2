@@ -78,9 +78,7 @@ import { useAppDataStore } from "src/stores/appDataStore";
 import { colorDataStore } from "src/stores/colorDataStore";
 import { useControllersStore } from "src/stores/controllersStore";
 import RawBadge from "src/components/RawBadge.vue";
-import addPresetDialog from "src/components/addPresetDialog.vue";
-import sendToControllers from "src/components/sendToControllers.vue";
-import TestDialogContent from "src/components/testDialogContent.vue";
+import SelectControllersDialog from "src/components/Dialogs/selectControllersDialog.vue";
 
 const { hsvToRgb } = colors;
 
@@ -88,14 +86,13 @@ export default {
   name: "PresetSection",
   components: {
     RawBadge,
-    addPresetDialog,
-    sendToControllers,
   },
   setup() {
     const appData = useAppDataStore();
     const colorData = colorDataStore();
     const controllers = useControllersStore();
     const selectedPreset = ref(null);
+    const selectedControllers = ref([]);
 
     // Fetch presets data on component mount
     onMounted(() => {
@@ -151,10 +148,13 @@ export default {
       console.log("showSendDialog called");
 
       Dialog.create({
-        component: TestDialogContent,
+        component: SelectControllersDialog,
         componentProps: {
-          controllersList: controllers.data,
-          selectedControllers: [],
+          controllersList: controllers.data.map((controller) => ({
+            id: controller.id,
+            name: controller.hostname || "Unknown",
+          })),
+          selectedControllers: selectedControllers.value,
         },
       })
         .onOk((selectedControllers) => {
