@@ -1,6 +1,6 @@
 import { defineStore } from "pinia";
 import { storeStatus } from "src/stores/storeConstants";
-import { controllersStore } from "src/stores/controllersStore";
+import { useControllersStore } from "src/stores/controllersStore";
 import { fetchApi, safeStringify } from "src/stores/storeHelpers";
 
 export const configDataStore = defineStore({
@@ -67,7 +67,7 @@ export const configDataStore = defineStore({
     },
     updateApi(minimalUpdate) {
       console.log("updateApi called with: ", safeStringify(minimalUpdate));
-      const controllers = controllersStore();
+      const controllers = useControllersStore();
       fetch(`http://${controllers.currentController["ip_address"]}/config`, {
         method: "POST",
         headers: {

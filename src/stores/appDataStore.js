@@ -1,6 +1,6 @@
 import { defineStore } from "pinia";
 import { fetchApi } from "src/stores/storeHelpers";
-import { controllersStore } from "src/stores/controllersStore";
+import { useControllersStore } from "src/stores/controllersStore";
 import { storeStatus } from "src/stores/storeConstants";
 
 export const useAppDataStore = defineStore("appData", {
@@ -42,7 +42,7 @@ export const useAppDataStore = defineStore("appData", {
      **************************************************************/
 
     async addPreset(preset) {
-      const controllers = controllersStore();
+      const controllers = useControllersStore();
       let payload = { "presets[]": [preset] };
       console.log("addPreset payload: ", JSON.stringify(payload));
       try {
@@ -71,7 +71,7 @@ export const useAppDataStore = defineStore("appData", {
       }
     },
     async toggleFavorite(preset) {
-      const controllers = controllersStore();
+      const controllers = useControllersStore();
       preset.favorite = !preset.favorite;
       let payload = {
         [`presets[name=${preset.name}]`]: { favorite: preset.favorite },
@@ -103,7 +103,7 @@ export const useAppDataStore = defineStore("appData", {
     },
 
     async deletePreset(preset) {
-      const controllers = controllersStore();
+      const controllers = useControllersStore();
       let payload = { [`presets[name=${preset.name}]`]: [] };
       console.log("deletePreset payload: ", JSON.stringify(payload));
       try {
@@ -140,7 +140,7 @@ export const useAppDataStore = defineStore("appData", {
      **************************************************************/
 
     async addGroup(group) {
-      const controllers = controllersStore();
+      const controllers = useControllersStore();
       let payload = { "groups[]": [group] };
       console.log("addGroup payload: ", JSON.stringify(payload));
       try {
@@ -169,7 +169,7 @@ export const useAppDataStore = defineStore("appData", {
       }
     },
     async updateGroup(name, partialGroup) {
-      const controllers = controllersStore();
+      const controllers = useControllersStore();
       let payload = { [`groups[name=${name}]`]: partialGroup };
       console.log("updateGroup payload: ", JSON.stringify(payload));
       try {
@@ -204,7 +204,7 @@ export const useAppDataStore = defineStore("appData", {
       }
     },
     async deleteGroup(name) {
-      const controllers = controllersStore();
+      const controllers = useControllersStore();
       let payload = { [`groups[name=${name}]`]: [] };
       console.log("deleteGroup payload: ", JSON.stringify(payload));
       try {
@@ -240,7 +240,7 @@ export const useAppDataStore = defineStore("appData", {
      **************************************************************/
 
     async addScene(scene) {
-      const controllers = controllersStore();
+      const controllers = useControllersStore();
       let payload = { "scenes[]": [scene] };
       console.log("addScene payload: ", JSON.stringify(payload));
       try {
@@ -270,7 +270,7 @@ export const useAppDataStore = defineStore("appData", {
     },
 
     async updateScene(name, partialScene) {
-      const controllers = controllersStore();
+      const controllers = useControllersStore();
       let payload = { [`scenes[name=${name}]`]: partialScene };
       console.log("updateScene payload: ", JSON.stringify(payload));
       try {
@@ -305,7 +305,7 @@ export const useAppDataStore = defineStore("appData", {
       }
     },
     async deleteScene(name) {
-      const controllers = controllersStore();
+      const controllers = useControllersStore();
       let payload = { [`scenes[name=${name}]`]: [] };
       console.log("deleteScene payload: ", JSON.stringify(payload));
       try {

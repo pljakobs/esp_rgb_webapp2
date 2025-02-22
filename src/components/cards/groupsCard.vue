@@ -9,7 +9,7 @@
             </q-item>
           </template>
           <template v-else>
-            <div class="no-groups-container">
+            <div class="-groups-container">
               <div class="no-groups-message">No groups available</div>
             </div>
           </template>
@@ -37,7 +37,7 @@
 <script>
 import { computed } from "vue";
 import { useAppDataStore } from "src/stores/appDataStore";
-import { controllersStore } from "src/stores/controllersStore";
+import { useControllersStore } from "src/stores/controllersStore";
 import MyCard from "src/components/myCard.vue";
 export default {
   name: "groupsCard",
@@ -46,7 +46,7 @@ export default {
   },
   setup() {
     const appData = useAppDataStore();
-    //const controllersStore = controllersStore();
+    const controllersStore = useControllersStore();
 
     console.log("groups data:", appData.data.groups);
 

@@ -44,7 +44,7 @@
 
 <script>
 import { ref, computed } from "vue";
-import { controllersStore } from "src/stores/controllersStore";
+import { useControllersStore } from "src/stores/controllersStore";
 import { infoDataStore } from "src/stores/infoDataStore";
 
 export default {
@@ -56,7 +56,7 @@ export default {
     },
   },
   setup(props, { emit }) {
-    const store = controllersStore();
+    const store = useControllersStore();
     const infoData = infoDataStore();
     const selectedControllers = ref([]);
 

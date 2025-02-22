@@ -4,7 +4,7 @@
 
 <script>
 import { onMounted, watch, defineComponent } from "vue";
-import { controllersStore } from "src/stores/controllersStore";
+import { useControllersStore } from "src/stores/controllersStore";
 import initializeStores from "src/services/initializeStores";
 import initializeNotifications from "src/services/notifications";
 import initizalizeAppCommands from "src/services/appCommands";
@@ -16,7 +16,7 @@ export default defineComponent({
   name: "App",
   setup() {
     try {
-      const controllers = controllersStore();
+      const controllers = useControllersStore();
       console.log("controllers:", controllers);
 
       const webhost = window.location.hostname;

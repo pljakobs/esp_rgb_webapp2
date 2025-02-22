@@ -3,7 +3,7 @@ import { localhost, storeStatus } from "./storeConstants";
 import { fetchApi } from "./storeHelpers";
 import useWebSocket from "src/services/websocket.js";
 
-export const controllersStore = defineStore({
+export const useControllersStore = defineStore({
   id: "controllersStore",
 
   state: () => ({

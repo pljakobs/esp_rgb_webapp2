@@ -118,7 +118,7 @@ import { ref } from "vue";
 import { useQuasar } from "quasar";
 import { configDataStore } from "src/stores/configDataStore";
 import { infoDataStore } from "src/stores/infoDataStore";
-import { controllersStore } from "src/stores/controllersStore";
+import { useControllersStore } from "src/stores/controllersStore";
 import MyCard from "src/components/myCard.vue";
 
 export default {
@@ -128,7 +128,7 @@ export default {
   setup() {
     const configData = configDataStore();
     const infoData = infoDataStore();
-    const controllers = controllersStore();
+    const controllers = useControllersStore();
 
     const otaUrl = ref(configData.data.ota.url);
     const dialogOpen = ref(false);

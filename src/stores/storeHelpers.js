@@ -1,4 +1,4 @@
-import { controllersStore } from "./controllersStore";
+import { useControllersStore } from "./controllersStore";
 import { retryDelay } from "./storeConstants";
 
 export function safeStringify(obj) {
@@ -17,7 +17,7 @@ export function safeStringify(obj) {
 }
 
 export async function fetchApi(endpoint, retryCount = 0) {
-  const controllers = controllersStore();
+  const controllers = useControllersStore();
   const maxRetries = 10;
   let error = null;
   let jsonData = null;

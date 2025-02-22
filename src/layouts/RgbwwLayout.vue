@@ -230,7 +230,7 @@ import { configDataStore } from "src/stores/configDataStore";
 import { colorDataStore } from "src/stores/colorDataStore";
 import { useAppDataStore } from "src/stores/appDataStore";
 import { infoDataStore } from "src/stores/infoDataStore";
-import { controllersStore } from "src/stores/controllersStore";
+import { useControllersStore } from "src/stores/controllersStore";
 
 import { storeStatus } from "src/stores/storeConstants";
 import useWebSocket, { wsStatus } from "src/services/websocket.js";
@@ -246,7 +246,7 @@ export default defineComponent({
     try {
       const leftDrawerOpen = ref(false);
 
-      const controllers = controllersStore();
+      const controllers = useControllersStore();
       const configData = configDataStore();
       const infoData = infoDataStore();
       const colorData = colorDataStore();

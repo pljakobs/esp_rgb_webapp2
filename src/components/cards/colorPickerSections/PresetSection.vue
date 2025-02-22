@@ -76,10 +76,11 @@ import { ref, computed, onMounted } from "vue";
 import { colors, Dialog } from "quasar";
 import { useAppDataStore } from "src/stores/appDataStore";
 import { colorDataStore } from "src/stores/colorDataStore";
-import { controllersStore } from "src/stores/controllersStore";
+import { useControllersStore } from "src/stores/controllersStore";
 import RawBadge from "src/components/RawBadge.vue";
 import addPresetDialog from "src/components/addPresetDialog.vue";
 import sendToControllers from "src/components/sendToControllers.vue";
+import TestDialogContent from "src/components/testDialogContent.vue";
 
 const { hsvToRgb } = colors;
 
@@ -93,7 +94,7 @@ export default {
   setup() {
     const appData = useAppDataStore();
     const colorData = colorDataStore();
-    const controllers = controllersStore();
+    const controllers = useControllersStore();
     const selectedPreset = ref(null);
 
     // Fetch presets data on component mount
@@ -147,11 +148,32 @@ export default {
     };
 
     const showSendDialog = () => {
+      console.log("showSendDialog called");
+
+      Dialog.create({
+        component: TestDialogContent,
+        componentProps: {
+          controllersList: controllers.data,
+          selectedControllers: [],
+        },
+      })
+        .onOk((selectedControllers) => {
+          handleSendPreset(selectedControllers);
+        })
+        .onCancel(() => {
+          console.log("Dialog canceled");
+        })
+        .onDismiss(() => {
+          console.log("Dialog dismissed");
+        });
+    };
+
+    /*
       Dialog.create({
         component: sendToControllers,
         onOk: handleSendPreset,
       });
-    };
+      */
 
     const handleSendPreset = async (selectedControllers) => {
       let payload = { "presets[]": [selectedPreset.value] };

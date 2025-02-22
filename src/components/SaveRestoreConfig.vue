@@ -39,7 +39,7 @@
 
 <script>
 import { ref } from "vue";
-import { controllersStore } from "src/stores/controllersStore";
+import { useControllersStore } from "src/stores/controllersStore";
 import { configDataStore } from "src/stores/configDataStore";
 import MyCard from "src/components/myCard.vue";
 
@@ -48,7 +48,7 @@ export default {
     MyCard,
   },
   setup() {
-    const controllers = controllersStore();
+    const controllers = useControllersStore();
     const configData = configDataStore();
     const fileInput = ref(null);
     const fileContent = ref("");
