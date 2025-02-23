@@ -35,7 +35,7 @@ import { colors, Dialog } from "quasar";
 import { colorDataStore } from "src/stores/colorDataStore";
 import { useAppDataStore } from "src/stores/appDataStore";
 import ColorSlider from "src/components/ColorSlider.vue";
-import addPresetDialog from "src/components/addPresetDialog.vue";
+import addPresetDialog from "src/components/Dialogs/addPresetDialog.vue";
 
 export default {
   name: "RawSection",

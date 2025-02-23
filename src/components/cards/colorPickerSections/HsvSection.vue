@@ -25,7 +25,7 @@ import { ref, watch } from "vue";
 import { colors, Dialog } from "quasar";
 import { colorDataStore } from "src/stores/colorDataStore";
 import { useAppDataStore } from "src/stores/appDataStore";
-import addPresetDialog from "src/components/addPresetDialog.vue";
+import addPresetDialog from "src/components/Dialogs/addPresetDialog.vue";
 
 const { hexToRgb, rgbToHsv, rgbToHex, hsvToRgb } = colors;
 
@@ -124,8 +124,6 @@ export default {
       };
       console.log("saving Preset:", JSON.stringify(newPreset));
       presetData.addPreset(newPreset);
-      // Handle saving the preset here
-      isDialogOpen.value = false;
     };
 
     return {
