@@ -115,6 +115,19 @@
             </q-item-section>
           </q-item>
 
+          <q-item clickable tag="router-link" to="/GroupsAndScenes">
+            <q-item-section class="icon-section"
+              ><svgIcon name="linked_services" class="icon" />
+            </q-item-section>
+
+            <q-item-section class="text-section">
+              <q-item-label>Groups and Scenes</q-item-label>
+              <q-item-label caption>
+                configure groups of controlelrs and scenes
+              </q-item-label>
+            </q-item-section>
+          </q-item>
+
           <q-item clickable tag="router-link" to="/ColorSettings">
             <q-item-section class="icon-section"
               ><svgIcon name="settings_outlined" class="icon" />

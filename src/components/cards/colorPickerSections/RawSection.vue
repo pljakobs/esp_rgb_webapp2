@@ -19,7 +19,7 @@
       raw-cw: {{ colorData.data.raw.cw }}
     </q-card-section>
     <q-card-section class="flex justify-center">
-      <q-btn @click="openDialog">
+      <q-btn flat color="primary" @click="openDialog">
         <template v-slot:default>
           <svgIcon name="star_outlined" />
           <span>Add Preset</span>

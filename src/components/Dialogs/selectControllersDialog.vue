@@ -5,28 +5,30 @@
         <q-toolbar-title>Select Controllers</q-toolbar-title>
       </q-toolbar>
       <q-card-section>
-        <q-list>
-          <q-item
-            v-for="controller in controllersList"
-            :key="controller.id"
-            clickable
-            v-ripple
-          >
-            <q-item-section avatar>
-              <q-checkbox
-                :model-value="
-                  internalSelectedControllers.includes(controller.id)
-                "
-                @update:model-value="
-                  updateSelectedControllers(controller.id, $event)
-                "
-              />
-            </q-item-section>
-            <q-item-section>
-              {{ controller.name }}
-            </q-item-section>
-          </q-item>
-        </q-list>
+        <q-scroll-area class="inset-scroll-area">
+          <q-list>
+            <q-item
+              v-for="controller in controllersList"
+              :key="controller.id"
+              clickable
+              v-ripple
+            >
+              <q-item-section avatar>
+                <q-checkbox
+                  :model-value="
+                    internalSelectedControllers.includes(controller.id)
+                  "
+                  @update:model-value="
+                    updateSelectedControllers(controller.id, $event)
+                  "
+                />
+              </q-item-section>
+              <q-item-section>
+                {{ controller.name }}
+              </q-item-section>
+            </q-item>
+          </q-list>
+        </q-scroll-area>
       </q-card-section>
       <q-card-actions align="right">
         <q-btn color="primary" label="OK" @click="onOKClick" />

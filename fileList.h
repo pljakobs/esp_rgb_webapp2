@@ -24,6 +24,7 @@
 	XX(hub_outlined_svg, "icons/hub_outlined.svg.gz") \
 	XX(info_outlined_svg, "icons/info_outlined.svg.gz") \
 	XX(lightbulb_outlined_svg, "icons/lightbulb_outlined.svg.gz") \
+	XX(linked_services_svg, "icons/linked_services.svg.gz") \
 	XX(memory_outlined_svg, "icons/memory_outlined.svg.gz") \
 	XX(menu_outlined_24_svg, "icons/menu_outlined_24.svg.gz") \
 	XX(network_wifi_1_bar_FILL0_wght400_GRAD0_opsz24_svg, "icons/network_wifi_1_bar_FILL0_wght400_GRAD0_opsz24.svg.gz") \
