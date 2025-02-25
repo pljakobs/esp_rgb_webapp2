@@ -112,7 +112,8 @@ export default {
 
     const openDialog = () => {
       console.log("raw section openDialog");
-
+      console.log("preset type:", "raw");
+      console.log("colorData.data.raw", colorData.data.raw);
       Dialog.create({
         component: addPresetDialog,
         componentProps: {
@@ -121,6 +122,7 @@ export default {
         },
       })
         .onOk((preset) => {
+          console.log("Dialog OK");
           handleSave(preset);
         })
         .onCancel(() => {

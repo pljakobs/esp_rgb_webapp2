@@ -1,6 +1,9 @@
 <template>
   <q-dialog ref="dialog" @hide="onDialogHide">
     <q-card class="q-dialog-plugin">
+      <q-toolbar class="bg-primary text-white">
+        <q-toolbar-title>Select Controllers</q-toolbar-title>
+      </q-toolbar>
       <q-card-section>
         <q-list>
           <q-item

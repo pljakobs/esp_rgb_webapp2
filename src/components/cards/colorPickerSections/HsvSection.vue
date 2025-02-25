@@ -98,6 +98,7 @@ export default {
         },
       })
         .onOk((preset) => {
+          console.log("Dialog OK");
           handleSave(preset);
         })
         .onCancel(() => {
@@ -124,6 +125,7 @@ export default {
       };
       console.log("saving Preset:", JSON.stringify(newPreset));
       presetData.addPreset(newPreset);
+      console.log("returned from saving preset");
     };
 
     return {
