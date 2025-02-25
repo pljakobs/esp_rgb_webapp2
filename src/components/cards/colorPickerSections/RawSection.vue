@@ -93,6 +93,7 @@ export default {
     ]);
 
     const updateColorSlider = (slider, value) => {
+      console.log("updateColorSlider", slider, value);
       const colorMap = {
         Red: "r",
         Green: "g",
@@ -104,9 +105,8 @@ export default {
       const rawColorKey = colorMap[slider.label];
 
       if (rawColorKey) {
-        let raw = {};
-        raw[rawColorKey] = value;
-        colorData.updateData("raw", raw);
+        colorData.data.raw[rawColorKey] = value;
+        colorData.updateData("raw", { ...colorData.data.raw });
       }
     };
 

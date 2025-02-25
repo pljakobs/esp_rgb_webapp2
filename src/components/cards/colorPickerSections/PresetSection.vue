@@ -168,13 +168,6 @@ export default {
         });
     };
 
-    /*
-      Dialog.create({
-        component: sendToControllers,
-        onOk: handleSendPreset,
-      });
-      */
-
     const handleSendPreset = async (selectedControllers) => {
       let payload = { "presets[]": [selectedPreset.value] };
       try {
