@@ -123,6 +123,7 @@ export default {
       })
         .onOk((preset) => {
           console.log("Dialog OK");
+          console.log("raw save preset", preset);
           handleSave(preset);
         })
         .onCancel(() => {
@@ -145,8 +146,6 @@ export default {
       };
       console.log("saving Preset:", JSON.stringify(newPreset));
       appData.addPreset(newPreset);
-      // Handle saving the preset here
-      isDialogOpen.value = false;
     };
 
     return {

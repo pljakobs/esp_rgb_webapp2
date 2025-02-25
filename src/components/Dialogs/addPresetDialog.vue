@@ -111,6 +111,7 @@ export default {
         type: props.presetType,
         data: props.preset,
       };
+      console.log("dialogOk, new preset:", newPreset);
       onDialogOK(newPreset);
     };
 
