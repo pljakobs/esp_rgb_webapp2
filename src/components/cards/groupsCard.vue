@@ -1,44 +1,49 @@
 <template>
   <MyCard icon="linked_services" title="Groups">
-    <q-card-section class="justify-center no-padding">
-      <q-list
-        separator
-        style="overflow-y: auto; height: 100%; width: 200px"
-        padding
-        dense
-        bordered
-      >
-        <div v-if="groups && groups.length > 0">
-          <q-item v-for="group in groups" :key="group.name" class="q-my-sm">
-            <q-item-section avatar @click="toggleGroup(group.name)">
-              <svg-icon
-                name="arrow_drop_down"
-                :class="{ 'rotated-arrow': expandedGroup != group.name }"
-              />
-            </q-item-section>
-            <q-item-section @click="toggleGroup(group.name)">
-              <q-item-label>{{ group.name }}</q-item-label>
-              <q-item-caption>
-                <div v-if="expandedGroup === group.name" class="indented-list">
-                  <q-list>
-                    <q-item
-                      v-for="controller in getControllers(group.IDs)"
-                      :key="controller.id"
-                    >
-                      <q-item-section>{{ controller.hostname }}</q-item-section>
-                    </q-item>
-                  </q-list>
-                </div>
-              </q-item-caption>
-            </q-item-section>
-          </q-item>
-        </div>
-        <div v-else>
-          <div class="no-groups-container">
-            <div class="no-groups-message">No groups available</div>
+    <q-card-section class="flex justify-center">
+      <q-scroll-area class="inset-scroll-area">
+        <q-list
+          separator
+          style="overflow-y: auto; height: 100%; width: 200px"
+          dense
+        >
+          <div v-if="groups && groups.length > 0">
+            <q-item v-for="group in groups" :key="group.name" class="q-my-sm">
+              <q-item-section avatar @click="toggleGroup(group.name)" top>
+                <svg-icon
+                  name="arrow_drop_down"
+                  :class="{ 'rotated-arrow': expandedGroup != group.name }"
+                />
+              </q-item-section>
+              <q-item-section @click="toggleGroup(group.name)">
+                <q-item-label>{{ group.name }}</q-item-label>
+                <q-item-label caption>
+                  <div
+                    v-if="expandedGroup === group.name"
+                    class="indented-list"
+                  >
+                    <q-list dense>
+                      <q-item
+                        v-for="controller in getControllers(group.IDs)"
+                        :key="controller.id"
+                      >
+                        <q-item-section>{{
+                          controller.hostname
+                        }}</q-item-section>
+                      </q-item>
+                    </q-list>
+                  </div>
+                </q-item-label>
+              </q-item-section>
+            </q-item>
           </div>
-        </div>
-      </q-list>
+          <div v-else>
+            <div class="no-groups-container">
+              <div class="no-groups-message">No groups available</div>
+            </div>
+          </div>
+        </q-list>
+      </q-scroll-area>
     </q-card-section>
     <q-card-section class="flex justify-center">
       <q-btn flat color="primary" @click="openDialog">
@@ -94,8 +99,6 @@ export default {
         component: addGroupDialog,
       })
         .onOk((group) => {
-          console.log("Dialog OK");
-          console.log("Group:", group);
           handleSave(group);
         })
         .onCancel(() => {
@@ -138,9 +141,16 @@ export default {
   color: #333;
 }
 .indented-list {
-  padding-left: 20px;
+  padding-left: 10px;
 }
 .rotated-arrow {
   transform: rotate(-90deg);
+}
+.inset-scroll-area {
+  height: 300px;
+  width: 100%;
+  max-width: 400px;
+  box-shadow: inset 0 0 10px rgba(255, 255, 255, 0.1);
+  margin: 10px;
 }
 </style>
