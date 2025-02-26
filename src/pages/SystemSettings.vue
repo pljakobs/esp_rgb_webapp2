@@ -12,12 +12,12 @@
 
 <script>
 import { infoDataStore } from "src/stores/infoDataStore";
-import InformationCard from "src/components/InformationCard.vue";
-import FirmwareUpdateCard from "src/components/FirmwareUpdateCard.vue";
-import LogViewerCard from "src/components/LogViewerCard.vue";
-import ControllerConfigCard from "src/components/ControllerConfigCard.vue";
+import InformationCard from "src/components/cards/InformationCard.vue";
+import FirmwareUpdateCard from "src/components/cards/FirmwareUpdateCard.vue";
+import LogViewerCard from "src/components/cards/LogViewerCard.vue";
+import ControllerConfigCard from "src/components/cards/ControllerConfigCard.vue";
 import SaveRestoreConfig from "src/components/SaveRestoreConfig.vue";
-import DebugFunctionCard from "src/components/DebugFunctionCard.vue";
+import DebugFunctionCard from "src/components/cards/DebugFunctionCard.vue";
 
 export default {
   components: {

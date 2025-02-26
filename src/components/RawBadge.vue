@@ -15,13 +15,13 @@
     <div
       class="color-dot"
       :style="{
-        backgroundColor: `rgb(${color.raw.ww}, ${color.raw.ww}, 0)`,
+        backgroundColor: `rgb(${color.raw.ww}, ${color.raw.ww}, 0)`, //yellow for warm white
       }"
     ></div>
     <div
       class="color-dot"
       :style="{
-        backgroundColor: `rgb(${color.raw.cw}, ${color.raw.cw}, ${color.raw.cw})`,
+        backgroundColor: `rgb(${color.raw.cw}, ${color.raw.cw}, ${color.raw.cw})`, //pure white for cold white
       }"
     ></div>
   </div>
@@ -46,7 +46,7 @@ export default {
   width: 30px;
   height: 30px;
   border-radius: 50%;
-  border: 0px solid black;
+  border: 1px solid black;
   display: flex;
   justify-content: center;
   align-items: center;

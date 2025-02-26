@@ -77,10 +77,10 @@
 import { ref, watch, computed } from "vue";
 import { useAppDataStore } from "src/stores/appDataStore";
 import { storeStatus } from "src/stores/storeConstants";
-import favoriteSection from "src/components/favoriteSection.vue";
-import HsvSection from "src/components/HsvSection.vue";
-import RawSection from "src/components/RawSection.vue";
-import PresetSection from "src/components/PresetSection.vue";
+import favoriteSection from "src/components/cards/colorPickerSections/favoriteSection.vue";
+import HsvSection from "src/components/cards/colorPickerSections/HsvSection.vue";
+import RawSection from "src/components/cards/colorPickerSections/RawSection.vue";
+import PresetSection from "src/components/cards/colorPickerSections/PresetSection.vue";
 import MyCard from "src/components/myCard.vue";
 
 export default {

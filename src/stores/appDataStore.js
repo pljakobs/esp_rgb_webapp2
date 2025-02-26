@@ -1,6 +1,6 @@
 import { defineStore } from "pinia";
 import { fetchApi } from "src/stores/storeHelpers";
-import { controllersStore } from "src/stores/controllersStore";
+import { useControllersStore } from "src/stores/controllersStore";
 import { storeStatus } from "src/stores/storeConstants";
 
 export const useAppDataStore = defineStore("appData", {
@@ -42,7 +42,7 @@ export const useAppDataStore = defineStore("appData", {
      **************************************************************/
 
     async addPreset(preset) {
-      const controllers = controllersStore();
+      const controllers = useControllersStore();
       let payload = { "presets[]": [preset] };
       console.log("addPreset payload: ", JSON.stringify(payload));
       try {
@@ -71,7 +71,7 @@ export const useAppDataStore = defineStore("appData", {
       }
     },
     async toggleFavorite(preset) {
-      const controllers = controllersStore();
+      const controllers = useControllersStore();
       preset.favorite = !preset.favorite;
       let payload = {
         [`presets[name=${preset.name}]`]: { favorite: preset.favorite },
@@ -103,7 +103,7 @@ export const useAppDataStore = defineStore("appData", {
     },
 
     async deletePreset(preset) {
-      const controllers = controllersStore();
+      const controllers = useControllersStore();
       let payload = { [`presets[name=${preset.name}]`]: [] };
       console.log("deletePreset payload: ", JSON.stringify(payload));
       try {
@@ -133,6 +133,105 @@ export const useAppDataStore = defineStore("appData", {
         console.error("error deleting preset:", error);
       }
     },
+    /*************************************************************
+     *
+     * group functions
+     *
+     **************************************************************/
+
+    async addGroup(group) {
+      const controllers = useControllersStore();
+      let payload = { "groups[]": [group] };
+      console.log("addGroup payload: ", JSON.stringify(payload));
+      try {
+        console.log(
+          "group uri: ",
+          `http://${controllers.currentController["ip_address"]}/data`,
+        );
+        console.log("group payload: ", JSON.stringify(payload));
+        const response = await fetch(
+          `http://${controllers.currentController["ip_address"]}/data`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(payload),
+          },
+        );
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        this.data.groups.push(group);
+        console.log("added group", group.name, "with id", group.id);
+      } catch (error) {
+        console.error("error adding group:", error);
+      }
+    },
+    async updateGroup(name, partialGroup) {
+      const controllers = useControllersStore();
+      let payload = { [`groups[name=${name}]`]: partialGroup };
+      console.log("updateGroup payload: ", JSON.stringify(payload));
+      try {
+        console.log(
+          "group uri: ",
+          `http://${controllers.currentController["ip_address"]}/data`,
+        );
+        console.log("group payload: ", JSON.stringify(payload));
+        const response = await fetch(
+          `http://${controllers.currentController["ip_address"]}/data`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(payload),
+          },
+        );
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const groupIndex = this.data.groups.findIndex((s) => s.name === name);
+        if (groupIndex !== -1) {
+          this.data.groups[groupIndex] = {
+            ...this.data.groups[groupIndex],
+            ...partialGroup,
+          };
+          console.log("updated group", name);
+        }
+      } catch (error) {
+        console.error("error updating group:", error);
+      }
+    },
+    async deleteGroup(name) {
+      const controllers = useControllersStore();
+      let payload = { [`groups[name=${name}]`]: [] };
+      console.log("deleteGroup payload: ", JSON.stringify(payload));
+      try {
+        console.log(
+          "group uri: ",
+          `http://${controllers.currentController["ip_address"]}/data`,
+        );
+        console.log("group payload: ", JSON.stringify(payload));
+        const response = await fetch(
+          `http://${controllers.currentController["ip_address"]}/data`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(payload),
+          },
+        );
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        this.data.groups = this.data.groups.filter((s) => s.name !== name);
+        console.log("deleted group", name);
+      } catch (error) {
+        console.error("error deleting scene:", error);
+      }
+    },
 
     /*************************************************************
      *
@@ -141,7 +240,7 @@ export const useAppDataStore = defineStore("appData", {
      **************************************************************/
 
     async addScene(scene) {
-      const controllers = controllersStore();
+      const controllers = useControllersStore();
       let payload = { "scenes[]": [scene] };
       console.log("addScene payload: ", JSON.stringify(payload));
       try {
@@ -171,7 +270,7 @@ export const useAppDataStore = defineStore("appData", {
     },
 
     async updateScene(name, partialScene) {
-      const controllers = controllersStore();
+      const controllers = useControllersStore();
       let payload = { [`scenes[name=${name}]`]: partialScene };
       console.log("updateScene payload: ", JSON.stringify(payload));
       try {
@@ -206,7 +305,7 @@ export const useAppDataStore = defineStore("appData", {
       }
     },
     async deleteScene(name) {
-      const controllers = controllersStore();
+      const controllers = useControllersStore();
       let payload = { [`scenes[name=${name}]`]: [] };
       console.log("deleteScene payload: ", JSON.stringify(payload));
       try {

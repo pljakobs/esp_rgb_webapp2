@@ -19,29 +19,23 @@
       raw-cw: {{ colorData.data.raw.cw }}
     </q-card-section>
     <q-card-section class="flex justify-center">
-      <q-btn @click="openDialog">
+      <q-btn flat color="primary" @click="openDialog">
         <template v-slot:default>
           <svgIcon name="star_outlined" />
           <span>Add Preset</span>
         </template>
       </q-btn>
     </q-card-section>
-    <addPresetDialog
-      :presetType="'raw'"
-      :presetData="colorData.data.raw"
-      :isOpen="isDialogOpen"
-      @close="handleClose"
-      @save="handleSave"
-    />
   </q-scroll-area>
 </template>
 
 <script>
 import { computed, ref } from "vue";
+import { colors, Dialog } from "quasar";
 import { colorDataStore } from "src/stores/colorDataStore";
 import { useAppDataStore } from "src/stores/appDataStore";
 import ColorSlider from "src/components/ColorSlider.vue";
-import addPresetDialog from "src/components/addPresetDialog.vue";
+import addPresetDialog from "src/components/Dialogs/addPresetDialog.vue";
 
 export default {
   name: "RawSection",
@@ -54,16 +48,11 @@ export default {
       type: String,
       default: "300px",
     },
-    openDialog: {
-      type: Function,
-      required: true,
-    },
   },
 
   setup() {
     const colorData = colorDataStore();
     const appData = useAppDataStore();
-    const isDialogOpen = ref(false);
 
     const colorSliders = computed(() => [
       {
@@ -104,6 +93,7 @@ export default {
     ]);
 
     const updateColorSlider = (slider, value) => {
+      console.log("updateColorSlider", slider, value);
       const colorMap = {
         Red: "r",
         Green: "g",
@@ -115,19 +105,33 @@ export default {
       const rawColorKey = colorMap[slider.label];
 
       if (rawColorKey) {
-        let raw = {};
-        raw[rawColorKey] = value;
-        colorData.updateData("raw", raw);
+        colorData.data.raw[rawColorKey] = value;
+        colorData.updateData("raw", { ...colorData.data.raw });
       }
     };
 
     const openDialog = () => {
       console.log("raw section openDialog");
-      isDialogOpen.value = true;
-    };
-
-    const handleClose = () => {
-      isDialogOpen.value = false;
+      console.log("preset type:", "raw");
+      console.log("colorData.data.raw", colorData.data.raw);
+      Dialog.create({
+        component: addPresetDialog,
+        componentProps: {
+          presetType: "raw",
+          preset: colorData.data.raw,
+        },
+      })
+        .onOk((preset) => {
+          console.log("Dialog OK");
+          console.log("raw save preset", preset);
+          handleSave(preset);
+        })
+        .onCancel(() => {
+          console.log("Dialog canceled");
+        })
+        .onDismiss(() => {
+          console.log("Dialog dismissed");
+        });
     };
 
     const handleSave = (preset) => {
@@ -142,8 +146,6 @@ export default {
       };
       console.log("saving Preset:", JSON.stringify(newPreset));
       appData.addPreset(newPreset);
-      // Handle saving the preset here
-      isDialogOpen.value = false;
     };
 
     return {
@@ -151,9 +153,7 @@ export default {
       colorSliders,
       updateColorSlider,
       openDialog,
-      handleClose,
       handleSave,
-      isDialogOpen,
     };
   },
 };

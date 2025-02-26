@@ -180,7 +180,7 @@
 import { ref, onMounted, watch } from "vue";
 //import useWebSocket, { wsStatus } from "../services/websocket";
 import useWebSocket from "src/services/websocket";
-import { controllersStore } from "src/stores/controllersStore.js";
+import { useControllersStore } from "src/stores/controllersStore.js";
 import { infoDataStore } from "src/stores/infoDataStore.js";
 import { storeStatus } from "src/stores/storeConstants";
 import systemCommand from "src/services/systemCommands.js";
@@ -191,7 +191,7 @@ export default {
     MyCard,
   },
   setup() {
-    const controllers = controllersStore();
+    const controllers = useControllersStore();
     const infoData = infoDataStore();
     const wifiData = ref({
       connected: false,

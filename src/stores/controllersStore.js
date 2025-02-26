@@ -1,8 +1,9 @@
 import { defineStore } from "pinia";
 import { localhost, storeStatus } from "./storeConstants";
 import { fetchApi } from "./storeHelpers";
+import useWebSocket from "src/services/websocket.js";
 
-export const controllersStore = defineStore({
+export const useControllersStore = defineStore({
   id: "controllersStore",
 
   state: () => ({
@@ -16,6 +17,7 @@ export const controllersStore = defineStore({
     async fetchData(retryCount = 0) {
       try {
         console.log("controllers start fetching data");
+
         const { jsonData, error } = await fetchApi("hosts", retryCount);
         if (error) {
           throw error;
@@ -31,6 +33,42 @@ export const controllersStore = defineStore({
         console.log("store: ", JSON.stringify(this.data));
         this.status = storeStatus.READY;
         console.log("controllers data fetched: ", JSON.stringify(this.data));
+
+        // Subscribe to WebSocket messages
+        const ws = useWebSocket();
+        ws.onJson("updated_host", (params) => {
+          host = data.message;
+          console.log("updating controller from jsonrpc message: ", host);
+
+          const index = this.data.findIndex(
+            (controller) => controller.ip_address === host.ip_address,
+          );
+          if (index !== -1) {
+            this.data[index] = { ...this.data[index], ...jpst };
+          } else {
+            this.data.push(host);
+          }
+        });
+        ws.onJson("new_host", (params) => {
+          host = data.message;
+          console.log("adding new controller from jsonrpc message: ", host);
+          const index = this.data.findIndex(
+            (controller) => controller.ip_address === host.ip_address,
+          );
+          if (index !== -1) {
+            //controller is already in list
+          } else {
+            this.data.push(host);
+          }
+        });
+        ws.onJson("removed_host", (params) => {
+          host = data.message;
+          console.log("removing controller from jsonrpc message: ", params);
+          this.data = this.data.filter(
+            (controller) => controller.ip_address !== host.ip_address,
+          );
+        });
+        console.log("WebSocket initialized and subscribed to updated_host.");
       } catch (error) {
         this.status = storeStatus.ERROR;
         this.error = error;

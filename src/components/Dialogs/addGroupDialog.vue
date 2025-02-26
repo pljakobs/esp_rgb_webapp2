@@ -1,9 +1,9 @@
 <template>
-  <q-dialog :model-value="dialog" @update:model-value="updateDialog">
-    <q-card class="adaptive-card">
-      <q-card-section>
-        <div class="text-h6">Select Controllers</div>
-      </q-card-section>
+  <q-dialog ref="dialogRef" @hide="onDialogHide">
+    <q-card class="q-dialog-plugin">
+      <q-toolbar class="bg-primary text-white">
+        <q-toolbar-title>Add Group</q-toolbar-title>
+      </q-toolbar>
 
       <q-card-section class="scroll-area-container">
         <q-scroll-area class="inset-scroll-area">
@@ -16,9 +16,12 @@
             >
               <q-item-section avatar>
                 <q-checkbox
-                  v-model="selectedControllers"
-                  :val="controller.id"
-                  @update:model-value="updateSelectedControllers"
+                  :model-value="
+                    internalSelectedControllers.includes(controller.id)
+                  "
+                  @update:model-value="
+                    updateSelectedControllers(controller.id, $event)
+                  "
                 />
               </q-item-section>
               <q-item-section>
@@ -28,15 +31,12 @@
           </q-list>
         </q-scroll-area>
       </q-card-section>
-
+      <q-card-section>
+        <q-input v-model="groupName" label="Group Name" filled autofocus />
+      </q-card-section>
       <q-card-actions align="right">
-        <q-btn flat label="Cancel" color="primary" @click="cancelSelection" />
-        <q-btn
-          flat
-          label="Send Preset"
-          color="primary"
-          @click="confirmSelection"
-        />
+        <q-btn flat label="Cancel" color="primary" @click="onCancelClick" />
+        <q-btn flat label="Save" color="primary" @click="saveGroup" />
       </q-card-actions>
     </q-card>
   </q-dialog>
@@ -44,21 +44,20 @@
 
 <script>
 import { ref, computed } from "vue";
-import { controllersStore } from "src/stores/controllersStore";
+import { useControllersStore } from "src/stores/controllersStore";
 import { infoDataStore } from "src/stores/infoDataStore";
+import { useDialogPluginComponent } from "quasar";
 
 export default {
-  name: "sendToControllers",
-  props: {
-    dialog: {
-      type: Boolean,
-      required: true,
-    },
-  },
-  setup(props, { emit }) {
-    const store = controllersStore();
+  name: "addGroupDialog",
+  emits: ["close", "save", ...useDialogPluginComponent.emits],
+  setup(_, { emit }) {
+    const { dialogRef, onDialogHide, onDialogOK, onDialogCancel } =
+      useDialogPluginComponent();
+    const store = useControllersStore();
     const infoData = infoDataStore();
-    const selectedControllers = ref([]);
+    const groupName = ref("");
+    const internalSelectedControllers = ref([]);
 
     const controllersList = computed(() => {
       try {
@@ -69,12 +68,6 @@ export default {
         }
         const options = controllers
           .filter((controller) => {
-            console.log(
-              "Filtering controller:",
-              String(controller.id),
-              "localDeviceId:",
-              localDeviceId,
-            ); // Debugging log
             return (
               controller.id !== undefined &&
               String(controller.id) !== localDeviceId
@@ -85,7 +78,6 @@ export default {
             name: controller.hostname,
             id: controller.id,
           }));
-        console.log("controllersList:", JSON.stringify(options)); // Debugging log
         return options;
       } catch (error) {
         console.error("Error computing controllersList:", error);
@@ -93,41 +85,38 @@ export default {
       }
     });
 
-    const updateDialog = (value) => {
-      try {
-        emit("update:dialog", value);
-      } catch (error) {
-        console.error("Error updating dialog:", error);
+    const updateSelectedControllers = (controllerId, isSelected) => {
+      const updatedControllers = isSelected
+        ? [...internalSelectedControllers.value, controllerId]
+        : internalSelectedControllers.value.filter((id) => id !== controllerId);
+      internalSelectedControllers.value = updatedControllers;
+    };
+
+    const saveGroup = () => {
+      if (internalSelectedControllers.value.length != 0) {
+        const newGroup = {
+          name: groupName.value,
+          IDs: internalSelectedControllers.value,
+        };
+        console.log("new group", newGroup);
+        emit("ok", newGroup);
+      } else {
+        alert("Please select at least one controller to create a group");
       }
     };
 
-    const cancelSelection = () => {
-      try {
-        emit("update:dialog", false);
-      } catch (error) {
-        console.error("Error canceling selection:", error);
-      }
-    };
-
-    const confirmSelection = () => {
-      try {
-        emit("update:dialog", false);
-        emit("confirm", selectedControllers.value);
-      } catch (error) {
-        console.error("Error confirming selection:", error);
-      }
-    };
-
-    const updateSelectedControllers = (value) => {
-      selectedControllers.value = value;
+    const onCancelClick = () => {
+      onDialogCancel();
     };
 
     return {
-      selectedControllers,
+      dialogRef,
+      onDialogHide,
+      onCancelClick,
+      saveGroup,
+      groupName,
       controllersList,
-      updateDialog,
-      cancelSelection,
-      confirmSelection,
+      internalSelectedControllers,
       updateSelectedControllers,
     };
   },
@@ -155,4 +144,3 @@ export default {
   margin: 10px;
 }
 </style>
-margin-right: 20px; padding-right: 20px;

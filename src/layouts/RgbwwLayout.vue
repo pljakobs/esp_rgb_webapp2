@@ -115,6 +115,19 @@
             </q-item-section>
           </q-item>
 
+          <q-item clickable tag="router-link" to="/GroupsAndScenes">
+            <q-item-section class="icon-section"
+              ><svgIcon name="linked_services" class="icon" />
+            </q-item-section>
+
+            <q-item-section class="text-section">
+              <q-item-label>Groups and Scenes</q-item-label>
+              <q-item-label caption>
+                configure groups of controlelrs and scenes
+              </q-item-label>
+            </q-item-section>
+          </q-item>
+
           <q-item clickable tag="router-link" to="/ColorSettings">
             <q-item-section class="icon-section"
               ><svgIcon name="settings_outlined" class="icon" />
@@ -230,7 +243,7 @@ import { configDataStore } from "src/stores/configDataStore";
 import { colorDataStore } from "src/stores/colorDataStore";
 import { useAppDataStore } from "src/stores/appDataStore";
 import { infoDataStore } from "src/stores/infoDataStore";
-import { controllersStore } from "src/stores/controllersStore";
+import { useControllersStore } from "src/stores/controllersStore";
 
 import { storeStatus } from "src/stores/storeConstants";
 import useWebSocket, { wsStatus } from "src/services/websocket.js";
@@ -246,7 +259,7 @@ export default defineComponent({
     try {
       const leftDrawerOpen = ref(false);
 
-      const controllers = controllersStore();
+      const controllers = useControllersStore();
       const configData = configDataStore();
       const infoData = infoDataStore();
       const colorData = colorDataStore();

@@ -107,7 +107,7 @@ export default configure(function (/* ctx */) {
       },
 
       // Quasar plugins
-      plugins: ["Notify"],
+      plugins: ["Notify", "Dialog"],
       lang: "en-US",
     },
 
