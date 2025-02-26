@@ -98,3 +98,25 @@ export default {
   },
 };
 </script>
+
+<style scoped>
+.adaptive-card {
+  min-width: 400px;
+  max-width: 80vw;
+  max-height: 80vh;
+  overflow: auto;
+}
+
+.scroll-area-container {
+  margin: 10px;
+  margin-right: 20px;
+}
+
+.inset-scroll-area {
+  height: 300px;
+  width: 100%;
+  max-width: 400px;
+  box-shadow: inset 0 0 10px rgba(255, 255, 255, 0.1);
+  margin: 10px;
+}
+</style>

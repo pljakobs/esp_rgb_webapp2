@@ -1,23 +1,35 @@
 <template>
   <MyCard icon="linked_services" title="Groups">
     <q-card-section class="justify-center no-padding">
-      <q-list separator style="overflow-y: auto; height: 100%; width: 200px">
+      <q-list
+        separator
+        style="overflow-y: auto; height: 100%; width: 200px"
+        padding
+        dense
+        bordered
+      >
         <div v-if="groups && groups.length > 0">
           <q-item v-for="group in groups" :key="group.name" class="q-my-sm">
             <q-item-section avatar @click="toggleGroup(group.name)">
-              <svg-icon name="arrow_drop_down" />
+              <svg-icon
+                name="arrow_drop_down"
+                :class="{ 'rotated-arrow': expandedGroup != group.name }"
+              />
             </q-item-section>
-            <q-item-section>{{ group.name }}</q-item-section>
-            <q-item-section v-if="expandedGroup === group.name">
-              controllers:
-              <q-list>
-                <q-item
-                  v-for="controller in getControllers(group.IDs)"
-                  :key="controller.id"
-                >
-                  <q-item-section>{{ controller.name }}</q-item-section>
-                </q-item>
-              </q-list>
+            <q-item-section @click="toggleGroup(group.name)">
+              <q-item-label>{{ group.name }}</q-item-label>
+              <q-item-caption>
+                <div v-if="expandedGroup === group.name" class="indented-list">
+                  <q-list>
+                    <q-item
+                      v-for="controller in getControllers(group.IDs)"
+                      :key="controller.id"
+                    >
+                      <q-item-section>{{ controller.hostname }}</q-item-section>
+                    </q-item>
+                  </q-list>
+                </div>
+              </q-item-caption>
             </q-item-section>
           </q-item>
         </div>
@@ -38,7 +50,6 @@
     </q-card-section>
   </MyCard>
 </template>
-
 <script>
 import { ref, computed } from "vue";
 import { Dialog } from "quasar";
@@ -58,21 +69,21 @@ export default {
     const expandedGroup = ref(null);
 
     console.log("groups data:", appData.data.groups);
-
+    console.log("controllers data:", controllersStore.data);
     const groups = computed(() => {
       return appData.data.groups;
     });
 
     const controllers = computed(() => {
-      return controllersStore.data.controllers;
+      return controllersStore.data;
     });
-
     const toggleGroup = (groupName) => {
       expandedGroup.value =
         expandedGroup.value === groupName ? null : groupName;
     };
 
     const getControllers = (ids) => {
+      console.log("getControllers. controllers:", controllers.value);
       return controllers.value.filter((controller) =>
         ids.includes(controller.id),
       );
@@ -125,5 +136,11 @@ export default {
   border-radius: 10px;
   text-align: center;
   color: #333;
+}
+.indented-list {
+  padding-left: 20px;
+}
+.rotated-arrow {
+  transform: rotate(-90deg);
 }
 </style>
