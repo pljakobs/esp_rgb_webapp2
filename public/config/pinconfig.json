@@ -1,5 +1,5 @@
 {
-  "version": 3,
+  "version": 4,
   "available_pins": [
     {
       "soc": "esp8266",
@@ -31,15 +31,15 @@
       ]
     },
     {
-      "name": "Lightinator mini",
+      "name": "NodeMC esp32c3 01M",
       "soc": "esp32c3",
       "model": "rgbww",
       "channels": [
-        { "name": "red", "pin": "7" },
-        { "name": "green", "pin": "6" },
-        { "name": "blue", "pin": "5" },
-        { "name": "warmwhite", "pin": "4" },
-        { "name": "coldwhite", "pin": "0" }
+        { "name": "red", "pin": "5" },
+        { "name": "green", "pin": "7" },
+        { "name": "blue", "pin": "6" },
+        { "name": "warmwhite", "pin": "9" },
+        { "name": "coldwhite", "pin": "10" }
       ]
     },
     {
