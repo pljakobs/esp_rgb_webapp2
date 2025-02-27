@@ -2,11 +2,7 @@
   <MyCard icon="linked_services" title="Groups">
     <q-card-section class="flex justify-center">
       <q-scroll-area class="inset-scroll-area">
-        <q-list
-          separator
-          style="overflow-y: auto; height: 100%; width: 200px"
-          dense
-        >
+        <q-list separator style="overflow-y: auto; height: 100%" dense>
           <div v-if="groups && groups.length > 0">
             <q-item v-for="group in groups" :key="group.name" class="q-my-sm">
               <q-item-section avatar @click="toggleGroup(group.name)" top>

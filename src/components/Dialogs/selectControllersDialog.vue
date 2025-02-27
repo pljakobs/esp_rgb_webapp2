@@ -6,7 +6,7 @@
       </q-toolbar>
       <q-card-section>
         <q-scroll-area class="inset-scroll-area">
-          <q-list>
+          <separator style="overflow-y: auto; height: 100%">
             <q-item
               v-for="controller in controllersList"
               :key="controller.id"
