@@ -261,7 +261,7 @@ export default {
         progress.value -= 1 / 30;
         if (progress.value <= 0) {
           clearInterval(interval);
-          location.reload();
+          location.reload(true);
         }
       }, 1000);
     };
