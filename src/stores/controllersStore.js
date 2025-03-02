@@ -34,6 +34,8 @@ export const useControllersStore = defineStore({
             };
           }); // Removing leading and trailing whitespaces from the IP address
 
+        this.data.sort((a, b) => a.hostname.localeCompare(b.hostname));
+
         if (this.currentController.hostname === "localhost") {
           let matchingController = this.data.find(
             (controller) =>
@@ -72,15 +74,13 @@ export const useControllersStore = defineStore({
           }
         });
         ws.onJson("new_host", (params) => {
-          host = data.message;
+          const host = params.message;
           console.log("adding new controller from jsonrpc message: ", host);
           const index = this.data.findIndex(
             (controller) => controller.ip_address === host.ip_address,
           );
-          if (index !== -1) {
-            //controller is already in list
-          } else {
-            this.data.push(host);
+          if (index === -1) {
+            this.insertControllerAlphabetically(host);
           }
         });
         ws.onJson("removed_host", (params) => {
@@ -96,6 +96,11 @@ export const useControllersStore = defineStore({
         this.error = error;
         console.error("Error fetching controllers data:", error);
       }
+    },
+
+    insertControllerAlphabetically(controller) {
+      this.data.push(controller);
+      this.data.sort((a, b) => a.hostname.localeCompare(b.hostname));
     },
 
     selectController(controller) {

@@ -397,7 +397,7 @@ export default defineComponent({
           toggleLeftDrawer();
         },
       );
-
+      /*
       watch(
         () => isSelectOpen.value,
         (isSelectOpen) => {
@@ -419,6 +419,7 @@ export default defineComponent({
         },
         { immediate: true },
       );
+      */
 
       const toggleLeftDrawer = () => {
         if (isSmallScreen.value) {
@@ -429,11 +430,16 @@ export default defineComponent({
       const getIconForController = (controller) => {
         // Logic to determine the icon based on the controller properties
         if (controller.ip_address === controllers.homeController.ip_address) {
+          console.log("home icon for ", controller.ip_address);
           return "home";
         } else if (
           controller.ip_address === controllers.currentController.ip_address
         ) {
+          console.log("api icon for", controller.ip_address);
           return "api";
+        } else {
+          console.log("no icon for ", controller.ip_address);
+          return "";
         }
         //return "controller_default_icon"; // Replace with your default icon
       };
