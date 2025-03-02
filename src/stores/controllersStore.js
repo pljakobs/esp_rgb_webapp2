@@ -2,6 +2,7 @@ import { defineStore } from "pinia";
 import { localhost, storeStatus } from "./storeConstants";
 import { fetchApi } from "./storeHelpers";
 import useWebSocket from "src/services/websocket.js";
+import { infoDataStore } from "src/stores/infoDataStore"; // Import infoDataStore
 
 export const useControllersStore = defineStore({
   id: "controllersStore",
@@ -9,13 +10,15 @@ export const useControllersStore = defineStore({
   state: () => ({
     status: storeStatus.LOADING,
     currentController: localhost,
+    homeController: localhost,
     http_response_status: null,
-    data: [localhost],
+    data: [],
   }),
 
   actions: {
     async fetchData(retryCount = 0) {
       try {
+        const infoData = infoDataStore();
         console.log("controllers start fetching data");
 
         const { jsonData, error } = await fetchApi("hosts", retryCount);
@@ -30,6 +33,25 @@ export const useControllersStore = defineStore({
               ip_address: host.ip_address.trim(),
             };
           }); // Removing leading and trailing whitespaces from the IP address
+
+        if (this.currentController.hostname === "localhost") {
+          let matchingController = this.data.find(
+            (controller) =>
+              this.data.ip_address === this.currentController.ip_address,
+          );
+          if (matchingController) {
+            this.currentController = matchingController;
+          }
+        }
+        if (this.homeController.hostname === "localhost") {
+          let matchingController = this.data.find(
+            (controller) =>
+              this.data.ip_address === this.currentController.ip_address,
+          );
+          if (matchingController) {
+            this.homeController = matchingController;
+          }
+        }
         console.log("store: ", JSON.stringify(this.data));
         this.status = storeStatus.READY;
         console.log("controllers data fetched: ", JSON.stringify(this.data));
@@ -41,7 +63,7 @@ export const useControllersStore = defineStore({
           console.log("updating controller from jsonrpc message: ", host);
 
           const index = this.data.findIndex(
-            (controller) => controller.ip_address === host.ip_address,
+            (controller) => controller.ip_address === host.iWindowp_address,
           );
           if (index !== -1) {
             this.data[index] = { ...this.data[index], ...jpst };
