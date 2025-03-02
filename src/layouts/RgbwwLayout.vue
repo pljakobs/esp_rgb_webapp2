@@ -100,6 +100,16 @@
           @popup-show="() => $nextTick(() => (isSelectOpen.value = true))"
           @popup-hide="() => $nextTick(() => (isSelectOpen.value = false))"
         >
+          <template v-slot:option="scope">
+            <q-item clickable @click="handleControllerSelection(scope.opt)">
+              <q-item-section avatar>
+                <svgIcon :name="getIconForController(scope.opt)" />
+              </q-item-section>
+              <q-item-section>
+                {{ scope.opt.hostname }}
+              </q-item-section>
+            </q-item>
+          </template>
         </q-select>
 
         <q-list>
@@ -307,6 +317,7 @@ export default defineComponent({
             return "green";
           case wsStatus.DISCONNECTED:
             return "red";
+            API;
           case wsStatus.CONNECTING:
             return "yellow";
           default:
@@ -386,7 +397,7 @@ export default defineComponent({
           toggleLeftDrawer();
         },
       );
-
+      /*
       watch(
         () => isSelectOpen.value,
         (isSelectOpen) => {
@@ -408,11 +419,29 @@ export default defineComponent({
         },
         { immediate: true },
       );
+      */
 
       const toggleLeftDrawer = () => {
         if (isSmallScreen.value) {
           leftDrawerOpen.value = !leftDrawerOpen.value;
         }
+      };
+
+      const getIconForController = (controller) => {
+        // Logic to determine the icon based on the controller properties
+        if (controller.ip_address === controllers.homeController.ip_address) {
+          console.log("home icon for ", controller.ip_address);
+          return "home";
+        } else if (
+          controller.ip_address === controllers.currentController.ip_address
+        ) {
+          console.log("api icon for", controller.ip_address);
+          return "api";
+        } else {
+          console.log("no icon for ", controller.ip_address);
+          return "";
+        }
+        //return "controller_default_icon"; // Replace with your default icon
       };
 
       return {
@@ -430,6 +459,7 @@ export default defineComponent({
         buttonIcon,
         isDarkMode,
         toggleDarkMode,
+        getIconForController,
       };
     } catch (error) {
       console.error("Error in setup function:", error);

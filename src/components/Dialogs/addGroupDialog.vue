@@ -47,6 +47,7 @@ import { ref, computed } from "vue";
 import { useControllersStore } from "src/stores/controllersStore";
 import { infoDataStore } from "src/stores/infoDataStore";
 import { useDialogPluginComponent } from "quasar";
+import { makeID } from "src/services/tools";
 
 export default {
   name: "addGroupDialog",
@@ -54,14 +55,14 @@ export default {
   setup(_, { emit }) {
     const { dialogRef, onDialogHide, onDialogOK, onDialogCancel } =
       useDialogPluginComponent();
-    const store = useControllersStore();
+    const controllersStore = useControllersStore();
     const infoData = infoDataStore();
     const groupName = ref("");
     const internalSelectedControllers = ref([]);
 
     const controllersList = computed(() => {
       try {
-        const controllers = store.data;
+        const controllers = controllersStore.data;
         const localDeviceId = infoData.data.deviceid;
         if (!controllers) {
           return [];
@@ -96,7 +97,8 @@ export default {
       if (internalSelectedControllers.value.length != 0) {
         const newGroup = {
           name: groupName.value,
-          IDs: internalSelectedControllers.value,
+          group_id: makeID(),
+          controller_ids: internalSelectedControllers.value,
         };
         console.log("new group", newGroup);
         emit("ok", newGroup);

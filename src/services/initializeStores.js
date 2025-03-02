@@ -25,9 +25,9 @@ export default async function initializeStores() {
 
     try {
       //await controllers.fetchData();
+      await infoStore.fetchData();
       await colorStore.fetchData();
       await configStore.fetchData();
-      await infoStore.fetchData();
       await presetStore.fetchData();
       await controllers.fetchData();
     } catch (error) {

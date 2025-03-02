@@ -20,7 +20,9 @@
                   >
                     <q-list dense>
                       <q-item
-                        v-for="controller in getControllers(group.IDs)"
+                        v-for="controller in getControllers(
+                          group.controller_ids,
+                        )"
                         :key="controller.id"
                       >
                         <q-item-section>{{
@@ -83,10 +85,10 @@ export default {
         expandedGroup.value === groupName ? null : groupName;
     };
 
-    const getControllers = (ids) => {
+    const getControllers = (controller_ids) => {
       console.log("getControllers. controllers:", controllers.value);
       return controllers.value.filter((controller) =>
-        ids.includes(controller.id),
+        controller_ids.includes(controller.id),
       );
     };
 
