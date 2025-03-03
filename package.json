@@ -34,7 +34,7 @@
     "postcss": "^8.5.1",
     "prettier": "^3.3.3",
     "rollup-plugin-visualizer": "^5.14.0",
-    "vite-bundle-visualizer": "^1.2.1",
+
     "vite-plugin-vue-devtools": "^7.7.1"
   },
   "engines": {

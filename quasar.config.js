@@ -42,7 +42,29 @@ export default configure(function (/* ctx */) {
       // 'eva-icons',
       // 'themify',
       // 'line-awesome',
-      // 'roboto-font-latin-ext', // this or either 'roboto-font', NEVER both!
+      // 'roboto-font-latin-ext', // this
+Reviewers
+No reviews
+Still in progress?
+Assignees
+No one—
+Labels
+None yet
+Projects
+None yet
+Milestone
+No milestone
+Development
+
+Successfully merging this pull request may close these issues.
+
+None yet
+
+You’re receiving notifications because you’re watching this repository.
+1 participant
+@pljakobs
+Footer
+ or either 'roboto-font', NEVER both!
       // "roboto-font", // optional, you are not bound to it
       // "material-icons", // optional, you are not bound to it
       // "material-icons-outlined",
@@ -91,8 +113,8 @@ export default configure(function (/* ctx */) {
           },
         ],
         visualizer({
-          filename: "./dist/stats.html",
-          open: true,
+          filename: "./dist/stats.json",
+          json: true,
         }),
       ],
     },

@@ -1,5 +1,4 @@
 import { infoDataStore } from "src/stores/infoDataStore";
-import { collapseTextChangeRangesAcrossMultipleVersions } from "typescript";
 
 function makeID() {
   const infoData = infoDataStore();
