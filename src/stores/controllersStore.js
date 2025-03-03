@@ -35,7 +35,11 @@ export const useControllersStore = defineStore({
           }); // Removing leading and trailing whitespaces from the IP address
 
         this.data.sort((a, b) => a.hostname.localeCompare(b.hostname));
-
+        console.log("controllers data fetched: ", JSON.stringify(this.data));
+        console.log(
+          "current Controller: ",
+          JSON.stringify(this.currentController),
+        );
         if (this.currentController.hostname === "localhost") {
           let matchingController = this.data.find(
             (controller) =>
