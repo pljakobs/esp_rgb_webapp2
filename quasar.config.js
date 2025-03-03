@@ -10,6 +10,7 @@
 
 import { configure } from "quasar/wrappers";
 import path from "path";
+import { visualizer } from "rollup-plugin-visualizer"; // Import visualizer
 
 export default configure(function (/* ctx */) {
   return {
@@ -89,6 +90,10 @@ export default configure(function (/* ctx */) {
             include: path.resolve("./src/i18n/**"),
           },
         ],
+        visualizer({
+          filename: "./dist/stats.json",
+          json: true,
+        }),
       ],
     },
     // Full list of options: https://v2.quasar.dev/quasar-cli-vite/quasar-config-js#devServer
