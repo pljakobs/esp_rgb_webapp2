@@ -7,14 +7,13 @@ import { onMounted, watch, defineComponent } from "vue";
 import { useControllersStore } from "src/stores/controllersStore";
 import initializeStores from "src/services/initializeStores";
 import initializeNotifications from "src/services/notifications";
-import initizalizeAppCommands from "src/services/appCommands";
-import { Dark } from "quasar";
 import initializeAppCommands from "src/services/appCommands";
 import initializeLogService from "src/services/logServices";
 
 export default defineComponent({
   name: "App",
   setup() {
+    console.log("starting app setup function");
     try {
       const controllers = useControllersStore();
       console.log("controllers:", controllers);
@@ -27,7 +26,7 @@ export default defineComponent({
         () => {
           console.log(
             "switching to controller",
-            controllers.currentController?.hostname,
+            controllers.currentController.hostname,
           );
           initializeStores();
         },
@@ -53,6 +52,11 @@ export default defineComponent({
       },
       immediate: true,
     },
+  },
+  errorCaptured(err, vm, info) {
+    console.error(`Error in component: ${vm.$options.name}`);
+    console.error(err);
+    return false; // Prevent the error from propagating further
   },
 });
 </script>

@@ -264,17 +264,21 @@ export default defineComponent({
   name: "MainLayout",
 
   setup() {
+    console.log("RgbwwLayout.vue setup start");
     const isDarkMode = ref(Dark.isActive);
 
     try {
       const leftDrawerOpen = ref(false);
 
+      console.log("RgbwwLayout.vue setup define stores");
       const controllers = useControllersStore();
       const configData = configDataStore();
       const infoData = infoDataStore();
       const colorData = colorDataStore();
       const appData = useAppDataStore();
       const intervalId = ref(null);
+
+      console.log("RgbwwLayout.vue setup useWebSocket");
       const ws = useWebSocket();
 
       const isSelectOpen = ref(false);
@@ -317,7 +321,6 @@ export default defineComponent({
             return "green";
           case wsStatus.DISCONNECTED:
             return "red";
-            API;
           case wsStatus.CONNECTING:
             return "yellow";
           default:
@@ -429,6 +432,7 @@ export default defineComponent({
 
       const getIconForController = (controller) => {
         // Logic to determine the icon based on the controller properties
+        console.log("getIconForController", controller.hostname);
         if (controller.ip_address === controllers.homeController.ip_address) {
           console.log("home icon for ", controller.ip_address);
           return "home";

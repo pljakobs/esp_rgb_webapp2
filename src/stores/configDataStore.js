@@ -3,8 +3,7 @@ import { storeStatus } from "src/stores/storeConstants";
 import { useControllersStore } from "src/stores/controllersStore";
 import { fetchApi, safeStringify } from "src/stores/storeHelpers";
 
-export const configDataStore = defineStore({
-  id: "configDataStore",
+export const configDataStore = defineStore("configDataStore", {
   state: () => ({
     status: storeStatus.LOADING,
     http_response_status: null,

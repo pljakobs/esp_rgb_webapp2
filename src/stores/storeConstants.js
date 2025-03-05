@@ -5,7 +5,7 @@ export const localhost = {
       ? "192.168.29.41"
       : window.location.hostname,
 };
-console.log("storeConstants: localhost", JSON.stringify(localhost));
+
 export const storeStatus = {
   LOADING: "loading",
   READY: "ready",

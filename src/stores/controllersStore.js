@@ -4,9 +4,7 @@ import { fetchApi } from "./storeHelpers";
 import useWebSocket from "src/services/websocket.js";
 import { infoDataStore } from "src/stores/infoDataStore"; // Import infoDataStore
 
-export const useControllersStore = defineStore({
-  id: "controllersStore",
-
+export const useControllersStore = defineStore("controllersStore", {
   state: () => ({
     status: storeStatus.LOADING,
     currentController: localhost,

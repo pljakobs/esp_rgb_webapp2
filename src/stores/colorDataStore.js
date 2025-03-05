@@ -4,8 +4,7 @@ import { fetchApi } from "./storeHelpers";
 import { useControllersStore } from "./controllersStore";
 import useWebSocket from "src/services/websocket.js";
 
-export const colorDataStore = defineStore({
-  id: "colorDataStore",
+export const colorDataStore = defineStore("colorDataStore", {
   state: () => ({
     data: {
       raw: { r: 0, g: 0, b: 0, cw: 0, ww: 0 },
