@@ -106,7 +106,8 @@
                 <svgIcon :name="getIconForController(scope.opt)" />
               </q-item-section>
               <q-item-section>
-                {{ scope.opt.hostname }}
+                <q-item-label>{{ scope.opt.hostname }}</q-item-label>
+                <q-item-label caption>{{ scope.opt.ip_address }}</q-item-label>
               </q-item-section>
             </q-item>
           </template>

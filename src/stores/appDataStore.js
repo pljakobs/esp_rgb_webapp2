@@ -203,9 +203,11 @@ export const useAppDataStore = defineStore("appData", {
         console.error("error updating group:", error);
       }
     },
-    async deleteGroup(name) {
+    async deleteGroup(group) {
       const controllers = useControllersStore();
-      let payload = { [`groups[name=${name}]`]: [] };
+      console.log("appDataStore deleteGroup group: ", group);
+
+      let payload = { [`groups[group_id=${group.group_id}]`]: [] };
       console.log("deleteGroup payload: ", JSON.stringify(payload));
       try {
         console.log(
@@ -226,8 +228,10 @@ export const useAppDataStore = defineStore("appData", {
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
-        this.data.groups = this.data.groups.filter((s) => s.name !== name);
-        console.log("deleted group", name);
+        this.data.groups = this.data.groups.filter(
+          (s) => s.group_id !== group.group_id,
+        );
+        console.log("deleted group", group.name);
       } catch (error) {
         console.error("error deleting scene:", error);
       }

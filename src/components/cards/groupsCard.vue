@@ -4,36 +4,53 @@
       <q-scroll-area class="inset-scroll-area">
         <q-list separator style="overflow-y: auto; height: 100%" dense>
           <div v-if="groups && groups.length > 0">
-            <q-item v-for="group in groups" :key="group.name" class="q-my-sm">
-              <q-item-section avatar @click="toggleGroup(group.name)" top>
-                <svg-icon
-                  name="arrow_drop_down"
-                  :class="{ 'rotated-arrow': expandedGroup != group.name }"
-                />
-              </q-item-section>
-              <q-item-section @click="toggleGroup(group.name)">
-                <q-item-label>{{ group.name }}</q-item-label>
-                <q-item-label caption>
-                  <div
-                    v-if="expandedGroup === group.name"
-                    class="indented-list"
-                  >
-                    <q-list dense>
-                      <q-item
-                        v-for="controller in getControllers(
-                          group.controller_ids,
-                        )"
-                        :key="controller.id"
-                      >
-                        <q-item-section>{{
-                          controller.hostname
-                        }}</q-item-section>
-                      </q-item>
-                    </q-list>
+            <div v-for="group in groups" :key="group.name">
+              <q-item class="q-my-sm">
+                <q-item-section
+                  avatar
+                  @click="toggleGroup(group.group_id)"
+                  top
+                  class="group"
+                >
+                  <q-tooltip>expand group</q-tooltip>
+                  <svg-icon
+                    name="arrow_drop_down"
+                    :class="{
+                      'rotated-arrow': expandedGroup !== group.group_id,
+                    }"
+                  />
+                </q-item-section>
+                <q-item-section @click="toggleGroup(group.group_id)">
+                  <q-item-label>{{ group.name }}</q-item-label>
+                </q-item-section>
+                <q-item-section side>
+                  <q-tooltip>edit group</q-tooltip>
+                  <div class="icon-wraper" @click="editGroup(group)">
+                    <svgIcon name="edit" />
                   </div>
-                </q-item-label>
-              </q-item-section>
-            </q-item>
+                </q-item-section>
+                <q-item-section side>
+                  <q-tooltip>delete group</q-tooltip>
+                  <div class="icon-wraper" @click="deleteGroup(group)">
+                    <svgIcon name="delete" />
+                  </div>
+                </q-item-section>
+              </q-item>
+              <div
+                v-if="expandedGroup === group.group_id"
+                class="indented-list"
+              >
+                <q-list dense>
+                  <q-item
+                    v-for="controller in getControllers(group.controller_ids)"
+                    :key="controller.id"
+                    class="controller-item"
+                  >
+                    <q-item-section>{{ controller.hostname }}</q-item-section>
+                  </q-item>
+                </q-list>
+              </div>
+            </div>
           </div>
           <div v-else>
             <div class="no-groups-container">
@@ -53,6 +70,7 @@
     </q-card-section>
   </MyCard>
 </template>
+
 <script>
 import { ref, computed } from "vue";
 import { Dialog } from "quasar";
@@ -80,16 +98,22 @@ export default {
     const controllers = computed(() => {
       return controllersStore.data;
     });
-    const toggleGroup = (groupName) => {
-      expandedGroup.value =
-        expandedGroup.value === groupName ? null : groupName;
+    const toggleGroup = (groupId) => {
+      expandedGroup.value = expandedGroup.value === groupId ? null : groupId;
     };
 
     const getControllers = (controller_ids) => {
-      console.log("getControllers. controllers:", controllers.value);
-      return controllers.value.filter((controller) =>
-        controller_ids.includes(controller.id),
+      console.log(
+        "getControllers. controllers:",
+        JSON.stringify(controller_ids),
+        "\n",
+        JSON.stringify(controllers.value),
       );
+      const controllers_in_group = controllers.value.filter((controller) =>
+        controller_ids.map(Number).includes(controller.id),
+      );
+      console.log("controllers_in_group:", controllers_in_group);
+      return controllers_in_group;
     };
 
     const openDialog = () => {
@@ -112,17 +136,27 @@ export default {
       appData.addGroup(group);
     };
 
+    const deleteGroup = (group) => {
+      console.log("Deleting group", group);
+      appData.deleteGroup(group);
+    };
+
+    const editGroup = (group) => {
+      console.log("Editing group", group);
+      // Implement the edit functionality here
+    };
+
     return {
       groups,
-      controllers,
-      expandedGroup,
-      toggleGroup,
       getControllers,
       openDialog,
+      editGroup,
+      deleteGroup,
     };
   },
 };
 </script>
+
 <style scoped>
 .no-groups-container {
   display: flex;
@@ -131,7 +165,7 @@ export default {
   height: 100%;
   width: 100%;
 }
-.no-groups-message {
+1 .no-groups-message {
   background-color: #f0f0f0;
   padding: 20px;
   border-radius: 10px;
@@ -139,10 +173,18 @@ export default {
   color: #333;
 }
 .indented-list {
-  padding-left: 10px;
+  padding-left: 55px;
+  margin-top: 0; /* Remove extra spacing */
+}
+.controller-item {
+  font-size: 0.875em; /* Smaller font size */
 }
 .rotated-arrow {
   transform: rotate(-90deg);
+  transition: transform 0.3s;
+}
+.rotated-arrow.expanded {
+  transform: rotate(0deg);
 }
 .inset-scroll-area {
   height: 300px;
@@ -151,4 +193,12 @@ export default {
   box-shadow: inset 0 0 10px rgba(255, 255, 255, 0.1);
   margin: 10px;
 }
+.group {
+  cursor: pointer;
+  margin-top: 0px;
+  margin-bottom: 0px;
+  padding-top: 0px; /* Adjust as needed */
+  padding-bottom: 5px; /* Adjust as needed */
+}
 </style>
+>
