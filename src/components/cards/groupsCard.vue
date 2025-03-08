@@ -25,13 +25,13 @@
                 </q-item-section>
                 <q-item-section side>
                   <q-tooltip>edit group</q-tooltip>
-                  <div class="icon-wraper" @click="editGroup(group)">
+                  <div class="icon-wraper" @click.stop="editGroup(group)">
                     <svgIcon name="edit" />
                   </div>
                 </q-item-section>
                 <q-item-section side>
                   <q-tooltip>delete group</q-tooltip>
-                  <div class="icon-wraper" @click="deleteGroup(group)">
+                  <div class="icon-wraper" @click.stop="deleteGroup(group)">
                     <svgIcon name="delete" />
                   </div>
                 </q-item-section>
@@ -152,6 +152,7 @@ export default {
       openDialog,
       editGroup,
       deleteGroup,
+      expandedGroup,
     };
   },
 };
