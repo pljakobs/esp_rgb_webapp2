@@ -9,6 +9,7 @@ export const useAppDataStore = defineStore("appData", {
       lastColor: {},
       presets: [],
       scenes: [],
+      groups: [],
     },
     status: storeStatus.IDLE,
   }),
@@ -28,6 +29,7 @@ export const useAppDataStore = defineStore("appData", {
           console.log("lastColor data: ", JSON.stringify(this.data.lastColor));
           console.log("presets data: ", JSON.stringify(this.data.presets));
           console.log("scenes data: ", JSON.stringify(this.data.scenes));
+          console.log("groups data: ", JSON.stringify(this.data.groups));
         }
       } catch (error) {
         console.error("error fetching app-data:", error);
@@ -37,172 +39,60 @@ export const useAppDataStore = defineStore("appData", {
 
     /*************************************************************
      *
-     * preset functions
-     *
-     **************************************************************/
-
-    async addPreset(preset) {
-      const controllers = useControllersStore();
-      let payload = { "presets[]": [preset] };
-      console.log("addPreset payload: ", JSON.stringify(payload));
-      try {
-        console.log(
-          "preset uri: ",
-          `http://${controllers.currentController["ip_address"]}/data`,
-        );
-        console.log("preset payload: ", JSON.stringify(payload));
-        const response = await fetch(
-          `http://${controllers.currentController["ip_address"]}/data`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(payload),
-          },
-        );
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        this.data.presets.push(preset);
-        console.log("added preset", preset.name, "with id", preset.id);
-      } catch (error) {
-        console.error("error adding preset:", error);
-      }
-    },
-    async toggleFavorite(preset) {
-      const controllers = useControllersStore();
-      preset.favorite = !preset.favorite;
-      let payload = {
-        [`presets[name=${preset.name}]`]: { favorite: preset.favorite },
-      };
-      console.log("toggleFavorite payload: ", JSON.stringify(payload));
-      try {
-        console.log(
-          "preset uri: ",
-          `http://${controllers.currentController["ip_address"]}/data`,
-        );
-        console.log("preset payload: ", JSON.stringify(payload));
-        const response = await fetch(
-          `http://${controllers.currentController["ip_address"]}/data`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(payload),
-          },
-        );
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        console.log("toggled favorite for preset", preset.name);
-      } catch (error) {
-        console.error("error toggling favorite:", error);
-      }
-    },
-
-    async deletePreset(preset) {
-      const controllers = useControllersStore();
-      let payload = { [`presets[name=${preset.name}]`]: [] };
-      console.log("deletePreset payload: ", JSON.stringify(payload));
-      try {
-        console.log(
-          "preset uri: ",
-          `http://${controllers.currentController["ip_address"]}/data`,
-        );
-        console.log("preset payload: ", JSON.stringify(payload));
-        const response = await fetch(
-          `http://${controllers.currentController["ip_address"]}/data`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(payload),
-          },
-        );
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        this.data.presets = this.data.presets.filter(
-          (p) => p.name !== preset.name,
-        );
-        console.log("deleted preset", preset.name);
-      } catch (error) {
-        console.error("error deleting preset:", error);
-      }
-    },
-    /*************************************************************
-     *
      * group functions
      *
      **************************************************************/
 
-    async addGroup(group) {
+    async saveGroup(group) {
       const controllers = useControllersStore();
-      let payload = { "groups[]": [group] };
-      console.log("addGroup payload: ", JSON.stringify(payload));
+      const existingGroupIndex = this.data.groups.findIndex(
+        (g) => g.group_id === group.group_id,
+      );
+
+      // Add timestamp to the group
+      group.ts = Date.now();
+
+      let payload;
+      if (existingGroupIndex !== -1) {
+        // Update existing group
+        payload = { [`groups[group_id=${group.group_id}]`]: group };
+        console.log("updateGroup payload: ", JSON.stringify(payload));
+      } else {
+        // Add new group
+        payload = { "groups[]": [group] };
+        console.log("addGroup payload: ", JSON.stringify(payload));
+      }
+
       try {
-        console.log(
-          "group uri: ",
-          `http://${controllers.currentController["ip_address"]}/data`,
-        );
-        console.log("group payload: ", JSON.stringify(payload));
-        const response = await fetch(
-          `http://${controllers.currentController["ip_address"]}/data`,
-          {
+        for (const controller of controllers.data) {
+          console.log("group uri: ", `http://${controller.ip_address}/data`);
+          console.log("group payload: ", JSON.stringify(payload));
+          const response = await fetch(`http://${controller.ip_address}/data`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
             },
             body: JSON.stringify(payload),
-          },
-        );
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+          });
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
         }
-        this.data.groups.push(group);
-        console.log("added group", group.name, "with id", group.id);
-      } catch (error) {
-        console.error("error adding group:", error);
-      }
-    },
-    async updateGroup(name, partialGroup) {
-      const controllers = useControllersStore();
-      let payload = { [`groups[name=${name}]`]: partialGroup };
-      console.log("updateGroup payload: ", JSON.stringify(payload));
-      try {
-        console.log(
-          "group uri: ",
-          `http://${controllers.currentController["ip_address"]}/data`,
-        );
-        console.log("group payload: ", JSON.stringify(payload));
-        const response = await fetch(
-          `http://${controllers.currentController["ip_address"]}/data`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(payload),
-          },
-        );
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const groupIndex = this.data.groups.findIndex((s) => s.name === name);
-        if (groupIndex !== -1) {
-          this.data.groups[groupIndex] = {
-            ...this.data.groups[groupIndex],
-            ...partialGroup,
-          };
-          console.log("updated group", name);
+
+        if (existingGroupIndex !== -1) {
+          // Update the group in the local store
+          this.data.groups[existingGroupIndex] = group;
+          console.log("updated group", group.name);
+        } else {
+          // Add the new group to the local store
+          this.data.groups.push(group);
+          console.log("added group", group.name, "with id", group.group_id);
         }
       } catch (error) {
-        console.error("error updating group:", error);
+        console.error("error saving group:", error);
       }
     },
+
     async deleteGroup(group) {
       const controllers = useControllersStore();
       console.log("appDataStore deleteGroup group: ", group);
@@ -210,30 +100,26 @@ export const useAppDataStore = defineStore("appData", {
       let payload = { [`groups[group_id=${group.group_id}]`]: [] };
       console.log("deleteGroup payload: ", JSON.stringify(payload));
       try {
-        console.log(
-          "group uri: ",
-          `http://${controllers.currentController["ip_address"]}/data`,
-        );
-        console.log("group payload: ", JSON.stringify(payload));
-        const response = await fetch(
-          `http://${controllers.currentController["ip_address"]}/data`,
-          {
+        for (const controller of controllers.data) {
+          console.log("group uri: ", `http://${controller.ip_address}/data`);
+          console.log("group payload: ", JSON.stringify(payload));
+          const response = await fetch(`http://${controller.ip_address}/data`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
             },
             body: JSON.stringify(payload),
-          },
-        );
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+          });
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
         }
         this.data.groups = this.data.groups.filter(
           (s) => s.group_id !== group.group_id,
         );
         console.log("deleted group", group.name);
       } catch (error) {
-        console.error("error deleting scene:", error);
+        console.error("error deleting group:", error);
       }
     },
 
@@ -243,96 +129,79 @@ export const useAppDataStore = defineStore("appData", {
      *
      **************************************************************/
 
-    async addScene(scene) {
+    async saveScene(scene) {
       const controllers = useControllersStore();
-      let payload = { "scenes[]": [scene] };
-      console.log("addScene payload: ", JSON.stringify(payload));
+      const existingSceneIndex = this.data.scenes.findIndex(
+        (s) => s.id === scene.id,
+      );
+
+      // Add timestamp to the scene
+      scene.ts = Date.now();
+
+      let payload;
+      if (existingSceneIndex !== -1) {
+        // Update existing scene
+        payload = { [`scenes[id=${scene.id}]`]: scene };
+        console.log("updateScene payload: ", JSON.stringify(payload));
+      } else {
+        // Add new scene
+        payload = { "scenes[]": [scene] };
+        console.log("addScene payload: ", JSON.stringify(payload));
+      }
+
       try {
-        console.log(
-          "scene uri: ",
-          `http://${controllers.currentController["ip_address"]}/data`,
-        );
-        console.log("scene payload: ", JSON.stringify(payload));
-        const response = await fetch(
-          `http://${controllers.currentController["ip_address"]}/data`,
-          {
+        for (const controller of controllers.data) {
+          console.log("scene uri: ", `http://${controller.ip_address}/data`);
+          console.log("scene payload: ", JSON.stringify(payload));
+          const response = await fetch(`http://${controller.ip_address}/data`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
             },
             body: JSON.stringify(payload),
-          },
-        );
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+          });
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
         }
-        this.data.scenes.push(scene);
-        console.log("added scene", scene.name, "with id", scene.id);
+
+        if (existingSceneIndex !== -1) {
+          // Update the scene in the local store
+          this.data.scenes[existingSceneIndex] = scene;
+          console.log("updated scene", scene.name);
+        } else {
+          // Add the new scene to the local store
+          this.data.scenes.push(scene);
+          console.log("added scene", scene.name, "with id", scene.id);
+        }
       } catch (error) {
-        console.error("error adding scene:", error);
+        console.error("error saving scene:", error);
       }
     },
 
-    async updateScene(name, partialScene) {
+    async deleteScene(scene) {
       const controllers = useControllersStore();
-      let payload = { [`scenes[name=${name}]`]: partialScene };
-      console.log("updateScene payload: ", JSON.stringify(payload));
-      try {
-        console.log(
-          "scene uri: ",
-          `http://${controllers.currentController["ip_address"]}/data`,
-        );
-        console.log("scene payload: ", JSON.stringify(payload));
-        const response = await fetch(
-          `http://${controllers.currentController["ip_address"]}/data`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(payload),
-          },
-        );
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const sceneIndex = this.data.scenes.findIndex((s) => s.name === name);
-        if (sceneIndex !== -1) {
-          this.data.scenes[sceneIndex] = {
-            ...this.data.scenes[sceneIndex],
-            ...partialScene,
-          };
-          console.log("updated scene", name);
-        }
-      } catch (error) {
-        console.error("error updating scene:", error);
-      }
-    },
-    async deleteScene(name) {
-      const controllers = useControllersStore();
-      let payload = { [`scenes[name=${name}]`]: [] };
+      console.log("appDataStore deleteScene scene: ", scene);
+
+      let payload = { [`scenes[id=${scene.id}]`]: [] };
       console.log("deleteScene payload: ", JSON.stringify(payload));
       try {
-        console.log(
-          "scene uri: ",
-          `http://${controllers.currentController["ip_address"]}/data`,
-        );
-        console.log("scene payload: ", JSON.stringify(payload));
-        const response = await fetch(
-          `http://${controllers.currentController["ip_address"]}/data`,
-          {
+        for (const controller of controllers.data) {
+          console.log("scene uri: ", `http://${controller.ip_address}/data`);
+          console.log("scene payload: ", JSON.stringify(payload));
+          const response = await fetch(`http://${controller.ip_address}/data`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
             },
             body: JSON.stringify(payload),
-          },
-        );
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+          });
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
         }
-        this.data.scenes = this.data.scenes.filter((s) => s.name !== name);
-        console.log("deleted scene", name);
+        this.data.scenes = this.data.scenes.filter((s) => s.id !== scene.id);
+        console.log("deleted scene", scene.name);
       } catch (error) {
         console.error("error deleting scene:", error);
       }

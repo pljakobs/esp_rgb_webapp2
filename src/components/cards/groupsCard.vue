@@ -5,7 +5,10 @@
         <q-list separator style="overflow-y: auto; height: 100%" dense>
           <div v-if="groups && groups.length > 0">
             <div v-for="group in groups" :key="group.name">
-              <q-item class="q-my-sm">
+              <q-item
+                class="q-my-sm"
+                style="padding-bottom: 0px; margin-bottom: 0px"
+              >
                 <q-item-section
                   avatar
                   @click="toggleGroup(group.group_id)"
@@ -77,7 +80,7 @@ import { Dialog } from "quasar";
 import { useAppDataStore } from "src/stores/appDataStore";
 import { useControllersStore } from "src/stores/controllersStore";
 import MyCard from "src/components/myCard.vue";
-import addGroupDialog from "src/components/Dialogs/addGroupDialog.vue";
+import groupDialog from "src/components/Dialogs/groupDialog.vue";
 
 export default {
   name: "groupsCard",
@@ -116,9 +119,25 @@ export default {
       return controllers_in_group;
     };
 
-    const openDialog = () => {
+    const addGroup = () => {
       Dialog.create({
-        component: addGroupDialog,
+        component: groupDialog,
+      })
+        .onOk((group) => {
+          handleSave(group);
+        })
+        .onCancel(() => {
+          console.log("Dialog canceled");
+        })
+        .onDismiss(() => {add
+    };
+
+    const editGroup = (group) => {
+      Dialog.create({
+        component: groupDialog,
+        componentProps: {
+          group,
+        },
       })
         .onOk((group) => {
           handleSave(group);
@@ -133,7 +152,7 @@ export default {
 
     const handleSave = (group) => {
       console.log("Saving group", group);
-      appData.addGroup(group);
+      appData.saveGroup(group);
     };
 
     const deleteGroup = (group) => {
@@ -141,18 +160,14 @@ export default {
       appData.deleteGroup(group);
     };
 
-    const editGroup = (group) => {
-      console.log("Editing group", group);
-      // Implement the edit functionality here
-    };
-
     return {
       groups,
       getControllers,
-      openDialog,
+      openDialog: addGroup,
       editGroup,
       deleteGroup,
       expandedGroup,
+      toggleGroup,
     };
   },
 };
@@ -165,16 +180,19 @@ export default {
   align-items: center;
   height: 100%;
   width: 100%;
+  vertical-align: middle;
 }
-1 .no-groups-message {
+.no-groups-message {
   background-color: #f0f0f0;
   padding: 20px;
   border-radius: 10px;
   text-align: center;
+  vertical-align: middle;
   color: #333;
 }
 .indented-list {
   padding-left: 55px;
+  padding-top: 0px;
   margin-top: 0; /* Remove extra spacing */
 }
 .controller-item {

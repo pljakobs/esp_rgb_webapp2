@@ -2,7 +2,9 @@
   <q-dialog ref="dialogRef" @hide="onDialogHide">
     <q-card class="q-dialog-plugin">
       <q-toolbar class="bg-primary text-white">
-        <q-toolbar-title>Add Group</q-toolbar-title>
+        <q-toolbar-title>{{
+          isEditMode ? "Edit Group" : "Add Group"
+        }}</q-toolbar-title>
       </q-toolbar>
 
       <q-card-section class="scroll-area-container">
@@ -16,9 +18,7 @@
             >
               <q-item-section avatar>
                 <q-checkbox
-                  :model-value="
-                    internalSelectedControllers.includes(controller.id)
-                  "
+                  :model-value="isControllerSelected(controller.id)"
                   @update:model-value="
                     updateSelectedControllers(controller.id, $event)
                   "
@@ -36,29 +36,38 @@
       </q-card-section>
       <q-card-actions align="right">
         <q-btn flat label="Cancel" color="primary" @click="onCancelClick" />
-        <q-btn flat label="Save" color="primary" @click="saveGroup" />
+        <q-btn flat label="Save" color="primary" @click="onSaveClick" />
       </q-card-actions>
     </q-card>
   </q-dialog>
 </template>
 
 <script>
-import { ref, computed } from "vue";
+import { ref, computed, watch } from "vue";
 import { useControllersStore } from "src/stores/controllersStore";
+import { useAppDataStore } from "src/stores/appDataStore";
 import { infoDataStore } from "src/stores/infoDataStore";
 import { useDialogPluginComponent } from "quasar";
 import { makeID } from "src/services/tools";
 
 export default {
-  name: "addGroupDialog",
+  name: "groupDialog",
+  props: {
+    group: {
+      type: Object,
+      default: null,
+    },
+  },
   emits: ["close", "save", ...useDialogPluginComponent.emits],
-  setup(_, { emit }) {
+  setup(props, { emit }) {
     const { dialogRef, onDialogHide, onDialogOK, onDialogCancel } =
       useDialogPluginComponent();
     const controllersStore = useControllersStore();
+    const appData = useAppDataStore();
     const infoData = infoDataStore();
     const groupName = ref("");
     const internalSelectedControllers = ref([]);
+    const isEditMode = computed(() => !!props.group);
 
     const controllersList = computed(() => {
       try {
@@ -67,18 +76,11 @@ export default {
         if (!controllers) {
           return [];
         }
-        const options = controllers
-          .filter((controller) => {
-            return (
-              controller.id !== undefined &&
-              String(controller.id) !== localDeviceId
-            );
-          })
-          .map((controller) => ({
-            address: controller.ip_address,
-            name: controller.hostname,
-            id: controller.id,
-          }));
+        const options = controllers.map((controller) => ({
+          address: controller.ip_address,
+          name: controller.hostname,
+          id: controller.id,
+        }));
         return options;
       } catch (error) {
         console.error("Error computing controllersList:", error);
@@ -86,22 +88,37 @@ export default {
       }
     });
 
-    const updateSelectedControllers = (controllerId, isSelected) => {
-      const updatedControllers = isSelected
-        ? [...internalSelectedControllers.value, controllerId]
-        : internalSelectedControllers.value.filter((id) => id !== controllerId);
-      internalSelectedControllers.value = updatedControllers;
+    const isControllerSelected = (controllerId) => {
+      const value = internalSelectedControllers.value.includes(
+        String(controllerId),
+      );
+      return value;
     };
 
-    const saveGroup = () => {
+    const updateSelectedControllers = (controllerId, isSelected) => {
+      if (isSelected) {
+        if (!internalSelectedControllers.value.includes(String(controllerId))) {
+          internalSelectedControllers.value.push(String(controllerId));
+        }
+      } else {
+        internalSelectedControllers.value =
+          internalSelectedControllers.value.filter(
+            (id) => id !== String(controllerId),
+          );
+      }
+    };
+
+    const onSaveClick = async () => {
       if (internalSelectedControllers.value.length != 0) {
         const newGroup = {
           name: groupName.value,
-          group_id: makeID(),
+          group_id: isEditMode.value ? props.group.group_id : makeID(),
           controller_ids: internalSelectedControllers.value,
         };
         console.log("new group", newGroup);
+        await appData.saveGroup(newGroup);
         emit("ok", newGroup);
+        onDialogOK();
       } else {
         alert("Please select at least one controller to create a group");
       }
@@ -111,15 +128,31 @@ export default {
       onDialogCancel();
     };
 
+    watch(
+      () => props.group,
+      (newGroup) => {
+        if (newGroup) {
+          groupName.value = newGroup.name;
+          internalSelectedControllers.value = newGroup.controller_ids;
+        } else {
+          groupName.value = "";
+          internalSelectedControllers.value = [];
+        }
+      },
+      { immediate: true },
+    );
+
     return {
       dialogRef,
       onDialogHide,
       onCancelClick,
-      saveGroup,
+      onSaveClick,
       groupName,
       controllersList,
       internalSelectedControllers,
+      isControllerSelected,
       updateSelectedControllers,
+      isEditMode,
     };
   },
 };
