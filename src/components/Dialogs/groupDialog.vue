@@ -1,7 +1,7 @@
 <template>
   <q-dialog ref="dialogRef" @hide="onDialogHide">
     <q-card class="q-dialog-plugin">
-      <q-toolbar class="bg-primary text-white">
+      <q-toolbar :class="toolbarClass">
         <q-toolbar-title>{{
           isEditMode ? "Edit Group" : "Add Group"
         }}</q-toolbar-title>
@@ -45,7 +45,22 @@
       </q-card-section>
       <q-card-actions align="right">
         <q-btn flat label="Cancel" color="primary" @click="onCancelClick" />
-        <q-btn flat label="Save" color="primary" @click="onSaveClick" />
+        <q-btn
+          v-if="groupExists"
+          flat
+          label="Overwrite"
+          color="negative"
+          @click="onSaveClick"
+          :disabled="isSaveDisabled"
+        />
+        <q-btn
+          v-if="!groupExists"
+          flat
+          label="Save"
+          color="primary"
+          @click="onSaveClick"
+          :disabled="isSaveDisabled"
+        />
       </q-card-actions>
     </q-card>
   </q-dialog>
@@ -79,6 +94,7 @@ export default {
       const internalSelectedControllers = ref([]);
       const isEditMode = computed(() => !!props.group);
       const progress = ref({ completed: 0, total: 0 });
+      const groupExists = ref(false);
 
       const controllersList = computed(() => {
         try {
@@ -144,6 +160,27 @@ export default {
         onDialogCancel();
       };
 
+      const isSaveDisabled = computed(() => {
+        const hasNoName = groupName.value.trim() === "";
+        const hasNoControllers = internalSelectedControllers.value.length === 0;
+        return hasNoName || hasNoControllers;
+      });
+
+      const verifyGroupName = () => {
+        const existingGroup = appData.data.groups.find(
+          (group) => group.name === groupName.value,
+        );
+        groupExists.value = !!existingGroup;
+      };
+
+      const toolbarClass = computed(() => {
+        return groupExists.value
+          ? "bg-warning text-dark"
+          : "bg-primary text-white";
+      });
+
+      watch(groupName, verifyGroupName);
+
       watch(
         () => props.group,
         (newGroup) => {
@@ -170,6 +207,9 @@ export default {
         updateSelectedControllers,
         isEditMode,
         progress,
+        isSaveDisabled,
+        groupExists,
+        toolbarClass,
       };
     } catch (error) {
       console.error("Error in setup function:", error);

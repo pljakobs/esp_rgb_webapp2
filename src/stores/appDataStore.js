@@ -108,6 +108,7 @@ export const useAppDataStore = defineStore("appData", {
       } catch (error) {
         console.error("error saving group:", error);
       }
+      this.fetchData();
     },
 
     async deleteGroup(group, progressCallback) {
