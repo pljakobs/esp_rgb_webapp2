@@ -129,7 +129,9 @@ export default {
         .onCancel(() => {
           console.log("Dialog canceled");
         })
-        .onDismiss(() => {add
+        .onDismiss(() => {
+          console.log("Dialog dismissed");
+        });
     };
 
     const editGroup = (group) => {
