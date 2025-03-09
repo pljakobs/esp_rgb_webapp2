@@ -11,7 +11,7 @@
               >
                 <q-item-section
                   avatar
-                  @click="toggleGroup(group.group_id)"
+                  @click="toggleGroup(group.id)"
                   top
                   class="group"
                 >
@@ -19,11 +19,11 @@
                   <svg-icon
                     name="arrow_drop_down"
                     :class="{
-                      'rotated-arrow': expandedGroup !== group.group_id,
+                      'rotated-arrow': expandedGroup !== group.id,
                     }"
                   />
                 </q-item-section>
-                <q-item-section @click="toggleGroup(group.group_id)">
+                <q-item-section @click="toggleGroup(group.id)">
                   <q-item-label>{{ group.name }}</q-item-label>
                 </q-item-section>
                 <q-item-section side>
@@ -39,10 +39,7 @@
                   </div>
                 </q-item-section>
               </q-item>
-              <div
-                v-if="expandedGroup === group.group_id"
-                class="indented-list"
-              >
+              <div v-if="expandedGroup === group.id" class="indented-list">
                 <q-list dense>
                   <q-item
                     v-for="controller in getControllers(group.controller_ids)"

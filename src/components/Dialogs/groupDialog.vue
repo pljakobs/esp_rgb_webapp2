@@ -112,7 +112,7 @@ export default {
       if (internalSelectedControllers.value.length != 0) {
         const newGroup = {
           name: groupName.value,
-          group_id: isEditMode.value ? props.group.group_id : makeID(),
+          id: isEditMode.value ? props.group.id : makeID(),
           controller_ids: internalSelectedControllers.value,
         };
         console.log("new group", newGroup);
