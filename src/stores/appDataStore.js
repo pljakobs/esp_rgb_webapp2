@@ -43,7 +43,7 @@ export const useAppDataStore = defineStore("appData", {
      *
      **************************************************************/
 
-    async saveGroup(group) {
+    async saveGroup(group, progressCallback) {
       const controllers = useControllersStore();
       const existingGroupIndex = this.data.groups.findIndex(
         (g) => g.id === group.id,
@@ -53,17 +53,9 @@ export const useAppDataStore = defineStore("appData", {
       group.ts = Date.now();
 
       let payload;
-      if (existingGroupIndex !== -1) {
-        // Update existing group
-        payload = { [`groups[id=${group.id}]`]: group };
-        console.log("updateGroup payload: ", JSON.stringify(payload));
-      } else {
-        // Add new group
-        payload = { "groups[]": [group] };
-        console.log("addGroup payload: ", JSON.stringify(payload));
-      }
 
       try {
+        let completed = 0;
         for (const controller of controllers.data) {
           const existingDataResponse = await fetch(
             `http://${controller.ip_address}/data`,
@@ -72,13 +64,15 @@ export const useAppDataStore = defineStore("appData", {
           const existingGroup = existingData.groups.find(
             (g) => g.id === group.id,
           );
-
-          console.log(
-            "looking for ",
-            group.name,
-            "on controller",
-            controller.hostname,
-          );
+          if (existingGroup) {
+            // Update existing group
+            payload = { [`groups[id=${group.id}]`]: group };
+            console.log("updateGroup payload: ", JSON.stringify(payload));
+          } else {
+            // Add new group
+            payload = { "groups[]": [group] };
+            console.log("addGroup payload: ", JSON.stringify(payload));
+          }
           if (!existingGroup || existingGroup.ts < group.ts) {
             console.log("group uri: ", `http://${controller.ip_address}/data`);
             console.log("group payload: ", JSON.stringify(payload));
@@ -96,6 +90,10 @@ export const useAppDataStore = defineStore("appData", {
               throw new Error(`HTTP error! status: ${response.status}`);
             }
           }
+          completed++;
+          if (progressCallback) {
+            progressCallback(completed, controllers.data.length);
+          }
         }
 
         if (existingGroupIndex !== -1) {
@@ -106,20 +104,20 @@ export const useAppDataStore = defineStore("appData", {
           // Add the new group to the local store
           this.data.groups.push(group);
           console.log("added group", group.name, "with id", group.id);
-          this.fetchData();
         }
       } catch (error) {
         console.error("error saving group:", error);
       }
     },
 
-    async deleteGroup(group) {
+    async deleteGroup(group, progressCallback) {
       const controllers = useControllersStore();
       console.log("appDataStore deleteGroup group: ", group);
 
       let payload = { [`groups[id=${group.id}]`]: [] };
       console.log("deleteGroup payload: ", JSON.stringify(payload));
       try {
+        let completed = 0;
         for (const controller of controllers.data) {
           console.log("group uri: ", `http://${controller.ip_address}/data`);
           console.log("group payload: ", JSON.stringify(payload));
@@ -132,6 +130,10 @@ export const useAppDataStore = defineStore("appData", {
           });
           if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          completed++;
+          if (progressCallback) {
+            progressCallback(completed, controllers.data.length);
           }
         }
         this.data.groups = this.data.groups.filter((s) => s.id !== group.id);
@@ -147,7 +149,7 @@ export const useAppDataStore = defineStore("appData", {
      *
      **************************************************************/
 
-    async saveScene(scene) {
+    async saveScene(scene, progressCallback) {
       const controllers = useControllersStore();
       const existingSceneIndex = this.data.scenes.findIndex(
         (s) => s.id === scene.id,
@@ -157,17 +159,9 @@ export const useAppDataStore = defineStore("appData", {
       scene.ts = Date.now();
 
       let payload;
-      if (existingSceneIndex !== -1) {
-        // Update existing scene
-        payload = { [`scenes[id=${scene.id}]`]: scene };
-        console.log("updateScene payload: ", JSON.stringify(payload));
-      } else {
-        // Add new scene
-        payload = { "scenes[]": [scene] };
-        console.log("addScene payload: ", JSON.stringify(payload));
-      }
 
       try {
+        let completed = 0;
         for (const controller of controllers.data) {
           const existingDataResponse = await fetch(
             `http://${controller.ip_address}/data`,
@@ -176,6 +170,16 @@ export const useAppDataStore = defineStore("appData", {
           const existingScene = existingData.scenes.find(
             (s) => s.id === scene.id,
           );
+
+          if (existingScene) {
+            // Update existing scene
+            payload = { [`scenes[id=${scene.id}]`]: scene };
+            console.log("updateScene payload: ", JSON.stringify(payload));
+          } else {
+            // Add new scene
+            payload = { "scenes[]": [scene] };
+            console.log("addScene payload: ", JSON.stringify(payload));
+          }
 
           if (!existingScene || existingScene.ts < scene.ts) {
             console.log("scene uri: ", `http://${controller.ip_address}/data`);
@@ -194,6 +198,11 @@ export const useAppDataStore = defineStore("appData", {
               throw new Error(`HTTP error! status: ${response.status}`);
             }
           }
+          completed++;
+          if (progressCallback) {
+            console.log("progressCallback: ", completed);
+            progressCallback(completed, controllers.data.length);
+          }
         }
 
         if (existingSceneIndex !== -1) {
@@ -210,13 +219,14 @@ export const useAppDataStore = defineStore("appData", {
       }
     },
 
-    async deleteScene(scene) {
+    async deleteScene(scene, progressCallback) {
       const controllers = useControllersStore();
       console.log("appDataStore deleteScene scene: ", scene);
 
       let payload = { [`scenes[id=${scene.id}]`]: [] };
       console.log("deleteScene payload: ", JSON.stringify(payload));
       try {
+        let completed = 0;
         for (const controller of controllers.data) {
           console.log("scene uri: ", `http://${controller.ip_address}/data`);
           console.log("scene payload: ", JSON.stringify(payload));
@@ -229,6 +239,10 @@ export const useAppDataStore = defineStore("appData", {
           });
           if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          completed++;
+          if (progressCallback) {
+            progressCallback(completed, controllers.data.length);
           }
         }
         this.data.scenes = this.data.scenes.filter((s) => s.id !== scene.id);

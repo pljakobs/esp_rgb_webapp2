@@ -150,8 +150,8 @@ export default {
     };
 
     const handleSave = (group) => {
-      console.log("Saving group", group);
-      appData.saveGroup(group);
+      //console.log("Saving group", group);
+      //appData.saveGroup(group);
     };
 
     const deleteGroup = (group) => {
