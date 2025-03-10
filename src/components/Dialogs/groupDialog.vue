@@ -84,136 +84,130 @@ export default {
   },
   emits: ["close", "save", ...useDialogPluginComponent.emits],
   setup(props, { emit }) {
-    try {
-      const { dialogRef, onDialogHide, onDialogOK, onDialogCancel } =
-        useDialogPluginComponent();
-      const controllersStore = useControllersStore();
-      const appData = useAppDataStore();
-      const infoData = infoDataStore();
-      const groupName = ref("");
-      const internalSelectedControllers = ref([]);
-      const isEditMode = computed(() => !!props.group);
-      const progress = ref({ completed: 0, total: 0 });
-      const groupExists = ref(false);
+    const { dialogRef, onDialogHide, onDialogOK, onDialogCancel } =
+      useDialogPluginComponent();
+    const controllersStore = useControllersStore();
+    const appData = useAppDataStore();
+    const infoData = infoDataStore();
+    const groupName = ref("");
+    const internalSelectedControllers = ref([]);
+    const isEditMode = computed(() => !!props.group);
+    const progress = ref({ completed: 0, total: 0 });
+    const groupExists = ref(false);
 
-      const controllersList = computed(() => {
-        try {
-          const controllers = controllersStore.data;
-          const localDeviceId = infoData.data.deviceid;
-          if (!controllers) {
-            return [];
-          }
-          const options = controllers.map((controller) => ({
-            address: controller.ip_address,
-            name: controller.hostname,
-            id: controller.id,
-          }));
-          return options;
-        } catch (error) {
-          console.error("Error computing controllersList:", error);
+    const controllersList = computed(() => {
+      try {
+        const controllers = controllersStore.data;
+        const localDeviceId = infoData.data.deviceid;
+        if (!controllers) {
           return [];
         }
-      });
+        const options = controllers.map((controller) => ({
+          address: controller.ip_address,
+          name: controller.hostname,
+          id: controller.id,
+        }));
+        return options;
+      } catch (error) {
+        console.error("Error computing controllersList:", error);
+        return [];
+      }
+    });
 
-      const isControllerSelected = (controllerId) => {
-        return internalSelectedControllers.value.includes(String(controllerId));
-      };
+    const isControllerSelected = (controllerId) => {
+      return internalSelectedControllers.value.includes(String(controllerId));
+    };
 
-      const updateSelectedControllers = (controllerId, isSelected) => {
-        if (isSelected) {
-          if (
-            !internalSelectedControllers.value.includes(String(controllerId))
-          ) {
-            internalSelectedControllers.value.push(String(controllerId));
-          }
-        } else {
-          internalSelectedControllers.value =
-            internalSelectedControllers.value.filter(
-              (id) => id !== String(controllerId),
-            );
+    const updateSelectedControllers = (controllerId, isSelected) => {
+      if (isSelected) {
+        if (!internalSelectedControllers.value.includes(String(controllerId))) {
+          internalSelectedControllers.value.push(String(controllerId));
         }
-      };
+      } else {
+        internalSelectedControllers.value =
+          internalSelectedControllers.value.filter(
+            (id) => id !== String(controllerId),
+          );
+      }
+    };
 
-      const onSaveClick = async () => {
-        if (internalSelectedControllers.value.length != 0) {
-          const newGroup = {
-            name: groupName.value,
-            id: isEditMode.value ? props.group.id : makeID(),
-            controller_ids: internalSelectedControllers.value,
-          };
-          console.log("new group", newGroup);
-          progress.value.total = controllersStore.data.length;
-          progress.value.completed = 0;
-          await appData.saveGroup(newGroup, (completed, total) => {
-            progress.value.completed = completed;
-            progress.value.total = total;
-          });
-          console.log("new group", newGroup);
-          emit("ok", newGroup);
-          onDialogOK();
-        } else {
-          alert("Please select at least one controller to create a group");
-        }
-      };
+    const onSaveClick = async () => {
+      if (internalSelectedControllers.value.length != 0) {
+        const newGroup = {
+          name: groupName.value,
+          id: isEditMode.value ? props.group.id : makeID(),
+          controller_ids: internalSelectedControllers.value,
+        };
+        console.log("new group", newGroup);
+        progress.value.total = controllersStore.data.length;
+        progress.value.completed = 0;
+        await appData.saveGroup(newGroup, (completed, total) => {
+          progress.value.completed = completed;
+          progress.value.total = total;
+        });
+        console.log("new group", newGroup);
+        emit("ok", newGroup);
+        onDialogOK();
+      } else {
+        alert("Please select at least one controller to create a group");
+      }
+    };
 
-      const onCancelClick = () => {
-        onDialogCancel();
-      };
+    const onCancelClick = () => {
+      onDialogCancel();
+    };
 
-      const isSaveDisabled = computed(() => {
-        const hasNoName = groupName.value.trim() === "";
-        const hasNoControllers = internalSelectedControllers.value.length === 0;
-        return hasNoName || hasNoControllers;
-      });
+    const isSaveDisabled = computed(() => {
+      const hasNoName = groupName.value.trim() === "";
+      const hasNoControllers = internalSelectedControllers.value.length === 0;
+      return hasNoName || hasNoControllers;
+    });
 
-      const verifyGroupName = () => {
-        const existingGroup = appData.data.groups.find(
-          (group) => group.name === groupName.value,
-        );
-        groupExists.value = !!existingGroup;
-      };
-
-      const toolbarClass = computed(() => {
-        return groupExists.value
-          ? "bg-warning text-dark"
-          : "bg-primary text-white";
-      });
-
-      watch(groupName, verifyGroupName);
-
-      watch(
-        () => props.group,
-        (newGroup) => {
-          if (newGroup) {
-            groupName.value = newGroup.name;
-            internalSelectedControllers.value = newGroup.controller_ids;
-          } else {
-            groupName.value = "";
-            internalSelectedControllers.value = [];
-          }
-        },
-        { immediate: true },
+    const verifyGroupName = () => {
+      const existingGroup = appData.data.groups.find(
+        (group) => group.name === groupName.value,
       );
+      groupExists.value = !!existingGroup;
+    };
 
-      return {
-        dialogRef,
-        onDialogHide,
-        onCancelClick,
-        onSaveClick,
-        groupName,
-        controllersList,
-        internalSelectedControllers,
-        isControllerSelected,
-        updateSelectedControllers,
-        isEditMode,
-        progress,
-        isSaveDisabled,
-        groupExists,
-        toolbarClass,
-      };
-    } catch (error) {
-      console.error("Error in setup function:", error);
-    }
+    const toolbarClass = computed(() => {
+      return groupExists.value
+        ? "bg-warning text-dark"
+        : "bg-primary text-white";
+    });
+
+    watch(groupName, verifyGroupName);
+
+    watch(
+      () => props.group,
+      (newGroup) => {
+        if (newGroup) {
+          groupName.value = newGroup.name;
+          internalSelectedControllers.value = newGroup.controller_ids;
+        } else {
+          groupName.value = "";
+          internalSelectedControllers.value = [];
+        }
+      },
+      { immediate: true },
+    );
+
+    return {
+      dialogRef,
+      onDialogHide,
+      onCancelClick,
+      onSaveClick,
+      groupName,
+      controllersList,
+      internalSelectedControllers,
+      isControllerSelected,
+      updateSelectedControllers,
+      isEditMode,
+      progress,
+      isSaveDisabled,
+      groupExists,
+      toolbarClass,
+    };
   },
 };
 </script>

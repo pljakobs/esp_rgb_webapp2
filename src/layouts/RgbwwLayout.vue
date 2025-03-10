@@ -128,7 +128,7 @@
 
           <q-item clickable tag="router-link" to="/GroupsAndScenes">
             <q-item-section class="icon-section"
-              ><svgIcon name="linked_services" class="icon" />
+              ><svgIcon name="light_group" class="icon" />
             </q-item-section>
 
             <q-item-section class="text-section">

@@ -1,5 +1,5 @@
 <template>
-  <MyCard icon="linked_services" title="Groups">
+  <MyCard icon="light_group" title="Groups">
     <q-card-section class="flex justify-center">
       <q-scroll-area class="inset-scroll-area">
         <q-list separator style="overflow-y: auto; height: 100%" dense>
@@ -63,7 +63,7 @@
     <q-card-section class="flex justify-center">
       <q-btn flat color="primary" @click="openDialog">
         <template v-slot:default>
-          <svgIcon name="linked_services" />
+          <svgIcon name="light_group" />
           <span>Add Group</span>
         </template>
       </q-btn>
