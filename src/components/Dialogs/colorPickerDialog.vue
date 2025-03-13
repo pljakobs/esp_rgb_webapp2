@@ -3,8 +3,14 @@
     <q-card>
       <q-card-section> [{{ type }}] </q-card-section>
       <q-card-section v-if="type === 'HSV'">
+        hsv color picker here
         <HsvSection card-height="200" />
       </q-card-section>
+      <q-card-section v-else-if="type === 'RAW'">
+        raw color picker here
+        <RawSection card-height="200" />
+      </q-card-section>
+
       <q-card-actions align="right">
         <q-btn flat label="Cancel" color="primary" @click="onCancel" />
         <q-btn flat label="OK" color="primary" @click="onOk" />
@@ -17,6 +23,7 @@
 import { ref, watch } from "vue";
 import { useDialogPluginComponent, colors } from "quasar";
 import HsvSection from "src/components/cards/colorPickerSections/HsvSection.vue";
+import RawSection from "src/components/cards/colorPickerSections/RawSection.vue";
 
 const { hexToRgb, rgbToHsv } = colors;
 
@@ -35,6 +42,7 @@ export default {
   emits: ["update:modelValue", "ok", "cancel"],
   components: {
     HsvSection,
+    RawSection,
   },
   setup(props, { emit }) {
     const { dialogRef, onDialogHide, onDialogOK, onDialogCancel } =
