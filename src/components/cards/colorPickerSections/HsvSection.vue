@@ -9,7 +9,7 @@
         class="scaled-color"
       />
     </q-card-section>
-    <q-card-section class="flex justify-center">
+    <q-card-section class="flex justify-center" v-if="isDialog !== true">
       <q-btn flat color="primary" @click="openDialog">
         <template v-slot:default>
           <svgIcon name="star_outlined" />
@@ -38,6 +38,10 @@ export default {
     cardHeight: {
       type: String,
       default: "300px",
+    },
+    isDialog: {
+      type: Boolean,
+      default: false,
     },
   },
   setup() {

@@ -64,8 +64,9 @@
             </q-item-section>
             <q-item-section>
               <q-select
+                v-model="getControllerSetting(controller.id).colorType"
+                :options="colorTypeOptions"
                 @update:model-value="onColorTypeChange(controller.id, $event)"
-                :options="colorOptions"
                 dropdown-icon="img:icons/arrow_drop_down.svg"
                 emit-value
                 map-options
@@ -109,6 +110,12 @@
         />
       </q-card-actions>
     </q-card>
+    <ColorPickerDialog
+      v-model="isColorPickerDialogOpen"
+      :type="colorPickerType"
+      @ok="onColorPickerOk"
+      @cancel="onColorPickerCancel"
+    />
   </q-dialog>
 </template>
 
@@ -116,9 +123,10 @@
 import { ref, computed, watch, onMounted, nextTick } from "vue";
 import { useControllersStore } from "src/stores/controllersStore";
 import { useAppDataStore } from "src/stores/appDataStore";
-import { useDialogPluginComponent, colors } from "quasar";
+import { useDialogPluginComponent, colors, Dialog } from "quasar";
 import { makeID } from "src/services/tools";
 import RawBadge from "src/components/RawBadge.vue";
+import ColorPickerDialog from "src/components/Dialogs/colorPickerDialog.vue";
 
 const { hsvToRgb } = colors;
 
@@ -126,6 +134,7 @@ export default {
   name: "sceneDialog",
   components: {
     RawBadge,
+    ColorPickerDialog,
   },
   props: {
     scene: {
@@ -148,6 +157,9 @@ export default {
     const isEditMode = computed(() => !!props.scene);
     const progress = ref({ completed: 0, total: 0 });
     const sceneExists = ref(false);
+    const isColorPickerDialogOpen = ref(false);
+    const colorPickerType = ref("");
+    const selectedControllerId = ref(null);
 
     const groupOptions = computed(() => {
       return appData.data.groups.map((group) => ({
@@ -161,7 +173,6 @@ export default {
         label: preset.name,
         value: preset.id,
       }));
-      console.log("presets: ", presets);
       return [
         { label: "Presets", header: true },
         { separator: true },
@@ -254,18 +265,21 @@ export default {
     const onGroupChange = async (groupId) => {
       scene.value.settings = [];
       await populateSettingsForGroup(groupId);
+      await nextTick(); // Ensure DOM updates are complete
+      console.log(
+        "Updated settings after group change:",
+        JSON.stringify(scene.value.settings),
+      );
     };
 
     const onColorTypeChange = (controllerId, value) => {
-      const setting = getControllerSetting(controllerId);
-      if (value === "HSV") {
-        // Open HsvSection.vue and get the resulting color
-        // This is a placeholder for opening the HSV section
-        console.log("Open HSV section for controller", controllerId);
-      } else if (value === "RAW") {
-        // Open RawSection.vue and get the resulting color
-        // This is a placeholder for opening the RAW section
-        console.log("Open RAW section for controller", controllerId);
+      selectedControllerId.value = controllerId;
+      if (value === "HSV" || value === "RAW") {
+        console.log("Opening color picker dialog for", value);
+        colorPickerType.value = value;
+        isColorPickerDialogOpen.value = true;
+        console.log("colorPickerType", colorPickerType.value);
+        console.log("isColorPickerDialogOpen", isColorPickerDialogOpen.value);
       } else {
         // Set the color to the selected preset
         const preset = appData.data.presets.find((p) => p.id === value);
@@ -273,6 +287,17 @@ export default {
           updateControllerSetting(controllerId, "color", preset.color);
         }
       }
+    };
+
+    const onColorPickerOk = (color) => {
+      // Handle the color selected from the color picker dialog
+      console.log("Color selected:", color);
+      // Update the controller setting with the selected color
+      updateControllerSetting(selectedControllerId.value, "color", color);
+    };
+
+    const onColorPickerCancel = () => {
+      console.log("Color picker dialog canceled");
     };
 
     const isSaveDisabled = computed(() => {
@@ -358,6 +383,12 @@ export default {
       colorTypeOptions,
       colorOptions,
       hsvToRgb,
+      onColorTypeChange,
+      isColorPickerDialogOpen,
+      colorPickerType,
+      onColorPickerOk,
+      onColorPickerCancel,
+      selectedControllerId,
     };
   },
 };
