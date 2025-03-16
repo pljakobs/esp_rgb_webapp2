@@ -57,16 +57,29 @@
     <q-card-section :style="{ height: cardHeight }">
       <q-carousel v-model="carouselPage" animated :style="{ height: '100%' }">
         <q-carousel-slide v-if="hasFavorites" name="favorites">
-          <favoriteSection :card-height="cardHeight" />
+          <favoriteSection
+            :card-height="cardHeight"
+            @update:model-value="handleColorChange"
+          />
         </q-carousel-slide>
         <q-carousel-slide name="hsv">
-          <HsvSection :card-height="cardHeight" :open-dialog="openDialog" />
+          <HsvSection
+            :card-height="cardHeight"
+            :model-value="colorValue"
+            @update:model-value="handleColorChange"
+            @add-preset="openAddPresetDialog"
+          />
         </q-carousel-slide>
         <q-carousel-slide name="raw">
-          <RawSection :card-height="cardHeight" :open-dialog="openDialog" />
+          <RawSection
+            :card-height="cardHeight"
+            :model-value="colorValue"
+            @update:model-value="handleColorChange"
+            @add-preset="openAddPresetDialog"
+          />
         </q-carousel-slide>
         <q-carousel-slide name="presets">
-          <PresetSection />
+          <PresetSection @update:model-value="handleColorChange" />
         </q-carousel-slide>
       </q-carousel>
     </q-card-section>
@@ -77,11 +90,14 @@
 import { ref, watch, computed } from "vue";
 import { useAppDataStore } from "src/stores/appDataStore";
 import { storeStatus } from "src/stores/storeConstants";
+import { colorDataStore } from "src/stores/colorDataStore";
+import { Dialog } from "quasar";
 import favoriteSection from "src/components/cards/colorPickerSections/favoriteSection.vue";
 import HsvSection from "src/components/cards/colorPickerSections/HsvSection.vue";
 import RawSection from "src/components/cards/colorPickerSections/RawSection.vue";
 import PresetSection from "src/components/cards/colorPickerSections/PresetSection.vue";
 import MyCard from "src/components/myCard.vue";
+import addPresetDialog from "src/components/Dialogs/addPresetDialog.vue";
 
 export default {
   name: "ColorPicker",
@@ -108,13 +124,27 @@ export default {
   },
   setup() {
     const carouselPage = ref("hsv");
+    const appData = useAppDataStore();
+    const colorStore = colorDataStore();
 
-    const presetData = useAppDataStore();
-    const showDialog = ref(false);
-    const presetColorModel = ref("");
+    // Local state to track the current color
+    const colorValue = ref({});
+
+    // Watch for changes in the colorDataStore
+    watch(
+      () => colorStore.data,
+      (newValue) => {
+        if (newValue.hsv) {
+          colorValue.value = { hsv: { ...newValue.hsv } };
+        } else if (newValue.raw) {
+          colorValue.value = { raw: { ...newValue.raw } };
+        }
+      },
+      { deep: true, immediate: true },
+    );
 
     const hasFavorites = computed(() =>
-      presetData.data.presets.some((preset) => preset.favorite),
+      appData.data.presets.some((preset) => preset.favorite),
     );
 
     watch(
@@ -132,28 +162,156 @@ export default {
     watch(
       () => carouselPage.value,
       (val) => {
-        if (
-          val === "presets" &&
-          presetData.storeStatus === storeStatus.LOADING
-        ) {
-          presetData.fetchData();
+        if (val === "presets" && appData.storeStatus === storeStatus.LOADING) {
+          appData.fetchData();
         }
       },
     );
 
-    const openDialog = (colorModel) => {
-      presetColorModel.value = colorModel;
-      showDialog.value = true;
+    // Handle color changes from any section
+    const handleColorChange = (newColor) => {
+      colorValue.value = newColor;
+
+      // Update the global store
+      if (newColor.hsv) {
+        colorStore.change_by = "component";
+        colorStore.updateData("hsv", newColor.hsv);
+      } else if (newColor.raw) {
+        colorStore.change_by = "component";
+        colorStore.updateData("raw", newColor.raw);
+      }
+    };
+
+    const openAddPresetDialog = (presetData) => {
+      console.log("Opening add preset dialog with:", presetData);
+
+      // Create a reference to track if an abort was requested
+      const abortRequested = ref(false);
+
+      // Create functions that will be passed as props to the dialog component
+      const handleAbort = async (abortData) => {
+        console.log("Abort event received:", abortData);
+        abortRequested.value = true;
+
+        // Notify appData store about abort request
+        appData.abortSaveOperation = true;
+
+        let presetId = abortData.existingId;
+
+        // If it's a new preset, search for it by name in the store
+        if (!presetId && abortData.name) {
+          const foundPreset = appData.data.presets.find(
+            (p) => p.name === abortData.name,
+          );
+          if (foundPreset) {
+            presetId = foundPreset.id;
+            console.log(
+              `Found preset ID ${presetId} for name "${abortData.name}"`,
+            );
+          }
+        }
+
+        // Only attempt rollback if we have a preset ID
+        if (presetId) {
+          try {
+            console.log(`Rolling back preset ${presetId} from controllers`);
+
+            // Use the appData store's deletePreset method
+            await appData.deletePreset(
+              { id: presetId, name: abortData.name || "Aborted preset" },
+              abortData.updateProgress ||
+                ((completed, total) => {
+                  console.log(
+                    `Rollback progress: ${completed}/${total} controllers processed`,
+                  );
+                }),
+            );
+
+            console.log("Rollback complete");
+          } catch (error) {
+            console.error("Error during rollback:", error);
+          }
+        } else {
+          console.warn("No preset ID available for rollback");
+
+          // Notify the dialog that no rollback will occur
+          if (abortData.updateProgress) {
+            abortData.updateProgress(-1, -1, null, {
+              noPresetId: true,
+              message:
+                "No preset ID found for rollback. The save operation was aborted, but no controllers needed to be updated.",
+            });
+          }
+        }
+      };
+
+      const dialog = Dialog.create({
+        component: addPresetDialog,
+        componentProps: {
+          presetType: presetData.type,
+          preset: presetData.value,
+          onAbort: handleAbort, // Pass the abort handler as a prop
+        },
+        persistent: true,
+      })
+        .onOk((result) => {
+          // Don't proceed if an abort was requested
+          if (abortRequested.value) {
+            console.log("Save operation was aborted, not processing OK event");
+            return;
+          }
+
+          console.log("Dialog OK with result:", result);
+
+          if (!result || !result.name) {
+            console.error("Invalid result from dialog");
+            return;
+          }
+
+          // Create a new preset object
+          const newPreset = {
+            name: result.name,
+            color: {},
+            ts: Date.now(),
+            favorite: result.favorite || false,
+          };
+
+          // If this is overwriting an existing preset, preserve its ID
+          if (!result.isNew && result.existingId) {
+            newPreset.id = result.existingId;
+          }
+
+          // Set the color data based on preset type
+          if (presetData.type === "hsv") {
+            newPreset.color.hsv = presetData.value;
+          } else if (presetData.type === "raw") {
+            newPreset.color.raw = presetData.value;
+          }
+
+          console.log("Saving preset:", newPreset);
+
+          // Call the store's savePreset method with the progress callback
+          appData.savePreset(
+            newPreset,
+            result.updateProgress ||
+              ((completed, total) => {
+                console.log(`Save progress: ${completed}/${total} controllers`);
+              }),
+          );
+        })
+        .onCancel(() => {
+          console.log("Add preset dialog canceled");
+        });
     };
 
     return {
       carouselPage,
-      openDialog,
-      presetData,
+      presetData: appData,
       storeStatus,
-      showDialog,
-      presetColorModel,
       hasFavorites,
+      colorValue,
+      handleColorChange,
+      openAddPresetDialog,
     };
   },
 };

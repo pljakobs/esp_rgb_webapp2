@@ -11,7 +11,9 @@
             <div v-if="preset.color.hsv">
               <q-badge
                 :style="{
-                  backgroundColor: `rgb(${hsvToRgb(preset.color.hsv).r}, ${hsvToRgb(preset.color.hsv).g}, ${hsvToRgb(preset.color.hsv).b})`,
+                  backgroundColor: `rgb(${hsvToRgb(preset.color.hsv).r}, ${
+                    hsvToRgb(preset.color.hsv).g
+                  }, ${hsvToRgb(preset.color.hsv).b})`,
                   width: '30px',
                   height: '30px',
                   borderRadius: '50%',
@@ -40,11 +42,7 @@
           <q-item-section @click="handlePresetClick(preset)">
             {{ preset.name }}
           </q-item-section>
-          <q-item-section side>
-            <svgIcon name="arrow_forward" @click="sendPreset(preset)" />
-            <q-tooltip>Send Preset to other controllers</q-tooltip>
-          </q-item-section>
-          <q-item-section side>
+          <q-item-section side v-if="!isDialog">
             <svgIcon
               name="star_outlined"
               :isSelected="preset.favorite"
@@ -54,7 +52,7 @@
               preset.favorite ? "Remove from favorites" : "Add to favorites"
             }}</q-tooltip>
           </q-item-section>
-          <q-item-section side>
+          <q-item-section side v-if="!isDialog">
             <div class="icon-wrapper" @click="deletePreset(preset)">
               <svgIcon name="delete" />
             </div>
@@ -69,16 +67,26 @@
       </template>
     </q-list>
   </q-scroll-area>
+  <!--<div v-if="!isDialog && activePresets.length > 0" class="q-my-sm">-->
+  <div
+    v-if="!isDialog && activePresets.length > 0"
+    class="delete-all-container"
+  >
+    <q-btn color="negative" @click="deleteAllPresets" class="full-width" flat>
+      <svgIcon name="delete_forever" />
+      Delete All Presets
+    </q-btn>
+  </div>
 </template>
 
 <script>
 import { ref, computed, onMounted } from "vue";
 import { colors, Dialog } from "quasar";
 import { useAppDataStore } from "src/stores/appDataStore";
-import { colorDataStore } from "src/stores/colorDataStore";
 import { useControllersStore } from "src/stores/controllersStore";
 import RawBadge from "src/components/RawBadge.vue";
-import SelectControllersDialog from "src/components/Dialogs/selectControllersDialog.vue";
+import DeletePresetDialog from "src/components/Dialogs/deletePresetDialog.vue";
+import DeleteAllPresetsDialog from "src/components/Dialogs/deleteAllPresetsDialog.vue";
 
 const { hsvToRgb } = colors;
 
@@ -87,17 +95,25 @@ export default {
   components: {
     RawBadge,
   },
-  setup() {
+  props: {
+    isDialog: {
+      type: Boolean,
+      default: false,
+    },
+    cardHeight: {
+      type: String,
+      default: "300px",
+    },
+  },
+  emits: ["update:modelValue"],
+  setup(props, { emit }) {
     const appData = useAppDataStore();
-    const colorData = colorDataStore();
     const controllers = useControllersStore();
     const selectedPreset = ref(null);
     const selectedControllers = ref([]);
 
-    // Fetch presets data on component mount
     onMounted(() => {
       try {
-        console.log("Fetching preset data...");
         appData.fetchData();
       } catch (error) {
         console.error("Error fetching preset data:", error);
@@ -106,11 +122,7 @@ export default {
 
     const activePresets = computed(() => {
       try {
-        const presets = appData.data.presets;
-        if (!presets) {
-          return [];
-        }
-        console.log("activePresets", JSON.stringify(presets));
+        const presets = appData.data.presets || [];
         return presets;
       } catch (error) {
         console.error("Error computing activePresets:", error);
@@ -120,88 +132,9 @@ export default {
 
     const handlePresetClick = (preset) => {
       try {
-        console.log("preset selected", preset);
-
-        if (preset.color.raw) {
-          colorData.change_by = "preset";
-          colorData.updateData("raw", preset.color.raw);
-        } else {
-          colorData.change_by = "preset";
-          colorData.updateData("hsv", preset.color.hsv);
-        }
+        emit("update:modelValue", { ...preset.color });
       } catch (error) {
         console.error("Error handling preset click:", error);
-      }
-    };
-
-    const sendPreset = (preset) => {
-      try {
-        console.log("sendPreset called with preset:", preset);
-        selectedPreset.value = preset;
-        showSendDialog();
-      } catch (error) {
-        console.error("Error sending preset:", error);
-      }
-    };
-
-    const showSendDialog = () => {
-      console.log("showSendDialog called");
-
-      Dialog.create({
-        component: SelectControllersDialog,
-        componentProps: {
-          controllersList: controllers.data.map((controller) => ({
-            id: controller.id,
-            name: controller.hostname || "Unknown",
-          })),
-          selectedControllers: selectedControllers.value,
-        },
-      })
-        .onOk((selectedControllers) => {
-          handleSendPreset(selectedControllers);
-        })
-        .onCancel(() => {
-          console.log("Dialog canceled");
-        })
-        .onDismiss(() => {
-          console.log("Dialog dismissed");
-        });
-    };
-
-    const handleSendPreset = async (selectedControllers) => {
-      let payload = { "presets[]": [selectedPreset.value] };
-      try {
-        for (const controllerId of selectedControllers) {
-          console.log("finding controller with id", controllerId);
-
-          const controller = controllers.data.find(
-            (controller) => String(controller.id) === String(controllerId),
-          );
-          if (controller) {
-            console.log(
-              `Sending preset ${selectedPreset.value.name} to controller ${controller.hostname} at IP ${controller.ip_address}`,
-            );
-            const response = await fetch(
-              `http://${controller.ip_address}/data`,
-              {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify(payload),
-              },
-            );
-            if (!response.ok) {
-              console.error(
-                `Failed to send preset to controller ${controller.hostname}`,
-              );
-            }
-          } else {
-            console.error(`Controller with ID ${controllerId} not found`);
-          }
-        }
-      } catch (error) {
-        console.error("Error handling send preset:", error);
       }
     };
 
@@ -215,10 +148,28 @@ export default {
 
     const deletePreset = async (preset) => {
       try {
-        await appData.deletePreset(preset);
-        console.log("deleted preset", preset);
+        // Show a single dialog that handles both confirmation and progress
+        Dialog.create({
+          component: DeletePresetDialog,
+          componentProps: {
+            preset: preset,
+          },
+          persistent: true,
+        });
       } catch (error) {
         console.error("Error deleting preset:", error);
+      }
+    };
+
+    const deleteAllPresets = async () => {
+      try {
+        // Show the confirmation dialog for deleting all presets
+        Dialog.create({
+          component: DeleteAllPresetsDialog,
+          persistent: true,
+        });
+      } catch (error) {
+        console.error("Error showing delete all presets dialog:", error);
       }
     };
 
@@ -227,16 +178,16 @@ export default {
       handlePresetClick,
       toggleFavorite,
       deletePreset,
+      deleteAllPresets,
       hsvToRgb,
-      selectedPreset,
-      sendPreset,
-      handleSendPreset,
+      isDialog: props.isDialog,
     };
   },
 };
 </script>
 
 <style scoped>
+/* Existing styles remain the same */
 .icon {
   color: var(--icon-color);
   fill: var(--icon-color);

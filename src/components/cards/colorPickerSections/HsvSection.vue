@@ -2,15 +2,15 @@
   <q-scroll-area style="height: 100%; width: 100%">
     <q-card-section class="flex justify-center no-padding">
       <q-color
-        v-model="color"
+        v-model="internalColor"
         format-model="hex"
         no-header
         no-footer
         class="scaled-color"
       />
     </q-card-section>
-    <q-card-section class="flex justify-center">
-      <q-btn flat color="primary" @click="openDialog">
+    <q-card-section class="flex justify-center" v-if="!isDialog">
+      <q-btn flat color="primary" @click="onAddPreset">
         <template v-slot:default>
           <svgIcon name="star_outlined" />
           <span>Add Preset</span>
@@ -21,118 +21,85 @@
 </template>
 
 <script>
-import { ref, watch } from "vue";
-import { colors, Dialog } from "quasar";
-import { colorDataStore } from "src/stores/colorDataStore";
-import { useAppDataStore } from "src/stores/appDataStore";
-import addPresetDialog from "src/components/Dialogs/addPresetDialog.vue";
+import { ref, watch, computed } from "vue";
+import { colors } from "quasar";
 
 const { hexToRgb, rgbToHsv, rgbToHex, hsvToRgb } = colors;
 
 export default {
   name: "HsvSection",
-  components: {
-    addPresetDialog,
-  },
   props: {
+    modelValue: {
+      type: Object,
+      default: () => ({ hsv: { h: 0, s: 0, v: 0 } }),
+    },
+    isDialog: {
+      type: Boolean,
+      default: false,
+    },
     cardHeight: {
       type: String,
       default: "300px",
     },
   },
-  setup() {
-    const colorData = colorDataStore();
-    const presetData = useAppDataStore();
-    const color = ref("#000000");
+  emits: ["update:modelValue", "add-preset"],
+  setup(props, { emit }) {
+    const internalColor = ref("#000000");
 
-    // Watch for changes in the colorDataStore's hsv property
+    // Watch for changes in props.modelValue
     watch(
-      () => colorData.data.hsv,
-      (val) => {
-        try {
-          if (val !== undefined) {
-            const rgb = hsvToRgb(val);
-            const hex = rgbToHex(rgb);
-            color.value = hex;
+      () => props.modelValue,
+      (newValue) => {
+        if (newValue?.hsv) {
+          try {
+            const rgb = hsvToRgb(newValue.hsv);
+            internalColor.value = rgbToHex(rgb);
+          } catch (error) {
+            console.log("Error converting HSV to hex:", error);
           }
-        } catch (error) {
-          console.log("error in hsv section watcher", error);
         }
       },
-      { immediate: true },
+      { immediate: true, deep: true },
     );
 
-    watch(color, (val) => {
-      //color is the q-color component
+    // Watch for changes in the color picker
+    watch(internalColor, (val) => {
       try {
-        console.log("color picker changed:", val);
         const rgb = hexToRgb(val);
         let hsv = rgbToHsv(rgb);
-        hsv = {
-          h: Math.round(hsv.h * 100) / 100,
-          s: Math.round(hsv.s * 100) / 100,
-          v: Math.round(hsv.v * 100) / 100,
-        };
-        console.log("calculated hsv", JSON.stringify(hsv));
 
-        colorData.change_by = "color picker";
-        console.log(
-          "colorPage picker watcher color store:",
-          JSON.stringify(colorData.data),
-        );
-        colorData.updateData("hsv", hsv);
+        // Round values to 1 decimal place instead of 2
+        hsv = {
+          h: Math.round(hsv.h * 10) / 10,
+          s: Math.round(hsv.s * 10) / 10,
+          v: Math.round(hsv.v * 10) / 10,
+        };
+
+        // Emit the new color value
+        emit("update:modelValue", { hsv });
       } catch (error) {
-        console.log("error in color picker watcher", error);
+        console.log("Error in color picker watcher:", error);
       }
     });
 
-    const openDialog = () => {
-      console.log("hsv section openDialog");
-      console.log("preset type:", "hsv");
-      console.log("colorData.data.hsv", colorData.data.hsv);
-      Dialog.create({
-        component: addPresetDialog,
-        componentProps: {
-          presetType: "hsv",
-          preset: colorData.data.hsv,
-        },
-      })
-        .onOk((preset) => {
-          console.log("Dialog OK");
-          handleSave(preset);
-        })
-        .onCancel(() => {
-          console.log("Dialog canceled");
-        })
-        .onDismiss(() => {
-          console.log("Dialog dismissed");
-        });
-    };
+    const onAddPreset = () => {
+      // Get the current HSV value and emit it for preset creation
+      const rgb = hexToRgb(internalColor.value);
+      const hsv = rgbToHsv(rgb);
 
-    const handleSave = (preset) => {
-      console.log("preset", JSON.stringify(preset));
-      const newPreset = {
-        name: preset.name,
-        color: {
-          hsv: {
-            h: preset.data.h,
-            s: preset.data.s,
-            v: preset.data.v,
-          },
+      emit("add-preset", {
+        type: "hsv",
+        value: {
+          h: Math.round(hsv.h * 10) / 10,
+          s: Math.round(hsv.s * 10) / 10,
+          v: Math.round(hsv.v * 10) / 10,
         },
-        ts: Date.now(),
-        favorite: false,
-      };
-      console.log("saving Preset:", JSON.stringify(newPreset));
-      presetData.addPreset(newPreset);
-      console.log("returned from saving preset");
+      });
     };
 
     return {
-      color,
-      colorData,
-      openDialog,
-      handleSave,
+      internalColor,
+      onAddPreset,
     };
   },
 };
@@ -142,10 +109,6 @@ export default {
 .no-padding {
   padding-top: 0 !important;
   padding-bottom: 0 !important;
-}
-.icon {
-  color: var(--icon-color);
-  fill: var(--icon-color);
 }
 .scaled-color {
   width: 150%;

@@ -37,7 +37,6 @@
 import { ref, computed } from "vue";
 import { colors } from "quasar";
 import { useAppDataStore } from "src/stores/appDataStore";
-import { colorDataStore } from "src/stores/colorDataStore";
 import RawBadge from "src/components/RawBadge.vue";
 
 const { hsvToRgb } = colors;
@@ -47,33 +46,33 @@ export default {
   components: {
     RawBadge,
   },
-  setup() {
+  props: {
+    isDialog: {
+      type: Boolean,
+      default: false,
+    },
+    cardHeight: {
+      type: String,
+      default: "300px",
+    },
+  },
+  emits: ["update:modelValue"],
+  setup(props, { emit }) {
     const presetData = useAppDataStore();
-    const colorData = colorDataStore();
-
-    const cols = ref(3); // Number of columns in the grid
+    const cols = ref(3);
 
     const favoritePresets = computed(() =>
       presetData.data.presets.filter((preset) => preset.favorite),
     );
 
-    const selectPreset = (preset) => {
-      console.log("Selected preset:", preset);
-      // Handle preset selection here
+    const setColor = (preset) => {
+      // Emit the selected color
+      emit("update:modelValue", { ...preset.color });
     };
 
-    const setColor = (preset) => {
-      // Set the color in the colorDataStore
-      console.log("Setting color to:", JSON.stringify(preset));
-      colorData.change_by = "preset";
-      preset.color.hsv
-        ? colorData.updateData("hsv", preset.color.hsv)
-        : colorData.updateData("raw", preset.color.raw);
-    };
     return {
       favoritePresets,
       cols,
-      selectPreset,
       setColor,
       hsvToRgb,
     };
@@ -82,6 +81,7 @@ export default {
 </script>
 
 <style scoped>
+/* Existing styles remain the same */
 .flex-container {
   display: flex;
   flex-wrap: wrap;
@@ -90,13 +90,13 @@ export default {
 
 .color-swatch {
   cursor: pointer;
-  flex: 1 1 100%; /* Adjust the width and gap as needed */
+  flex: 1 1 100%;
   box-sizing: border-box;
 }
 
 @media (min-width: 400px) {
   .color-swatch {
-    flex: 1 1 calc(50% - 10px); /* Two swatches per row with a 10px gap */
+    flex: 1 1 calc(50% - 10px);
   }
 }
 
@@ -110,11 +110,13 @@ export default {
   color: white;
   text-shadow: 1px 1px 2px black;
 }
+
 .raw-badge {
   position: absolute;
   top: 35%;
   left: 5%;
 }
+
 .swatch-name {
   text-align: center;
   font-weight: bold;

@@ -14,12 +14,12 @@
       />
     </q-card-section>
     <q-card-section>
-      raw-r: {{ colorData.data.raw.r }}, raw-g: {{ colorData.data.raw.g }},
-      raw-b: {{ colorData.data.raw.b }}, raw-ww: {{ colorData.data.raw.ww }},
-      raw-cw: {{ colorData.data.raw.cw }}
+      raw-r: {{ internalRaw.r }}, raw-g: {{ internalRaw.g }}, raw-b:
+      {{ internalRaw.b }}, raw-ww: {{ internalRaw.ww }}, raw-cw:
+      {{ internalRaw.cw }}
     </q-card-section>
-    <q-card-section class="flex justify-center">
-      <q-btn flat color="primary" @click="openDialog">
+    <q-card-section class="flex justify-center" v-if="!isDialog">
+      <q-btn flat color="primary" @click="onAddPreset">
         <template v-slot:default>
           <svgIcon name="star_outlined" />
           <span>Add Preset</span>
@@ -30,62 +30,83 @@
 </template>
 
 <script>
-import { computed, ref } from "vue";
-import { colors, Dialog } from "quasar";
-import { colorDataStore } from "src/stores/colorDataStore";
-import { useAppDataStore } from "src/stores/appDataStore";
+import { computed, ref, watch } from "vue";
 import ColorSlider from "src/components/ColorSlider.vue";
-import addPresetDialog from "src/components/Dialogs/addPresetDialog.vue";
 
 export default {
   name: "RawSection",
   components: {
     ColorSlider,
-    addPresetDialog,
   },
   props: {
+    modelValue: {
+      type: Object,
+      default: () => ({ raw: { r: 0, g: 0, b: 0, ww: 0, cw: 0 } }),
+    },
+    isDialog: {
+      type: Boolean,
+      default: false,
+    },
     cardHeight: {
       type: String,
       default: "300px",
     },
   },
+  emits: ["update:modelValue", "add-preset"],
 
-  setup() {
-    const colorData = colorDataStore();
-    const appData = useAppDataStore();
+  setup(props, { emit }) {
+    // Local state for raw values
+    const internalRaw = ref({
+      r: 0,
+      g: 0,
+      b: 0,
+      ww: 0,
+      cw: 0,
+    });
+
+    // Watch for changes from parent
+    watch(
+      () => props.modelValue,
+      (newValue) => {
+        if (newValue?.raw) {
+          internalRaw.value = { ...newValue.raw };
+        }
+      },
+      { immediate: true, deep: true },
+    );
 
     const colorSliders = computed(() => [
       {
         label: "Red",
-        model: colorData.data.raw.r,
+        model: internalRaw.value.r,
         min: 0,
         max: 1023,
         color: "red",
       },
       {
         label: "Green",
-        model: colorData.data.raw.g,
+        model: internalRaw.value.g,
         min: 0,
         max: 1023,
         color: "green",
       },
       {
         label: "Blue",
-        model: colorData.data.raw.b,
+        model: internalRaw.value.b,
         min: 0,
         max: 1023,
         color: "blue",
       },
       {
         label: "Warm White",
-        model: colorData.data.raw.ww,
+        model: internalRaw.value.ww,
         min: 0,
         max: 1023,
         color: "yellow",
       },
       {
         label: "Cold White",
-        model: colorData.data.raw.cw,
+        model: internalRaw.value.cw,
         min: 0,
         max: 1023,
         color: "cyan",
@@ -93,7 +114,6 @@ export default {
     ]);
 
     const updateColorSlider = (slider, value) => {
-      console.log("updateColorSlider", slider, value);
       const colorMap = {
         Red: "r",
         Green: "g",
@@ -103,57 +123,24 @@ export default {
       };
 
       const rawColorKey = colorMap[slider.label];
-
       if (rawColorKey) {
-        colorData.data.raw[rawColorKey] = value;
-        colorData.updateData("raw", { ...colorData.data.raw });
+        internalRaw.value[rawColorKey] = value;
+        emit("update:modelValue", { raw: { ...internalRaw.value } });
       }
     };
 
-    const openDialog = () => {
-      console.log("raw section openDialog");
-      console.log("preset type:", "raw");
-      console.log("colorData.data.raw", colorData.data.raw);
-      Dialog.create({
-        component: addPresetDialog,
-        componentProps: {
-          presetType: "raw",
-          preset: colorData.data.raw,
-        },
-      })
-        .onOk((preset) => {
-          console.log("Dialog OK");
-          console.log("raw save preset", preset);
-          handleSave(preset);
-        })
-        .onCancel(() => {
-          console.log("Dialog canceled");
-        })
-        .onDismiss(() => {
-          console.log("Dialog dismissed");
-        });
-    };
-
-    const handleSave = (preset) => {
-      console.log("preset", JSON.stringify(preset));
-      const newPreset = {
-        name: preset.name,
-        color: {
-          raw: preset.data,
-        },
-        ts: Date.now(),
-        favorite: false,
-      };
-      console.log("saving Preset:", JSON.stringify(newPreset));
-      appData.addPreset(newPreset);
+    const onAddPreset = () => {
+      emit("add-preset", {
+        type: "raw",
+        value: { ...internalRaw.value },
+      });
     };
 
     return {
-      colorData,
+      internalRaw,
       colorSliders,
       updateColorSlider,
-      openDialog,
-      handleSave,
+      onAddPreset,
     };
   },
 };

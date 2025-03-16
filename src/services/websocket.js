@@ -94,12 +94,14 @@ export default function useWebSocket() {
       state.data = message;
       const key = message.method;
       const id = message.id;
+      /*
       console.log(
         "=> websocket message",
         key,
         id,
         JSON.stringify(message.params),
       );
+      */
       if (key === "keep_alive") {
         handleKeepAlive(message);
       }
