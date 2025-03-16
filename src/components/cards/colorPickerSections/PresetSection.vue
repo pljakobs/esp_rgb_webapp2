@@ -1,81 +1,99 @@
 <template>
-  <q-scroll-area style="height: 100%; width: 100%">
-    <q-list separator style="overflow-y: auto; height: 100%">
-      <template v-if="activePresets.length != 0">
-        <q-item
-          v-for="preset in activePresets"
-          :key="preset.name"
-          class="q-my-sm"
-        >
-          <q-item-section avatar>
-            <div v-if="preset.color.hsv">
-              <q-badge
-                :style="{
-                  backgroundColor: `rgb(${hsvToRgb(preset.color.hsv).r}, ${
-                    hsvToRgb(preset.color.hsv).g
-                  }, ${hsvToRgb(preset.color.hsv).b})`,
-                  width: '30px',
-                  height: '30px',
-                  borderRadius: '50%',
-                  border: '1px solid black',
-                }"
-                round
-                @click="handlePresetClick(preset)"
-              />
-            </div>
-            <div v-else>
-              <RawBadge
-                :color="preset.color"
-                @click="handlePresetClick(preset)"
-              />
-            </div>
-          </q-item-section>
-          <q-item-section avatar>
-            <q-badge
-              style="background-color: black; color: white; font-size: 0.8em"
-              round
-              @click="handlePresetClick(preset)"
+  <div class="preset-section" :class="{ 'in-dialog': isDialog }">
+    <q-scroll-area
+      :style="{ height: isDialog ? dialogHeight : cardHeight, width: '100%' }"
+    >
+      <q-list separator :dense="isDialog">
+        <template v-if="activePresets.length != 0">
+          <q-item
+            v-for="preset in activePresets"
+            :key="preset.name"
+            :class="{ 'q-my-sm': !isDialog, 'q-my-xs': isDialog }"
+            clickable
+            @click="handlePresetClick(preset)"
+          >
+            <!-- Smaller badges in dialog mode -->
+            <q-item-section avatar :class="{ 'dialog-avatar': isDialog }">
+              <div v-if="preset.color.hsv">
+                <q-badge
+                  :style="{
+                    backgroundColor: `rgb(${hsvToRgb(preset.color.hsv).r}, ${
+                      hsvToRgb(preset.color.hsv).g
+                    }, ${hsvToRgb(preset.color.hsv).b})`,
+                    width: isDialog ? '20px' : '30px',
+                    height: isDialog ? '20px' : '30px',
+                    borderRadius: '50%',
+                    border: '1px solid black',
+                  }"
+                  round
+                />
+              </div>
+              <div v-else>
+                <RawBadge :color="preset.color" :is-dialog="isDialog" />
+              </div>
+            </q-item-section>
+
+            <!-- Make type badge smaller or optional in dialog mode -->
+            <q-item-section
+              avatar
+              :class="{ 'dialog-avatar': isDialog }"
+              v-if="!isDialog || preset.color.raw"
             >
-              {{ preset.color.raw ? "RAW" : "HSV" }}
-            </q-badge>
-          </q-item-section>
-          <q-item-section @click="handlePresetClick(preset)">
-            {{ preset.name }}
-          </q-item-section>
-          <q-item-section side v-if="!isDialog">
-            <svgIcon
-              name="star_outlined"
-              :isSelected="preset.favorite"
-              @click="toggleFavorite(preset)"
-            />
-            <q-tooltip>{{
-              preset.favorite ? "Remove from favorites" : "Add to favorites"
-            }}</q-tooltip>
-          </q-item-section>
-          <q-item-section side v-if="!isDialog">
-            <div class="icon-wrapper" @click="deletePreset(preset)">
-              <svgIcon name="delete" />
-            </div>
-            <q-tooltip>Delete Preset</q-tooltip>
-          </q-item-section>
-        </q-item>
-      </template>
-      <template v-else>
-        <div class="no-presets-container">
-          <div class="no-presets-message">No presets available</div>
-        </div>
-      </template>
-    </q-list>
-  </q-scroll-area>
-  <!--<div v-if="!isDialog && activePresets.length > 0" class="q-my-sm">-->
-  <div
-    v-if="!isDialog && activePresets.length > 0"
-    class="delete-all-container"
-  >
-    <q-btn color="negative" @click="deleteAllPresets" class="full-width" flat>
-      <svgIcon name="delete_forever" />
-      Delete All Presets
-    </q-btn>
+              <q-badge
+                style="background-color: black; color: white"
+                :style="{ fontSize: isDialog ? '0.6em' : '0.8em' }"
+                round
+              >
+                {{ preset.color.raw ? "RAW" : "HSV" }}
+              </q-badge>
+            </q-item-section>
+
+            <!-- Name - make more compact in dialog -->
+            <q-item-section>
+              <div :class="{ 'text-subtitle2': isDialog }">
+                {{ preset.name }}
+              </div>
+            </q-item-section>
+
+            <!-- Only show these controls when not in dialog mode -->
+            <q-item-section side v-if="!isDialog">
+              <svgIcon
+                name="star_outlined"
+                :isSelected="preset.favorite"
+                @click.stop="toggleFavorite(preset)"
+              />
+              <q-tooltip>{{
+                preset.favorite ? "Remove from favorites" : "Add to favorites"
+              }}</q-tooltip>
+            </q-item-section>
+            <q-item-section side v-if="!isDialog">
+              <div class="icon-wrapper" @click.stop="deletePreset(preset)">
+                <svgIcon name="delete" />
+              </div>
+              <q-tooltip>Delete Preset</q-tooltip>
+            </q-item-section>
+          </q-item>
+        </template>
+        <template v-else>
+          <div
+            class="no-presets-container"
+            :style="{ height: isDialog ? '200px' : '100%' }"
+          >
+            <div class="no-presets-message">No presets available</div>
+          </div>
+        </template>
+      </q-list>
+    </q-scroll-area>
+    <!--<div v-if="!isDialog && activePresets.length > 0" class="q-my-sm">-->
+    <div
+      v-if="!isDialog && activePresets.length > 0"
+      class="delete-all-container"
+    >
+      <q-btn color="negative" @click="deleteAllPresets" class="full-width" flat>
+        <svgIcon name="delete_forever" />
+        Delete All Presets
+      </q-btn>
+    </div>
   </div>
 </template>
 

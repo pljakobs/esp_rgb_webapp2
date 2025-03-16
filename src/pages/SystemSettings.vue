@@ -1,6 +1,6 @@
 <template>
   <div>
-    <InformationCard />
+    <InformationCard :collapsed="false" />
     <FirmwareUpdateCard />
     <ControllerConfigCard />
     <SaveRestoreConfig />

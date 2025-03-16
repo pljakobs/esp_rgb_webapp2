@@ -1,6 +1,6 @@
 <template>
-  <q-dialog ref="dialogRef" @hide="onDialogHide">
-    <q-card class="q-dialog-plugin">
+  <q-dialog ref="dialogRef" @hide="handleDialogHide">
+    <q-card class="q-dialog-plugin adaptive-card">
       <q-toolbar :class="toolbarClass">
         <q-toolbar-title>
           {{ isEditMode ? "Edit Scene" : "Add Scene" }}
@@ -22,7 +22,7 @@
       <q-card-section v-else>
         A scene needs at least one group to be defined
       </q-card-section>
-      <q-card-section> </q-card-section>
+
       <q-card-section>
         <q-list>
           <q-item
@@ -53,15 +53,13 @@
                   :color="getControllerSetting(controller.id)?.color?.raw"
                 />
               </div>
-              <div v-else>
-                ❌ -> {{ controller.id }}:
-                {{ getControllerSetting(controller.id) }} <-
-              </div>
+              <div v-else>❌</div>
             </q-item-section>
 
             <q-item-section>
               {{ controller.hostname }}
             </q-item-section>
+
             <q-item-section>
               <q-select
                 v-model="getControllerSetting(controller.id).colorType"
@@ -70,6 +68,7 @@
                 dropdown-icon="img:icons/arrow_drop_down.svg"
                 emit-value
                 map-options
+                :display-value="getDisplayValue(controller.id)"
               />
             </q-item-section>
           </q-item>
@@ -110,12 +109,6 @@
         />
       </q-card-actions>
     </q-card>
-    <ColorPickerDialog
-      v-model="isColorPickerDialogOpen"
-      :type="colorPickerType"
-      @ok="onColorPickerOk"
-      @cancel="onColorPickerCancel"
-    />
   </q-dialog>
 </template>
 
@@ -126,6 +119,7 @@ import { useAppDataStore } from "src/stores/appDataStore";
 import { useDialogPluginComponent, colors, Dialog } from "quasar";
 import { makeID } from "src/services/tools";
 import RawBadge from "src/components/RawBadge.vue";
+// Import but don't register in components - we'll use it programmatically
 import ColorPickerDialog from "src/components/Dialogs/colorPickerDialog.vue";
 
 const { hsvToRgb } = colors;
@@ -134,15 +128,23 @@ export default {
   name: "sceneDialog",
   components: {
     RawBadge,
-    ColorPickerDialog,
   },
   props: {
+    modelValue: {
+      type: Boolean,
+      default: false,
+    },
     scene: {
       type: Object,
       default: null,
     },
   },
-  emits: ["close", "save", ...useDialogPluginComponent.emits],
+  emits: [
+    "close",
+    "save",
+    "update:model-value",
+    ...useDialogPluginComponent.emits,
+  ],
   setup(props, { emit }) {
     const { dialogRef, onDialogHide, onDialogOK, onDialogCancel } =
       useDialogPluginComponent();
@@ -154,12 +156,21 @@ export default {
       settings: [],
       id: makeID(),
     });
+
     const isEditMode = computed(() => !!props.scene);
     const progress = ref({ completed: 0, total: 0 });
     const sceneExists = ref(false);
-    const isColorPickerDialogOpen = ref(false);
-    const colorPickerType = ref("");
     const selectedControllerId = ref(null);
+
+    watch(
+      () => props.modelValue,
+      (val) => {
+        if (val && dialogRef.value) {
+          dialogRef.value.show();
+        }
+      },
+      { immediate: true },
+    );
 
     const groupOptions = computed(() => {
       return appData.data.groups.map((group) => ({
@@ -167,6 +178,19 @@ export default {
         value: group.id,
       }));
     });
+
+    const getDisplayValue = (controllerId) => {
+      const setting = getControllerSetting(controllerId);
+      if (!setting || !setting.colorType) {
+        return "Select color type";
+      }
+      return setting.colorType;
+    };
+
+    const handleDialogHide = () => {
+      emit("update:model-value", false);
+      onDialogHide();
+    };
 
     const colorOptions = computed(() => {
       const presets = appData.data.presets.map((preset) => ({
@@ -213,18 +237,12 @@ export default {
     });
 
     const getControllerSetting = (controllerId) => {
-      console.log("-> getControllerSetting", controllerId);
-      console.log("-> scene settings", scene.value.settings);
-      const thisControllerSetting = scene.value.settings.find(
+      if (!controllerId) return null;
+      if (!scene.value.settings) return null;
+
+      return scene.value.settings.find(
         (setting) => setting.controller_id === String(controllerId),
       );
-      console.log(
-        "setting for Controller",
-        controllerId,
-        ":",
-        thisControllerSetting,
-      );
-      return thisControllerSetting;
     };
 
     const updateControllerSetting = (controllerId, key, value) => {
@@ -253,9 +271,9 @@ export default {
             scene.value.settings.push({
               controller_id: controllerId,
               color: { hsv: { h: 0, s: 0, v: 0 } },
+              colorType: "HSV",
             });
           }
-          console.log("-> after loop");
         }
         console.log("sceneSettings", JSON.stringify(scene.value.settings));
         await nextTick();
@@ -266,38 +284,117 @@ export default {
       scene.value.settings = [];
       await populateSettingsForGroup(groupId);
       await nextTick(); // Ensure DOM updates are complete
-      console.log(
-        "Updated settings after group change:",
-        JSON.stringify(scene.value.settings),
-      );
     };
 
-    const onColorTypeChange = (controllerId, value) => {
-      selectedControllerId.value = controllerId;
-      if (value === "HSV" || value === "RAW") {
-        console.log("Opening color picker dialog for", value);
-        colorPickerType.value = value;
-        isColorPickerDialogOpen.value = true;
-        console.log("colorPickerType", colorPickerType.value);
-        console.log("isColorPickerDialogOpen", isColorPickerDialogOpen.value);
-      } else {
-        // Set the color to the selected preset
-        const preset = appData.data.presets.find((p) => p.id === value);
-        if (preset) {
-          updateControllerSetting(controllerId, "color", preset.color);
+    const openColorPicker = (type, controllerId) => {
+      try {
+        selectedControllerId.value = controllerId;
+        const setting = getControllerSetting(controllerId);
+
+        let initialColor = {};
+
+        if (type === "HSV") {
+          // If the setting already has HSV values, use them, otherwise use defaults
+          initialColor = {
+            hsv: setting?.color?.hsv || { h: 0, s: 0, v: 0 },
+          };
+        } else if (type === "RAW") {
+          // If the setting already has RAW values, use them, otherwise use defaults
+          initialColor = {
+            raw: setting?.color?.raw || { r: 0, g: 0, b: 0, ww: 0, cw: 0 },
+          };
+        } else {
+          throw new Error(`Unsupported color type: ${type}`);
         }
+
+        console.log("Opening color picker with type:", type);
+        console.log("Initial color:", initialColor);
+
+        Dialog.create({
+          component: ColorPickerDialog,
+          componentProps: {
+            type,
+            initialColor,
+          },
+        })
+          .onOk((color) => {
+            console.log("Color picker returned:", color);
+
+            if (selectedControllerId.value) {
+              updateControllerSetting(
+                selectedControllerId.value,
+                "color",
+                color,
+              );
+              updateControllerSetting(
+                selectedControllerId.value,
+                "colorType",
+                type,
+              );
+            }
+          })
+          .onCancel(() => {
+            console.log("Color selection canceled");
+          })
+          .onDismiss(() => {
+            selectedControllerId.value = null;
+          });
+      } catch (error) {
+        console.error("Error opening color picker:", error);
+        selectedControllerId.value = null;
+
+        Dialog.create({
+          title: "Error",
+          message: "Failed to open color picker. Please try again.",
+          persistent: true,
+          ok: true,
+        });
       }
     };
 
-    const onColorPickerOk = (color) => {
-      // Handle the color selected from the color picker dialog
-      console.log("Color selected:", color);
-      // Update the controller setting with the selected color
-      updateControllerSetting(selectedControllerId.value, "color", color);
-    };
-
-    const onColorPickerCancel = () => {
-      console.log("Color picker dialog canceled");
+    const onColorTypeChange = (controllerId, value) => {
+      try {
+        if (value === "HSV" || value === "RAW") {
+          // Always open the color picker, even if the type is the same
+          openColorPicker(value, controllerId);
+        } else if (value === "Preset") {
+          // Handle preset selection
+          const presetSelector = Dialog.create({
+            title: "Select Preset",
+            message: "Choose a preset color",
+            options: {
+              type: "radio",
+              model: "",
+              items: presetOptions.value,
+            },
+            persistent: true,
+            cancel: true,
+            ok: true,
+          }).onOk((selectedPresetId) => {
+            const preset = appData.data.presets.find(
+              (p) => p.id === selectedPresetId,
+            );
+            if (preset) {
+              // Set color using the new format with Preset id
+              updateControllerSetting(controllerId, "color", {
+                Preset: { id: selectedPresetId },
+              });
+              updateControllerSetting(controllerId, "colorType", "Preset");
+            }
+          });
+        } else {
+          // Direct preset selection (if value is a preset ID)
+          const preset = appData.data.presets.find((p) => p.id === value);
+          if (preset) {
+            updateControllerSetting(controllerId, "color", {
+              Preset: { id: value },
+            });
+            updateControllerSetting(controllerId, "colorType", "Preset");
+          }
+        }
+      } catch (error) {
+        console.error("Error handling color type change:", error);
+      }
     };
 
     const isSaveDisabled = computed(() => {
@@ -306,7 +403,7 @@ export default {
 
     const verifySceneName = () => {
       const existingScene = appData.data.scenes.find(
-        (s) => s.name === scene.value.name,
+        (s) => s.name === scene.value.name && s.id !== (props.scene?.id || ""),
       );
       sceneExists.value = !!existingScene;
     };
@@ -322,7 +419,7 @@ export default {
     onMounted(async () => {
       try {
         if (props.scene) {
-          scene.value = { ...props.scene };
+          scene.value = JSON.parse(JSON.stringify(props.scene)); // Deep copy
           await populateSettingsForGroup(props.scene.group_id);
         } else {
           scene.value = {
@@ -332,9 +429,8 @@ export default {
             id: makeID(),
           };
         }
-        console.log("scene on mount:", JSON.stringify(scene.value));
-      } catch {
-        console.log("error in onMounted");
+      } catch (error) {
+        console.error("Error in onMounted:", error);
       }
     });
 
@@ -344,14 +440,15 @@ export default {
           ...scene.value,
           id: isEditMode.value ? props.scene.id : makeID(),
         };
-        console.log("new scene", newScene);
+
         progress.value.total = controllersStore.data.length;
         progress.value.completed = 0;
+
         await appData.saveScene(newScene, (completed, total) => {
           progress.value.completed = completed;
           progress.value.total = total;
         });
-        console.log("new scene", newScene);
+
         emit("ok", newScene);
         onDialogOK();
       } else {
@@ -365,14 +462,13 @@ export default {
 
     return {
       dialogRef,
-      onDialogHide,
+      handleDialogHide,
       onCancelClick,
       onSaveClick,
       scene,
       onGroupChange,
       controllersInGroup,
       getControllerSetting,
-      updateControllerSetting,
       isEditMode,
       progress,
       isSaveDisabled,
@@ -384,11 +480,8 @@ export default {
       colorOptions,
       hsvToRgb,
       onColorTypeChange,
-      isColorPickerDialogOpen,
-      colorPickerType,
-      onColorPickerOk,
-      onColorPickerCancel,
       selectedControllerId,
+      getDisplayValue,
     };
   },
 };

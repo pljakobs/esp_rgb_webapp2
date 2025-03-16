@@ -1,5 +1,5 @@
 <template>
-  <q-scroll-area style="height: 100%; width: 100%">
+  <q-scroll-area :style="{ height: isDialog ? dialogHeight : cardHeight }">
     <q-card-section class="flex justify-center no-padding">
       <q-color
         v-model="internalColor"
@@ -27,7 +27,6 @@ import { colors } from "quasar";
 const { hexToRgb, rgbToHsv, rgbToHex, hsvToRgb } = colors;
 
 export default {
-  name: "HsvSection",
   props: {
     modelValue: {
       type: Object,
@@ -40,6 +39,11 @@ export default {
     cardHeight: {
       type: String,
       default: "300px",
+    },
+    // Add a specific prop for dialog height
+    dialogHeight: {
+      type: String,
+      default: "280px",
     },
   },
   emits: ["update:modelValue", "add-preset"],
@@ -113,5 +117,9 @@ export default {
 .scaled-color {
   width: 150%;
   height: 150%;
+}
+.hsv-section {
+  display: flex;
+  flex-direction: column;
 }
 </style>

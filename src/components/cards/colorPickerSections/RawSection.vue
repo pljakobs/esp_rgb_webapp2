@@ -1,5 +1,5 @@
 <template>
-  <q-scroll-area style="height: 100%; width: 100%">
+  <q-scroll-area :style="{ height: isDialog ? dialogHeight : cardHeight }">
     <q-card-section>
       <ColorSlider
         v-for="colorSlider in colorSliders"
@@ -13,11 +13,7 @@
         @update:model="($event) => updateColorSlider(colorSlider, $event)"
       />
     </q-card-section>
-    <q-card-section>
-      raw-r: {{ internalRaw.r }}, raw-g: {{ internalRaw.g }}, raw-b:
-      {{ internalRaw.b }}, raw-ww: {{ internalRaw.ww }}, raw-cw:
-      {{ internalRaw.cw }}
-    </q-card-section>
+
     <q-card-section class="flex justify-center" v-if="!isDialog">
       <q-btn flat color="primary" @click="onAddPreset">
         <template v-slot:default>
@@ -34,9 +30,8 @@ import { computed, ref, watch } from "vue";
 import ColorSlider from "src/components/ColorSlider.vue";
 
 export default {
-  name: "RawSection",
   components: {
-    ColorSlider,
+    ColorSlider, // This line is missing in your code
   },
   props: {
     modelValue: {
@@ -50,6 +45,11 @@ export default {
     cardHeight: {
       type: String,
       default: "300px",
+    },
+    // Add dialog height prop
+    dialogHeight: {
+      type: String,
+      default: "280px",
     },
   },
   emits: ["update:modelValue", "add-preset"],
@@ -150,5 +150,14 @@ export default {
 .icon {
   color: var(--icon-color);
   fill: var(--icon-color);
+}
+
+.raw-section {
+  display: flex;
+  flex-direction: column;
+}
+/* Compact styling for dialog mode */
+:deep(.q-slider) {
+  height: 20px;
 }
 </style>
