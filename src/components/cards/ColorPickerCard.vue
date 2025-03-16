@@ -188,29 +188,87 @@ export default {
       // Create a reference to track if an abort was requested
       const abortRequested = ref(false);
 
+      // Create functions that will be passed as props to the dialog component
+      const handleAbort = async (abortData) => {
+        console.log("Abort event received:", abortData);
+        abortRequested.value = true;
+
+        // Notify appData store about abort request
+        appData.abortSaveOperation = true;
+
+        let presetId = abortData.existingId;
+
+        // If it's a new preset, search for it by name in the store
+        if (!presetId && abortData.name) {
+          const foundPreset = appData.data.presets.find(
+            (p) => p.name === abortData.name,
+          );
+          if (foundPreset) {
+            presetId = foundPreset.id;
+            console.log(
+              `Found preset ID ${presetId} for name "${abortData.name}"`,
+            );
+          }
+        }
+
+        // Only attempt rollback if we have a preset ID
+        if (presetId) {
+          try {
+            console.log(`Rolling back preset ${presetId} from controllers`);
+
+            // Use the appData store's deletePreset method
+            await appData.deletePreset(
+              { id: presetId, name: abortData.name || "Aborted preset" },
+              abortData.updateProgress ||
+                ((completed, total) => {
+                  console.log(
+                    `Rollback progress: ${completed}/${total} controllers processed`,
+                  );
+                }),
+            );
+
+            console.log("Rollback complete");
+          } catch (error) {
+            console.error("Error during rollback:", error);
+          }
+        } else {
+          console.warn("No preset ID available for rollback");
+
+          // Notify the dialog that no rollback will occur
+          if (abortData.updateProgress) {
+            abortData.updateProgress(-1, -1, null, {
+              noPresetId: true,
+              message:
+                "No preset ID found for rollback. The save operation was aborted, but no controllers needed to be updated.",
+            });
+          }
+        }
+      };
+
       const dialog = Dialog.create({
         component: addPresetDialog,
         componentProps: {
           presetType: presetData.type,
           preset: presetData.value,
+          onAbort: handleAbort, // Pass the abort handler as a prop
         },
-        persistent: true, // Make sure the dialog can't be closed except through our code
+        persistent: true,
       })
         .onOk((result) => {
-          console.log("Dialog OK event with result:", result);
-
-          // Check if abort was requested before proceeding
+          // Don't proceed if an abort was requested
           if (abortRequested.value) {
-            console.log("Abort was requested, not processing OK event");
+            console.log("Save operation was aborted, not processing OK event");
             return;
           }
+
+          console.log("Dialog OK with result:", result);
 
           if (!result || !result.name) {
-            console.error("No preset data returned from dialog");
+            console.error("Invalid result from dialog");
             return;
           }
 
-          // Create a new preset or update existing one
+          // Create a new preset object
           const newPreset = {
             name: result.name,
             color: {},
@@ -218,12 +276,12 @@ export default {
             favorite: result.favorite || false,
           };
 
-          // If overwriting an existing preset, preserve its ID
+          // If this is overwriting an existing preset, preserve its ID
           if (!result.isNew && result.existingId) {
             newPreset.id = result.existingId;
           }
 
-          // Set the color based on preset type
+          // Set the color data based on preset type
           if (presetData.type === "hsv") {
             newPreset.color.hsv = presetData.value;
           } else if (presetData.type === "raw") {
@@ -232,76 +290,18 @@ export default {
 
           console.log("Saving preset:", newPreset);
 
-          // Create a wrapper around the progress callback to handle dialog closing
-          const progressWrapper = (completed, total) => {
-            // Call the original callback to update the dialog UI
-            if (typeof result.updateProgress === "function") {
-              result.updateProgress(completed, total);
-            }
-
-            // When saving is complete, close the dialog after a short delay
-            if (completed === total) {
-              console.log(
-                "Save operation complete, closing dialog after delay",
-              );
-              setTimeout(() => {
-                try {
-                  // Use the known working method
-                  if (result.dialogRef && result.dialogRef._value) {
-                    result.dialogRef._value.hide();
-                  }
-                } catch (err) {
-                  console.error("Error trying to close dialog:", err);
-                  // Fallback only if the known method fails
-                  Dialog.closeAll();
-                }
-              }, 800);
-            }
-          };
-
-          // Save the preset and update progress
-          appData.savePreset(newPreset, progressWrapper);
+          // Call the store's savePreset method with the progress callback
+          appData.savePreset(
+            newPreset,
+            result.updateProgress ||
+              ((completed, total) => {
+                console.log(`Save progress: ${completed}/${total} controllers`);
+              }),
+          );
         })
         .onCancel(() => {
           console.log("Add preset dialog canceled");
         });
-
-      // Handle abort events from the dialog
-      if (dialog.componentInstance && dialog.componentInstance.$on) {
-        dialog.componentInstance.$on("abort", async (abortData) => {
-          console.log("Abort event received:", abortData);
-          abortRequested.value = true;
-
-          // Notify appData store about abort request
-          appData.abortSaveOperation = true;
-
-          // Delete the preset from controllers that already received it
-          const presetId = abortData.existingId || appData.latestPresetId;
-
-          // Only attempt rollback if we have a preset ID
-          if (presetId) {
-            try {
-              console.log(`Rolling back preset ${presetId} from controllers`);
-
-              // Use the appData store's deletePreset method instead of direct API calls
-              await appData.deletePreset(
-                { id: presetId, name: abortData.name || "Aborted preset" },
-                (completed, total) => {
-                  console.log(
-                    `Rollback progress: ${completed}/${total} controllers processed`,
-                  );
-                },
-              );
-
-              console.log("Rollback complete");
-            } catch (error) {
-              console.error("Error during rollback:", error);
-            }
-          } else {
-            console.warn("No preset ID available for rollback");
-          }
-        });
-      }
     };
 
     return {

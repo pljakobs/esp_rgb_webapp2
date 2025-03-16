@@ -27,28 +27,54 @@
         />
       </q-card-section>
 
-      <q-card-section v-if="isSaving">
+      <q-card-section v-if="isSaving || isRollingBack">
         <q-linear-progress
-          :value="progress.completed / progress.total"
-          color="primary"
+          :value="progressValue"
+          :color="isRollingBack ? 'negative' : 'primary'"
           size="md"
           :indeterminate="progress.total === 0"
         />
         <div class="text-center q-mt-sm">
-          {{ progress.completed }} of {{ progress.total }} controllers updated
+          <span v-if="!isRollingBack">
+            {{ progress.completed }} of {{ progress.total }} controllers updated
+          </span>
+          <span v-else>
+            {{
+              progress.message ||
+              `${progress.completed} of ${progress.total} controllers rolled back`
+            }}
+          </span>
+        </div>
+      </q-card-section>
+      <q-card-section v-if="isAborting && !isRollingBack && progress.message">
+        <div class="text-center q-pa-md">
+          <q-icon name="info" color="primary" size="2rem" />
+          <p>{{ progress.message }}</p>
         </div>
       </q-card-section>
 
       <q-card-actions align="right">
         <q-btn
           flat
-          :label="isSaving ? 'Abort' : 'Cancel'"
-          :color="isSaving ? 'negative' : 'primary'"
-          @click="isSaving ? onAbortSaving() : onDialogCancel()"
+          :label="isSaving && !isRollingBack ? 'Abort' : 'Cancel'"
+          :color="isSaving && !isRollingBack ? 'negative' : 'primary'"
+          @click="
+            isSaving && !isRollingBack ? onAbortSaving() : onDialogCancel()
+          "
+          :disable="isRollingBack"
+        />
+
+        <!-- Show OK button when abort is done but no rollback needed -->
+        <q-btn
+          v-if="isAborting && !isRollingBack && progress.message"
+          flat
+          label="OK"
+          color="primary"
+          @click="onDialogCancel()"
         />
 
         <q-btn
-          v-if="presetExists && !isSaving"
+          v-if="presetExists && !isSaving && !isRollingBack"
           flat
           label="Overwrite"
           color="negative"
@@ -56,14 +82,22 @@
           :disable="!presetName"
         />
         <q-btn
-          v-if="!presetExists && !isSaving"
+          v-if="!presetExists && !isSaving && !isRollingBack"
           flat
           label="Save"
           color="primary"
           @click="onSaveClick"
           :disable="!presetName"
         />
+
         <q-btn v-if="isSaving" flat label="Saving..." color="primary" disable />
+        <q-btn
+          v-if="isRollingBack"
+          flat
+          label="Rolling back..."
+          color="negative"
+          disable
+        />
       </q-card-actions>
     </q-card>
   </q-dialog>
@@ -89,7 +123,7 @@ export default {
       required: true,
     },
   },
-  emits: ["close", "save", ...useDialogPluginComponent.emits],
+  emits: ["close", "save", "abort", ...useDialogPluginComponent.emits],
   setup(props, { emit }) {
     const { dialogRef, onDialogHide, onDialogOK, onDialogCancel } =
       useDialogPluginComponent();
@@ -104,21 +138,90 @@ export default {
       total: 0,
     });
     const isAborting = ref(false);
-    const updatedControllers = ref([]);
+    const isRollingBack = ref(false);
+    const progressValue = computed(() => {
+      if (progress.value.total === 0) return 0;
+
+      // For saving, show 0 to 100% progress
+      if (!isRollingBack.value) {
+        return progress.value.completed / progress.value.total;
+      }
+      // For rollback, show 100% to 0% progress (reversed)
+      else {
+        // We want to show the inverse - how many are left to process
+        return Math.max(0, 1 - progress.value.completed / progress.value.total);
+      }
+    });
 
     const onAbortSaving = () => {
       console.log("Aborting save operation");
       isAborting.value = true;
+      isRollingBack.value = true;
 
-      // Emit an abort event with information about already updated controllers
+      // Update progress display for rollback
+      progress.value = {
+        completed: 0,
+        total: 0,
+        message: "Initiating rollback...",
+      };
+
+      // Find the preset ID if it exists in store
+      let presetId = existingPreset.value?.id;
+
+      // If it's a new preset, try to find it by name in the store
+      if (!presetId && presetName.value) {
+        const foundPreset = presetData.data.presets.find(
+          (p) => p.name === presetName.value,
+        );
+        if (foundPreset) {
+          presetId = foundPreset.id;
+          console.log(
+            `Found preset ID ${presetId} for name "${presetName.value}"`,
+          );
+        }
+      }
+
+      // Create a rollback progress callback
+      const rollbackProgressCallback = (
+        completed,
+        total,
+        controllerIP,
+        options = {},
+      ) => {
+        console.log(`Rollback progress: ${completed}/${total}`);
+
+        // Special case: no preset ID found
+        if (options && options.noPresetId) {
+          isRollingBack.value = false;
+          progress.value = {
+            completed: 0,
+            total: 0,
+            message: options.message || "No rollback needed",
+          };
+          return;
+        }
+
+        // Normal progress update
+        progress.value.completed = completed;
+        progress.value.total = total;
+        progress.value.message = `Rolling back changes from ${completed} of ${total} controllers`;
+
+        // Close dialog only when rollback is complete
+        if (completed === total) {
+          setTimeout(() => {
+            onDialogCancel();
+          }, 800); // Short delay to show completion
+        }
+      };
+
+      // Emit an abort event with the necessary info and progress callback
       emit("abort", {
         name: presetName.value,
-        updatedControllers: updatedControllers.value,
         existingId: existingPreset.value?.id,
+        updateProgress: rollbackProgressCallback,
       });
 
-      // Close the dialog
-      onDialogCancel();
+      // Important: DON'T close the dialog here - it will close after rollback
     };
 
     const badgeStyle = computed(() => {
@@ -166,23 +269,25 @@ export default {
       isSaving.value = true;
 
       // Create the progress update callback
-      const updateProgressCallback = (completed, total, controllerIP) => {
+      const updateProgressCallback = (completed, total) => {
         console.log(`Progress update in dialog: ${completed}/${total}`);
         progress.value.completed = completed;
         progress.value.total = total;
-
-        // Track which controllers have been updated
-        if (controllerIP && !updatedControllers.value.includes(controllerIP)) {
-          updatedControllers.value.push(controllerIP);
-        }
 
         // Don't close if we're aborting
         if (isAborting.value) {
           return;
         }
+
+        // Close dialog when saving completes
+        if (completed === total) {
+          setTimeout(() => {
+            onDialogCancel();
+          }, 800); // Short delay to show completion
+        }
       };
 
-      // Pass the data along with the updateProgress callback, but don't close the dialog yet
+      // Pass the data along with the updateProgress callback
       const result = {
         name: presetName.value,
         isNew: true,
@@ -191,11 +296,8 @@ export default {
         dialogRef: dialogRef,
       };
 
-      // CHANGE THIS LINE: Emit the "ok" event instead of canceling
+      // Emit the "ok" event
       emit("ok", result);
-
-      // DO NOT close the dialog here - the parent will close it when saving is complete
-      // Remove this line: onDialogCancel();
     };
 
     const onOverwriteClick = () => {
@@ -207,16 +309,27 @@ export default {
         console.log(`Progress update in dialog: ${completed}/${total}`);
         progress.value.completed = completed;
         progress.value.total = total;
+
+        // Don't close if we're aborting
+        if (isAborting.value) {
+          return;
+        }
+
+        // Close dialog when saving completes
+        if (completed === total) {
+          setTimeout(() => {
+            onDialogCancel();
+          }, 800); // Short delay to show completion
+        }
       };
 
-      // Pass the data along with the updateProgress callback, but don't close the dialog yet
+      // Pass the data along with the updateProgress callback
       const result = {
         name: presetName.value,
         isNew: false,
         existingId: existingPreset.value.id,
         favorite: existingPreset.value.favorite || false,
         updateProgress: updateProgressCallback,
-        // Add a reference to dialogRef so the parent can close it
         dialogRef: dialogRef,
       };
 
@@ -239,8 +352,8 @@ export default {
       progress,
       onAbortSaving,
       isAborting,
-      updatedControllers,
-      isAborting,
+      isRollingBack,
+      progressValue,
     };
   },
 };
