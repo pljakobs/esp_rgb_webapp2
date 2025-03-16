@@ -64,7 +64,7 @@ export default {
 
 <style scoped>
 .rotate-icon {
-  transition: transform 0.3s ease;
+  transition: transform 0.4s ease;
   cursor: pointer;
   transform-origin: center center;
 }
