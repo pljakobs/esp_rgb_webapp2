@@ -174,7 +174,8 @@ export const useAppDataStore = defineStore("appData", {
     },
 
     // Toggle favorite status (local only)
-    toggleFavorite(preset) {
+    async toggleFavorite(preset) {
+      const controllers = useControllersStore();
       const presetIndex = this.data.presets.findIndex(
         (p) => p.id === preset.id,
       );
@@ -184,6 +185,20 @@ export const useAppDataStore = defineStore("appData", {
         const updatedPreset = { ...this.data.presets[presetIndex] };
         updatedPreset.favorite = !updatedPreset.favorite;
 
+        const payload = { [`presets[id=${preset.id}]`]: updatedPreset };
+        const response = await fetch(
+          `http://${controllers.currentController["ip_address"]}/data`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(payload),
+          },
+        );
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
         // Update in local store only
         this.data.presets[presetIndex] = updatedPreset;
         console.log(
