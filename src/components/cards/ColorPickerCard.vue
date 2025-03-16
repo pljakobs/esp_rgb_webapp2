@@ -1,5 +1,5 @@
 <template>
-  <MyCard :icon="'palette_outlined'" :title="title">
+  <MyCard :icon="'palette_outlined'" :title="title" :collapsed="false">
     <q-card-section class="row justify-center no-padding">
       <q-btn-group class="btn-group w-100">
         <q-btn
