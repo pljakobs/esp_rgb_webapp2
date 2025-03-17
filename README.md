@@ -21,17 +21,35 @@ that one image rather than two. I could probably get away with the current front
 image url. That has to be coded.*
 For phase one, all I really intend to achieve is a feature complete re-implementation of the current UI with the change to the OTA call noted above. That's all. 
 
+[x] single image firmware
+[x] backend ported to Sming 6 and ConfigDB
+[x] freed up about 15kB of Heap on the ESP 8266
+[x] HSV color picker
+[x] RAW color picker
+[x] color settings
+[x] network settings
+  [x] hostname
+  [x] static / dchp ip config
+  [x] mqtt settings ([ ] needs testing)
+[x] network initialization 
+[ ] reliable captive page for 8266
+[x] firmware OTA
+[ ] pin config
+[x] presets for HSV and RAW and favorites 
+
 #### Phase 2: go beyond one controller
 As I said above, one of the appeals of Quasar is that it allows to build native apps that live locally. To fully enable that, I want the app to be able to talk to multiple controllers. Here is what I have in mind:
 
-- be able to maintain (add, remove, name, rename, group) a list of controllers known to the app locally
-  - already today, as far as I remember, the controllers advertize themselves using mdns, otherwise, I'll add that, this will make the controllers be detectable in a local wlan.
-  - naming the controller in the app should write the name back to the controller, so that it is able to be identified by that name by others, too
-- a ui element to manage the controller list will have to be added
-- grouping controllers will allow to create scenes that apply to multiple controllers right from the device, without support from any home automation system.
-  - the grouping and scenes information should probably by saved to the controllers and provided to new apps that talk to them so they are not bound to individual devices.
-  - a ui element to manage scenes will have to be added
-- at this point, a stand alone app will be useful even in scenarios with multiple led controllers
+[x] be able to maintain (add, remove, name, rename, group) a list of controllers known to the app locally
+[x] naming the controller in the app should write the name back to the controller, so that it is able to be identified by that name by others, too
+[ ] grouping controllers will allow to create scenes that apply to multiple controllers right from the device, without support from any home automation system.
+[ ] the grouping and scenes information should probably by saved to the controllers and provided to new apps that talk to them so they are not bound to individual devices.
+[ ] a ui element to manage scenes will have to be added
+
+[x] mDNS controller detection
+[x] single instance UI allows access to all controllers
+[ ] mDNS for UI Access (accessing lightinator.local or so)
+
 
 #### Phase 3: make better use of the existing hardware
 It has always bugged me that, with all it's flexibility, the controllers are limited to a few very basic modes:
