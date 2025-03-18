@@ -32,6 +32,7 @@
             v-ripple
           >
             <q-item-section avatar>
+              <!-- HSV Color Badge -->
               <div v-if="getControllerSetting(controller.id)?.color?.hsv">
                 <q-badge
                   :style="{
@@ -48,12 +49,26 @@
                   round
                 />
               </div>
+              <!-- RAW Color Badge -->
               <div v-else-if="getControllerSetting(controller.id)?.color?.raw">
-                <RawBadge
-                  :color="getControllerSetting(controller.id)?.color?.raw"
+                <RawBadge :color="getControllerSetting(controller.id)?.color" />
+              </div>
+              <!-- Preset Badge - NEW! -->
+              <div
+                v-else-if="getControllerSetting(controller.id)?.color?.Preset"
+              >
+                <q-badge
+                  class="preset-badge"
+                  :label="
+                    getPresetName(
+                      getControllerSetting(controller.id).color.Preset.id,
+                    )
+                  "
+                  color="primary"
                 />
               </div>
-              <div v-else>❌</div>
+              <!-- No selection -->
+              <div v-else><svgIcon name="palette_outlined" /></div>
             </q-item-section>
 
             <q-item-section>
@@ -61,15 +76,29 @@
             </q-item-section>
 
             <q-item-section>
-              <q-select
-                v-model="getControllerSetting(controller.id).colorType"
-                :options="colorTypeOptions"
-                @update:model-value="onColorTypeChange(controller.id, $event)"
-                dropdown-icon="img:icons/arrow_drop_down.svg"
-                emit-value
-                map-options
-                :display-value="getDisplayValue(controller.id)"
-              />
+              <div class="row items-center">
+                <q-btn
+                  v-if="getColorType(controller.id)"
+                  flat
+                  dense
+                  round
+                  @click="editCurrentSelection(controller.id)"
+                  class="q-ml-sm"
+                >
+                  <svgIcon name="edit" />
+                  <q-tooltip>Edit current selection</q-tooltip>
+                </q-btn>
+                <q-select
+                  :model-value="getColorType(controller.id)"
+                  @update:model-value="onColorTypeChange(controller.id, $event)"
+                  :options="colorTypeOptions"
+                  dropdown-icon="img:icons/arrow_drop_down.svg"
+                  emit-value
+                  map-options
+                  :display-value="getDisplayValue(controller.id)"
+                  class="col"
+                />
+              </div>
             </q-item-section>
           </q-item>
         </q-list>
@@ -179,34 +208,40 @@ export default {
       }));
     });
 
+    // Enhanced display function that shows more info about the selection
     const getDisplayValue = (controllerId) => {
       const setting = getControllerSetting(controllerId);
-      if (!setting || !setting.colorType) {
+      if (!setting || !setting.color) {
         return "Select color type";
       }
-      return setting.colorType;
+
+      // More descriptive display values
+      if (setting.color.hsv) {
+        const { h, s, v } = setting.color.hsv;
+        return `HSV (${h}°, ${s}%, ${v}%)`;
+      }
+      if (setting.color.raw) {
+        const { r, g, b } = setting.color.raw;
+        return `RAW (R:${r}, G:${g}, B:${b})`;
+      }
+      if (setting.color.Preset) {
+        const presetName = getPresetName(setting.color.Preset.id);
+        return `Preset: ${presetName}`;
+      }
+
+      return "Select color type";
+    };
+
+    // Helper to get preset name from ID
+    const getPresetName = (presetId) => {
+      const preset = appData.data.presets.find((p) => p.id === presetId);
+      return preset ? preset.name : "Unknown";
     };
 
     const handleDialogHide = () => {
       emit("update:model-value", false);
       onDialogHide();
     };
-
-    const colorOptions = computed(() => {
-      const presets = appData.data.presets.map((preset) => ({
-        label: preset.name,
-        value: preset.id,
-      }));
-      return [
-        { label: "Presets", header: true },
-        { separator: true },
-        ...presets,
-        { separator: true },
-        { label: "Select HSV", value: "HSV" },
-        { separator: true },
-        { label: "Select RAW", value: "RAW" },
-      ];
-    });
 
     const presetOptions = computed(() => {
       return appData.data.presets.map((preset) => ({
@@ -245,17 +280,34 @@ export default {
       );
     };
 
+    const getColorType = (controllerId) => {
+      const setting = getControllerSetting(controllerId);
+      if (!setting || !setting.color) return null;
+
+      if (setting.color.hsv) return "HSV";
+      if (setting.color.raw) return "RAW";
+      if (setting.color.Preset) return "Preset";
+
+      return null;
+    };
+
     const updateControllerSetting = (controllerId, key, value) => {
       const setting = getControllerSetting(controllerId);
       if (setting) {
-        const keys = key.split(".");
-        let obj = setting;
-        while (keys.length > 1) {
-          const k = keys.shift();
-          if (!obj[k]) obj[k] = {};
-          obj = obj[k];
+        if (key === "color") {
+          // Replace the entire color object
+          setting.color = value;
+        } else {
+          // For other properties, use the path-based approach
+          const keys = key.split(".");
+          let obj = setting;
+          while (keys.length > 1) {
+            const k = keys.shift();
+            if (!obj[k]) obj[k] = {};
+            obj = obj[k];
+          }
+          obj[keys[0]] = value;
         }
-        obj[keys[0]] = value;
       }
     };
 
@@ -271,7 +323,7 @@ export default {
             scene.value.settings.push({
               controller_id: controllerId,
               color: { hsv: { h: 0, s: 0, v: 0 } },
-              colorType: "HSV",
+              // No colorType property
             });
           }
         }
@@ -291,21 +343,28 @@ export default {
         selectedControllerId.value = controllerId;
         const setting = getControllerSetting(controllerId);
 
-        let initialColor = {};
+        // Create a completely non-reactive plain object for initial color
+        let initialHsv = { h: 0, s: 0, v: 0 };
+        let initialRaw = { r: 0, g: 0, b: 0, ww: 0, cw: 0 };
 
-        if (type === "HSV") {
-          // If the setting already has HSV values, use them, otherwise use defaults
-          initialColor = {
-            hsv: setting?.color?.hsv || { h: 0, s: 0, v: 0 },
-          };
-        } else if (type === "RAW") {
-          // If the setting already has RAW values, use them, otherwise use defaults
-          initialColor = {
-            raw: setting?.color?.raw || { r: 0, g: 0, b: 0, ww: 0, cw: 0 },
-          };
-        } else {
-          throw new Error(`Unsupported color type: ${type}`);
+        // Copy primitive values manually
+        if (setting?.color?.hsv) {
+          initialHsv.h = Number(setting.color.hsv.h || 0);
+          initialHsv.s = Number(setting.color.hsv.s || 0);
+          initialHsv.v = Number(setting.color.hsv.v || 0);
         }
+
+        if (setting?.color?.raw) {
+          initialRaw.r = Number(setting.color.raw.r || 0);
+          initialRaw.g = Number(setting.color.raw.g || 0);
+          initialRaw.b = Number(setting.color.raw.b || 0);
+          initialRaw.ww = Number(setting.color.raw.ww || 0);
+          initialRaw.cw = Number(setting.color.raw.cw || 0);
+        }
+
+        // Create the initial color object based on type
+        const initialColor =
+          type === "HSV" ? { hsv: initialHsv } : { raw: initialRaw };
 
         console.log("Opening color picker with type:", type);
         console.log("Initial color:", initialColor);
@@ -317,24 +376,49 @@ export default {
             initialColor,
           },
         })
-          .onOk((color) => {
-            console.log("Color picker returned:", color);
+          .onOk((result) => {
+            console.log("Color picker returned:", result);
 
-            if (selectedControllerId.value) {
-              updateControllerSetting(
-                selectedControllerId.value,
-                "color",
-                color,
-              );
-              updateControllerSetting(
-                selectedControllerId.value,
-                "colorType",
-                type,
-              );
+            // Create a completely new plain object to avoid reactivity issues
+            let newColorObj;
+
+            if (type === "HSV") {
+              // Manual primitive extraction
+              const h = Number(result?.hsv?.h || 0);
+              const s = Number(result?.hsv?.s || 0);
+              const v = Number(result?.hsv?.v || 0);
+              newColorObj = { hsv: { h, s, v } };
+            } else {
+              // Manual primitive extraction
+              const r = Number(result?.raw?.r || 0);
+              const g = Number(result?.raw?.g || 0);
+              const b = Number(result?.raw?.b || 0);
+              const ww = Number(result?.raw?.ww || 0);
+              const cw = Number(result?.raw?.cw || 0);
+              newColorObj = { raw: { r, g, b, ww, cw } };
             }
+
+            console.log("Created plain color object:", newColorObj);
+
+            // Direct settings update
+            if (selectedControllerId.value) {
+              // Find the controller setting index rather than the object reference
+              const settingIndex = scene.value.settings.findIndex(
+                (s) => s.controller_id === String(selectedControllerId.value),
+              );
+
+              if (settingIndex >= 0) {
+                // Replace the entire color object with our non-reactive plain object
+                scene.value.settings[settingIndex].color = newColorObj;
+                console.log("Updated controller color:", newColorObj);
+              }
+            }
+
+            selectedControllerId.value = null;
           })
           .onCancel(() => {
             console.log("Color selection canceled");
+            selectedControllerId.value = null;
           })
           .onDismiss(() => {
             selectedControllerId.value = null;
@@ -352,6 +436,40 @@ export default {
       }
     };
 
+    // New function to edit the current selection without changing type
+    const editCurrentSelection = (controllerId) => {
+      const currentType = getColorType(controllerId);
+      if (!currentType) return;
+
+      // Re-open the appropriate dialog based on current type
+      if (currentType === "HSV" || currentType === "RAW") {
+        openColorPicker(currentType, controllerId);
+      } else if (currentType === "Preset") {
+        // Open preset selection dialog with the current preset selected
+        const currentPresetId =
+          getControllerSetting(controllerId)?.color?.Preset?.id;
+
+        Dialog.create({
+          title: "Change Preset",
+          message: "Choose a preset color",
+          options: {
+            type: "radio",
+            model: currentPresetId || "",
+            items: presetOptions.value,
+          },
+          persistent: true,
+          cancel: true,
+          ok: true,
+        }).onOk((selectedPresetId) => {
+          if (selectedPresetId) {
+            updateControllerSetting(controllerId, "color", {
+              Preset: { id: selectedPresetId },
+            });
+          }
+        });
+      }
+    };
+
     const onColorTypeChange = (controllerId, value) => {
       try {
         if (value === "HSV" || value === "RAW") {
@@ -359,7 +477,7 @@ export default {
           openColorPicker(value, controllerId);
         } else if (value === "Preset") {
           // Handle preset selection
-          const presetSelector = Dialog.create({
+          Dialog.create({
             title: "Select Preset",
             message: "Choose a preset color",
             options: {
@@ -379,7 +497,6 @@ export default {
               updateControllerSetting(controllerId, "color", {
                 Preset: { id: selectedPresetId },
               });
-              updateControllerSetting(controllerId, "colorType", "Preset");
             }
           });
         } else {
@@ -389,7 +506,6 @@ export default {
             updateControllerSetting(controllerId, "color", {
               Preset: { id: value },
             });
-            updateControllerSetting(controllerId, "colorType", "Preset");
           }
         }
       } catch (error) {
@@ -477,11 +593,13 @@ export default {
       groupOptions,
       presetOptions,
       colorTypeOptions,
-      colorOptions,
       hsvToRgb,
       onColorTypeChange,
       selectedControllerId,
       getDisplayValue,
+      getColorType,
+      getPresetName, // Added this
+      editCurrentSelection, // Added this
     };
   },
 };
@@ -493,5 +611,20 @@ export default {
   max-width: 80vw;
   max-height: 80vh;
   overflow: auto;
+}
+
+.preset-badge {
+  min-width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 15px;
+  padding: 0 8px;
+  font-size: 0.8em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100px;
+  white-space: nowrap;
 }
 </style>

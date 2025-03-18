@@ -8,7 +8,11 @@
           <q-item
             v-for="preset in activePresets"
             :key="preset.name"
-            :class="{ 'q-my-sm': !isDialog, 'q-my-xs': isDialog }"
+            :class="{
+              'q-my-sm': !isDialog,
+              'q-my-xs': isDialog,
+              'selected-preset': isDialog && selectedPresetId === preset.id,
+            }"
             clickable
             @click="handlePresetClick(preset)"
           >
@@ -114,9 +118,18 @@ export default {
     RawBadge,
   },
   props: {
+    // Fixed: wrapped in props object
+    modelValue: {
+      type: Object,
+      default: () => ({}),
+    },
     isDialog: {
       type: Boolean,
       default: false,
+    },
+    dialogHeight: {
+      type: String,
+      default: "400px",
     },
     cardHeight: {
       type: String,
@@ -129,6 +142,7 @@ export default {
     const controllers = useControllersStore();
     const selectedPreset = ref(null);
     const selectedControllers = ref([]);
+    const selectedPresetId = ref(props.modelValue?.Preset?.id || null);
 
     onMounted(() => {
       try {
@@ -150,7 +164,20 @@ export default {
 
     const handlePresetClick = (preset) => {
       try {
-        emit("update:modelValue", { ...preset.color });
+        if (props.isDialog) {
+          // Just select the preset visually but don't emit yet
+          selectedPresetId.value = preset.id;
+
+          // Still update model value but don't expect parent to act on it yet
+          emit("update:modelValue", {
+            Preset: {
+              id: preset.id,
+            },
+          });
+        } else {
+          // Normal mode - emit immediately
+          emit("update:modelValue", { ...preset.color });
+        }
       } catch (error) {
         console.error("Error handling preset click:", error);
       }
@@ -166,7 +193,6 @@ export default {
 
     const deletePreset = async (preset) => {
       try {
-        // Show a single dialog that handles both confirmation and progress
         Dialog.create({
           component: DeletePresetDialog,
           componentProps: {
@@ -181,7 +207,6 @@ export default {
 
     const deleteAllPresets = async () => {
       try {
-        // Show the confirmation dialog for deleting all presets
         Dialog.create({
           component: DeleteAllPresetsDialog,
           persistent: true,
@@ -191,6 +216,7 @@ export default {
       }
     };
 
+    // Fixed: removed the early return and included all functions
     return {
       activePresets,
       handlePresetClick,
@@ -198,7 +224,8 @@ export default {
       deletePreset,
       deleteAllPresets,
       hsvToRgb,
-      isDialog: props.isDialog,
+      selectedPresetId, // Added this
+      // No need to use props.isDialog here - Vue exposes props in the template
     };
   },
 };

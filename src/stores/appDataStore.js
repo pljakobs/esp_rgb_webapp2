@@ -422,5 +422,173 @@ export const useAppDataStore = defineStore("appData", {
         console.error("error deleting scene:", error);
       }
     },
+
+    /*************************************************************
+     *
+     * sync function
+     *
+     **************************************************************/
+
+    async synchronizeAllData(progressCallback) {
+      const controllers = useControllersStore();
+      this.status = storeStatus.LOADING;
+
+      try {
+        console.log("Starting synchronization across all controllers...");
+
+        // 1. Collect data from all controllers
+        const allData = {
+          presets: [],
+          scenes: [],
+          groups: [],
+        };
+
+        // Track number of operations for progress
+        let totalOperations = 0;
+        let completedOperations = 0;
+
+        // Fetch data from all controllers
+        for (const controller of controllers.data) {
+          try {
+            const response = await fetch(
+              `http://${controller.ip_address}/data`,
+            );
+            if (!response.ok) {
+              console.warn(`Could not fetch data from ${controller.hostname}`);
+              continue;
+            }
+
+            const data = await response.json();
+
+            // Add all items to our collection arrays
+            if (Array.isArray(data.presets)) {
+              allData.presets.push(...data.presets);
+            }
+            if (Array.isArray(data.scenes)) {
+              allData.scenes.push(...data.scenes);
+            }
+            if (Array.isArray(data.groups)) {
+              allData.groups.push(...data.groups);
+            }
+          } catch (error) {
+            console.warn(`Error fetching from ${controller.hostname}:`, error);
+          }
+        }
+
+        // 2. Find most recent versions of each item by ID
+        const latestItems = {
+          presets: new Map(),
+          scenes: new Map(),
+          groups: new Map(),
+        };
+
+        // Process presets
+        for (const preset of allData.presets) {
+          if (!preset.id) continue;
+
+          const existing = latestItems.presets.get(preset.id);
+          if (!existing || preset.ts > existing.ts) {
+            latestItems.presets.set(preset.id, preset);
+          }
+        }
+
+        // Process scenes
+        for (const scene of allData.scenes) {
+          if (!scene.id) continue;
+
+          const existing = latestItems.scenes.get(scene.id);
+          if (!existing || scene.ts > existing.ts) {
+            latestItems.scenes.set(scene.id, scene);
+          }
+        }
+
+        // Process groups
+        for (const group of allData.groups) {
+          if (!group.id) continue;
+
+          const existing = latestItems.groups.get(group.id);
+          if (!existing || group.ts > existing.ts) {
+            latestItems.groups.set(group.id, group);
+          }
+        }
+
+        // 3. Calculate total operations for the progress callback
+        totalOperations =
+          latestItems.presets.size +
+          latestItems.scenes.size +
+          latestItems.groups.size;
+
+        // 4. Save only the newest versions using existing save methods
+        // These already handle timestamp comparisons!
+
+        // Synchronize presets
+        for (const preset of latestItems.presets.values()) {
+          // Check if our local copy is newer
+          const localPreset = this.data.presets.find((p) => p.id === preset.id);
+          if (!localPreset || localPreset.ts < preset.ts) {
+            await this.savePreset(preset, (completed, total) => {
+              // Track overall progress
+              const stepProgress = completed / total;
+              const weightedProgress = completedOperations + stepProgress;
+
+              if (progressCallback) {
+                progressCallback(weightedProgress, totalOperations);
+              }
+            });
+          }
+          completedOperations++;
+          if (progressCallback) {
+            progressCallback(completedOperations, totalOperations);
+          }
+        }
+
+        // Synchronize scenes
+        for (const scene of latestItems.scenes.values()) {
+          const localScene = this.data.scenes.find((s) => s.id === scene.id);
+          if (!localScene || localScene.ts < scene.ts) {
+            await this.saveScene(scene, (completed, total) => {
+              const stepProgress = completed / total;
+              const weightedProgress = completedOperations + stepProgress;
+
+              if (progressCallback) {
+                progressCallback(weightedProgress, totalOperations);
+              }
+            });
+          }
+          completedOperations++;
+          if (progressCallback) {
+            progressCallback(completedOperations, totalOperations);
+          }
+        }
+
+        // Synchronize groups
+        for (const group of latestItems.groups.values()) {
+          const localGroup = this.data.groups.find((g) => g.id === group.id);
+          if (!localGroup || localGroup.ts < group.ts) {
+            await this.saveGroup(group, (completed, total) => {
+              const stepProgress = completed / total;
+              const weightedProgress = completedOperations + stepProgress;
+
+              if (progressCallback) {
+                progressCallback(weightedProgress, totalOperations);
+              }
+            });
+          }
+          completedOperations++;
+          if (progressCallback) {
+            progressCallback(completedOperations, totalOperations);
+          }
+        }
+
+        console.log("Synchronization completed successfully");
+        this.status = storeStatus.READY;
+        await this.fetchData(); // Refresh local data after sync
+        return true;
+      } catch (error) {
+        console.error("Error during synchronization:", error);
+        this.status = storeStatus.ERROR;
+        return false;
+      }
+    },
   },
 });

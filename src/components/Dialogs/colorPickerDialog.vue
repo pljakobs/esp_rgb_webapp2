@@ -12,6 +12,7 @@
         <!-- Add PresetSection -->
         <PresetSection
           v-if="type === 'Preset'"
+          :model-value="colorValue"
           :is-dialog="true"
           dialog-height="400px"
           @update:model-value="updateColorValue"
@@ -82,6 +83,7 @@ export default {
     // Default colors for each type
     const defaultHsv = { hsv: { h: 0, s: 0, v: 0 } };
     const defaultRaw = { raw: { r: 0, g: 0, b: 0, ww: 0, cw: 0 } };
+    const defaultPreset = { Preset: { id: null } };
 
     const dialogTitle = computed(() => {
       switch (props.type) {
@@ -119,6 +121,8 @@ export default {
           colorValue.value = { hsv: { ...props.initialColor.hsv } };
         } else if (props.type === "RAW" && props.initialColor.raw) {
           colorValue.value = { raw: { ...props.initialColor.raw } };
+        } else if (props.type === "Preset" && props.initialColor.Preset) {
+          colorValue.value = { Preset: { ...props.initialColor.Preset } };
         }
       }
     });

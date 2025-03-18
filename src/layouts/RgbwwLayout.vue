@@ -251,7 +251,7 @@ import {
   computed,
 } from "vue";
 import { configDataStore } from "src/stores/configDataStore";
-import { colorDataStore } from "src/stores/colorDataStore";
+import { useColorDataStore } from "src/stores/colorDataStore";
 import { useAppDataStore } from "src/stores/appDataStore";
 import { infoDataStore } from "src/stores/infoDataStore";
 import { useControllersStore } from "src/stores/controllersStore";
@@ -275,7 +275,7 @@ export default defineComponent({
       const controllers = useControllersStore();
       const configData = configDataStore();
       const infoData = infoDataStore();
-      const colorData = colorDataStore();
+      const colorData = useColorDataStore();
       const appData = useAppDataStore();
       const intervalId = ref(null);
 

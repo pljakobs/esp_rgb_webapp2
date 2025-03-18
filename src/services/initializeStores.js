@@ -1,5 +1,5 @@
 import { configDataStore } from "src/stores/configDataStore";
-import { colorDataStore } from "src/stores/colorDataStore";
+import { useColorDataStore } from "src/stores/colorDataStore";
 import { useAppDataStore } from "src/stores/appDataStore";
 import { infoDataStore } from "src/stores/infoDataStore";
 import { useControllersStore } from "src/stores/controllersStore";
@@ -13,7 +13,7 @@ export default async function initializeStores() {
   );
 
   const configStore = configDataStore();
-  const colorStore = colorDataStore();
+  const colorStore = useColorDataStore();
   const infoStore = infoDataStore();
   const presetStore = useAppDataStore();
   const webSocket = useWebSocket();

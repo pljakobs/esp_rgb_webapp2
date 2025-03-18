@@ -83,6 +83,13 @@
         </q-carousel-slide>
       </q-carousel>
     </q-card-section>
+    <q-btn
+      label="Sync All Controllers"
+      icon="sync"
+      :loading="syncing"
+      @click="startSync"
+      color="primary"
+    />
   </MyCard>
 </template>
 
@@ -90,7 +97,7 @@
 import { ref, watch, computed } from "vue";
 import { useAppDataStore } from "src/stores/appDataStore";
 import { storeStatus } from "src/stores/storeConstants";
-import { colorDataStore } from "src/stores/colorDataStore";
+import { useColorDataStore } from "src/stores/colorDataStore";
 import { Dialog } from "quasar";
 import favoriteSection from "src/components/cards/colorPickerSections/favoriteSection.vue";
 import HsvSection from "src/components/cards/colorPickerSections/HsvSection.vue";
@@ -125,7 +132,7 @@ export default {
   setup() {
     const carouselPage = ref("hsv");
     const appData = useAppDataStore();
-    const colorStore = colorDataStore();
+    const colorStore = useColorDataStore();
 
     // Local state to track the current color
     const colorValue = ref({});
@@ -304,6 +311,36 @@ export default {
         });
     };
 
+    const syncing = ref(false);
+    const progress = ref(0);
+
+    async function startSync() {
+      syncing.value = true;
+      progress.value = 0;
+
+      try {
+        console.log("starting sync function");
+        await appData.synchronizeAllData((completed, total) => {
+          progress.value = (completed / total) * 100;
+        });
+        // Show success notification
+        console.log("success");
+        Notify.create({
+          type: "positive",
+          message: "All controllers synchronized successfully",
+        });
+      } catch (error) {
+        // Show error notification
+        console.error("Error synchronizing controllers:", error);
+        Notify.create({
+          type: "negative",
+          message: "Error synchronizing controllers",
+        });
+      } finally {
+        syncing.value = false;
+      }
+    }
+
     return {
       carouselPage,
       presetData: appData,
@@ -312,6 +349,7 @@ export default {
       colorValue,
       handleColorChange,
       openAddPresetDialog,
+      startSync,
     };
   },
 };
