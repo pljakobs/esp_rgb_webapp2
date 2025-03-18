@@ -135,7 +135,7 @@ async function applyScene(scene) {
       const ipAddress = controllerInfo.ip_address;
 
       // Set color based on what's available in the settings
-      if (setting.color) {
+      if (setting.color?.hsv || setting.color?.raw) {
         console.log(`Setting color:`, setting.color);
         currentColor = { ...setting.color };
       } else if (setting.color?.Preset) {

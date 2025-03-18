@@ -425,6 +425,7 @@ export default {
       debugStatus,
       getControllerInfo,
       getPresetName,
+      applyScene,
     };
   },
 };
