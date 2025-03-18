@@ -16,7 +16,7 @@
               <div class="row items-center full-width q-py-xs">
                 <!-- Custom expand/collapse toggle -->
                 <div
-                  v-if="prop.node.children"
+                  v-if="prop.node.children && prop.node.children.length > 0"
                   class="q-mr-xs cursor-pointer"
                   @click.stop="toggleNode(prop.node)"
                 >
@@ -25,8 +25,20 @@
                     :class="{ 'rotate-right': !isExpanded(prop.node.id) }"
                   />
                 </div>
-                <div v-else class="q-mr-xs" style="width: 24px"></div>
-
+                <div
+                  v-else
+                  class="q-mr-xs"
+                  style="width: 8px; height: 16px"
+                ></div>
+                <!-- Add scene count badge -->
+                <q-badge
+                  v-if="prop.node.nodeType === 'group'"
+                  color="primary"
+                  rounded
+                  class="q-ml-sm"
+                >
+                  {{ prop.node.sceneCount }}
+                </q-badge>
                 <!-- Node type icons and label -->
                 <div
                   class="col row items-center no-wrap"
@@ -41,7 +53,7 @@
                   <div class="q-mr-sm">
                     <svgIcon
                       v-if="prop.node.nodeType === 'group'"
-                      name="group"
+                      name="light_group"
                     />
                     <svgIcon
                       v-else-if="prop.node.nodeType === 'scene'"
@@ -53,31 +65,54 @@
                       :name="prop.node.data.icon || 'led-strip-variant'"
                     />
                   </div>
-
-                  <div>
-                    <div
-                      class="text-weight-medium"
-                      :class="{ 'scene-label': prop.node.nodeType === 'scene' }"
-                    >
-                      {{ prop.node.label }}
-                    </div>
-                    <!-- Rest of the existing code -->
+                  <div
+                    class="text-weight-medium"
+                    :class="{ 'scene-label': prop.node.nodeType === 'scene' }"
+                  >
+                    {{ prop.node.label }}
                   </div>
                 </div>
 
-                <!-- Actions buttons -->
+                <!-- Actions buttons for Groups -->
                 <div class="col-auto" v-if="prop.node.nodeType === 'group'">
+                  <!-- Take snapshot button -->
                   <q-btn
                     flat
                     round
                     dense
                     size="sm"
-                    @click.stop="takeSnapshot(prop.node.data)"
+                    @click.stop="snapshotScene(prop.node.data)"
                   >
                     <svgIcon name="photo" />
-                    <q-tooltip>take Scene Snapshot</q-tooltip>
+                    <q-tooltip>Take Scene Snapshot</q-tooltip>
+                  </q-btn>
+
+                  <!-- Edit group button -->
+                  <q-btn
+                    flat
+                    round
+                    dense
+                    size="sm"
+                    @click.stop="editGroup(prop.node.data)"
+                  >
+                    <svgIcon name="edit" />
+                    <q-tooltip>Edit group</q-tooltip>
+                  </q-btn>
+
+                  <!-- Delete group button -->
+                  <q-btn
+                    flat
+                    round
+                    dense
+                    size="sm"
+                    @click.stop="deleteGroup(prop.node.data)"
+                  >
+                    <svgIcon name="delete" />
+                    <q-tooltip>Delete group</q-tooltip>
                   </q-btn>
                 </div>
+
+                <!-- Actions buttons for Scenes -->
                 <div class="col-auto" v-if="prop.node.nodeType === 'scene'">
                   <q-btn
                     flat
@@ -171,7 +206,13 @@
         </div>
       </q-scroll-area>
     </q-card-section>
-    <q-card-section class="flex justify-center">
+    <q-card-section class="flex justify-center q-gutter-md">
+      <q-btn flat color="primary" @click="openAddGroupDialog">
+        <template v-slot:default>
+          <svgIcon name="light_group" />
+          <span>Add Group</span>
+        </template>
+      </q-btn>
       <q-btn flat color="primary" @click="openDialog">
         <template v-slot:default>
           <svgIcon name="scene" />
@@ -190,11 +231,13 @@ import { useControllersStore } from "src/stores/controllersStore";
 import { useColorDataStore } from "src/stores/colorDataStore";
 import MyCard from "src/components/myCard.vue";
 import sceneDialog from "src/components/Dialogs/sceneDialog.vue";
+import groupDialog from "src/components/Dialogs/groupDialog.vue";
 import {
   applyScene,
   getControllerInfo,
   getPresetName,
   getControllerColorDisplay,
+  makeID,
 } from "src/services/tools.js";
 
 const { hsvToRgb } = colors;
@@ -207,7 +250,7 @@ export default {
   setup() {
     const appData = useAppDataStore();
     const controllersStore = useControllersStore();
-    const colorDataStore = useColorDataStore(); // Correct import
+    const colorDataStore = useColorDataStore();
     const expandedNodes = ref([]);
     const debugStatus = ref("Loading data...");
 
@@ -287,69 +330,98 @@ export default {
         console.log("Groups:", groups.length || 0);
         console.log("Scenes:", scenes.length || 0);
 
-        if (!groups.length || !scenes.length) {
-          console.log("No groups or scenes found");
-          debugStatus.value = `No data: Groups: ${groups.length || 0}, Scenes: ${
-            scenes.length || 0
-          }`;
+        if (groups.length === 0) {
+          console.log("No groups found");
+          debugStatus.value = "No groups available";
           return [];
         }
 
-        const result = groups
-          .map((group) => {
-            // Find all scenes for this group
-            const groupScenes = scenes.filter(
-              (scene) => scene.group_id === group.id,
-            );
+        // Process ALL groups, even empty ones
+        const result = groups.map((group) => {
+          // Find all scenes for this group
+          const groupScenes = scenes.filter(
+            (scene) => scene.group_id === group.id,
+          );
 
-            if (groupScenes.length === 0) {
-              return null;
-            }
+          // Count scenes in this group
+          const sceneCount = groupScenes.length;
 
-            // Create tree node for this group
-            const groupNode = {
-              id: `group-${group.id}`,
-              label: group.name,
-              nodeType: "group",
-              data: group,
-              children: groupScenes.map((scene) => {
-                // For each scene, map settings to controller nodes
-                const controllerNodes =
-                  scene.settings?.map((setting) => {
-                    const controllerInfo = getControllerInfo(
-                      setting.controller_id,
-                    );
-                    return {
-                      id: `controller-${scene.id}-${setting.controller_id}`,
-                      label: controllerInfo.hostname,
-                      nodeType: "controller",
-                      data: {
-                        ...setting,
-                        hostname: controllerInfo.hostname,
-                        ip: controllerInfo.ip,
-                        online: controllerInfo.online,
-                        icon: controllerInfo.icon,
-                      },
-                    };
-                  }) || [];
+          // Map scenes if there are any
+          let children = [];
+          if (groupScenes.length > 0) {
+            children = groupScenes.map((scene) => {
+              // For each scene, map settings to controller nodes
+              const controllerNodes =
+                scene.settings?.map((setting) => {
+                  const controllerInfo = getControllerInfo(
+                    setting.controller_id,
+                  );
+                  return {
+                    id: `controller-${scene.id}-${setting.controller_id}`,
+                    label: controllerInfo.hostname,
+                    nodeType: "controller",
+                    data: {
+                      ...setting,
+                      hostname: controllerInfo.hostname,
+                      ip: controllerInfo.ip,
+                      online: controllerInfo.online,
+                      icon: controllerInfo.icon,
+                    },
+                  };
+                }) || [];
 
-                // Return the scene node with its controller children
-                return {
-                  id: `scene-${scene.id}`,
-                  label: scene.name,
-                  nodeType: "scene",
-                  data: scene,
-                  children: controllerNodes,
-                };
-              }),
-            };
+              // Return the scene node with its controller children
+              return {
+                id: `scene-${scene.id}`,
+                label: scene.name,
+                nodeType: "scene",
+                data: scene,
+                children: controllerNodes,
+              };
+            });
+          }
 
-            return groupNode;
-          })
-          .filter(Boolean); // Remove null entries (groups with no scenes)
+          // Create tree node for this group - all groups have 'children' now
+          const groupNode = {
+            id: `group-${group.id}`,
+            label: group.name,
+            nodeType: "group",
+            data: group,
+            sceneCount: sceneCount,
+            children: children,
+          };
 
-        debugStatus.value =
-          result.length > 0 ? "" : "No scenes with controllers found";
+          return groupNode;
+        });
+
+        // Debug logging outside the map function
+        console.log("FINAL GROUP NODES STRUCTURE:");
+        console.log(
+          JSON.stringify(
+            result.map((group) => ({
+              id: group.id,
+              label: group.label,
+              nodeType: group.nodeType,
+              groupId: group.data.id,
+              sceneCount: group.sceneCount,
+              childrenCount: group.children.length,
+            })),
+            null,
+            2,
+          ),
+        );
+
+        // Check for duplicate groups
+        const groupIds = result.map((g) => g.data.id);
+        const uniqueGroupIds = [...new Set(groupIds)];
+        if (groupIds.length !== uniqueGroupIds.length) {
+          console.warn(
+            "DUPLICATE GROUPS DETECTED!",
+            groupIds.filter((id, idx) => groupIds.indexOf(id) !== idx),
+          );
+        }
+
+        debugStatus.value = "";
         return result;
       } catch (error) {
         console.error("Error in groupNodes computed:", error);
@@ -362,12 +434,13 @@ export default {
       expandedNodes.value = expanded;
     };
 
+    // Scene Management Functions
     const addScene = () => {
       Dialog.create({
         component: sceneDialog,
       })
         .onOk((scene) => {
-          handleSave(scene);
+          handleSaveScene(scene);
         })
         .onCancel(() => {
           console.log("Dialog canceled");
@@ -382,14 +455,14 @@ export default {
         },
       })
         .onOk((scene) => {
-          handleSave(scene);
+          handleSaveScene(scene);
         })
         .onCancel(() => {
           console.log("Dialog canceled");
         });
     };
 
-    const handleSave = (scene) => {
+    const handleSaveScene = (scene) => {
       console.log("Saving scene", scene);
       appData.saveScene(scene);
 
@@ -411,6 +484,147 @@ export default {
       appData.deleteScene(scene);
     };
 
+    // Group Management Functions
+    const addGroup = () => {
+      Dialog.create({
+        component: groupDialog,
+      })
+        .onOk((group) => {
+          handleSaveGroup(group);
+        })
+        .onCancel(() => {
+          console.log("Group dialog canceled");
+        });
+    };
+
+    const editGroup = (group) => {
+      Dialog.create({
+        component: groupDialog,
+        componentProps: {
+          group,
+        },
+      })
+        .onOk((group) => {
+          handleSaveGroup(group);
+        })
+        .onCancel(() => {
+          console.log("Group dialog canceled");
+        });
+    };
+
+    const handleSaveGroup = (group) => {
+      console.log("Saving group", group);
+      appData.saveGroup(group);
+
+      // Expand this group node
+      const groupNodeId = `group-${group.id}`;
+      if (!expandedNodes.value.includes(groupNodeId)) {
+        expandedNodes.value.push(groupNodeId);
+      }
+    };
+
+    const deleteGroup = (group) => {
+      // Check if group has scenes
+      const scenes = appData.data?.scenes || [];
+      const groupScenes = scenes.filter((scene) => scene.group_id === group.id);
+
+      if (groupScenes.length > 0) {
+        Notify.create({
+          message: `Cannot delete group that contains ${groupScenes.length} scenes. Delete scenes first.`,
+          color: "negative",
+        });
+        return;
+      }
+
+      console.log("Deleting group", group);
+      appData.deleteGroup(group);
+    };
+
+    const snapshotScene = async (group) => {
+      console.log("Taking snapshot for group:", group.name);
+
+      // Get all controllers
+      const controllers = controllersStore.data || [];
+      if (!controllers.length) {
+        Notify.create({
+          message: "No controllers available for snapshot",
+          color: "negative",
+        });
+        return;
+      }
+
+      try {
+        Notify.create({
+          message: "Taking snapshot of current controller states...",
+          color: "info",
+          timeout: 2000,
+        });
+
+        // Fetch color info for each controller
+        const settings = [];
+        for (const controller of controllers) {
+          if (!controller.ip_address) continue;
+
+          try {
+            const response = await fetch(
+              `http://${controller.ip_address}/color`,
+            );
+            if (!response.ok) {
+              console.error(
+                `Error fetching color from ${controller.ip_address}: ${response.status}`,
+              );
+              continue;
+            }
+
+            const colorData = await response.json();
+            console.log(`Color data from ${controller.ip_address}:`, colorData);
+
+            // Only add controllers that returned valid color data
+            if (colorData.hsv || colorData.raw) {
+              settings.push({
+                controller_id: controller.id,
+                color: {
+                  ...(colorData.hsv ? { hsv: colorData.hsv } : {}),
+                  ...(colorData.raw ? { raw: colorData.raw } : {}),
+                },
+              });
+            }
+          } catch (error) {
+            console.error(
+              `Network error fetching color from ${controller.ip_address}:`,
+              error,
+            );
+          }
+        }
+
+        // Create a new scene object with the fetched settings
+        const newScene = {
+          id: makeID(),
+          name: `Snapshot ${new Date().toLocaleTimeString()}`,
+          group_id: group.id,
+          settings: settings,
+        };
+
+        console.log("Created scene snapshot:", newScene);
+
+        // Open dialog with prepopulated data
+        Dialog.create({
+          component: sceneDialog,
+          componentProps: {
+            scene: newScene,
+          },
+        }).onOk((scene) => {
+          handleSaveScene(scene);
+        });
+      } catch (error) {
+        console.error("Error taking snapshot:", error);
+        Notify.create({
+          message: "Failed to take snapshot: " + error.message,
+          color: "negative",
+        });
+      }
+    };
+
     return {
       groupNodes,
       expandedNodes,
@@ -418,14 +632,18 @@ export default {
       isExpanded,
       toggleNode,
       openDialog: addScene,
+      openAddGroupDialog: addGroup,
       editScene,
       deleteScene,
+      editGroup,
+      deleteGroup,
       getControllerColorDisplay,
       hsvToRgb,
       debugStatus,
       getControllerInfo,
       getPresetName,
       applyScene,
+      snapshotScene,
     };
   },
 };
