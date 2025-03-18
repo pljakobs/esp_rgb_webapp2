@@ -121,8 +121,8 @@
                     size="sm"
                     @click.stop="applyScene(prop.node.data)"
                   >
-                    <svgIcon name="play_arrow" />
-                    <q-tooltip>Apply scene</q-tooltip>
+                    <svgIcon name="star_outlined" />
+                    <q-tooltip>setFavorite</q-tooltip>
                   </q-btn>
 
                   <!-- Edit button -->
@@ -224,6 +224,15 @@
 </template>
 
 <script>
+/*
+TodDo:
+- adding groups dialog does not auto close after having saved all.
+- remove play icon from scenes (not needed)
+- delete button for scene does not work
+- delete button for group should ask if all associated scenes should also be deleted
+- scenes without a group - how should they be handled?
+- saving a scene snapshot - progress callback seems not to work
+*/
 import { ref, computed, onMounted, watch } from "vue";
 import { Dialog, colors, Notify } from "quasar";
 import { useAppDataStore } from "src/stores/appDataStore";
@@ -554,21 +563,47 @@ export default {
       }
 
       try {
-        Notify.create({
-          message: "Taking snapshot of current controller states...",
+        // Filter out controllers without IP addresses to get accurate count
+        const validControllers = controllers.filter((c) => c.ip_address);
+        const totalControllers = validControllers.length;
+
+        if (totalControllers === 0) {
+          Notify.create({
+            message: "No online controllers available for snapshot",
+            color: "warning",
+          });
+          return;
+        }
+
+        // Create a persistent notification with progress for data collection phase
+        const collectNotif = Notify.create({
+          message: "Collecting controller states...",
+          caption: `0/${totalControllers} controllers processed`,
           color: "info",
-          timeout: 2000,
+          position: "bottom-right",
+          timeout: 0, // Persistent until manually dismissed
+          progress: true,
+          actions: [{ icon: "close", color: "white" }],
         });
 
         // Fetch color info for each controller
         const settings = [];
-        for (const controller of controllers) {
-          if (!controller.ip_address) continue;
+        let processedCount = 0;
 
+        for (const controller of validControllers) {
           try {
+            // Update notification with current controller
+            collectNotif({
+              caption: `Processing ${
+                controller.hostname || controller.ip_address
+              }... (${processedCount}/${totalControllers})`,
+              progress: processedCount / totalControllers,
+            });
+
             const response = await fetch(
               `http://${controller.ip_address}/color`,
             );
+
             if (!response.ok) {
               console.error(
                 `Error fetching color from ${controller.ip_address}: ${response.status}`,
@@ -577,7 +612,6 @@ export default {
             }
 
             const colorData = await response.json();
-            console.log(`Color data from ${controller.ip_address}:`, colorData);
 
             // Only add controllers that returned valid color data
             if (colorData.hsv || colorData.raw) {
@@ -594,8 +628,22 @@ export default {
               `Network error fetching color from ${controller.ip_address}:`,
               error,
             );
+          } finally {
+            // Update progress regardless of success/failure
+            processedCount++;
+            collectNotif({
+              caption: `${processedCount}/${totalControllers} controllers processed`,
+              progress: processedCount / totalControllers,
+            });
           }
         }
+
+        // Close the data collection notification
+        collectNotif({
+          message: `Collection complete: ${settings.length} controller states captured`,
+          timeout: 1000,
+          progress: 1,
+        });
 
         // Create a new scene object with the fetched settings
         const newScene = {
@@ -614,7 +662,50 @@ export default {
             scene: newScene,
           },
         }).onOk((scene) => {
-          handleSaveScene(scene);
+          // Create a new notification for saving phase
+          const saveNotif = Notify.create({
+            message: "Saving scene to controllers...",
+            caption: "0% complete",
+            color: "primary",
+            position: "bottom-right",
+            timeout: 0,
+            progress: 0, // Start at 0
+            actions: [{ icon: "close", color: "white" }],
+          });
+
+          // Use appDataStore.saveScene which already has controller iteration and progress reporting
+          appData.saveScene(scene, (completed, total) => {
+            const percent = Math.round((completed / total) * 100);
+            // Try forcing a clean update to the notification
+            setTimeout(() => {
+              saveNotif({
+                caption: `${percent}% complete (${completed}/${total} controllers)`,
+                progress: completed / total,
+              });
+            }, 10); // Small timeout to ensure UI updates
+
+            // Close notification when done
+            if (completed === total) {
+              setTimeout(() => {
+                saveNotif({
+                  message: "Scene saved successfully!",
+                  caption: "All controllers updated",
+                  timeout: 2000,
+                  progress: 1,
+                });
+              }, 50);
+            }
+          });
+
+          // Expand the relevant tree nodes
+          const groupNodeId = `group-${scene.group_id}`;
+          const sceneNodeId = `scene-${scene.id}`;
+          if (!expandedNodes.value.includes(groupNodeId)) {
+            expandedNodes.value.push(groupNodeId);
+          }
+          if (!expandedNodes.value.includes(sceneNodeId)) {
+            expandedNodes.value.push(sceneNodeId);
+          }
         });
       } catch (error) {
         console.error("Error taking snapshot:", error);
