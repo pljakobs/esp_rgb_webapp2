@@ -9,6 +9,7 @@ import initializeStores from "src/services/initializeStores";
 import initializeNotifications from "src/services/notifications";
 import initializeAppCommands from "src/services/appCommands";
 import initializeLogService from "src/services/logServices";
+import { useQuasar } from "quasar"; // Use this instead
 
 export default defineComponent({
   name: "App",
@@ -16,6 +17,8 @@ export default defineComponent({
     console.log("starting app setup function");
     try {
       const controllers = useControllersStore();
+      const $q = useQuasar(); // Get Quasar's global instance
+
       console.log("controllers:", controllers);
 
       const webhost = window.location.hostname;
@@ -37,6 +40,28 @@ export default defineComponent({
         initializeNotifications();
         initializeAppCommands();
         initializeLogService();
+
+        // Setup fullscreen for mobile devices
+        if ($q.platform.is.mobile) {
+          console.log("Mobile device detected, enabling fullscreen mode");
+
+          // Attempt to go fullscreen after a user interaction (required by browsers)
+          const handleUserInteraction = () => {
+            if ($q.fullscreen.isCapable) {
+              $q.fullscreen.toggle();
+              console.log("Toggling fullscreen mode");
+            } else {
+              console.log("Fullscreen not supported on this device");
+            }
+
+            // Remove event listeners after first interaction
+            document.removeEventListener("click", handleUserInteraction);
+            document.removeEventListener("touchstart", handleUserInteraction);
+          };
+
+          document.addEventListener("click", handleUserInteraction);
+          document.addEventListener("touchstart", handleUserInteraction);
+        }
       });
     } catch (error) {
       console.error("Error in setup function:", error);
