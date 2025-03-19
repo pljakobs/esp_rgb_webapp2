@@ -481,37 +481,25 @@ export default {
     const handleSaveScene = (scene) => {
       console.log("Saving scene", scene);
 
-      // Create a notification for the saving process
-      const saveNotif = Notify.create({
-        message: "Saving scene...",
-        caption: "0% complete",
-        color: "primary",
-        position: "bottom-right",
-        timeout: 0,
-        progress: 0,
-        actions: [{ icon: "close", color: "white" }],
-      });
+      // Extract any callbacks just like we do with groups
+      const saveComplete = scene.saveComplete;
+      const updateProgress = scene.updateProgress;
+
+      // Remove callbacks from the scene object
+      if (saveComplete) delete scene.saveComplete;
+      if (updateProgress) delete scene.updateProgress;
 
       // Use the utility function with progress callback
       saveSceneUtil(appData, scene, (completed, total) => {
-        const percent = Math.round((completed / total) * 100);
+        // Update dialog progress if available
+        if (updateProgress) {
+          updateProgress(completed, total);
+        }
 
-        setTimeout(() => {
-          saveNotif({
-            caption: `${percent}% complete (${completed}/${total} controllers)`,
-            progress: completed / total,
-          });
-        }, 10);
-
-        // When complete, show success and close notification
-        if (completed === total) {
+        // When complete, signal to close dialog
+        if (completed === total && saveComplete) {
           setTimeout(() => {
-            saveNotif({
-              message: "Scene saved successfully!",
-              caption: "All controllers updated",
-              timeout: 2000,
-              progress: 1,
-            });
+            saveComplete();
           }, 50);
         }
       });
@@ -742,14 +730,6 @@ export default {
         const validControllers = controllers.filter((c) => c.ip_address);
         const totalControllers = validControllers.length;
 
-        if (totalControllers === 0) {
-          Notify.create({
-            message: "No online controllers available for snapshot",
-            color: "warning",
-          });
-          return;
-        }
-
         // Create a persistent notification with progress for data collection phase
         const collectNotif = Notify.create({
           message: "Collecting controller states...",
@@ -837,50 +817,8 @@ export default {
             scene: newScene,
           },
         }).onOk((scene) => {
-          // Create a new notification for saving phase
-          const saveNotif = Notify.create({
-            message: "Saving scene to controllers...",
-            caption: "0% complete",
-            color: "primary",
-            position: "bottom-right",
-            timeout: 0,
-            progress: 0, // Start at 0
-            actions: [{ icon: "close", color: "white" }],
-          });
-
-          // Use appDataStore.saveScene which already has controller iteration and progress reporting
-          appData.saveScene(scene, (completed, total) => {
-            const percent = Math.round((completed / total) * 100);
-            // Try forcing a clean update to the notification
-            setTimeout(() => {
-              saveNotif({
-                caption: `${percent}% complete (${completed}/${total} controllers)`,
-                progress: completed / total,
-              });
-            }, 10); // Small timeout to ensure UI updates
-
-            // Close notification when done
-            if (completed === total) {
-              setTimeout(() => {
-                saveNotif({
-                  message: "Scene saved successfully!",
-                  caption: "All controllers updated",
-                  timeout: 2000,
-                  progress: 1,
-                });
-              }, 50);
-            }
-          });
-
-          // Expand the relevant tree nodes
-          const groupNodeId = `group-${scene.group_id}`;
-          const sceneNodeId = `scene-${scene.id}`;
-          if (!expandedNodes.value.includes(groupNodeId)) {
-            expandedNodes.value.push(groupNodeId);
-          }
-          if (!expandedNodes.value.includes(sceneNodeId)) {
-            expandedNodes.value.push(sceneNodeId);
-          }
+          // Use the existing handleSaveScene function instead of duplicating code
+          handleSaveScene(scene);
         });
       } catch (error) {
         console.error("Error taking snapshot:", error);

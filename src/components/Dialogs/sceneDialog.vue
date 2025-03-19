@@ -557,16 +557,23 @@ export default {
           id: isEditMode.value ? props.scene.id : makeID(),
         };
 
-        progress.value.total = controllersStore.data.length;
-        progress.value.completed = 0;
+        // Add callbacks like in groupDialog
+        const result = {
+          ...newScene,
+          // Function parent will call when save is complete
+          saveComplete: () => {
+            console.log("saveComplete called, closing dialog");
+            // Directly hide the dialog instead of calling onDialogOK
+            dialogRef.value.hide();
+          },
+          // Progress reporting callback
+          updateProgress: (completed, total) => {
+            progress.value.completed = completed;
+            progress.value.total = total;
+          },
+        };
 
-        await appData.saveScene(newScene, (completed, total) => {
-          progress.value.completed = completed;
-          progress.value.total = total;
-        });
-
-        emit("ok", newScene);
-        onDialogOK();
+        emit("ok", result);
       } else {
         alert("Please enter a scene name");
       }
