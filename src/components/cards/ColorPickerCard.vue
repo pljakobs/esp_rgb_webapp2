@@ -105,6 +105,9 @@ import RawSection from "src/components/cards/colorPickerSections/RawSection.vue"
 import PresetSection from "src/components/cards/colorPickerSections/PresetSection.vue";
 import MyCard from "src/components/myCard.vue";
 import addPresetDialog from "src/components/Dialogs/addPresetDialog.vue";
+import deleteItemDialog from "src/components/Dialogs/deleteItemDialog.vue";
+
+import { savePreset, deletePreset } from "src/services/saveDelete";
 
 export default {
   name: "ColorPicker",
@@ -223,8 +226,9 @@ export default {
           try {
             console.log(`Rolling back preset ${presetId} from controllers`);
 
-            // Use the appData store's deletePreset method
-            await appData.deletePreset(
+            // Use the utility function with the store
+            await deletePreset(
+              appData,
               { id: presetId, name: abortData.name || "Aborted preset" },
               abortData.updateProgress ||
                 ((completed, total) => {
@@ -297,8 +301,9 @@ export default {
 
           console.log("Saving preset:", newPreset);
 
-          // Call the store's savePreset method with the progress callback
-          appData.savePreset(
+          // Use the utility function with the store
+          savePreset(
+            appData,
             newPreset,
             result.updateProgress ||
               ((completed, total) => {

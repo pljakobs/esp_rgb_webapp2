@@ -141,31 +141,58 @@ export const useAppDataStore = defineStore("appData", {
 
     async deletePreset(preset, progressCallback) {
       const controllers = useControllersStore();
-      console.log("appDataStore deletePreset preset: ", preset);
-
       let payload = { [`presets[id=${preset.id}]`]: [] };
-      console.log("deletePreset payload: ", JSON.stringify(payload));
 
       try {
         let completed = 0;
         for (const controller of controllers.data) {
-          console.log("preset uri: ", `http://${controller.ip_address}/data`);
-          console.log("preset payload: ", JSON.stringify(payload));
-          const response = await fetch(`http://${controller.ip_address}/data`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(payload),
-          });
-          if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+          if (!controller.ip_address) {
+            completed++;
+            if (progressCallback)
+              progressCallback(completed, controllers.data.length);
+            continue;
           }
+
+          try {
+            // Wrap each controller request in its own try/catch
+            const response = await fetch(
+              `http://${controller.ip_address}/data`,
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload),
+              },
+            );
+
+            if (!response.ok) {
+              const errorText = await response.text();
+              // If it's a BadSelector error, just log and continue
+              if (errorText.includes("BadSelector")) {
+                console.log(
+                  `Preset not found on ${controller.ip_address}, continuing...`,
+                );
+              } else {
+                console.warn(
+                  `Error from ${controller.ip_address}: ${errorText}`,
+                );
+              }
+            }
+          } catch (controllerError) {
+            // Log network errors but continue with next controller
+            console.warn(
+              `Network error with ${controller.ip_address}:`,
+              controllerError,
+            );
+          }
+
+          // Always increment counter and update progress
           completed++;
           if (progressCallback) {
             progressCallback(completed, controllers.data.length);
           }
         }
+
+        // Update local store regardless of individual controller errors
         this.data.presets = this.data.presets.filter((p) => p.id !== preset.id);
         console.log("deleted preset", preset.name);
       } catch (error) {
@@ -283,31 +310,58 @@ export const useAppDataStore = defineStore("appData", {
 
     async deleteGroup(group, progressCallback) {
       const controllers = useControllersStore();
-      console.log("appDataStore deleteGroup group: ", group);
-
       let payload = { [`groups[id=${group.id}]`]: [] };
-      console.log("deleteGroup payload: ", JSON.stringify(payload));
+
       try {
         let completed = 0;
         for (const controller of controllers.data) {
-          console.log("group uri: ", `http://${controller.ip_address}/data`);
-          console.log("group payload: ", JSON.stringify(payload));
-          const response = await fetch(`http://${controller.ip_address}/data`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(payload),
-          });
-          if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+          if (!controller.ip_address) {
+            completed++;
+            if (progressCallback)
+              progressCallback(completed, controllers.data.length);
+            continue;
           }
+
+          try {
+            // Wrap controller request in try/catch
+            const response = await fetch(
+              `http://${controller.ip_address}/data`,
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload),
+              },
+            );
+
+            if (!response.ok) {
+              const errorText = await response.text();
+              if (errorText.includes("BadSelector")) {
+                console.log(
+                  `Group not found on ${controller.ip_address}, continuing...`,
+                );
+              } else {
+                console.warn(
+                  `Error from ${controller.ip_address}: ${errorText}`,
+                );
+              }
+            }
+          } catch (controllerError) {
+            // Log network errors but continue
+            console.warn(
+              `Network error with ${controller.ip_address}:`,
+              controllerError,
+            );
+          }
+
+          // Always increment counter and update progress
           completed++;
           if (progressCallback) {
             progressCallback(completed, controllers.data.length);
           }
         }
-        this.data.groups = this.data.groups.filter((s) => s.id !== group.id);
+
+        // Update local store regardless of individual controller errors
+        this.data.groups = this.data.groups.filter((g) => g.id !== group.id);
         console.log("deleted group", group.name);
       } catch (error) {
         console.error("error deleting group:", error);
@@ -392,30 +446,57 @@ export const useAppDataStore = defineStore("appData", {
 
     async deleteScene(scene, progressCallback) {
       const controllers = useControllersStore();
-      console.log("appDataStore deleteScene scene: ", scene);
-
       let payload = { [`scenes[id=${scene.id}]`]: [] };
-      console.log("deleteScene payload: ", JSON.stringify(payload));
+
       try {
         let completed = 0;
         for (const controller of controllers.data) {
-          console.log("scene uri: ", `http://${controller.ip_address}/data`);
-          console.log("scene payload: ", JSON.stringify(payload));
-          const response = await fetch(`http://${controller.ip_address}/data`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(payload),
-          });
-          if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+          if (!controller.ip_address) {
+            completed++;
+            if (progressCallback)
+              progressCallback(completed, controllers.data.length);
+            continue;
           }
+
+          try {
+            // Wrap controller request in try/catch
+            const response = await fetch(
+              `http://${controller.ip_address}/data`,
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload),
+              },
+            );
+
+            if (!response.ok) {
+              const errorText = await response.text();
+              if (errorText.includes("BadSelector")) {
+                console.log(
+                  `Scene not found on ${controller.ip_address}, continuing...`,
+                );
+              } else {
+                console.warn(
+                  `Error from ${controller.ip_address}: ${errorText}`,
+                );
+              }
+            }
+          } catch (controllerError) {
+            // Log network errors but continue
+            console.warn(
+              `Network error with ${controller.ip_address}:`,
+              controllerError,
+            );
+          }
+
+          // Always increment counter and update progress
           completed++;
           if (progressCallback) {
             progressCallback(completed, controllers.data.length);
           }
         }
+
+        // Update local store regardless of individual controller errors
         this.data.scenes = this.data.scenes.filter((s) => s.id !== scene.id);
         console.log("deleted scene", scene.name);
       } catch (error) {

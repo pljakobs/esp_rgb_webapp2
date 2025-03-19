@@ -5,29 +5,48 @@
       <q-card-section v-if="!isDeleting">
         <q-item>
           <q-item-section>
-            <q-item-label class="text-h6">Delete Preset</q-item-label>
-            <q-item-label
-              >Are you sure you want to delete "{{
-                preset.name
-              }}"?</q-item-label
+            <q-item-label class="text-h6"
+              >Delete {{ itemTypeCapitalized }}</q-item-label
             >
+            <q-item-label>
+              Are you sure you want to delete "{{ item.name }}"?
+            </q-item-label>
+            <q-item-label
+              caption
+              v-if="blockingCondition"
+              class="text-negative"
+            >
+              {{ blockingCondition.message }}
+            </q-item-label>
           </q-item-section>
-          <q-item-section avatar v-if="preset.color" side>
-            <q-badge :style="badgeStyle" round />
+          <q-item-section avatar side>
+            <!-- Icon based on item type -->
+            <svgIcon v-if="itemType === 'group'" name="light_group" />
+            <svgIcon v-else-if="itemType === 'scene'" name="scene" />
+            <!-- For presets, show color badge instead of icon -->
+            <q-badge v-else-if="showColorBadge" :style="badgeStyle" round />
+            <svgIcon v-else name="star_outlined" />
           </q-item-section>
         </q-item>
       </q-card-section>
 
       <!-- Progress mode -->
       <template v-else>
-        <q-toolbar class="bg-negative text-white">
-          <q-toolbar-title>Deleting Preset...</q-toolbar-title>
-          <q-badge v-if="preset.color" :style="badgeStyle" round />
+        <q-toolbar :class="progressToolbarClass">
+          <q-toolbar-title
+            >Deleting {{ itemTypeCapitalized }}...</q-toolbar-title
+          >
+          <!-- For presets, show color badge -->
+          <q-badge
+            v-if="itemType === 'preset' && showColorBadge"
+            :style="badgeStyle"
+            round
+          />
         </q-toolbar>
 
         <q-card-section>
           <div class="text-center q-mb-md">
-            <p>Deleting "{{ preset.name }}" from all controllers</p>
+            <p>Deleting "{{ item.name }}" from all controllers</p>
           </div>
 
           <q-linear-progress
@@ -52,7 +71,13 @@
             color="primary"
             @click="onDialogCancel()"
           />
-          <q-btn flat label="Delete" color="negative" @click="startDelete()" />
+          <q-btn
+            flat
+            label="Delete"
+            color="negative"
+            @click="startDelete()"
+            :disabled="!!blockingCondition"
+          />
         </template>
         <!-- No buttons needed in progress mode - closes automatically when complete -->
       </q-card-actions>
@@ -61,20 +86,35 @@
 </template>
 
 <script>
-import { ref, computed, onMounted } from "vue";
+import { ref, computed } from "vue";
 import { colors } from "quasar";
 import { useDialogPluginComponent } from "quasar";
 import { useAppDataStore } from "src/stores/appDataStore";
 import { useControllersStore } from "src/stores/controllersStore";
+import {
+  deletePreset as deletePresetUtil,
+  deleteScene as deleteSceneUtil,
+  deleteGroup as deleteGroupUtil,
+} from "src/services/saveDelete";
 
 const { hsvToRgb } = colors;
 
 export default {
-  name: "deletePresetDialog",
+  name: "deleteItemDialog",
   props: {
-    preset: {
+    item: {
       type: Object,
       required: true,
+    },
+    itemType: {
+      type: String,
+      required: true,
+      validator: (val) => ["preset", "scene", "group"].includes(val),
+    },
+    blockingCondition: {
+      type: Object,
+      default: null,
+      // { message: String, count: Number }
     },
   },
   emits: [...useDialogPluginComponent.emits],
@@ -90,14 +130,30 @@ export default {
       total: 0,
     });
 
+    const itemTypeCapitalized = computed(() => {
+      return props.itemType.charAt(0).toUpperCase() + props.itemType.slice(1);
+    });
+
+    const progressToolbarClass = computed(() => {
+      return `bg-negative text-white`;
+    });
+
     const progressValue = computed(() => {
       if (progress.value.total === 0) return 0;
       return progress.value.completed / progress.value.total;
     });
 
+    // Only applicable for presets that have color data
+    const showColorBadge = computed(() => {
+      return (
+        props.itemType === "preset" &&
+        (props.item.color?.hsv || props.item.color?.raw)
+      );
+    });
+
     // The progress update function
     const updateProgress = (completed, total) => {
-      console.log(`DeletePresetDialog progress update: ${completed}/${total}`);
+      console.log(`DeleteItemDialog progress update: ${completed}/${total}`);
       progress.value.completed = completed;
       progress.value.total = total;
 
@@ -112,23 +168,43 @@ export default {
     // Function to start the delete operation
     const startDelete = async () => {
       try {
+        // Safety check - don't allow deletion if there's a blocking condition
+        if (props.blockingCondition) {
+          return;
+        }
+
         isDeleting.value = true;
 
         // Initialize with total controllers
         const total = controllers.data.length;
         updateProgress(0, total);
 
-        // Call the store's delete method with our local update function
-        await appData.deletePreset(props.preset, updateProgress);
+        // Call the appropriate utility function based on item type
+        switch (props.itemType) {
+          case "preset":
+            await deletePresetUtil(appData, props.item, updateProgress);
+            break;
+          case "scene":
+            await deleteSceneUtil(appData, props.item, updateProgress);
+            break;
+          case "group":
+            await deleteGroupUtil(appData, props.item, updateProgress);
+            break;
+          default:
+            console.error("Unknown item type:", props.itemType);
+            onDialogCancel();
+        }
       } catch (error) {
-        console.error("Error deleting preset:", error);
+        console.error(`Error deleting ${props.itemType}:`, error);
         onDialogCancel(); // Close on error
       }
     };
 
     const badgeStyle = computed(() => {
-      if (props.preset.color?.hsv) {
-        const { r, g, b } = hsvToRgb(props.preset.color.hsv);
+      if (props.itemType !== "preset") return {};
+
+      if (props.item.color?.hsv) {
+        const { r, g, b } = hsvToRgb(props.item.color.hsv);
         return {
           backgroundColor: `rgb(${r}, ${g}, ${b})`,
           width: "30px",
@@ -136,8 +212,8 @@ export default {
           borderRadius: "50%",
           border: "1px solid black",
         };
-      } else if (props.preset.color?.raw) {
-        const { r, g, b } = props.preset.color.raw;
+      } else if (props.item.color?.raw) {
+        const { r, g, b } = props.item.color.raw;
         if (r !== undefined && g !== undefined && b !== undefined) {
           return {
             backgroundColor: `rgb(${r}, ${g}, ${b})`,
@@ -166,6 +242,9 @@ export default {
       progressValue,
       isDeleting,
       startDelete,
+      itemTypeCapitalized,
+      progressToolbarClass,
+      showColorBadge,
     };
   },
 };

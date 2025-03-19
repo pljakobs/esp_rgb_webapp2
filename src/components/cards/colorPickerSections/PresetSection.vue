@@ -107,7 +107,7 @@ import { colors, Dialog } from "quasar";
 import { useAppDataStore } from "src/stores/appDataStore";
 import { useControllersStore } from "src/stores/controllersStore";
 import RawBadge from "src/components/RawBadge.vue";
-import DeletePresetDialog from "src/components/Dialogs/deletePresetDialog.vue";
+import DeleteItemDialog from "src/components/Dialogs/deleteItemDialog.vue";
 import DeleteAllPresetsDialog from "src/components/Dialogs/deleteAllPresetsDialog.vue";
 
 const { hsvToRgb } = colors;
@@ -194,9 +194,10 @@ export default {
     const deletePreset = async (preset) => {
       try {
         Dialog.create({
-          component: DeletePresetDialog,
+          component: DeleteItemDialog,
           componentProps: {
-            preset: preset,
+            item: preset,
+            itemType: "preset",
           },
           persistent: true,
         });

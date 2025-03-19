@@ -31,9 +31,11 @@
           </q-list>
         </q-scroll-area>
       </q-card-section>
+
       <q-card-section>
         <q-input v-model="groupName" label="Group Name" filled autofocus />
       </q-card-section>
+
       <q-card-section v-if="progress.total > 0">
         <q-linear-progress
           :value="progress.completed / progress.total"
@@ -43,23 +45,21 @@
           {{ progress.completed }} / {{ progress.total }} controllers updated
         </div>
       </q-card-section>
+
       <q-card-actions align="right">
-        <q-btn flat label="Cancel" color="primary" @click="onCancelClick" />
         <q-btn
-          v-if="groupExists"
+          color="primary"
           flat
-          label="Overwrite"
-          color="negative"
-          @click="onSaveClick"
-          :disabled="isSaveDisabled"
+          label="Cancel"
+          @click="onCancelClick"
+          :disable="saving"
         />
         <q-btn
-          v-if="!groupExists"
-          flat
-          label="Save"
           color="primary"
-          @click="onSaveClick"
-          :disabled="isSaveDisabled"
+          label="Save"
+          @click="onOKClick"
+          :loading="saving"
+          :disable="isSaveDisabled"
         />
       </q-card-actions>
     </q-card>
@@ -67,7 +67,7 @@
 </template>
 
 <script>
-import { ref, computed, watch } from "vue";
+import { ref, computed, watch, nextTick } from "vue";
 import { useControllersStore } from "src/stores/controllersStore";
 import { useAppDataStore } from "src/stores/appDataStore";
 import { infoDataStore } from "src/stores/infoDataStore";
@@ -81,8 +81,13 @@ export default {
       type: Object,
       default: null,
     },
+    // Add saveInProgress prop to control the dialog from parent
+    saveInProgress: {
+      type: Boolean,
+      default: false,
+    },
   },
-  emits: ["close", "save", ...useDialogPluginComponent.emits],
+  emits: ["ok", "hide", "cancel", ...useDialogPluginComponent.emits],
   setup(props, { emit }) {
     const { dialogRef, onDialogHide, onDialogOK, onDialogCancel } =
       useDialogPluginComponent();
@@ -94,6 +99,15 @@ export default {
     const isEditMode = computed(() => !!props.group);
     const progress = ref({ completed: 0, total: 0 });
     const groupExists = ref(false);
+    const saving = ref(false);
+
+    // Watch external saveInProgress prop
+    watch(
+      () => props.saveInProgress,
+      (val) => {
+        saving.value = val;
+      },
+    );
 
     const controllersList = computed(() => {
       try {
@@ -131,41 +145,73 @@ export default {
       }
     };
 
-    const onSaveClick = async () => {
-      if (internalSelectedControllers.value.length != 0) {
-        const newGroup = {
-          name: groupName.value,
-          id: isEditMode.value ? props.group.id : makeID(),
-          controller_ids: internalSelectedControllers.value,
-        };
-        console.log("new group", newGroup);
-        progress.value.total = controllersStore.data.length;
-        progress.value.completed = 0;
-        await appData.saveGroup(newGroup, (completed, total) => {
-          progress.value.completed = completed;
-          progress.value.total = total;
-        });
-        console.log("new group", newGroup);
-        emit("ok", newGroup);
-        onDialogOK();
-      } else {
+    // Modified to work with async operations
+    const onOKClick = () => {
+      if (internalSelectedControllers.value.length === 0) {
         alert("Please select at least one controller to create a group");
+        return;
       }
+
+      // Set saving state
+      saving.value = true;
+
+      // Create the group object
+      const newGroup = {
+        name: groupName.value,
+        id: isEditMode.value ? props.group.id : makeID(),
+        controller_ids: internalSelectedControllers.value,
+        ts: Date.now(),
+      };
+
+      // Create progress update callback
+      const updateProgress = (completed, total) => {
+        console.log(`Updating progress: ${completed}/${total}`);
+        // Use nextTick to ensure Vue updates the UI
+        nextTick(() => {
+          progress.value = { completed, total };
+          // Emit progress for anyone listening
+          emit("progress", { completed, total });
+        });
+      };
+
+      // Add completion callback to the emitted group
+      const result = {
+        ...newGroup,
+        // Function parent will call when save is complete
+        saveComplete: () => {
+          console.log("saveComplete called, closing dialog");
+          saving.value = false;
+          // Directly hide the dialog instead of calling onDialogOK
+          dialogRef.value.hide();
+        },
+        // Progress reporting callback
+        updateProgress,
+      };
+
+      // Emit the enhanced result for the parent component
+      emit("ok", result);
     };
 
     const onCancelClick = () => {
-      onDialogCancel();
+      // Only allow cancel if not currently saving
+      if (!saving.value) {
+        onDialogCancel();
+      }
     };
 
     const isSaveDisabled = computed(() => {
       const hasNoName = groupName.value.trim() === "";
       const hasNoControllers = internalSelectedControllers.value.length === 0;
-      return hasNoName || hasNoControllers;
+      return hasNoName || hasNoControllers || saving.value;
     });
 
     const verifyGroupName = () => {
+      if (!appData.data?.groups) return;
+
       const existingGroup = appData.data.groups.find(
-        (group) => group.name === groupName.value,
+        (g) =>
+          g.name === groupName.value &&
+          (!isEditMode.value || g.id !== props.group?.id),
       );
       groupExists.value = !!existingGroup;
     };
@@ -183,7 +229,7 @@ export default {
       (newGroup) => {
         if (newGroup) {
           groupName.value = newGroup.name;
-          internalSelectedControllers.value = newGroup.controller_ids;
+          internalSelectedControllers.value = [...newGroup.controller_ids];
         } else {
           groupName.value = "";
           internalSelectedControllers.value = [];
@@ -196,7 +242,7 @@ export default {
       dialogRef,
       onDialogHide,
       onCancelClick,
-      onSaveClick,
+      onOKClick,
       groupName,
       controllersList,
       internalSelectedControllers,
@@ -207,6 +253,7 @@ export default {
       isSaveDisabled,
       groupExists,
       toolbarClass,
+      saving,
     };
   },
 };

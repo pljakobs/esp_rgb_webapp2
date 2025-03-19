@@ -241,6 +241,7 @@ import { useColorDataStore } from "src/stores/colorDataStore";
 import MyCard from "src/components/myCard.vue";
 import sceneDialog from "src/components/Dialogs/sceneDialog.vue";
 import groupDialog from "src/components/Dialogs/groupDialog.vue";
+import deleteItemDialog from "src/components/Dialogs/deleteItemDialog.vue";
 import {
   applyScene,
   getControllerInfo,
@@ -248,6 +249,12 @@ import {
   getControllerColorDisplay,
   makeID,
 } from "src/services/tools.js";
+import {
+  saveGroup as saveGroupUtil,
+  saveScene as saveSceneUtil,
+  deleteGroup as deleteGroupUtil,
+  deleteScene as deleteSceneUtil,
+} from "src/services/saveDelete";
 
 const { hsvToRgb } = colors;
 
@@ -473,7 +480,41 @@ export default {
 
     const handleSaveScene = (scene) => {
       console.log("Saving scene", scene);
-      appData.saveScene(scene);
+
+      // Create a notification for the saving process
+      const saveNotif = Notify.create({
+        message: "Saving scene...",
+        caption: "0% complete",
+        color: "primary",
+        position: "bottom-right",
+        timeout: 0,
+        progress: 0,
+        actions: [{ icon: "close", color: "white" }],
+      });
+
+      // Use the utility function with progress callback
+      saveSceneUtil(appData, scene, (completed, total) => {
+        const percent = Math.round((completed / total) * 100);
+
+        setTimeout(() => {
+          saveNotif({
+            caption: `${percent}% complete (${completed}/${total} controllers)`,
+            progress: completed / total,
+          });
+        }, 10);
+
+        // When complete, show success and close notification
+        if (completed === total) {
+          setTimeout(() => {
+            saveNotif({
+              message: "Scene saved successfully!",
+              caption: "All controllers updated",
+              timeout: 2000,
+              progress: 1,
+            });
+          }, 50);
+        }
+      });
 
       // Expand the parent group node
       const groupNodeId = `group-${scene.group_id}`;
@@ -489,17 +530,86 @@ export default {
     };
 
     const deleteScene = (scene) => {
-      console.log("Deleting scene", scene);
-      appData.deleteScene(scene);
+      console.log("Delete scene clicked");
+
+      Dialog.create({
+        component: deleteItemDialog,
+        componentProps: {
+          item: scene,
+          itemType: "scene",
+        },
+      });
     };
 
     // Group Management Functions
     const addGroup = () => {
       Dialog.create({
         component: groupDialog,
+        persistent: true,
       })
-        .onOk((group) => {
-          handleSaveGroup(group);
+        .onOk((result) => {
+          console.log("Saving group", result);
+
+          // Extract the callbacks from the result
+          const group = { ...result };
+          const saveComplete = group.saveComplete;
+          const updateProgress = group.updateProgress;
+
+          // Remove the callbacks from the group object
+          delete group.saveComplete;
+          delete group.updateProgress;
+
+          // Create a notification for the saving process
+          const saveNotif = Notify.create({
+            message: "Saving group...",
+            caption: "0% complete",
+            color: "primary",
+            position: "bottom-right",
+            timeout: 0,
+            progress: 0,
+            actions: [{ icon: "close", color: "white" }],
+          });
+
+          // Call the utility function with progress callback
+          saveGroupUtil(appData, group, (completed, total) => {
+            const percent = Math.round((completed / total) * 100);
+
+            // Update the notification
+            setTimeout(() => {
+              saveNotif({
+                caption: `${percent}% complete (${completed}/${total} controllers)`,
+                progress: completed / total,
+              });
+
+              // Also update the dialog's progress if dialog is still showing
+              if (updateProgress) {
+                updateProgress(completed, total);
+              }
+            }, 10);
+
+            // When complete, show success message and close the dialog
+            if (completed === total) {
+              setTimeout(() => {
+                saveNotif({
+                  message: "Group saved successfully!",
+                  caption: "All controllers updated",
+                  timeout: 2000,
+                  progress: 1,
+                });
+
+                // Signal completion to close the dialog
+                if (saveComplete) {
+                  saveComplete();
+                }
+              }, 50);
+            }
+          });
+
+          // Expand this group node
+          const groupNodeId = `group-${group.id}`;
+          if (!expandedNodes.value.includes(groupNodeId)) {
+            expandedNodes.value.push(groupNodeId);
+          }
         })
         .onCancel(() => {
           console.log("Group dialog canceled");
@@ -512,24 +622,81 @@ export default {
         componentProps: {
           group,
         },
+        persistent: true, // Make it persistent like addGroup
       })
-        .onOk((group) => {
-          handleSaveGroup(group);
+        .onOk((result) => {
+          console.log("Editing group", result);
+
+          // Extract the callbacks from the result - same pattern as addGroup
+          const group = { ...result };
+          const saveComplete = group.saveComplete;
+          const updateProgress = group.updateProgress;
+
+          // Remove the callbacks from the group object
+          delete group.saveComplete;
+          delete group.updateProgress;
+
+          // Create a notification for the saving process
+          const saveNotif = Notify.create({
+            message: "Editing group...",
+            caption: "0% complete",
+            color: "primary",
+            position: "bottom-right",
+            timeout: 0,
+            progress: 0,
+            actions: [{ icon: "close", color: "white" }],
+          });
+
+          // Call the utility function with progress callback
+          saveGroupUtil(appData, group, (completed, total) => {
+            const percent = Math.round((completed / total) * 100);
+            console.log(
+              `Group save progress: ${completed}/${total} (${percent}%)`,
+            );
+
+            // Update the notification
+            setTimeout(() => {
+              saveNotif({
+                caption: `${percent}% complete (${completed}/${total} controllers)`,
+                progress: completed / total,
+              });
+
+              // Also update the dialog's progress if dialog is still showing
+              if (updateProgress) {
+                console.log("Updating progress in dialog");
+                updateProgress(completed, total);
+              }
+            }, 10);
+
+            // When complete, show success message and close the dialog
+            if (completed === total) {
+              console.log("Save complete, closing dialog");
+              setTimeout(() => {
+                saveNotif({
+                  message: "Group saved successfully!",
+                  caption: "All controllers updated",
+                  timeout: 2000,
+                  progress: 1,
+                });
+
+                // Signal completion to close the dialog
+                if (saveComplete) {
+                  console.log("Calling saveComplete to close dialog");
+                  saveComplete();
+                }
+              }, 50);
+            }
+          });
+
+          // Expand this group node
+          const groupNodeId = `group-${group.id}`;
+          if (!expandedNodes.value.includes(groupNodeId)) {
+            expandedNodes.value.push(groupNodeId);
+          }
         })
         .onCancel(() => {
           console.log("Group dialog canceled");
         });
-    };
-
-    const handleSaveGroup = (group) => {
-      console.log("Saving group", group);
-      appData.saveGroup(group);
-
-      // Expand this group node
-      const groupNodeId = `group-${group.id}`;
-      if (!expandedNodes.value.includes(groupNodeId)) {
-        expandedNodes.value.push(groupNodeId);
-      }
     };
 
     const deleteGroup = (group) => {
@@ -537,16 +704,24 @@ export default {
       const scenes = appData.data?.scenes || [];
       const groupScenes = scenes.filter((scene) => scene.group_id === group.id);
 
-      if (groupScenes.length > 0) {
-        Notify.create({
-          message: `Cannot delete group that contains ${groupScenes.length} scenes. Delete scenes first.`,
-          color: "negative",
-        });
-        return;
-      }
+      console.log("delte group clicked");
+      // Create blocking condition if there are scenes in this group
+      const blockingCondition =
+        groupScenes.length > 0
+          ? {
+              message: `This group contains ${groupScenes.length} scene(s) which must be deleted first.`,
+              count: groupScenes.length,
+            }
+          : null;
 
-      console.log("Deleting group", group);
-      appData.deleteGroup(group);
+      Dialog.create({
+        component: deleteItemDialog,
+        componentProps: {
+          item: group,
+          itemType: "group",
+          blockingCondition,
+        },
+      });
     };
 
     const snapshotScene = async (group) => {

@@ -25,6 +25,13 @@
 </template>
 
 <script>
+/*
+ToDo
+  - add an "update all" button to the firmware update card that will update all controllers with the appropriate firmware
+    this will have to be decided on SoC, release or debug as well as build branch (not relevant right now but in the future)
+  - consider making the "check firmware" conditional in that I could check for new firmware once the card is opened and
+    this would automatically become active when there is a new build
+*/
 import { ref } from "vue";
 import { Dialog } from "quasar";
 import { configDataStore } from "src/stores/configDataStore";
