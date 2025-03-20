@@ -18,6 +18,50 @@ function getLocalID(n) {
 }
 
 /**
+ * Gets controllers by their IDs from a group's controller_id array
+ * @param {Object|string} group - The group object or group ID
+ * @returns {Array} Array of controller objects belonging to this group
+ */
+function getControllersInGroup(group) {
+  const appData = useAppDataStore();
+  const controllersStore = useControllersStore();
+
+  // Find the group if only ID was provided
+  let groupObject;
+  if (typeof group === "object") {
+    groupObject = group;
+  } else {
+    // Find group by ID
+    groupObject = appData.data?.groups?.find((g) => g.id === group);
+    if (!groupObject) {
+      console.warn(`Group not found for ID: ${group}`);
+      return [];
+    }
+  }
+
+  // Ensure the group has a controller_ids array
+  if (
+    !groupObject.controller_ids ||
+    !Array.isArray(groupObject.controller_ids)
+  ) {
+    console.log(`Group "${groupObject.name}" has no controller_ids array`);
+    return [];
+  }
+
+  // Convert all IDs to strings for reliable comparison
+  const controllerIds = groupObject.controller_ids.map((id) => String(id));
+
+  // Get all valid controllers that match the IDs in the group
+  const controllers = controllersStore.data || [];
+  const groupControllers = controllers.filter(
+    (controller) =>
+      controller.ip_address && controllerIds.includes(String(controller.id)),
+  );
+
+  return groupControllers;
+}
+
+/**
  * Gets controller information by ID
  * @param {string|number} controllerId - The ID of the controller
  * @returns {Object} Controller information object
@@ -193,4 +237,5 @@ export {
   applyScene,
   getPresetName,
   getControllerColorDisplay,
+  getControllersInGroup,
 };

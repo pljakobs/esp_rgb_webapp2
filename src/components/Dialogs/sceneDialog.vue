@@ -191,6 +191,7 @@ export default {
     const sceneExists = ref(false);
     const selectedControllerId = ref(null);
 
+    console.log("in scene dialog, scene:", scene);
     watch(
       () => props.modelValue,
       (val) => {

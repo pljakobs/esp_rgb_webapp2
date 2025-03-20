@@ -119,10 +119,17 @@
                     round
                     dense
                     size="sm"
-                    @click.stop="applyScene(prop.node.data)"
+                    @click.stop="toggleFavoriteScene(prop.node.data)"
                   >
-                    <svgIcon name="star_outlined" />
-                    <q-tooltip>setFavorite</q-tooltip>
+                    <svgIcon
+                      name="star_outlined"
+                      :isSelected="prop.node.data.favorite"
+                    />
+                    <q-tooltip>{{
+                      prop.node.data.favorite
+                        ? "Remove from favorites"
+                        : "Add to favorites"
+                    }}</q-tooltip>
                   </q-btn>
 
                   <!-- Edit button -->
@@ -227,11 +234,10 @@
 /*
 TodDo:
 - adding groups dialog does not auto close after having saved all.
-- remove play icon from scenes (not needed)
-- delete button for scene does not work
+- 
 - delete button for group should ask if all associated scenes should also be deleted
 - scenes without a group - how should they be handled?
-- saving a scene snapshot - progress callback seems not to work
+- 
 */
 import { ref, computed, onMounted, watch } from "vue";
 import { Dialog, colors, Notify } from "quasar";
@@ -248,6 +254,7 @@ import {
   getPresetName,
   getControllerColorDisplay,
   makeID,
+  getControllersInGroup,
 } from "src/services/tools.js";
 import {
   saveGroup as saveGroupUtil,
@@ -464,6 +471,7 @@ export default {
     };
 
     const editScene = (scene) => {
+      console.log("editing scene", scene);
       Dialog.create({
         component: sceneDialog,
         componentProps: {
@@ -529,6 +537,11 @@ export default {
       });
     };
 
+    const toggleFavoriteScene = (scene) => {
+      scene.favorite = !scene.favorite;
+      console.log("Toggling favorite for scene", scene);
+      appData.saveScene(scene);
+    };
     // Group Management Functions
     const addGroup = () => {
       Dialog.create({
@@ -715,44 +728,32 @@ export default {
     const snapshotScene = async (group) => {
       console.log("Taking snapshot for group:", group.name);
 
-      // Get all controllers
-      const controllers = controllersStore.data || [];
-      if (!controllers.length) {
-        Notify.create({
-          message: "No controllers available for snapshot",
-          color: "negative",
-        });
-        return;
-      }
-
       try {
-        // Filter out controllers without IP addresses to get accurate count
-        const validControllers = controllers.filter((c) => c.ip_address);
-        const totalControllers = validControllers.length;
-
-        // Create a persistent notification with progress for data collection phase
+        const controllersInGroup = getControllersInGroup(group);
+        console.log(
+          "snapshotting controllers for group ",
+          controllersInGroup,
+          group.name,
+        );
+        // Create a single notification that persists during collection
         const collectNotif = Notify.create({
-          message: "Collecting controller states...",
-          caption: `0/${totalControllers} controllers processed`,
+          message: `Collecting states for group '${group.name}'`,
+          caption: `0/${controllersInGroup.length} controllers processed`,
           color: "info",
-          position: "bottom-right",
-          timeout: 0, // Persistent until manually dismissed
-          progress: true,
-          actions: [{ icon: "close", color: "white" }],
+          timeout: 6000,
+          progress: 0,
         });
 
         // Fetch color info for each controller
         const settings = [];
         let processedCount = 0;
 
-        for (const controller of validControllers) {
+        for (const controller of controllersInGroup) {
           try {
-            // Update notification with current controller
+            // Update notification with progress
             collectNotif({
-              caption: `Processing ${
-                controller.hostname || controller.ip_address
-              }... (${processedCount}/${totalControllers})`,
-              progress: processedCount / totalControllers,
+              caption: `Processing ${controller.hostname || controller.ip_address}`,
+              progress: processedCount / controllersInGroup.length,
             });
 
             const response = await fetch(
@@ -761,65 +762,53 @@ export default {
 
             if (!response.ok) {
               console.error(
-                `Error fetching color from ${controller.ip_address}: ${response.status}`,
+                `Error fetching color from ${controller.ip_address}`,
               );
               continue;
             }
 
             const colorData = await response.json();
 
-            // Only add controllers that returned valid color data
-            if (colorData.hsv || colorData.raw) {
+            // Prefer HSV format for consistency
+            if (colorData.hsv) {
+              const { h, s, v } = colorData.hsv;
               settings.push({
-                controller_id: controller.id,
-                color: {
-                  ...(colorData.hsv ? { hsv: colorData.hsv } : {}),
-                  ...(colorData.raw ? { raw: colorData.raw } : {}),
-                },
+                controller_id: String(controller.id),
+                color: { hsv: { h, s, v } },
+              });
+            } else if (colorData.raw) {
+              // Fallback to raw if hsv isn't available
+              settings.push({
+                controller_id: String(controller.id),
+                color: { raw: colorData.raw },
               });
             }
           } catch (error) {
             console.error(
-              `Network error fetching color from ${controller.ip_address}:`,
+              `Network error with ${controller.ip_address}:`,
               error,
             );
-          } finally {
-            // Update progress regardless of success/failure
-            processedCount++;
-            collectNotif({
-              caption: `${processedCount}/${totalControllers} controllers processed`,
-              progress: processedCount / totalControllers,
-            });
           }
+          processedCount++;
         }
 
-        // Close the data collection notification
+        // Close the collection notification
         collectNotif({
-          message: `Collection complete: ${settings.length} controller states captured`,
+          message: `Collection complete: ${settings.length} states captured`,
           timeout: 1000,
           progress: 1,
         });
 
-        // Create a new scene object with the fetched settings
-        const newScene = {
+        // Create a scene object
+        const sceneSnapshot = {
           id: makeID(),
           name: `Snapshot ${new Date().toLocaleTimeString()}`,
           group_id: group.id,
           settings: settings,
         };
 
-        console.log("Created scene snapshot:", newScene);
-
-        // Open dialog with prepopulated data
-        Dialog.create({
-          component: sceneDialog,
-          componentProps: {
-            scene: newScene,
-          },
-        }).onOk((scene) => {
-          // Use the existing handleSaveScene function instead of duplicating code
-          handleSaveScene(scene);
-        });
+        // Simply pass to existing editScene function!
+        editScene(sceneSnapshot);
       } catch (error) {
         console.error("Error taking snapshot:", error);
         Notify.create({
@@ -828,7 +817,6 @@ export default {
         });
       }
     };
-
     return {
       groupNodes,
       expandedNodes,
@@ -848,6 +836,7 @@ export default {
       getPresetName,
       applyScene,
       snapshotScene,
+      toggleFavoriteScene,
     };
   },
 };
