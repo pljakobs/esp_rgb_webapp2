@@ -1,3 +1,4 @@
+import { watch } from "vue";
 import { defineStore } from "pinia";
 import { fetchApi } from "src/stores/storeHelpers";
 import { useControllersStore } from "src/stores/controllersStore";
@@ -37,6 +38,53 @@ export const useAppDataStore = defineStore("appData", {
         console.error("error fetching app-data:", error);
         this.status = storeStatus.ERROR;
       }
+    },
+
+    watchForSync() {
+      const controllers = useControllersStore();
+
+      if (
+        controllers.status === storeStatus.READY &&
+        this.status === storeStatus.READY
+      ) {
+        console.log(
+          "Both stores are already ready, starting synchronization...",
+        );
+        this.synchronizeAllData((completed, total) => {
+          console.log(`Sync progress: ${completed}/${total}`);
+        });
+      }
+      // Set up a watcher for the controllers store status
+      watch(
+        () => controllers.status,
+        (newStatus) => {
+          if (
+            newStatus === storeStatus.READY &&
+            this.status === storeStatus.READY
+          ) {
+            console.log("Both stores are ready, starting synchronization...");
+            this.synchronizeAllData((completed, total) => {
+              console.log(`Sync progress: ${completed}/${total}`);
+            });
+          }
+        },
+      );
+
+      // Also watch our own status in case controllers become ready first
+      watch(
+        () => this.status,
+        (newStatus) => {
+          if (
+            newStatus === storeStatus.READY &&
+            controllers.status === storeStatus.READY
+          ) {
+            console.log("Both stores are ready, starting synchronization...");
+            this.synchronizeAllData((completed, total) => {
+              console.log(`Sync progress: ${completed}/${total}`);
+            });
+          }
+        },
+      );
     },
 
     /*************************************************************
@@ -517,19 +565,20 @@ export const useAppDataStore = defineStore("appData", {
       try {
         console.log("Starting synchronization across all controllers...");
 
-        // 1. Collect data from all controllers
+        // PHASE 1: Collection - gather all data from all controllers
         const allData = {
           presets: [],
           scenes: [],
           groups: [],
         };
 
-        // Track number of operations for progress
-        let totalOperations = 0;
-        let completedOperations = 0;
+        // Keep track of which objects each controller has
+        const controllerObjects = {};
 
         // Fetch data from all controllers
         for (const controller of controllers.data) {
+          if (!controller.ip_address) continue;
+
           try {
             const response = await fetch(
               `http://${controller.ip_address}/data`,
@@ -541,22 +590,55 @@ export const useAppDataStore = defineStore("appData", {
 
             const data = await response.json();
 
+            // Track objects by controller for efficient updating
+            controllerObjects[controller.id] = {
+              presets: new Map(),
+              scenes: new Map(),
+              groups: new Map(),
+            };
+
             // Add all items to our collection arrays
             if (Array.isArray(data.presets)) {
-              allData.presets.push(...data.presets);
+              data.presets.forEach((preset) => {
+                if (preset.id && preset.ts) {
+                  allData.presets.push(preset);
+                  controllerObjects[controller.id].presets.set(
+                    preset.id,
+                    preset.ts,
+                  );
+                }
+              });
             }
+
             if (Array.isArray(data.scenes)) {
-              allData.scenes.push(...data.scenes);
+              data.scenes.forEach((scene) => {
+                if (scene.id && scene.ts) {
+                  allData.scenes.push(scene);
+                  controllerObjects[controller.id].scenes.set(
+                    scene.id,
+                    scene.ts,
+                  );
+                }
+              });
             }
+
             if (Array.isArray(data.groups)) {
-              allData.groups.push(...data.groups);
+              data.groups.forEach((group) => {
+                if (group.id && group.ts) {
+                  allData.groups.push(group);
+                  controllerObjects[controller.id].groups.set(
+                    group.id,
+                    group.ts,
+                  );
+                }
+              });
             }
           } catch (error) {
             console.warn(`Error fetching from ${controller.hostname}:`, error);
           }
         }
 
-        // 2. Find most recent versions of each item by ID
+        // PHASE 2: Find the most recent versions
         const latestItems = {
           presets: new Map(),
           scenes: new Map(),
@@ -593,77 +675,286 @@ export const useAppDataStore = defineStore("appData", {
           }
         }
 
-        // 3. Calculate total operations for the progress callback
-        totalOperations =
-          latestItems.presets.size +
-          latestItems.scenes.size +
-          latestItems.groups.size;
+        const validGroupIds = new Set(Array.from(latestItems.groups.keys()));
+        const scenesToDelete = [];
 
-        // 4. Save only the newest versions using existing save methods
-        // These already handle timestamp comparisons!
+        const updates = {};
 
-        // Synchronize presets
-        for (const preset of latestItems.presets.values()) {
-          // Check if our local copy is newer
-          const localPreset = this.data.presets.find((p) => p.id === preset.id);
-          if (!localPreset || localPreset.ts < preset.ts) {
-            await this.savePreset(preset, (completed, total) => {
-              // Track overall progress
-              const stepProgress = completed / total;
-              const weightedProgress = completedOperations + stepProgress;
-
-              if (progressCallback) {
-                progressCallback(weightedProgress, totalOperations);
-              }
-            });
-          }
-          completedOperations++;
-          if (progressCallback) {
-            progressCallback(completedOperations, totalOperations);
+        // Find scenes with missing groups and remove them
+        for (const [sceneId, scene] of latestItems.scenes.entries()) {
+          if (!validGroupIds.has(scene.group_id)) {
+            console.log(
+              `Scene "${scene.name}" (ID: ${sceneId}) has invalid group_id, marking for deletion`,
+            );
+            latestItems.scenes.delete(sceneId);
+            scenesToDelete.push(sceneId);
           }
         }
 
-        // Synchronize scenes
-        for (const scene of latestItems.scenes.values()) {
-          const localScene = this.data.scenes.find((s) => s.id === scene.id);
-          if (!localScene || localScene.ts < scene.ts) {
-            await this.saveScene(scene, (completed, total) => {
-              const stepProgress = completed / total;
-              const weightedProgress = completedOperations + stepProgress;
+        // Add deletion tasks to controllers that have these orphaned scenes
+        if (scenesToDelete.length > 0) {
+          for (const [controllerId, controllerData] of Object.entries(
+            controllerObjects,
+          )) {
+            for (const sceneId of scenesToDelete) {
+              if (controllerData.scenes.has(sceneId)) {
+                // Make sure we have this controller in our updates map
+                if (!updates[controllerId]) {
+                  updates[controllerId] = {
+                    presetsToAdd: [],
+                    presetsToUpdate: [],
+                    scenesToAdd: [],
+                    scenesToUpdate: [],
+                    scenesToDelete: [],
+                    groupsToAdd: [],
+                    groupsToUpdate: [],
+                  };
+                } else if (!updates[controllerId].scenesToDelete) {
+                  updates[controllerId].scenesToDelete = [];
+                }
 
-              if (progressCallback) {
-                progressCallback(weightedProgress, totalOperations);
+                // Add this scene ID to the delete list for this controller
+                updates[controllerId].scenesToDelete.push(sceneId);
               }
-            });
-          }
-          completedOperations++;
-          if (progressCallback) {
-            progressCallback(completedOperations, totalOperations);
+            }
           }
         }
 
-        // Synchronize groups
-        for (const group of latestItems.groups.values()) {
-          const localGroup = this.data.groups.find((g) => g.id === group.id);
-          if (!localGroup || localGroup.ts < group.ts) {
-            await this.saveGroup(group, (completed, total) => {
-              const stepProgress = completed / total;
-              const weightedProgress = completedOperations + stepProgress;
+        // PHASE 3: Prepare updates for each controller
+        for (const controller of controllers.data) {
+          if (!controller.ip_address || !controllerObjects[controller.id])
+            continue;
 
-              if (progressCallback) {
-                progressCallback(weightedProgress, totalOperations);
-              }
-            });
+          updates[controller.id] = {
+            presetsToAdd: [],
+            presetsToUpdate: [],
+            scenesToAdd: [],
+            scenesToUpdate: [],
+            groupsToAdd: [],
+            groupsToUpdate: [],
+          };
+
+          // Check each preset
+          for (const [id, preset] of latestItems.presets.entries()) {
+            const controllerTs =
+              controllerObjects[controller.id].presets.get(id);
+            if (!controllerTs) {
+              // Controller doesn't have this preset - add it
+              updates[controller.id].presetsToAdd.push(preset);
+            } else if (controllerTs < preset.ts) {
+              // Controller has older version - update it
+              updates[controller.id].presetsToUpdate.push(preset);
+            }
           }
-          completedOperations++;
-          if (progressCallback) {
-            progressCallback(completedOperations, totalOperations);
+
+          // Check each scene
+          for (const [id, scene] of latestItems.scenes.entries()) {
+            const controllerTs =
+              controllerObjects[controller.id].scenes.get(id);
+            if (!controllerTs) {
+              // Controller doesn't have this scene - add it
+              updates[controller.id].scenesToAdd.push(scene);
+            } else if (controllerTs < scene.ts) {
+              // Controller has older version - update it
+              updates[controller.id].scenesToUpdate.push(scene);
+            }
+          }
+
+          // Check each group
+          for (const [id, group] of latestItems.groups.entries()) {
+            const controllerTs =
+              controllerObjects[controller.id].groups.get(id);
+            if (!controllerTs) {
+              // Controller doesn't have this group - add it
+              updates[controller.id].groupsToAdd.push(group);
+            } else if (controllerTs < group.ts) {
+              // Controller has older version - update it
+              updates[controller.id].groupsToUpdate.push(group);
+            }
           }
         }
+
+        // PHASE 4: Execute updates with batched operations
+        // Calculate total updates for progress
+        const totalUpdates = Object.values(updates).reduce((sum, update) => {
+          return (
+            sum +
+            update.presetsToAdd.length +
+            update.presetsToUpdate.length +
+            update.scenesToAdd.length +
+            update.scenesToUpdate.length +
+            update.groupsToAdd.length +
+            update.groupsToUpdate.length
+          );
+        }, 0);
+
+        console.log(
+          "**********************************************************",
+        );
+        console.log("* SYNCHRONIZATION SUMMARY");
+        console.log("* Total updates needed:", totalUpdates);
+        console.log("* Controllers to update:", Object.keys(updates).length);
+        // Log details for each controller if needed
+        for (const [controllerId, update] of Object.entries(updates)) {
+          const controller = controllers.data.find(
+            (c) => String(c.id) === controllerId,
+          );
+          console.log(`* Controller: ${controller?.hostname || controllerId}`);
+          console.log(`*   Presets to add:   ${update.presetsToAdd.length}`);
+          console.log(
+            `*   Presets to update: ${update.presetsToUpdate.length}`,
+          );
+          console.log(`*   Scenes to add:    ${update.scenesToAdd.length}`);
+          console.log(`*   Scenes to update: ${update.scenesToUpdate.length}`);
+          console.log(`*   Groups to add:    ${update.groupsToAdd.length}`);
+          console.log(`*   Groups to update: ${update.groupsToUpdate.length}`);
+        }
+        console.log(
+          "**********************************************************",
+        );
+        let completedUpdates = 0;
+
+        for (const [controllerId, update] of Object.entries(updates)) {
+          const controller = controllers.data.find(
+            (c) => String(c.id) === controllerId,
+          );
+          if (!controller || !controller.ip_address) continue;
+
+          // Batch add operations
+          if (update.presetsToAdd.length > 0) {
+            try {
+              const payload = { "presets[]": update.presetsToAdd };
+              await fetch(`http://${controller.ip_address}/data`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload),
+              });
+              completedUpdates += update.presetsToAdd.length;
+              if (progressCallback) {
+                progressCallback(completedUpdates, totalUpdates);
+              }
+            } catch (error) {
+              console.error(
+                `Error adding presets to ${controller.hostname}:`,
+                error,
+              );
+            }
+          }
+
+          // Individual update operations
+          for (const preset of update.presetsToUpdate) {
+            try {
+              const payload = { [`presets[id=${preset.id}]`]: preset };
+              await fetch(`http://${controller.ip_address}/data`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload),
+              });
+              completedUpdates++;
+              if (progressCallback) {
+                progressCallback(completedUpdates, totalUpdates);
+              }
+            } catch (error) {
+              console.error(
+                `Error updating preset on ${controller.hostname}:`,
+                error,
+              );
+            }
+          }
+
+          // Repeat for scenes and groups
+          if (update.scenesToDelete && update.scenesToDelete.length > 0) {
+            for (const sceneId of update.scenesToDelete) {
+              try {
+                const payload = { [`scenes[id=${sceneId}]`]: [] };
+                await fetch(`http://${controller.ip_address}/data`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify(payload),
+                });
+                completedUpdates++;
+                if (progressCallback) {
+                  progressCallback(completedUpdates, totalUpdates);
+                }
+              } catch (error) {
+                console.error(
+                  `Error deleting orphaned scene ${sceneId} on ${controller.hostname}:`,
+                  error,
+                );
+              }
+            }
+          }
+
+          for (const scene of update.scenesToUpdate) {
+            try {
+              const payload = { [`scenes[id=${scene.id}]`]: scene };
+              await fetch(`http://${controller.ip_address}/data`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload),
+              });
+              completedUpdates++;
+              if (progressCallback) {
+                progressCallback(completedUpdates, totalUpdates);
+              }
+            } catch (error) {
+              console.error(
+                `Error updating scene on ${controller.hostname}:`,
+                error,
+              );
+            }
+          }
+
+          // Batch add operations for groups
+          if (update.groupsToAdd.length > 0) {
+            try {
+              const payload = { "groups[]": update.groupsToAdd };
+              await fetch(`http://${controller.ip_address}/data`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload),
+              });
+              completedUpdates += update.groupsToAdd.length;
+              if (progressCallback) {
+                progressCallback(completedUpdates, totalUpdates);
+              }
+            } catch (error) {
+              console.error(
+                `Error adding groups to ${controller.hostname}:`,
+                error,
+              );
+            }
+          }
+
+          // Individual group update operations
+          for (const group of update.groupsToUpdate) {
+            try {
+              const payload = { [`groups[id=${group.id}]`]: group };
+              await fetch(`http://${controller.ip_address}/data`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload),
+              });
+              completedUpdates++;
+              if (progressCallback) {
+                progressCallback(completedUpdates, totalUpdates);
+              }
+            } catch (error) {
+              console.error(
+                `Error updating group on ${controller.hostname}:`,
+                error,
+              );
+            }
+          }
+        }
+
+        // Update local state with the latest versions
+        this.data.presets = Array.from(latestItems.presets.values());
+        this.data.scenes = Array.from(latestItems.scenes.values());
+        this.data.groups = Array.from(latestItems.groups.values());
 
         console.log("Synchronization completed successfully");
         this.status = storeStatus.READY;
-        await this.fetchData(); // Refresh local data after sync
         return true;
       } catch (error) {
         console.error("Error during synchronization:", error);
