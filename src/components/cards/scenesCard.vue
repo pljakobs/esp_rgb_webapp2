@@ -18,7 +18,7 @@
                 <div
                   v-if="prop.node.children && prop.node.children.length > 0"
                   class="q-mr-xs cursor-pointer"
-                  @click.stop="toggleNode(prop.node)"
+                  @click.stop="localToggleNode(prop.node)"
                 >
                   <svgIcon
                     name="arrow_drop_down"
@@ -220,7 +220,7 @@
           <span>Add Group</span>
         </template>
       </q-btn>
-      <q-btn flat color="primary" @click="openDialog">
+      <q-btn flat color="primary" @click="openAddSceneDialog">
         <template v-slot:default>
           <svgIcon name="scene" />
           <span>Add Scene</span>
@@ -231,37 +231,16 @@
 </template>
 
 <script>
-/*
-TodDo:
-- adding groups dialog does not auto close after having saved all.
-- 
-- delete button for group should ask if all associated scenes should also be deleted
-- scenes without a group - how should they be handled?
-- 
-*/
-import { ref, computed, onMounted, watch } from "vue";
+import { computed, onMounted } from "vue";
 import { Dialog, colors, Notify } from "quasar";
 import { useAppDataStore } from "src/stores/appDataStore";
 import { useControllersStore } from "src/stores/controllersStore";
-import { useColorDataStore } from "src/stores/colorDataStore";
+import { useScenesStore } from "src/stores/scenesStore";
 import MyCard from "src/components/myCard.vue";
 import sceneDialog from "src/components/Dialogs/sceneDialog.vue";
 import groupDialog from "src/components/Dialogs/groupDialog.vue";
 import deleteItemDialog from "src/components/Dialogs/deleteItemDialog.vue";
-import {
-  applyScene,
-  getControllerInfo,
-  getPresetName,
-  getControllerColorDisplay,
-  makeID,
-  getControllersInGroup,
-} from "src/services/tools.js";
-import {
-  saveGroup as saveGroupUtil,
-  saveScene as saveSceneUtil,
-  deleteGroup as deleteGroupUtil,
-  deleteScene as deleteSceneUtil,
-} from "src/services/saveDelete";
+import { applyScene, getPresetName } from "src/services/tools.js";
 
 const { hsvToRgb } = colors;
 
@@ -273,542 +252,75 @@ export default {
   setup() {
     const appData = useAppDataStore();
     const controllersStore = useControllersStore();
-    const colorDataStore = useColorDataStore();
-    const expandedNodes = ref([]);
-    const debugStatus = ref("Loading data...");
+    const scenesStore = useScenesStore();
 
-    // Ensure controllers are loaded and initialize data
-    onMounted(async () => {
-      console.log("Mounted scenesCard");
-      debugStatus.value = "Checking data availability...";
+    // Initialize the scenes store when the component mounts
+    onMounted(() => {
+      console.log("🎬 ScenesCard: Initializing scenes store");
+      scenesStore.initialize();
 
-      try {
-        console.log("Initial store state:");
-        console.log("- controllers:", controllersStore.data?.length || 0);
-        console.log("- appData groups:", appData.data?.groups?.length || 0);
-        console.log("- appData scenes:", appData.data?.scenes?.length || 0);
+      // Add debug output about stores
+      setTimeout(() => {
+        console.log("🔍 DEBUG: ScenesCard component state");
+        console.log("SceneStore state:", scenesStore.debugState());
+        console.log("GroupNodes:", scenesStore.groupNodes?.length || 0);
 
-        if (!controllersStore.data || controllersStore.data.length === 0) {
-          debugStatus.value = "Loading controllers...";
-          await controllersStore.fetchControllers();
+        // Force expand first group for testing
+        if (scenesStore.groupNodes?.length > 0) {
+          const firstGroupId = scenesStore.groupNodes[0].id;
+          console.log("🔍 Forcing expand of first group:", firstGroupId);
+          scenesStore.expandedNodes = [firstGroupId];
         }
-
-        if (!appData.data?.groups || appData.data.groups.length === 0) {
-          debugStatus.value = "Loading groups and scenes...";
-          // You may need to add a method to fetch groups/scenes if they're not loaded automatically
-          if (typeof appData.fetchData === "function") {
-            await appData.fetchData();
-          }
-        }
-
-        // Force recomputation of groupNodes
-        debugStatus.value = "Building scene tree...";
-      } catch (error) {
-        console.error("Error initializing scene data:", error);
-        debugStatus.value = "Error loading data";
-      }
+      }, 1000);
     });
 
-    // Watch for data changes to trigger recomputation of the tree
-    watch(
-      () => [
-        controllersStore.data?.length,
-        appData.data?.groups?.length,
-        appData.data?.scenes?.length,
-      ],
-      ([controllers, groups, scenes]) => {
-        console.log(
-          `Data updated - Controllers: ${controllers || 0}, Groups: ${
-            groups || 0
-          }, Scenes: ${scenes || 0}`,
-        );
-        debugStatus.value =
-          groups && scenes ? "Updating scene tree..." : "Waiting for data...";
-      },
-      { immediate: true },
-    );
-
-    // Functions to handle node expansion
     const isExpanded = (nodeId) => {
-      return expandedNodes.value.includes(nodeId);
+      return scenesStore.expandedNodes.includes(nodeId);
     };
 
-    const toggleNode = (node) => {
-      const nodeId = node.id;
-      if (isExpanded(nodeId)) {
-        expandedNodes.value = expandedNodes.value.filter((id) => id !== nodeId);
+    // Local toggle function to ensure proper context
+    const localToggleNode = (node) => {
+      console.log("Local toggle node called with:", node.id);
+
+      // Create a new array to ensure reactivity
+      let newExpanded = [...scenesStore.expandedNodes];
+
+      if (newExpanded.includes(node.id)) {
+        // If already expanded, remove it to collapse
+        newExpanded = newExpanded.filter((id) => id !== node.id);
       } else {
-        expandedNodes.value.push(nodeId);
+        // If not expanded, add it to expand
+        newExpanded.push(node.id);
       }
+
+      // Update the store
+      scenesStore.expandedNodes = newExpanded;
+      console.log("New expanded nodes:", scenesStore.expandedNodes);
     };
 
-    // Get the hierarchical data structure for QTree
-    const groupNodes = computed(() => {
-      try {
-        // Use optional chaining and default to empty array to avoid errors
-        const groups = appData.data?.groups || [];
-        const scenes = appData.data?.scenes || [];
-
-        console.log("Computing groupNodes");
-        console.log("Groups:", groups.length || 0);
-        console.log("Scenes:", scenes.length || 0);
-
-        if (groups.length === 0) {
-          console.log("No groups found");
-          debugStatus.value = "No groups available";
-          return [];
-        }
-
-        // Process ALL groups, even empty ones
-        const result = groups.map((group) => {
-          // Find all scenes for this group
-          const groupScenes = scenes.filter(
-            (scene) => scene.group_id === group.id,
-          );
-
-          // Count scenes in this group
-          const sceneCount = groupScenes.length;
-
-          // Map scenes if there are any
-          let children = [];
-          if (groupScenes.length > 0) {
-            children = groupScenes.map((scene) => {
-              // For each scene, map settings to controller nodes
-              const controllerNodes =
-                scene.settings?.map((setting) => {
-                  const controllerInfo = getControllerInfo(
-                    setting.controller_id,
-                  );
-                  return {
-                    id: `controller-${scene.id}-${setting.controller_id}`,
-                    label: controllerInfo.hostname,
-                    nodeType: "controller",
-                    data: {
-                      ...setting,
-                      hostname: controllerInfo.hostname,
-                      ip: controllerInfo.ip,
-                      online: controllerInfo.online,
-                      icon: controllerInfo.icon,
-                    },
-                  };
-                }) || [];
-
-              // Return the scene node with its controller children
-              return {
-                id: `scene-${scene.id}`,
-                label: scene.name,
-                nodeType: "scene",
-                data: scene,
-                children: controllerNodes,
-              };
-            });
-          }
-
-          // Create tree node for this group - all groups have 'children' now
-          const groupNode = {
-            id: `group-${group.id}`,
-            label: group.name,
-            nodeType: "group",
-            data: group,
-            sceneCount: sceneCount,
-            children: children,
-          };
-
-          return groupNode;
-        });
-
-        // Debug logging outside the map function
-        console.log("FINAL GROUP NODES STRUCTURE:");
-        console.log(
-          JSON.stringify(
-            result.map((group) => ({
-              id: group.id,
-              label: group.label,
-              nodeType: group.nodeType,
-              groupId: group.data.id,
-              sceneCount: group.sceneCount,
-              childrenCount: group.children.length,
-            })),
-            null,
-            2,
-          ),
-        );
-
-        // Check for duplicate groups
-        const groupIds = result.map((g) => g.data.id);
-        const uniqueGroupIds = [...new Set(groupIds)];
-        if (groupIds.length !== uniqueGroupIds.length) {
-          console.warn(
-            "DUPLICATE GROUPS DETECTED!",
-            groupIds.filter((id, idx) => groupIds.indexOf(id) !== idx),
-          );
-        }
-
-        debugStatus.value = "";
-        return result;
-      } catch (error) {
-        console.error("Error in groupNodes computed:", error);
-        debugStatus.value = "Error building scene tree";
-        return [];
-      }
-    });
-
+    // Handle expanded nodes change from q-tree
     const onExpandedChange = (expanded) => {
-      expandedNodes.value = expanded;
+      console.log("🌳 Tree reports expanded nodes changed to:", expanded);
+      scenesStore.expandedNodes = expanded;
     };
 
-    // Scene Management Functions
-    const addScene = () => {
-      Dialog.create({
-        component: sceneDialog,
-      })
-        .onOk((scene) => {
-          handleSaveScene(scene);
-        })
-        .onCancel(() => {
-          console.log("Dialog canceled");
-        });
-    };
-
-    const editScene = (scene) => {
-      console.log("editing scene", scene);
-      Dialog.create({
-        component: sceneDialog,
-        componentProps: {
-          scene,
-        },
-      })
-        .onOk((scene) => {
-          handleSaveScene(scene);
-        })
-        .onCancel(() => {
-          console.log("Dialog canceled");
-        });
-    };
-
-    const handleSaveScene = (scene) => {
-      console.log("Saving scene", scene);
-
-      // Extract any callbacks just like we do with groups
-      const saveComplete = scene.saveComplete;
-      const updateProgress = scene.updateProgress;
-
-      // Remove callbacks from the scene object
-      if (saveComplete) delete scene.saveComplete;
-      if (updateProgress) delete scene.updateProgress;
-
-      // Use the utility function with progress callback
-      saveSceneUtil(appData, scene, (completed, total) => {
-        // Update dialog progress if available
-        if (updateProgress) {
-          updateProgress(completed, total);
-        }
-
-        // When complete, signal to close dialog
-        if (completed === total && saveComplete) {
-          setTimeout(() => {
-            saveComplete();
-          }, 50);
-        }
-      });
-
-      // Expand the parent group node
-      const groupNodeId = `group-${scene.group_id}`;
-      if (!expandedNodes.value.includes(groupNodeId)) {
-        expandedNodes.value.push(groupNodeId);
-      }
-
-      // Expand this scene node
-      const sceneNodeId = `scene-${scene.id}`;
-      if (!expandedNodes.value.includes(sceneNodeId)) {
-        expandedNodes.value.push(sceneNodeId);
-      }
-    };
-
-    const deleteScene = (scene) => {
-      console.log("Delete scene clicked");
-
-      Dialog.create({
-        component: deleteItemDialog,
-        componentProps: {
-          item: scene,
-          itemType: "scene",
-        },
-      });
-    };
-
-    const toggleFavoriteScene = (scene) => {
-      scene.favorite = !scene.favorite;
-      console.log("Toggling favorite for scene", scene);
-      appData.saveScene(scene);
-    };
-    // Group Management Functions
-    const addGroup = () => {
-      Dialog.create({
-        component: groupDialog,
-        persistent: true,
-      })
-        .onOk((result) => {
-          console.log("Saving group", result);
-
-          // Extract the callbacks from the result
-          const group = { ...result };
-          const saveComplete = group.saveComplete;
-          const updateProgress = group.updateProgress;
-
-          // Remove the callbacks from the group object
-          delete group.saveComplete;
-          delete group.updateProgress;
-
-          // Create a notification for the saving process
-          const saveNotif = Notify.create({
-            message: "Saving group...",
-            caption: "0% complete",
-            color: "primary",
-            position: "bottom-right",
-            timeout: 0,
-            progress: 0,
-            actions: [{ icon: "close", color: "white" }],
-          });
-
-          // Call the utility function with progress callback
-          saveGroupUtil(appData, group, (completed, total) => {
-            const percent = Math.round((completed / total) * 100);
-
-            // Update the notification
-            setTimeout(() => {
-              saveNotif({
-                caption: `${percent}% complete (${completed}/${total} controllers)`,
-                progress: completed / total,
-              });
-
-              // Also update the dialog's progress if dialog is still showing
-              if (updateProgress) {
-                updateProgress(completed, total);
-              }
-            }, 10);
-
-            // When complete, show success message and close the dialog
-            if (completed === total) {
-              setTimeout(() => {
-                saveNotif({
-                  message: "Group saved successfully!",
-                  caption: "All controllers updated",
-                  timeout: 2000,
-                  progress: 1,
-                });
-
-                // Signal completion to close the dialog
-                if (saveComplete) {
-                  saveComplete();
-                }
-              }, 50);
-            }
-          });
-
-          // Expand this group node
-          const groupNodeId = `group-${group.id}`;
-          if (!expandedNodes.value.includes(groupNodeId)) {
-            expandedNodes.value.push(groupNodeId);
-          }
-        })
-        .onCancel(() => {
-          console.log("Group dialog canceled");
-        });
-    };
-
-    const editGroup = (group) => {
-      Dialog.create({
-        component: groupDialog,
-        componentProps: {
-          group,
-        },
-        persistent: true, // Make it persistent like addGroup
-      })
-        .onOk((result) => {
-          console.log("Editing group", result);
-
-          // Extract the callbacks from the result - same pattern as addGroup
-          const group = { ...result };
-          const saveComplete = group.saveComplete;
-          const updateProgress = group.updateProgress;
-
-          // Remove the callbacks from the group object
-          delete group.saveComplete;
-          delete group.updateProgress;
-
-          // Create a notification for the saving process
-          const saveNotif = Notify.create({
-            message: "Editing group...",
-            caption: "0% complete",
-            color: "primary",
-            position: "bottom-right",
-            timeout: 0,
-            progress: 0,
-            actions: [{ icon: "close", color: "white" }],
-          });
-
-          // Call the utility function with progress callback
-          saveGroupUtil(appData, group, (completed, total) => {
-            const percent = Math.round((completed / total) * 100);
-            console.log(
-              `Group save progress: ${completed}/${total} (${percent}%)`,
-            );
-
-            // Update the notification
-            setTimeout(() => {
-              saveNotif({
-                caption: `${percent}% complete (${completed}/${total} controllers)`,
-                progress: completed / total,
-              });
-
-              // Also update the dialog's progress if dialog is still showing
-              if (updateProgress) {
-                console.log("Updating progress in dialog");
-                updateProgress(completed, total);
-              }
-            }, 10);
-
-            // When complete, show success message and close the dialog
-            if (completed === total) {
-              console.log("Save complete, closing dialog");
-              setTimeout(() => {
-                saveNotif({
-                  message: "Group saved successfully!",
-                  caption: "All controllers updated",
-                  timeout: 2000,
-                  progress: 1,
-                });
-
-                // Signal completion to close the dialog
-                if (saveComplete) {
-                  console.log("Calling saveComplete to close dialog");
-                  saveComplete();
-                }
-              }, 50);
-            }
-          });
-
-          // Expand this group node
-          const groupNodeId = `group-${group.id}`;
-          if (!expandedNodes.value.includes(groupNodeId)) {
-            expandedNodes.value.push(groupNodeId);
-          }
-        })
-        .onCancel(() => {
-          console.log("Group dialog canceled");
-        });
-    };
-
-    const deleteGroup = (group) => {
-      // Check if group has scenes
-      const scenes = appData.data?.scenes || [];
-      const groupScenes = scenes.filter((scene) => scene.group_id === group.id);
-
-      console.log("delte group clicked");
-      // Create blocking condition if there are scenes in this group
-      const blockingCondition =
-        groupScenes.length > 0
-          ? {
-              message: `This group contains ${groupScenes.length} scene(s) which must be deleted first.`,
-              count: groupScenes.length,
-            }
-          : null;
-
-      Dialog.create({
-        component: deleteItemDialog,
-        componentProps: {
-          item: group,
-          itemType: "group",
-          blockingCondition,
-        },
-      });
-    };
-
-    const snapshotScene = async (group) => {
-      console.log("Taking snapshot for group:", group.name);
-
+    const handleSnapshotScene = async (group) => {
       try {
-        const controllersInGroup = getControllersInGroup(group);
-        console.log(
-          "snapshotting controllers for group ",
-          controllersInGroup,
-          group.name,
-        );
-        // Create a single notification that persists during collection
         const collectNotif = Notify.create({
           message: `Collecting states for group '${group.name}'`,
-          caption: `0/${controllersInGroup.length} controllers processed`,
           color: "info",
-          timeout: 6000,
-          progress: 0,
+          timeout: 2000,
+          progress: true,
         });
 
-        // Fetch color info for each controller
-        const settings = [];
-        let processedCount = 0;
+        const sceneSnapshot = await scenesStore.snapshotScene(group);
 
-        for (const controller of controllersInGroup) {
-          try {
-            // Update notification with progress
-            collectNotif({
-              caption: `Processing ${controller.hostname || controller.ip_address}`,
-              progress: processedCount / controllersInGroup.length,
-            });
-
-            const response = await fetch(
-              `http://${controller.ip_address}/color`,
-            );
-
-            if (!response.ok) {
-              console.error(
-                `Error fetching color from ${controller.ip_address}`,
-              );
-              continue;
-            }
-
-            const colorData = await response.json();
-
-            // Prefer HSV format for consistency
-            if (colorData.hsv) {
-              const { h, s, v } = colorData.hsv;
-              settings.push({
-                controller_id: String(controller.id),
-                color: { hsv: { h, s, v } },
-              });
-            } else if (colorData.raw) {
-              // Fallback to raw if hsv isn't available
-              settings.push({
-                controller_id: String(controller.id),
-                color: { raw: colorData.raw },
-              });
-            }
-          } catch (error) {
-            console.error(
-              `Network error with ${controller.ip_address}:`,
-              error,
-            );
-          }
-          processedCount++;
-        }
-
-        // Close the collection notification
         collectNotif({
-          message: `Collection complete: ${settings.length} states captured`,
+          message: "Collection complete",
           timeout: 1000,
-          progress: 1,
         });
 
-        // Create a scene object
-        const sceneSnapshot = {
-          id: makeID(),
-          name: `Snapshot ${new Date().toLocaleTimeString()}`,
-          group_id: group.id,
-          settings: settings,
-        };
-
-        // Simply pass to existing editScene function!
-        editScene(sceneSnapshot);
+        openSceneDialog(sceneSnapshot);
       } catch (error) {
         console.error("Error taking snapshot:", error);
         Notify.create({
@@ -817,26 +329,167 @@ export default {
         });
       }
     };
+
+    // Keep UI handlers in the component
+    const openSceneDialog = (existingScene = null) => {
+      Dialog.create({
+        component: sceneDialog,
+        componentProps: existingScene ? { scene: existingScene } : undefined,
+      }).onOk((scene) => {
+        // Extract callbacks
+        const saveComplete = scene.saveComplete;
+        const updateProgress = scene.updateProgress;
+
+        // Remove callbacks from scene object
+        if (saveComplete) delete scene.saveComplete;
+        if (updateProgress) delete scene.updateProgress;
+
+        scenesStore.saveScene(scene, updateProgress, saveComplete);
+      });
+    };
+
+    const openGroupDialog = (existingGroup = null) => {
+      try {
+        console.log("Opening group dialog with:", existingGroup);
+
+        // Create default empty group if none is provided
+        const defaultGroup = existingGroup || {
+          id: "",
+          name: "",
+          controllers: [], // Keep for backward compatibility
+          controller_ids: [], // Add this for the groupDialog component
+          ts: Date.now(),
+        };
+
+        console.log("Group data being passed to dialog:", defaultGroup);
+
+        Dialog.create({
+          component: groupDialog,
+          componentProps: { group: defaultGroup }, // Always pass a group object
+          persistent: true,
+        }).onOk((result) => {
+          try {
+            console.log("Dialog returned:", result);
+
+            // Extract callbacks
+            const group = { ...result };
+            const saveComplete = group.saveComplete;
+            const updateProgress = group.updateProgress;
+
+            // Remove callbacks
+            delete group.saveComplete;
+            delete group.updateProgress;
+
+            // Create notification
+            const saveNotif = Notify.create({
+              message: existingGroup ? "Editing group..." : "Saving group...",
+              caption: "0% complete",
+              color: "primary",
+
+              timeout: 2000,
+              progress: 0,
+              actions: [{ icon: "close", color: "white" }],
+            });
+
+            // Custom progress handler that updates notification
+            const notifyProgress = (completed, total) => {
+              const percent = Math.round((completed / total) * 100);
+
+              saveNotif({
+                caption: `${percent}% complete (${completed}/${total} controllers)`,
+                progress: completed / total,
+              });
+
+              if (updateProgress) updateProgress(completed, total);
+
+              if (completed === total) {
+                saveNotif({
+                  message: "Group saved successfully!",
+                  caption: "All controllers updated",
+                  timeout: 2000,
+                  progress: 1,
+                });
+
+                if (saveComplete) saveComplete();
+              }
+            };
+
+            scenesStore.saveGroup(group, notifyProgress);
+          } catch (err) {
+            console.error("Error in dialog onOk handler:", err);
+            Notify.create({
+              type: "negative",
+              message: "Error saving group: " + err.message,
+            });
+          }
+        });
+      } catch (err) {
+        console.error("Error opening group dialog:", err);
+        Notify.create({
+          type: "negative",
+          message: "Error opening dialog: " + err.message,
+        });
+      }
+    };
+
+    const deleteItem = (item, itemType) => {
+      let blockingCondition = null;
+
+      if (itemType === "group") {
+        // Check if group has scenes
+        const scenes = appData.data?.scenes || [];
+        const groupScenes = scenes.filter(
+          (scene) => scene.group_id === item.id,
+        );
+
+        if (groupScenes.length > 0) {
+          blockingCondition = {
+            message: `This group contains ${groupScenes.length} scene(s) which must be deleted first.`,
+            count: groupScenes.length,
+          };
+        }
+      }
+
+      Dialog.create({
+        component: deleteItemDialog,
+        componentProps: {
+          item,
+          itemType,
+          blockingCondition,
+        },
+      });
+    };
+
     return {
-      groupNodes,
-      expandedNodes,
-      onExpandedChange,
+      // Store refs
+      groupNodes: computed(() => scenesStore.groupNodes),
+      expandedNodes: computed(() => scenesStore.expandedNodes),
+      debugStatus: computed(() => scenesStore.debugStatus),
+
+      // Local UI methods
       isExpanded,
-      toggleNode,
-      openDialog: addScene,
-      openAddGroupDialog: addGroup,
-      editScene,
-      deleteScene,
-      editGroup,
-      deleteGroup,
-      getControllerColorDisplay,
+      localToggleNode, // Use the local handler
+      onExpandedChange,
+
+      openAddGroupDialog: () => openGroupDialog(null),
+      editGroup: openGroupDialog,
+      deleteGroup: (group) => deleteItem(group, "group"),
+
+      openAddSceneDialog: () => openSceneDialog(null),
+      editScene: openSceneDialog,
+      deleteScene: (scene) => deleteItem(scene, "scene"),
+      snapshotScene: handleSnapshotScene,
+
+      // Utility functions that stay in component
       hsvToRgb,
-      debugStatus,
-      getControllerInfo,
       getPresetName,
       applyScene,
-      snapshotScene,
-      toggleFavoriteScene,
+
+      // Toggle favorite directly through appData store
+      toggleFavoriteScene: (scene) => {
+        scene.favorite = !scene.favorite;
+        appData.saveScene(scene);
+      },
     };
   },
 };
