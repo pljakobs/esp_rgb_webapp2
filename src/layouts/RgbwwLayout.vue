@@ -55,6 +55,13 @@
             v-else-if="appData.status === storeStatus.LOADING"
             color="light-blue"
           />
+
+          <span
+            v-else-if="appData.status === storeStatus.SYNCING"
+            color="light-blue"
+          >
+            <q-spinner-radio /> synching
+          </span>
           <span v-else class="text-danger">❌ {{ appData.error }}</span>
         </div>
       </div>

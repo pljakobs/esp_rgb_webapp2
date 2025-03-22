@@ -43,6 +43,16 @@ export const useAppDataStore = defineStore("appData", {
     watchForSync() {
       const controllers = useControllersStore();
 
+      // Only proceed if not already synced or syncing
+      if (
+        this.status === storeStatus.SYNCED ||
+        this.status === storeStatus.SYNCING
+      ) {
+        console.log("Synchronization already completed or in progress");
+        return;
+      }
+
+      // Immediate check if both stores are ready
       if (
         controllers.status === storeStatus.READY &&
         this.status === storeStatus.READY
@@ -53,14 +63,18 @@ export const useAppDataStore = defineStore("appData", {
         this.synchronizeAllData((completed, total) => {
           console.log(`Sync progress: ${completed}/${total}`);
         });
+        return; // Exit early - no need to set up watchers
       }
+
       // Set up a watcher for the controllers store status
       watch(
         () => controllers.status,
         (newStatus) => {
           if (
             newStatus === storeStatus.READY &&
-            this.status === storeStatus.READY
+            this.status === storeStatus.READY &&
+            this.status !== storeStatus.SYNCED &&
+            this.status !== storeStatus.SYNCING
           ) {
             console.log("Both stores are ready, starting synchronization...");
             this.synchronizeAllData((completed, total) => {
@@ -76,7 +90,9 @@ export const useAppDataStore = defineStore("appData", {
         (newStatus) => {
           if (
             newStatus === storeStatus.READY &&
-            controllers.status === storeStatus.READY
+            controllers.status === storeStatus.READY &&
+            this.status !== storeStatus.SYNCED &&
+            this.status !== storeStatus.SYNCING
           ) {
             console.log("Both stores are ready, starting synchronization...");
             this.synchronizeAllData((completed, total) => {
@@ -560,7 +576,20 @@ export const useAppDataStore = defineStore("appData", {
 
     async synchronizeAllData(progressCallback) {
       const controllers = useControllersStore();
-      this.status = storeStatus.LOADING;
+
+      // Check if we're already syncing or have completed sync
+      if (this.status === storeStatus.SYNCING) {
+        console.log("Synchronization already in progress, skipping");
+        return false;
+      }
+
+      if (this.status === storeStatus.SYNCED) {
+        console.log("Synchronization already completed, skipping");
+        return true;
+      }
+
+      // Set status to SYNCING to prevent duplicate syncs
+      this.status = storeStatus.SYNCING;
 
       try {
         console.log("Starting synchronization across all controllers...");
@@ -954,7 +983,7 @@ export const useAppDataStore = defineStore("appData", {
         this.data.groups = Array.from(latestItems.groups.values());
 
         console.log("Synchronization completed successfully");
-        this.status = storeStatus.READY;
+        this.status = storeStatus.SYNCED;
         return true;
       } catch (error) {
         console.error("Error during synchronization:", error);
