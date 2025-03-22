@@ -48,11 +48,11 @@
                 <q-radio
                   v-model="selectedFirmware"
                   :val="fw"
-                  :label="fw.fw_version"
+                  :label="getVersionLabel(fw)"
                 />
               </td>
               <td>{{ fw.type }}</td>
-              <td>{{ fw.fw_version }}</td>
+              <td>{{ getVersionLabel(fw) }}</td>
             </tr>
           </tbody>
         </table>
@@ -98,19 +98,28 @@ export default {
     const { dialogRef, onDialogHide, onDialogOK, onDialogCancel } =
       useDialogPluginComponent();
 
-    const selectedFirmware = props.firmwareOptions.find(
-      (fw) => fw.type === props.currentInfo.build_type,
+    // Make selectedFirmware reactive by using ref
+    const selectedFirmware = ref(
+      props.firmwareOptions.find(
+        (fw) => fw.type === props.currentInfo.build_type,
+      ) || props.firmwareOptions[0],
     );
 
+    // Helper function to get version from different possible property names
+    const getVersionLabel = (fw) => {
+      // Check different possible version property names
+      return fw.version || fw.fw_version || "Unknown";
+    };
+
     const startUpdate = () => {
-      if (!selectedFirmware) {
+      if (!selectedFirmware.value) {
         return;
       }
 
       // Process the firmware URLs
       let baseUrl;
       let fullUrl;
-      const relativeUrl = selectedFirmware.files.rom.url;
+      const relativeUrl = selectedFirmware.value.files.rom.url;
 
       if (relativeUrl.substring(0, 4) !== "http") {
         // relative URL is server relative (has no scheme)
@@ -122,7 +131,9 @@ export default {
       }
 
       // Create a deep copy to avoid mutating props
-      const preparedFirmware = JSON.parse(JSON.stringify(selectedFirmware));
+      const preparedFirmware = JSON.parse(
+        JSON.stringify(selectedFirmware.value),
+      );
       preparedFirmware.files.rom.url = fullUrl;
 
       // Send the selected firmware back to the parent
@@ -135,6 +146,7 @@ export default {
       onDialogCancel,
       selectedFirmware,
       startUpdate,
+      getVersionLabel,
     };
   },
 };

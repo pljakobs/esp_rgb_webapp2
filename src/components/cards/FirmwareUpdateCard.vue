@@ -55,6 +55,24 @@ export default {
     const availableFirmware = ref([]);
     const updating = ref(false);
 
+    // Helper function to fetch with a 500ms timeout
+    const fetchWithTimeout = async (url, options = {}, timeout = 500) => {
+      const controller = new AbortController();
+      const id = setTimeout(() => controller.abort(), timeout);
+
+      try {
+        const response = await fetch(url, {
+          ...options,
+          signal: controller.signal,
+        });
+        clearTimeout(id);
+        return response;
+      } catch (error) {
+        clearTimeout(id);
+        throw error;
+      }
+    };
+
     const fetchFirmware = async () => {
       console.log("Fetching firmware from:", otaUrl.value);
       try {
@@ -79,13 +97,36 @@ export default {
         const data = await response.json();
         firmware.value = data;
 
-        // Filter available firmware based on current SoC
+        // Filter available firmware based on current SoC only (not build_type)
+        // This allows choosing any build type (debug/release) for the current hardware
         availableFirmware.value = data.firmware.filter(
           (fw) => fw.soc === infoData.data.soc,
         );
-        console.log("Available firmware:", availableFirmware.value);
 
-        // Open the firmware selection dialog
+        // Sort by version and put current build type first for better UX
+        availableFirmware.value.sort((a, b) => {
+          // Put current build type first
+          if (
+            a.type === infoData.data.build_type &&
+            b.type !== infoData.data.build_type
+          )
+            return -1;
+          if (
+            a.type !== infoData.data.build_type &&
+            b.type === infoData.data.build_type
+          )
+            return 1;
+
+          // Then sort by version (assuming semantic versioning)
+          return b.version.localeCompare(a.version, undefined, {
+            numeric: true,
+          });
+        });
+
+        console.log("Available firmware:", availableFirmware.value);
+        console.log("About to show firmware selection dialog...");
+
+        // Show the firmware selection dialog
         showFirmwareDialog();
       } catch (error) {
         console.error("Error fetching firmware:", error);
@@ -100,40 +141,59 @@ export default {
     };
 
     const showFirmwareDialog = () => {
-      Dialog.create({
-        component: FirmwareSelectDialog,
-        componentProps: {
-          firmwareOptions: availableFirmware.value,
-          currentInfo: infoData.data,
-          otaUrl: otaUrl.value,
-        },
-        persistent: true,
-      }).onOk(async (selectedFirmware) => {
-        await updateController(
-          selectedFirmware,
-          controllersStore.currentController,
-        );
-      });
-    };
-
-    // Helper function to fetch with a 500ms timeout
-    const fetchWithTimeout = async (url, options = {}, timeout = 500) => {
-      const controller = new AbortController();
-      const id = setTimeout(() => controller.abort(), timeout);
-
       try {
-        const response = await fetch(url, {
-          ...options,
-          signal: controller.signal,
-        });
-        clearTimeout(id);
-        return response;
+        console.log(
+          "Creating firmware selection dialog with options:",
+          availableFirmware.value,
+        );
+
+        // First check if there are any options
+        if (availableFirmware.value.length === 0) {
+          console.log("No firmware options available, showing simple dialog");
+          Dialog.create({
+            title: "No Firmware Available",
+            message: "No compatible firmware was found for your device.",
+            persistent: true,
+          });
+          return;
+        }
+
+        // Use the component-based dialog
+        Dialog.create({
+          component: FirmwareSelectDialog,
+          componentProps: {
+            firmwareOptions: availableFirmware.value,
+            currentInfo: infoData.data,
+            otaUrl: otaUrl.value,
+          },
+          persistent: true,
+        })
+          .onOk(async (selectedFirmware) => {
+            console.log("Dialog OK with firmware:", selectedFirmware);
+            if (selectedFirmware) {
+              await updateController(
+                selectedFirmware,
+                controllersStore.currentController,
+              );
+            } else {
+              console.error("No firmware selected");
+            }
+          })
+          .onCancel(() => {
+            console.log("Firmware selection cancelled");
+          });
       } catch (error) {
-        clearTimeout(id);
-        throw error;
+        console.error("Error creating firmware dialog:", error);
+        // Fallback to a basic dialog
+        Dialog.create({
+          title: "Error",
+          message: `Could not create firmware selection dialog: ${error.message}`,
+          color: "negative",
+          icon: "report_problem",
+          persistent: true,
+        });
       }
     };
-
     const updateController = async (
       selectedFirmware,
       controller,
@@ -408,8 +468,12 @@ export default {
                     <div id="status-local" class="controller-status q-mb-md" style="display:none;">
                       <div class="row items-center">
                         <div class="col-8">
-                          <div class="text-weight-medium">${controllersStore.currentController.hostname} (Current)</div>
-                          <div class="text-caption">${controllersStore.currentController.ip_address}</div>
+                          <div class="text-weight-medium">${
+                            controllersStore.currentController.hostname
+                          } (Current)</div>
+                          <div class="text-caption">${
+                            controllersStore.currentController.ip_address
+                          }</div>
                         </div>
                         <div class="col-4 text-right">
                           <div class="q-mr-xs status-indicator waiting">
@@ -544,36 +608,36 @@ export default {
                   switch (status) {
                     case "checking":
                       iconHtml = `<span class="q-spinner-container">
-                        <svg class="q-spinner text-primary" width="1em" height="1em" viewBox="25 25 50 50">
-                          <circle class="path" cx="50" cy="50" r="20" fill="none" stroke="currentColor" stroke-width="3" stroke-miterlimit="10"/>
-                        </svg>
-                      </span> <span>Checking</span>`;
+    <svg class="q-spinner text-primary" width="1em" height="1em" viewBox="25 25 50 50">
+      <circle class="path" cx="50" cy="50" r="20" fill="none" stroke="currentColor" stroke-width="3" stroke-miterlimit="10"/>
+    </svg>
+  </span> <span>Checking</span>`;
                       break;
                     case "updating":
                       iconHtml = `<span class="q-spinner-container">
-                        <svg class="q-spinner text-orange" width="1em" height="1em" viewBox="25 25 50 50">
-                          <circle class="path" cx="50" cy="50" r="20" fill="none" stroke="currentColor" stroke-width="3" stroke-miterlimit="10"/>
-                        </svg>
-                      </span> <span>Updating</span>`;
+    <svg class="q-spinner text-orange" width="1em" height="1em" viewBox="25 25 50 50">
+      <circle class="path" cx="50" cy="50" r="20" fill="none" stroke="currentColor" stroke-width="3" stroke-miterlimit="10"/>
+    </svg>
+  </span> <span>Updating</span>`;
                       break;
                     case "success":
                       iconHtml =
-                        '<i class="material-icons text-positive" style="font-size: 1em;">check_circle</i> <span>Success</span>';
+                        '<div class="inline-icon text-positive"><img src="icons/check_circle.svg" width="1em" height="1em"/></div> <span>Success</span>';
                       break;
                     case "failed":
                       iconHtml =
-                        '<i class="material-icons text-negative" style="font-size: 1em;">error</i> <span>Failed</span>';
+                        '<div class="inline-icon text-negative"><img src="icons/error.svg" width="1em" height="1em"/></div> <span>Failed</span>';
                       break;
                     case "skipped":
                       iconHtml =
-                        '<i class="material-icons text-amber" style="font-size: 1em;">info</i> <span>Skipped</span>';
+                        '<div class="inline-icon text-amber"><img src="icons/info.svg" width="1em" height="1em"/></div> <span>Skipped</span>';
                       break;
                     default:
                       iconHtml = `<span class="q-spinner-container">
-                        <svg class="q-spinner text-grey" width="1em" height="1em" viewBox="25 25 50 50">
-                          <circle class="path" cx="50" cy="50" r="20" fill="none" stroke="currentColor" stroke-width="3" stroke-miterlimit="10"/>
-                        </svg>
-                      </span> <span>Waiting</span>`;
+    <svg class="q-spinner text-grey" width="1em" height="1em" viewBox="25 25 50 50">
+      <circle class="path" cx="50" cy="50" r="20" fill="none" stroke="currentColor" stroke-width="3" stroke-miterlimit="10"/>
+    </svg>
+  </span> <span>Waiting</span>`;
                   }
                   indicator.innerHTML = iconHtml;
                 }
@@ -1118,5 +1182,33 @@ export default {
 .details {
   font-size: 0.85em;
   line-height: 1.4;
+}
+
+.inline-icon {
+  display: inline-flex;
+  align-items: center;
+  vertical-align: middle;
+  margin-right: 4px;
+}
+
+.inline-icon img {
+  display: block;
+  width: 1em;
+  height: 1em;
+}
+
+.text-positive img {
+  filter: invert(48%) sepia(79%) saturate(2476%) hue-rotate(86deg)
+    brightness(90%) contrast(85%);
+}
+
+.text-negative img {
+  filter: invert(27%) sepia(51%) saturate(7497%) hue-rotate(346deg)
+    brightness(97%) contrast(105%);
+}
+
+.text-amber img {
+  filter: invert(63%) sepia(57%) saturate(4548%) hue-rotate(2deg)
+    brightness(109%) contrast(102%);
 }
 </style>
