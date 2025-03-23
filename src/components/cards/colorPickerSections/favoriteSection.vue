@@ -57,7 +57,18 @@
             @click="activateScene(scene)"
           >
             <div class="swatch scene-swatch-bg">
-              <svgIcon name="auto_awesome" class="scene-icon" />
+              <svgIcon :name="getSceneIcon(scene)" class="scene-icon" />
+              <div class="scene-colors">
+                <div
+                  v-for="(light, index) in getSceneLights(scene)"
+                  :key="index"
+                  class="scene-color-circle"
+                  :style="{
+                    backgroundColor: light.color,
+                    animationDelay: index * 0.15 + 's',
+                  }"
+                ></div>
+              </div>
               <div class="swatch-name">{{ scene.name }}</div>
             </div>
           </div>
@@ -85,7 +96,7 @@ import { ref, computed } from "vue";
 import { colors } from "quasar";
 import { useAppDataStore } from "src/stores/appDataStore";
 import RawBadge from "src/components/RawBadge.vue";
-import { applyScene } from "src/services/tools.js";
+import { applyScene, getControllerInfo } from "src/services/tools.js";
 
 const { hsvToRgb } = colors;
 
@@ -145,6 +156,50 @@ export default {
       return groups;
     });
 
+    const getSceneLights = (scene) => {
+      const lights = [];
+
+      // Add console logging for debugging
+      console.log("Processing scene:", scene.name);
+
+      // Check if scene has steps (animations)
+      if (scene.steps && scene.steps.length > 0) {
+        // Get colors from the first step
+        const firstStep = scene.steps[0];
+        console.log("First step has colors:", !!firstStep.colors);
+
+        if (firstStep.colors) {
+          // Convert each color to a display format
+          Object.entries(firstStep.colors).forEach(([key, value]) => {
+            console.log(`Processing color: ${key}`, value);
+
+            if (value.hsv) {
+              const rgb = hsvToRgb(value.hsv);
+              lights.push({
+                name: key,
+                color: `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`,
+              });
+            } else if (value.raw) {
+              // For raw values, use a neutral color
+              lights.push({
+                name: key,
+                color: "#afafaf",
+              });
+            } else {
+              // Fallback if the color format is unknown
+              lights.push({
+                name: key,
+                color: "#ff00ff", // Bright magenta to easily spot issues
+              });
+            }
+          });
+        }
+      }
+
+      console.log(`Found ${lights.length} lights for scene ${scene.name}`);
+      // Limit to 8 colors
+      return lights.slice(0, 8);
+    };
     // Helper to check if a group is the last one (to avoid extra dividers)
     const isLastGroup = (groupName) => {
       const groupNames = Object.keys(favoriteSceneGroups.value);
@@ -157,11 +212,28 @@ export default {
     };
 
     const activateScene = (scene) => {
-      // Apply the scene directly
       applyScene(scene);
 
-      // Also emit the event for backward compatibility
       emit("activate-scene", scene);
+    };
+
+    const getSceneIcon = (scene) => {
+      // If the scene has settings, use the icon from the first controller
+      if (scene.settings && scene.settings.length > 0) {
+        const firstSetting = scene.settings[0];
+        const controllerId = firstSetting.controller_id;
+
+        if (controllerId) {
+          // Get controller info using the existing function from tools.js
+          const controllerInfo = getControllerInfo(controllerId);
+
+          // Return the controller's icon or fall back to "scene"
+          return controllerInfo.icon || "scene";
+        }
+      }
+
+      // Fallback to the default scene icon
+      return "scene";
     };
 
     return {
@@ -172,6 +244,8 @@ export default {
       activateScene,
       isLastGroup,
       hsvToRgb,
+      getSceneLights,
+      getSceneIcon,
     };
   },
 };
@@ -207,18 +281,99 @@ export default {
   text-shadow: 1px 1px 2px black;
 }
 
+/* Update scene swatch styles */
 .scene-swatch-bg {
-  background: linear-gradient(135deg, #8e2de2, #4a00e0);
+  background-color: #f0eeed; /* Warm grey background instead of gradient */
+  position: relative;
+  overflow: hidden;
+}
+
+/* Add styles for scene color circles */
+.scene-color-circle {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.7); /* Stronger border */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  margin: 2px;
+  display: inline-block; /* Ensure proper display */
+  opacity: 1; /* Start visible instead of using animation */
+  /* animation: fadeIn 0.5s ease forwards; */ /* Temporarily disable animation */
+}
+
+.scene-colors {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: center;
+  position: absolute;
+  top: 25px;
+  left: 10px;
+  right: 10px;
+  min-height: 30px; /* Ensure visibility even without content */
+  padding: 5px;
+  background-color: rgba(255, 255, 255, 0.1); /* Slightly highlight the area */
+}
+
+/* Make the scene swatch background more distinct */
+.scene-swatch-bg {
+  background-color: #e5e0db; /* Slightly darker warm grey */
+  position: relative;
+  overflow: visible; /* Allow content to be visible if needed */
+  border: 1px solid #ccc; /* Add border to make more distinct */
 }
 
 .scene-icon {
   position: absolute;
-  top: 10px;
-  right: 10px;
-  font-size: 20px;
-  opacity: 0.8;
+  top: 5px;
+  right: 5px;
+  font-size: 10px; /* Reduced size by 50% */
+  opacity: 0.9;
+  color: #8e2de2;
+  background-color: rgba(255, 255, 255, 0.7); /* Add background for clarity */
+  padding: 4px;
+  border-radius: 4px;
+  z-index: 2; /* Ensure it's above other elements */
 }
 
+/* Update swatch name for scenes */
+.scene-swatch .swatch-name {
+  position: absolute;
+  bottom: 8px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-weight: bold;
+  color: #333; /* Darker text color */
+  text-shadow: none;
+  background-color: rgba(255, 255, 255, 0.7);
+  padding: 2px 0;
+  border-radius: 0 0 8px 8px;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Hover effects */
+.scene-swatch:hover .scene-color-circle {
+  transform: scale(1.05);
+  transition: transform 0.2s ease;
+}
+
+.scene-swatch:hover .scene-swatch-bg {
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+  transition: box-shadow 0.2s ease;
+}
+
+/* Keep your existing styles below */
 .raw-badge {
   position: absolute;
   top: 35%;

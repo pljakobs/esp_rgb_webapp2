@@ -83,13 +83,6 @@
         </q-carousel-slide>
       </q-carousel>
     </q-card-section>
-    <q-btn
-      label="Sync All Controllers"
-      icon="sync"
-      :loading="syncing"
-      @click="startSync"
-      color="primary"
-    />
   </MyCard>
 </template>
 
