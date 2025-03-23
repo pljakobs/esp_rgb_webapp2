@@ -2,15 +2,14 @@
   <MyCard icon="palette_outlined" title="Color">
     <q-card-section>
       <div class="text-h6 col-auto self-center q-gutter-md">
-        <q-select
+        <mySelect
           v-model="colorModel"
           :options="colorOptions"
           label="Color Model"
           style="width: 200px"
           @update:model-value="emitColorModel"
-          dropdown-icon="img:icons/arrow_drop_down.svg"
         >
-        </q-select>
+        </mySelect>
       </div>
     </q-card-section>
     <q-card-section style="width: 80%">

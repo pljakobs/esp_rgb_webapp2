@@ -94,7 +94,7 @@
         show-if-above
         bordered
       >
-        <q-select
+        <mySelect
           v-if="controllers.status === storeStatus.READY"
           v-model="controllers.currentController"
           filled
@@ -102,7 +102,6 @@
           option-label="hostname"
           option-value="ip_address"
           label="Select a controller"
-          dropdown-icon="img:icons/arrow_drop_down.svg"
           @input="handleControllerSelection"
           @popup-show="() => $nextTick(() => (isSelectOpen.value = true))"
           @popup-hide="() => $nextTick(() => (isSelectOpen.value = false))"
@@ -118,7 +117,7 @@
               </q-item-section>
             </q-item>
           </template>
-        </q-select>
+        </mySelect>
 
         <q-list>
           <q-item-label header>main menu</q-item-label>

@@ -2,15 +2,14 @@
   <MyCard icon="tune_outlined" title="Transition Mode">
     <q-card-section>
       <div class="text-h6 col-auto self-center q-gutter-md">
-        <q-select
+        <mySelect
           v-model="transitionModel"
           :options="transitionOptions"
           label="Transition Mode"
           style="width: 200px"
           @update:model-value="updateTransitionMode"
-          dropdown-icon="img:icons/arrow_drop_down.svg"
         >
-        </q-select>
+        </mySelect>
       </div>
     </q-card-section>
 
