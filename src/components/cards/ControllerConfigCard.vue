@@ -1,71 +1,55 @@
 <template>
-  <MyCard icon="memory_outlined" title="Controller config">
+  <MyCard title="Controller config" icon="memory_outlined">
     <q-card-section>
-      <q-select
-        v-model="currentPinConfigName"
-        class="custom-select"
-        :options="pinConfigNames"
-        label="Pin configuration"
-        emit-value
-        map-options
-        dropdown-icon="img:icons/arrow_drop_down.svg"
-        @update:model-value="handlePinConfigChange"
-        style="width: auto"
-      ></q-select>
+      <div class="row items-center q-mb-md">
+        <mySelect
+          v-model="currentPinConfigName"
+          class="custom-select col-6"
+          :options="pinConfigNames"
+          label="Pin configuration"
+          emit-value
+          map-options
+        >
+        </mySelect>
+        <div class="col-6 q-pl-md">
+          <q-btn
+            color="primary"
+            flat
+            dense
+            round
+            @click="editCurrentConfig"
+            :disable="!currentPinConfigName"
+            title="Edit current configuration"
+          >
+            <svgIcon name="edit" />
+          </q-btn>
+          <q-btn
+            color="primary"
+            flat
+            dense
+            round
+            @click="showAddConfigDialog"
+            title="Add new configuration"
+          >
+            <svgIcon name="add_circle" />
+          </q-btn>
+        </div>
+      </div>
+
       <q-toggle v-model="showDetails" label="Show Details" />
       <data-table v-if="showDetails" :items="formattedPinConfigData" />
-      <q-separator />
-      <div v-if="!showAddConfigPane">
-        <q-btn
-          label="Add Config"
-          color="primary"
-          class="q-mt-md"
-          @click="handleAddConfigPane(true)"
-        />
-      </div>
-      <div v-else>
-        <q-input
-          v-model="newConfigName"
-          label="Config Name"
-          class="config-name-input"
-        />
-        <div
-          v-for="(channel, index) in newConfigChannels"
-          :key="index"
-          class="channel-select"
-        >
-          <div class="color-circle" :class="channel.name"></div>
-          <q-select
-            v-model="channel.pin"
-            :options="filteredAvailablePins"
-            :label="channel.name"
-            emit-value
-            map-options
-            dropdown-icon="img:icons/arrow_drop_down.svg"
-            @update:model-value="updateAvailablePins"
-            class="pin-select"
-          ></q-select>
-        </div>
-        <div class="button-row">
-          <q-btn
-            label="Cancel"
-            color="primary"
-            @click="handleAddConfigPane(false)"
-          />
-          <q-btn label="Add" color="primary" @click="addNewConfig" />
-        </div>
-      </div>
     </q-card-section>
   </MyCard>
 </template>
 
 <script>
 import { ref, onMounted, computed, watch } from "vue";
-import { useQuasar } from "quasar";
+import { useQuasar, Dialog } from "quasar";
 import { configDataStore } from "src/stores/configDataStore";
 import { infoDataStore } from "src/stores/infoDataStore";
 import MyCard from "src/components/myCard.vue";
 import DataTable from "src/components/dataTable.vue";
+import PinConfigDialog from "src/components/Dialogs/pinConfigDialog.vue";
 
 export default {
   name: "ControllerConfigCard",
@@ -83,32 +67,51 @@ export default {
     );
     const showDetails = ref(false);
     const pinConfigNames = ref([]);
-    const showAddConfigPane = ref(false);
-    const newConfigName = ref("");
     const availablePins = ref([]);
-    const newConfigChannels = ref([
-      { name: "red", pin: null },
-      { name: "green", pin: null },
-      { name: "blue", pin: null },
-      { name: "warmwhite", pin: null },
-      { name: "coldwhite", pin: null },
-    ]);
+
+    // Add a computed property for SOC-specific configs
+    const socSpecificConfigs = computed(() => {
+      return configData.data.hardware.pinconfigs.filter(
+        (config) =>
+          config.soc.toLowerCase() === infoData.data.soc.toLowerCase(),
+      );
+    });
 
     const getPinConfigNames = () => {
-      pinConfigNames.value = configData.data.hardware.pinconfigs
-        .filter(
-          (config) =>
-            config.soc.toLowerCase() === infoData.data.soc.toLowerCase(),
-        )
-        .map((config) => config.name);
+      // Use the computed property instead of filtering again
+      pinConfigNames.value = socSpecificConfigs.value.map(
+        (config) => config.name,
+      );
     };
 
     const getCurrentPinConfig = () => {
-      const currentConfig = configData.data.hardware.pinconfigs.find(
+      // First check if the current config is compatible with this SOC
+      const isSocCompatible = socSpecificConfigs.value.some(
         (config) => config.name === currentPinConfigName.value,
       );
+
+      if (!isSocCompatible && socSpecificConfigs.value.length > 0) {
+        // Current config is not compatible, select the first compatible one
+        currentPinConfigName.value = socSpecificConfigs.value[0].name;
+        $q.notify({
+          type: "warning",
+          message: `Selected pin configuration not compatible with ${infoData.data.soc}. Switching to a compatible configuration.`,
+          timeout: 3000,
+        });
+      }
+
+      const currentConfig = socSpecificConfigs.value.find(
+        (config) => config.name === currentPinConfigName.value,
+      );
+
       if (currentConfig) {
         pinConfigData.value = currentConfig.channels;
+      } else if (socSpecificConfigs.value.length > 0) {
+        // Fallback to first compatible config if current one not found
+        currentPinConfigName.value = socSpecificConfigs.value[0].name;
+        pinConfigData.value = socSpecificConfigs.value[0].channels;
+      } else {
+        pinConfigData.value = [];
       }
     };
 
@@ -118,29 +121,25 @@ export default {
       updatePinConfig();
     };
 
-    const handleAddConfigPane = (show) => {
-      console.log(
-        "in handleAddConfigPane, setting up for soc",
-        infoData.data.soc,
+    const updatePinConfig = async () => {
+      const currentConfig = socSpecificConfigs.value.find(
+        (config) => config.name === currentPinConfigName.value,
       );
-      newConfigName.value = "new";
-      newConfigChannels.value = [
-        { name: "red", pin: null },
-        { name: "green", pin: null },
-        { name: "blue", pin: null },
-        { name: "warmwhite", pin: null },
-        { name: "coldwhite", pin: null },
-      ];
-      console.log(
-        "available_pins",
-        JSON.stringify(configData.data.hardware.available_pins),
-      );
+
+      if (currentConfig) {
+        configData.updateData("general.channels", currentConfig.channels);
+        configData.updateData(
+          "general.current_pin_config_name",
+          currentPinConfigName.value,
+        );
+      }
+    };
+
+    const loadAvailablePins = () => {
       const socPins = configData.data.hardware.available_pins.find(
         (pinConfig) =>
           pinConfig.soc.toLowerCase() === infoData.data.soc.toLowerCase(),
       );
-
-      console.log("socPins", JSON.stringify(socPins));
 
       if (socPins) {
         availablePins.value = socPins.pins.map((pin) => ({
@@ -149,23 +148,6 @@ export default {
         }));
       } else {
         availablePins.value = [];
-      }
-
-      console.log("mapped pins:", JSON.stringify(availablePins.value));
-      console.log("finished handleAddConfigPane");
-      showAddConfigPane.value = show;
-    };
-
-    const updatePinConfig = async () => {
-      const currentConfig = configData.data.hardware.pinconfigs.find(
-        (config) => config.name === currentPinConfigName.value,
-      );
-      if (currentConfig) {
-        configData.updateData("general.channels", currentConfig.channels);
-        configData.updateData(
-          "general.current_pin_config_name",
-          currentPinConfigName.value,
-        );
       }
     };
 
@@ -192,16 +174,9 @@ export default {
             ),
           ];
 
-          console.log("mergedPinConfigs", JSON.stringify(mergedPinConfigs));
-
           configData.updateData("hardware.pinconfigs", mergedPinConfigs, false);
           configData.updateData("hardware.version", remoteVersion, false);
         }
-
-        pinConfigData.value = configData.data.hardware.pinconfigs.filter(
-          (config) =>
-            config.soc.toLowerCase() === infoData.data.soc.toLowerCase(),
-        );
       } catch (error) {
         console.error("Error loading pin config:", error);
         $q.notify({
@@ -209,45 +184,91 @@ export default {
           message: `Error loading pin config: ${error.message}`,
         });
       }
+
+      // After loading data, update the UI based on SOC-specific configs
       getPinConfigNames();
       getCurrentPinConfig();
+      loadAvailablePins();
     };
 
-    const addNewConfig = () => {
-      if (!newConfigName.value) {
+    const showAddConfigDialog = () => {
+      Dialog.create({
+        component: PinConfigDialog,
+        componentProps: {
+          mode: "add",
+          availablePins: availablePins.value,
+          soc: infoData.data.soc,
+        },
+      }).onOk((newConfig) => {
+        // Add the new configuration
+        configData.updateData("hardware.pinconfigs", [
+          ...configData.data.hardware.pinconfigs,
+          newConfig,
+        ]);
+
+        // Update the available configurations list
+        getPinConfigNames();
+
+        // Select the new configuration
+        currentPinConfigName.value = newConfig.name;
+        getCurrentPinConfig();
+        updatePinConfig();
+
+        $q.notify({
+          type: "positive",
+          message: `Pin configuration "${newConfig.name}" created`,
+        });
+      });
+    };
+
+    const editCurrentConfig = () => {
+      // Find the current configuration
+      const currentConfig = socSpecificConfigs.value.find(
+        (config) => config.name === currentPinConfigName.value,
+      );
+
+      if (!currentConfig) {
         $q.notify({
           type: "negative",
-          message: "Config name is required",
+          message: "No configuration selected",
         });
         return;
       }
 
-      const newConfig = {
-        name: newConfigName.value,
-        soc: infoData.data.soc,
-        channels: newConfigChannels.value,
-      };
+      Dialog.create({
+        component: PinConfigDialog,
+        componentProps: {
+          mode: "edit",
+          existingConfig: currentConfig,
+          availablePins: availablePins.value,
+          soc: infoData.data.soc,
+        },
+      }).onOk((updatedConfig) => {
+        // Update the configuration in the store
+        const configs = configData.data.hardware.pinconfigs;
+        const index = configs.findIndex(
+          (c) => c.name === currentPinConfigName.value,
+        );
 
-      configData.updateData("hardware.pinconfigs", [
-        ...configData.data.hardware.pinconfigs,
-        newConfig,
-      ]);
-      showAddConfigPane.value = false;
-      getPinConfigNames();
-    };
+        if (index !== -1) {
+          configs[index] = updatedConfig;
+          configData.updateData("hardware.pinconfigs", configs);
 
-    const filteredAvailablePins = computed(() => {
-      const selectedPins = newConfigChannels.value.map(
-        (channel) => channel.pin,
-      );
-      return availablePins.value.filter(
-        (pin) => !selectedPins.includes(pin.value),
-      );
-    });
+          // If the name changed, update the selection
+          if (updatedConfig.name !== currentPinConfigName.value) {
+            currentPinConfigName.value = updatedConfig.name;
+            getPinConfigNames();
+          }
 
-    const updateAvailablePins = () => {
-      // Trigger reactivity for filteredAvailablePins
-      filteredAvailablePins.value;
+          getCurrentPinConfig();
+          updatePinConfig();
+
+          $q.notify({
+            type: "positive",
+            message: `Pin configuration "${updatedConfig.name}" updated`,
+          });
+        }
+      });
     };
 
     const formattedPinConfigData = computed(() => {
@@ -269,11 +290,15 @@ export default {
       }
     });
 
-    // Watch for changes in infoData.data.soc to ensure availablePins is reactive
+    // Add a watch for changes in SOC
     watch(
       () => infoData.data.soc,
-      (newSoc) => {
-        console.log("infoData.data.soc changed to", newSoc);
+      () => {
+        if (infoData.data.soc) {
+          getPinConfigNames();
+          getCurrentPinConfig();
+          loadAvailablePins();
+        }
       },
     );
 
@@ -282,79 +307,16 @@ export default {
       pinConfigData,
       showDetails,
       handlePinConfigChange,
-      handleAddConfigPane,
       updatePinConfig,
       getPinConfigNames,
       getCurrentPinConfig,
       loadPinConfigData,
       pinConfigNames,
       formattedPinConfigData,
-      showAddConfigPane,
-      newConfigName,
-      newConfigChannels,
-      addNewConfig,
-      availablePins,
-      filteredAvailablePins,
-      updateAvailablePins,
+      showAddConfigDialog,
+      editCurrentConfig,
+      socSpecificConfigs, // Add to return object for template access
     };
   },
 };
 </script>
-
-<style scoped>
-.q-mt-md {
-  margin-top: 16px;
-}
-
-.config-name-input {
-  width: 50%;
-  margin-left: 15%;
-  min-width: 100px;
-}
-
-.channel-select {
-  display: flex;
-  align-items: center;
-  margin-left: 25%;
-}
-
-.color-circle {
-  width: 15px;
-  height: 15px;
-  border-radius: 50%;
-  margin-right: 10px;
-}
-
-.color-circle.red {
-  background-color: red;
-}
-
-.color-circle.green {
-  background-color: green;
-}
-
-.color-circle.blue {
-  background-color: blue;
-}
-
-.color-circle.warmwhite {
-  background-color: yellow;
-}
-
-.color-circle.coldwhite {
-  background-color: white;
-  border: 1px solid #ccc; /* Add a border to make the white circle visible */
-}
-
-.pin-select {
-  width: 30%;
-}
-
-.button-row {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 16px;
-  margin-left: 20%;
-  margin-right: 40%;
-}
-</style>

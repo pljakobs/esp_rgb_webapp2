@@ -8,13 +8,12 @@
       </q-toolbar>
 
       <q-card-section v-if="groupOptions.length !== 0">
-        <q-select
+        <mySelect
           v-model="scene.group_id"
           :options="groupOptions"
           label="Select Group"
           filled
           @update:model-value="onGroupChange"
-          dropdown-icon="img:icons/arrow_drop_down.svg"
           emit-value
           map-options
         />
@@ -88,11 +87,10 @@
                   <svgIcon name="edit" />
                   <q-tooltip>Edit current selection</q-tooltip>
                 </q-btn>
-                <q-select
+                <mySelect
                   :model-value="getColorType(controller.id)"
                   @update:model-value="onColorTypeChange(controller.id, $event)"
                   :options="colorTypeOptions"
-                  dropdown-icon="img:icons/arrow_drop_down.svg"
                   emit-value
                   map-options
                   :display-value="getDisplayValue(controller.id)"

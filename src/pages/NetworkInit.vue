@@ -2,7 +2,7 @@
   <div>
     <MyCard title="connect to Network" icon="wifi_outlined">
       <q-card-section class="row justify-center">
-        <q-select
+        <mySelect
           v-model="selectedNetwork"
           filled
           :options="networks"
@@ -11,7 +11,6 @@
           option-label="ssid"
           option-value="ssid"
           style="width: 80%"
-          dropdown-icon="img:icons/arrow_drop_down.svg"
         >
           <template #option="props">
             <q-item
@@ -29,7 +28,7 @@
               </q-item-section>
             </q-item>
           </template>
-        </q-select>
+        </mySelect>
 
         <q-input
           v-model="selectedNetwork.ssid"
@@ -345,9 +344,7 @@ export default {
           if (response.status === 429 && retryCount < maxRetries) {
             // Too many requests, retry after a delay
             console.log(
-              `Request limit reached, retrying after ${
-                retryDelay * 2 ** retryCount
-              }ms...`,
+              `Request limit reached, retrying after ${retryDelay * 2 ** retryCount}ms...`,
             );
             setTimeout(
               () => fetchNetworks(retryCount + 1),
@@ -372,9 +369,7 @@ export default {
           if (response.status === 429 && retryCount < maxRetries) {
             // Too many requests, retry after a delay
             console.log(
-              `Request limit reached, retrying after ${
-                retryDelay * 2 ** retryCount
-              }ms...`,
+              `Request limit reached, retrying after ${retryDelay * 2 ** retryCount}ms...`,
             );
             setTimeout(
               () => fetchNetworks(retryCount + 1),
