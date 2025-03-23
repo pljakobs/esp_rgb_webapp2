@@ -9,6 +9,7 @@
           label="Pin configuration"
           emit-value
           map-options
+          @update:model-value="handlePinConfigChange"
         >
         </mySelect>
         <div class="col-6 q-pl-md">
