@@ -23,6 +23,7 @@
 <script>
 import { ref, watch, computed } from "vue";
 import { colors } from "quasar";
+import { useColorDataStore } from "src/stores/colorDataStore";
 
 const { hexToRgb, rgbToHsv, rgbToHex, hsvToRgb } = colors;
 
@@ -40,7 +41,6 @@ export default {
       type: String,
       default: "300px",
     },
-    // Add a specific prop for dialog height
     dialogHeight: {
       type: String,
       default: "280px",
@@ -49,6 +49,10 @@ export default {
   emits: ["update:modelValue", "add-preset"],
   setup(props, { emit }) {
     const internalColor = ref("#000000");
+    const colorStore = useColorDataStore();
+
+    // Flag to prevent emitting during prop updates from websocket events
+    const updatingFromProps = ref(false);
 
     // Watch for changes in props.modelValue
     watch(
@@ -56,10 +60,19 @@ export default {
       (newValue) => {
         if (newValue?.hsv) {
           try {
+            // Set flag to prevent emitting
+            updatingFromProps.value = true;
+
             const rgb = hsvToRgb(newValue.hsv);
             internalColor.value = rgbToHex(rgb);
+
+            // Reset flag after DOM update
+            setTimeout(() => {
+              updatingFromProps.value = false;
+            }, 0);
           } catch (error) {
             console.log("Error converting HSV to hex:", error);
+            updatingFromProps.value = false;
           }
         }
       },
@@ -68,21 +81,24 @@ export default {
 
     // Watch for changes in the color picker
     watch(internalColor, (val) => {
-      try {
-        const rgb = hexToRgb(val);
-        let hsv = rgbToHsv(rgb);
+      // Only emit if not updating from props and not from websocket
+      if (!updatingFromProps.value && colorStore.change_by !== "websocket") {
+        try {
+          const rgb = hexToRgb(val);
+          let hsv = rgbToHsv(rgb);
 
-        // Round values to 1 decimal place instead of 2
-        hsv = {
-          h: Math.round(hsv.h * 10) / 10,
-          s: Math.round(hsv.s * 10) / 10,
-          v: Math.round(hsv.v * 10) / 10,
-        };
+          // Round values to 1 decimal place instead of 2
+          hsv = {
+            h: Math.round(hsv.h * 10) / 10,
+            s: Math.round(hsv.s * 10) / 10,
+            v: Math.round(hsv.v * 10) / 10,
+          };
 
-        // Emit the new color value
-        emit("update:modelValue", { hsv });
-      } catch (error) {
-        console.log("Error in color picker watcher:", error);
+          // Emit the new color value
+          emit("update:modelValue", { hsv });
+        } catch (error) {
+          console.log("Error in color picker watcher:", error);
+        }
       }
     });
 

@@ -28,10 +28,11 @@
 <script>
 import { computed, ref, watch } from "vue";
 import ColorSlider from "src/components/ColorSlider.vue";
+import { useColorDataStore } from "src/stores/colorDataStore";
 
 export default {
   components: {
-    ColorSlider, // This line is missing in your code
+    ColorSlider,
   },
   props: {
     modelValue: {
@@ -46,7 +47,6 @@ export default {
       type: String,
       default: "300px",
     },
-    // Add dialog height prop
     dialogHeight: {
       type: String,
       default: "280px",
@@ -55,6 +55,8 @@ export default {
   emits: ["update:modelValue", "add-preset"],
 
   setup(props, { emit }) {
+    const colorStore = useColorDataStore();
+
     // Local state for raw values
     const internalRaw = ref({
       r: 0,
@@ -64,12 +66,23 @@ export default {
       cw: 0,
     });
 
+    // Flag to prevent emitting during prop updates from websocket events
+    const updatingFromProps = ref(false);
+
     // Watch for changes from parent
     watch(
       () => props.modelValue,
       (newValue) => {
         if (newValue?.raw) {
+          // Set flag to prevent emitting
+          updatingFromProps.value = true;
+
           internalRaw.value = { ...newValue.raw };
+
+          // Reset flag after DOM update
+          setTimeout(() => {
+            updatingFromProps.value = false;
+          }, 0);
         }
       },
       { immediate: true, deep: true },
@@ -114,18 +127,21 @@ export default {
     ]);
 
     const updateColorSlider = (slider, value) => {
-      const colorMap = {
-        Red: "r",
-        Green: "g",
-        Blue: "b",
-        "Warm White": "ww",
-        "Cold White": "cw",
-      };
+      // Only process updates if not updating from props and not from websocket
+      if (!updatingFromProps.value && colorStore.change_by !== "websocket") {
+        const colorMap = {
+          Red: "r",
+          Green: "g",
+          Blue: "b",
+          "Warm White": "ww",
+          "Cold White": "cw",
+        };
 
-      const rawColorKey = colorMap[slider.label];
-      if (rawColorKey) {
-        internalRaw.value[rawColorKey] = value;
-        emit("update:modelValue", { raw: { ...internalRaw.value } });
+        const rawColorKey = colorMap[slider.label];
+        if (rawColorKey) {
+          internalRaw.value[rawColorKey] = value;
+          emit("update:modelValue", { raw: { ...internalRaw.value } });
+        }
       }
     };
 
