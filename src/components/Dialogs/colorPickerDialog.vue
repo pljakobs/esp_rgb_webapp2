@@ -2,13 +2,13 @@
   <q-dialog ref="dialogRef" @hide="onDialogHide" persistent>
     <q-card class="q-dialog-plugin" style="width: 400px; max-height: 600px">
       <q-toolbar :class="getToolbarClass">
-        <q-toolbar-title>
+        <q-toolbar_title>
           {{ dialogTitle }}
-        </q-toolbar-title>
+        </q-toolbar_title>
       </q-toolbar>
 
       <!-- Increased height to match the component height -->
-      <q-card-section style="height: 420px; padding: 10px">
+      <q-card_section style="height: 420px; padding: 10px">
         <!-- Add PresetSection -->
         <PresetSection
           v-if="type === 'Preset'"
@@ -32,12 +32,12 @@
           dialog-height="400px"
           @update:model-value="updateColorValue"
         />
-      </q-card-section>
+      </q-card_section>
 
-      <q-card-actions align="right">
+      <q-card_actions align="right">
         <q-btn flat label="Cancel" color="primary" @click="onCancelClick" />
         <q-btn flat label="OK" color="primary" @click="onOkClick" />
-      </q-card-actions>
+      </q-card_actions>
     </q-card>
   </q-dialog>
 </template>
@@ -47,6 +47,7 @@ import { useDialogPluginComponent } from "quasar";
 import HsvSection from "src/components/cards/colorPickerSections/HsvSection.vue";
 import RawSection from "src/components/cards/colorPickerSections/RawSection.vue";
 import PresetSection from "src/components/cards/colorPickerSections/PresetSection.vue";
+import { useAppDataStore } from "src/stores/appDataStore";
 
 export default {
   name: "ColorPickerDialog",
@@ -79,11 +80,17 @@ export default {
   setup(props, { emit }) {
     const { dialogRef, onDialogHide, onDialogOK, onDialogCancel } =
       useDialogPluginComponent();
+    const appData = useAppDataStore();
 
-    // Default colors for each type
-    const defaultHsv = { hsv: { h: 0, s: 0, v: 0 } };
-    const defaultRaw = { raw: { r: 0, g: 0, b: 0, ww: 0, cw: 0 } };
-    const defaultPreset = { Preset: { id: null } };
+    // Default colors for each type with safe values
+    const defaultHsv = { hsv: { h: 0, s: 100, v: 100 } };
+    const defaultRaw = { raw: { r: 255, g: 0, b: 0, ww: 0, cw: 0 } };
+
+    // Get first preset if available for default
+    const getDefaultPreset = () => {
+      const firstPreset = appData.data.presets?.[0];
+      return { Preset: { id: firstPreset?.id || null } };
+    };
 
     const dialogTitle = computed(() => {
       switch (props.type) {
@@ -111,25 +118,97 @@ export default {
       }
     });
 
-    // Track the current color value
-    const colorValue = ref(props.type === "HSV" ? defaultHsv : defaultRaw);
+    // Initialize colorValue with appropriate default based on type
+    const colorValue = ref(
+      props.type === "HSV"
+        ? defaultHsv
+        : props.type === "RAW"
+          ? defaultRaw
+          : getDefaultPreset(),
+    );
+
+    // Helper function to ensure HSV values are valid
+    const ensureValidHsv = (hsvObj) => {
+      if (!hsvObj) return { h: 0, s: 100, v: 100 };
+
+      return {
+        h: Number(hsvObj.h ?? 0),
+        s: Number(hsvObj.s ?? 100),
+        v: Number(hsvObj.v ?? 100),
+      };
+    };
+
+    // Helper function to ensure RAW values are valid
+    const ensureValidRaw = (rawObj) => {
+      if (!rawObj) return { r: 255, g: 0, b: 0, ww: 0, cw: 0 };
+
+      return {
+        r: Number(rawObj.r ?? 255),
+        g: Number(rawObj.g ?? 0),
+        b: Number(rawObj.b ?? 0),
+        ww: Number(rawObj.ww ?? 0),
+        cw: Number(rawObj.cw ?? 0),
+      };
+    };
+
+    // Helper function to ensure Preset is valid
+    const ensureValidPreset = (presetObj) => {
+      if (!presetObj || !presetObj.id) {
+        const defaultPreset = getDefaultPreset();
+        return defaultPreset.Preset;
+      }
+      return { id: presetObj.id };
+    };
 
     // Initialize with any provided initial colors
     onMounted(() => {
-      if (props.initialColor) {
-        if (props.type === "HSV" && props.initialColor.hsv) {
-          colorValue.value = { hsv: { ...props.initialColor.hsv } };
-        } else if (props.type === "RAW" && props.initialColor.raw) {
-          colorValue.value = { raw: { ...props.initialColor.raw } };
-        } else if (props.type === "Preset" && props.initialColor.Preset) {
-          colorValue.value = { Preset: { ...props.initialColor.Preset } };
+      try {
+        if (props.initialColor) {
+          if (props.type === "HSV") {
+            const validHsv = ensureValidHsv(props.initialColor.hsv);
+            colorValue.value = { hsv: validHsv };
+          } else if (props.type === "RAW") {
+            const validRaw = ensureValidRaw(props.initialColor.raw);
+            colorValue.value = { raw: validRaw };
+          } else if (props.type === "Preset") {
+            const validPreset = ensureValidPreset(props.initialColor.Preset);
+            colorValue.value = { Preset: validPreset };
+          }
+        }
+      } catch (error) {
+        console.error("Error initializing color picker:", error);
+        // Set safe defaults on error
+        if (props.type === "HSV") {
+          colorValue.value = defaultHsv;
+        } else if (props.type === "RAW") {
+          colorValue.value = defaultRaw;
+        } else if (props.type === "Preset") {
+          colorValue.value = getDefaultPreset();
         }
       }
     });
 
     // Update the internal color value when a section emits an update
     const updateColorValue = (newValue) => {
-      colorValue.value = newValue;
+      try {
+        if (props.type === "HSV" && newValue.hsv) {
+          colorValue.value = {
+            hsv: ensureValidHsv(newValue.hsv),
+          };
+        } else if (props.type === "RAW" && newValue.raw) {
+          colorValue.value = {
+            raw: ensureValidRaw(newValue.raw),
+          };
+        } else if (props.type === "Preset" && newValue.Preset) {
+          colorValue.value = {
+            Preset: ensureValidPreset(newValue.Preset),
+          };
+        } else {
+          colorValue.value = newValue;
+        }
+      } catch (error) {
+        console.error("Error updating color value:", error);
+      }
     };
 
     // Watch for the modelValue prop to control dialog visibility
@@ -146,9 +225,41 @@ export default {
 
     // Handle OK button click
     const onOkClick = () => {
-      emit("ok", colorValue.value);
-      emit("update:model-value", false);
-      onDialogOK();
+      try {
+        let resultValue;
+
+        if (props.type === "HSV") {
+          resultValue = {
+            hsv: ensureValidHsv(colorValue.value.hsv),
+          };
+        } else if (props.type === "RAW") {
+          resultValue = {
+            raw: ensureValidRaw(colorValue.value.raw),
+          };
+        } else if (props.type === "Preset") {
+          resultValue = {
+            Preset: ensureValidPreset(colorValue.value.Preset),
+          };
+        } else {
+          resultValue = colorValue.value;
+        }
+
+        emit("ok", resultValue);
+        emit("update:model-value", false);
+        onDialogOK();
+      } catch (error) {
+        console.error("Error in onOkClick:", error);
+        // Send fallback values on error
+        if (props.type === "HSV") {
+          emit("ok", defaultHsv);
+        } else if (props.type === "RAW") {
+          emit("ok", defaultRaw);
+        } else {
+          emit("ok", getDefaultPreset());
+        }
+        emit("update:model-value", false);
+        onDialogOK();
+      }
     };
 
     // Handle Cancel button click

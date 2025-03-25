@@ -1,7 +1,8 @@
 <template>
   <q-select
     v-bind="$attrs"
-    dropdown-icon=""
+    dropdown-icon="none"
+    :class="'my-select-component'"
     @popup-show="isDropdownOpen = true"
     @popup-hide="isDropdownOpen = false"
   >
@@ -13,10 +14,12 @@
     <!-- Custom append slot with rotating arrow -->
     <template #append>
       <slot name="append">
-        <svgIcon
-          name="arrow_drop_down"
-          :class="{ 'rotate-icon': !isDropdownOpen }"
-        />
+        <div class="dropdown-icon-container">
+          <svgIcon
+            name="arrow_drop_down"
+            :class="{ 'rotate-icon': !isDropdownOpen }"
+          />
+        </div>
       </slot>
     </template>
   </q-select>
@@ -40,8 +43,24 @@ export default {
 </script>
 
 <style scoped>
+.my-select-component {
+  position: relative;
+}
+
+.dropdown-icon-container {
+  position: absolute;
+  right: 0px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
 .rotate-icon {
   transform: rotate(-90deg);
   transition: transform 0.3s ease;
+}
+
+/* Ensure enough space for the text */
+:deep(.q-field__native) {
+  padding-right: 5px !important;
 }
 </style>

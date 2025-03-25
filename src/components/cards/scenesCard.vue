@@ -330,21 +330,62 @@ export default {
       }
     };
 
-    // Keep UI handlers in the component
+    // Updated openSceneDialog function with better error handling and forced closure
     const openSceneDialog = (existingScene = null) => {
-      Dialog.create({
+      // If editing an existing scene, get a fresh copy from the store
+      let sceneToEdit = null;
+
+      if (existingScene) {
+        // Get fresh data from the store
+        const freshScene = appData.data.scenes.find(
+          (s) => s.id === existingScene.id,
+        );
+        if (freshScene) {
+          // Make a deep copy to ensure we're completely disconnected from the store
+          sceneToEdit = JSON.parse(JSON.stringify(freshScene));
+        } else {
+          sceneToEdit = existingScene; // Fallback if not found
+        }
+      }
+
+      // Store the dialog reference
+      let dialogRef;
+
+      dialogRef = Dialog.create({
         component: sceneDialog,
-        componentProps: existingScene ? { scene: existingScene } : undefined,
+        componentProps: sceneToEdit ? { scene: sceneToEdit } : undefined,
+        persistent: true,
+        noRouteDismiss: true,
       }).onOk((scene) => {
         // Extract callbacks
         const saveComplete = scene.saveComplete;
         const updateProgress = scene.updateProgress;
 
-        // Remove callbacks from scene object
-        if (saveComplete) delete scene.saveComplete;
-        if (updateProgress) delete scene.updateProgress;
+        // Create a deep copy without the callback functions
+        const sceneToSave = JSON.parse(JSON.stringify(scene));
+        delete sceneToSave.saveComplete;
+        delete sceneToSave.updateProgress;
 
-        scenesStore.saveScene(scene, updateProgress, saveComplete);
+        // Progress handler just forwards the progress to the dialog
+        const progressHandler = (completed, total) => {
+          if (updateProgress) {
+            updateProgress(completed, total);
+          }
+        };
+
+        // Completion handler will close the dialog
+        const completeCallback = () => {
+          console.log("Save operation complete, closing dialog");
+          if (saveComplete) {
+            saveComplete();
+          }
+        };
+
+        // Log for debugging
+        console.log("Saving scene:", sceneToSave.name);
+
+        // Call save with both callbacks
+        scenesStore.saveScene(sceneToSave, progressHandler, completeCallback);
       });
     };
 
@@ -380,38 +421,9 @@ export default {
             delete group.saveComplete;
             delete group.updateProgress;
 
-            // Create notification
-            const saveNotif = Notify.create({
-              message: existingGroup ? "Editing group..." : "Saving group...",
-              caption: "0% complete",
-              color: "primary",
-
-              timeout: 2000,
-              progress: 0,
-              actions: [{ icon: "close", color: "white" }],
-            });
-
-            // Custom progress handler that updates notification
             const notifyProgress = (completed, total) => {
-              const percent = Math.round((completed / total) * 100);
-
-              saveNotif({
-                caption: `${percent}% complete (${completed}/${total} controllers)`,
-                progress: completed / total,
-              });
-
               if (updateProgress) updateProgress(completed, total);
-
-              if (completed === total) {
-                saveNotif({
-                  message: "Group saved successfully!",
-                  caption: "All controllers updated",
-                  timeout: 2000,
-                  progress: 1,
-                });
-
-                if (saveComplete) saveComplete();
-              }
+              if (completed === total && saveComplete) saveComplete();
             };
 
             scenesStore.saveGroup(group, notifyProgress);
