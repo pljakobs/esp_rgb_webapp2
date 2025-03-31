@@ -97,28 +97,71 @@ export default {
         const data = await response.json();
         firmware.value = data;
 
-        // Filter available firmware based on current SoC only (not build_type)
-        // This allows choosing any build type (debug/release) for the current hardware
-        availableFirmware.value = data.firmware.filter(
-          (fw) => fw.soc === infoData.data.soc,
-        );
+        // Extract branch from git_version (e.g., "V5.0-331-develop" → "develop")
+        const getBranchFromVersion = (versionString) => {
+          if (!versionString) return "develop";
+          const parts = versionString.split("-");
+          return parts.length > 2 ? parts[parts.length - 1] : "develop";
+        };
+
+        // Create a combined array of firmware options from both firmware and history arrays
+        const allFirmwareOptions = [];
+
+        // First, process the main firmware array
+        if (data.firmware && Array.isArray(data.firmware)) {
+          data.firmware.forEach((fw) => {
+            // Only include firmware for the current SOC
+            if (fw.soc === infoData.data.soc) {
+              // Ensure all required properties exist
+              const firmwareOption = {
+                ...fw,
+                // Make sure fw_version exists (prioritize fw_version if both exist)
+                fw_version: fw.fw_version || fw.version,
+              };
+              allFirmwareOptions.push(firmwareOption);
+            }
+          });
+        }
+
+        // Then, process the history array
+        if (data.history && Array.isArray(data.history)) {
+          data.history.forEach((histItem) => {
+            // Only include firmware for the current SOC
+            if (histItem.soc === infoData.data.soc) {
+              // Skip if this exact version is already in the options
+              const isDuplicate = allFirmwareOptions.some(
+                (fw) =>
+                  fw.branch === histItem.branch &&
+                  fw.type === histItem.type &&
+                  fw.fw_version === histItem.fw_version
+              );
+
+              if (!isDuplicate) {
+                // Ensure all required properties exist
+                const historyOption = {
+                  ...histItem,
+                  // Make sure fw_version exists (prioritize fw_version if both exist)
+                  fw_version: histItem.fw_version || histItem.version,
+                };
+                allFirmwareOptions.push(historyOption);
+              }
+            }
+          });
+        }
+
+        // Set available firmware to our combined and filtered list
+        availableFirmware.value = allFirmwareOptions;
 
         // Sort by version and put current build type first for better UX
         availableFirmware.value.sort((a, b) => {
           // Put current build type first
-          if (
-            a.type === infoData.data.build_type &&
-            b.type !== infoData.data.build_type
-          )
+          if (a.type === infoData.data.build_type && b.type !== infoData.data.build_type)
             return -1;
-          if (
-            a.type !== infoData.data.build_type &&
-            b.type === infoData.data.build_type
-          )
+          if (a.type !== infoData.data.build_type && b.type === infoData.data.build_type)
             return 1;
 
           // Then sort by version (assuming semantic versioning)
-          return b.version.localeCompare(a.version, undefined, {
+          return b.fw_version.localeCompare(a.fw_version, undefined, {
             numeric: true,
           });
         });
@@ -144,7 +187,7 @@ export default {
       try {
         console.log(
           "Creating firmware selection dialog with options:",
-          availableFirmware.value,
+          availableFirmware.value
         );
 
         // First check if there are any options
@@ -158,12 +201,25 @@ export default {
           return;
         }
 
+        // Add the current branch to the current info
+        const getBranchFromVersion = (versionString) => {
+          if (!versionString) return "develop";
+          const parts = versionString.split("-");
+          return parts.length > 2 ? parts[parts.length - 1] : "develop";
+        };
+
+        // Create a copy of infoData.data and add branch property
+        const currentInfoWithBranch = {
+          ...infoData.data,
+          branch: getBranchFromVersion(infoData.data.git_version),
+        };
+
         // Use the component-based dialog
         Dialog.create({
           component: FirmwareSelectDialog,
           componentProps: {
             firmwareOptions: availableFirmware.value,
-            currentInfo: infoData.data,
+            currentInfo: currentInfoWithBranch,
             otaUrl: otaUrl.value,
           },
           persistent: true,
@@ -173,7 +229,7 @@ export default {
             if (selectedFirmware) {
               await updateController(
                 selectedFirmware,
-                controllersStore.currentController,
+                controllersStore.currentController
               );
             } else {
               console.error("No firmware selected");
@@ -197,26 +253,23 @@ export default {
     const updateController = async (
       selectedFirmware,
       controller,
-      initialUptime = null,
+      initialUptime = null
     ) => {
       try {
         console.log(
           "Updating controller:",
           controller.hostname,
           "with firmware:",
-          selectedFirmware,
+          selectedFirmware
         );
 
-        const postResponse = await fetch(
-          `http://${controller.ip_address}/update`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(selectedFirmware.files),
+        const postResponse = await fetch(`http://${controller.ip_address}/update`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
           },
-        );
+          body: JSON.stringify(selectedFirmware.files),
+        });
 
         if (!postResponse.ok) {
           Dialog.create({
@@ -256,7 +309,7 @@ export default {
                 const response = await fetchWithTimeout(
                   `http://${controller.ip_address}/info`,
                   {},
-                  500, // 500ms timeout
+                  500 // 500ms timeout
                 );
 
                 // If we get a response, check the uptime
@@ -267,7 +320,7 @@ export default {
                   // If uptime is less than before, controller has successfully rebooted
                   if (newUptime < initialUptime) {
                     console.log(
-                      `Reboot verified for ${controller.hostname} after ${attempts} attempts. Uptime: ${initialUptime} → ${newUptime}`,
+                      `Reboot verified for ${controller.hostname} after ${attempts} attempts. Uptime: ${initialUptime} → ${newUptime}`
                     );
                     rebootVerified = true;
                     return {
@@ -278,7 +331,7 @@ export default {
                     };
                   } else {
                     console.log(
-                      `Controller ${controller.hostname} responded but with unexpected uptime: ${initialUptime} → ${newUptime}`,
+                      `Controller ${controller.hostname} responded but with unexpected uptime: ${initialUptime} → ${newUptime}`
                     );
                     // Wait 5 seconds before next attempt
                     await new Promise((resolve) => setTimeout(resolve, 5000));
@@ -286,7 +339,7 @@ export default {
                 } else {
                   // No valid response yet, likely still rebooting
                   console.log(
-                    `Controller ${controller.hostname} not ready yet, attempt ${attempts}`,
+                    `Controller ${controller.hostname} not ready yet, attempt ${attempts}`
                   );
                   // Wait 5 seconds before next attempt
                   await new Promise((resolve) => setTimeout(resolve, 5000));
@@ -299,7 +352,7 @@ export default {
                     : error.message;
 
                 console.log(
-                  `Connection to ${controller.hostname} failed, attempt ${attempts}: ${errorMessage}`,
+                  `Connection to ${controller.hostname} failed, attempt ${attempts}: ${errorMessage}`
                 );
                 // Wait 5 seconds before next attempt
                 await new Promise((resolve) => setTimeout(resolve, 5000));
@@ -323,10 +376,7 @@ export default {
 
         return { success: true };
       } catch (error) {
-        console.error(
-          `Error updating firmware for ${controller.hostname}:`,
-          error,
-        );
+        console.error(`Error updating firmware for ${controller.hostname}:`, error);
         Dialog.create({
           title: "Error",
           message: `Error updating ${controller.hostname}: ${error.message}`,
@@ -385,8 +435,7 @@ export default {
 
             // Get all controllers except the current one
             const allControllers = controllersStore.data.filter(
-              (controller) =>
-                controller.id !== controllersStore.currentController.id,
+              (controller) => controller.id !== controllersStore.currentController.id
             );
 
             if (allControllers.length === 0) {
@@ -461,7 +510,7 @@ export default {
                           </div>
                         </div>
                         <div id="details-${controller.id}" class="details q-mt-sm q-pa-xs rounded-borders" style="display:none;"></div>
-                      </div>`,
+                      </div>`
                       )
                       .join("")}
                     <!-- Add local controller to the list -->
@@ -525,32 +574,28 @@ export default {
             const updateUI = () => {
               try {
                 if (document.getElementById("success-count")) {
-                  document.getElementById("success-count").textContent =
-                    results.success;
-                  document.getElementById("failed-count").textContent =
-                    results.failed;
-                  document.getElementById("skipped-count").textContent =
-                    results.skipped;
+                  document.getElementById("success-count").textContent = results.success;
+                  document.getElementById("failed-count").textContent = results.failed;
+                  document.getElementById("skipped-count").textContent = results.skipped;
 
                   const total = allControllers.length;
-                  const completed =
-                    results.success + results.failed + results.skipped;
+                  const completed = results.success + results.failed + results.skipped;
                   const percentComplete = Math.round((completed / total) * 100);
 
-                  document.getElementById("progress-percent").textContent =
-                    `${percentComplete}%`;
+                  document.getElementById(
+                    "progress-percent"
+                  ).textContent = `${percentComplete}%`;
 
                   // Enable the close button when all controllers are processed
                   if (completed === total) {
                     if (document.getElementById("completion-message")) {
-                      document.getElementById(
-                        "completion-message",
-                      ).style.display = "block";
+                      document.getElementById("completion-message").style.display =
+                        "block";
                     }
 
                     // Enable the local controller update option
                     const localControllerUpdateDiv = document.getElementById(
-                      "local-controller-update",
+                      "local-controller-update"
                     );
                     if (localControllerUpdateDiv) {
                       localControllerUpdateDiv.style.display = "block";
@@ -583,7 +628,7 @@ export default {
               status,
               details = null,
               fromVersion = null,
-              toVersion = null,
+              toVersion = null
             ) => {
               try {
                 const statusId =
@@ -686,7 +731,7 @@ export default {
                 updateStatus(
                   localController,
                   "checking",
-                  "Fetching controller information...",
+                  "Fetching controller information..."
                 );
 
                 // Get current uptime for reboot verification
@@ -699,32 +744,32 @@ export default {
                 updateStatus(
                   localController,
                   "checking",
-                  `Controller information: SOC=${soc}, type=${build_type}, version=${git_version}, uptime=${uptime}`,
+                  `Controller information: SOC=${soc}, type=${build_type}, version=${git_version}, uptime=${uptime}`
                 );
 
                 // Find matching firmware
                 const matchingFirmware = firmwareData.firmware.find(
-                  (fw) => fw.soc === soc && fw.type === build_type,
+                  (fw) => fw.soc === soc && fw.type === build_type
                 );
 
                 if (!matchingFirmware) {
                   // Look for fallback firmware
                   const fallbackFirmware = firmwareData.firmware.find(
-                    (fw) => fw.soc === soc,
+                    (fw) => fw.soc === soc
                   );
 
                   if (fallbackFirmware) {
                     updateStatus(
                       localController,
                       "updating",
-                      `No exact firmware match found. Using fallback: ${fallbackFirmware.soc}/${fallbackFirmware.type} v${fallbackFirmware.version}`,
+                      `No exact firmware match found. Using fallback: ${fallbackFirmware.soc}/${fallbackFirmware.type} v${fallbackFirmware.version}`
                     );
 
                     // Update with fallback firmware
                     const updateResult = await updateController(
                       fallbackFirmware,
                       localController,
-                      uptime,
+                      uptime
                     );
 
                     if (updateResult.success) {
@@ -742,20 +787,20 @@ export default {
                         "success",
                         statusMessage,
                         git_version,
-                        fallbackFirmware.version,
+                        fallbackFirmware.version
                       );
                     } else {
                       updateStatus(
                         localController,
                         "failed",
-                        "Update failed with fallback firmware",
+                        "Update failed with fallback firmware"
                       );
                     }
                   } else {
                     updateStatus(
                       localController,
                       "skipped",
-                      `No matching firmware found for SOC: ${soc}, type: ${build_type}`,
+                      `No matching firmware found for SOC: ${soc}, type: ${build_type}`
                     );
                   }
                   return;
@@ -766,7 +811,7 @@ export default {
                   updateStatus(
                     localController,
                     "skipped",
-                    `Already on latest version (${matchingFirmware.version})`,
+                    `Already on latest version (${matchingFirmware.version})`
                   );
                   return;
                 }
@@ -775,13 +820,13 @@ export default {
                 updateStatus(
                   localController,
                   "updating",
-                  `Updating to version ${matchingFirmware.version}`,
+                  `Updating to version ${matchingFirmware.version}`
                 );
 
                 const updateResult = await updateController(
                   matchingFirmware,
                   localController,
-                  uptime,
+                  uptime
                 );
 
                 if (updateResult.success) {
@@ -799,23 +844,15 @@ export default {
                     "success",
                     statusMessage,
                     git_version,
-                    matchingFirmware.version,
+                    matchingFirmware.version
                   );
                 } else {
-                  updateStatus(
-                    localController,
-                    "failed",
-                    "Update process failed",
-                  );
+                  updateStatus(localController, "failed", "Update process failed");
                 }
               } catch (error) {
                 console.error(`Error processing local controller:`, error);
 
-                updateStatus(
-                  localController,
-                  "failed",
-                  `Error: ${error.message}`,
-                );
+                updateStatus(localController, "failed", `Error: ${error.message}`);
               }
             };
 
@@ -826,7 +863,7 @@ export default {
                 updateStatus(
                   controller,
                   "checking",
-                  "Fetching controller information...",
+                  "Fetching controller information..."
                 );
 
                 // Fetch controller info with retries
@@ -840,7 +877,7 @@ export default {
                     const infoResponse = await fetchWithTimeout(
                       `http://${controller.ip_address}/info`,
                       {},
-                      500, // 500ms timeout
+                      500 // 500ms timeout
                     );
 
                     if (infoResponse.ok) {
@@ -850,7 +887,7 @@ export default {
                       updateStatus(
                         controller,
                         "checking",
-                        `Connection attempt ${retryCount}/${maxRetries} failed, retrying...`,
+                        `Connection attempt ${retryCount}/${maxRetries} failed, retrying...`
                       );
                       await new Promise((resolve) => setTimeout(resolve, 1000)); // Wait 1 second between retries
                     }
@@ -864,7 +901,7 @@ export default {
                     updateStatus(
                       controller,
                       "checking",
-                      `Attempt ${retryCount}/${maxRetries} failed: ${errorMessage}`,
+                      `Attempt ${retryCount}/${maxRetries} failed: ${errorMessage}`
                     );
 
                     if (retryCount >= maxRetries) {
@@ -880,7 +917,7 @@ export default {
                   updateStatus(
                     controller,
                     "failed",
-                    "Could not connect to controller after multiple attempts",
+                    "Could not connect to controller after multiple attempts"
                   );
                   results.failed++;
                   results.details.push({
@@ -897,32 +934,32 @@ export default {
                 updateStatus(
                   controller,
                   "checking",
-                  `Controller information: SOC=${soc}, type=${build_type}, version=${git_version}, uptime=${uptime}`,
+                  `Controller information: SOC=${soc}, type=${build_type}, version=${git_version}, uptime=${uptime}`
                 );
 
                 // Find matching firmware - note that firmware uses 'type' instead of 'build_type'
                 const matchingFirmware = firmwareData.firmware.find(
-                  (fw) => fw.soc === soc && fw.type === build_type,
+                  (fw) => fw.soc === soc && fw.type === build_type
                 );
 
                 if (!matchingFirmware) {
                   // Look for fallback firmware with matching SOC
                   const fallbackFirmware = firmwareData.firmware.find(
-                    (fw) => fw.soc === soc,
+                    (fw) => fw.soc === soc
                   );
 
                   if (fallbackFirmware) {
                     updateStatus(
                       controller,
                       "updating",
-                      `No exact firmware match found. Using fallback: ${fallbackFirmware.soc}/${fallbackFirmware.type} v${fallbackFirmware.version}`,
+                      `No exact firmware match found. Using fallback: ${fallbackFirmware.soc}/${fallbackFirmware.type} v${fallbackFirmware.version}`
                     );
 
                     // Update with fallback firmware and pass uptime for reboot verification
                     const updateResult = await updateController(
                       fallbackFirmware,
                       controller,
-                      uptime,
+                      uptime
                     );
 
                     if (updateResult.success) {
@@ -940,7 +977,7 @@ export default {
                         "success",
                         statusMessage,
                         git_version,
-                        fallbackFirmware.version,
+                        fallbackFirmware.version
                       );
 
                       results.success++;
@@ -957,7 +994,7 @@ export default {
                       updateStatus(
                         controller,
                         "failed",
-                        "Update failed with fallback firmware",
+                        "Update failed with fallback firmware"
                       );
 
                       results.failed++;
@@ -972,7 +1009,7 @@ export default {
                     updateStatus(
                       controller,
                       "skipped",
-                      `No matching firmware found for SOC: ${soc}, type: ${build_type}`,
+                      `No matching firmware found for SOC: ${soc}, type: ${build_type}`
                     );
 
                     results.skipped++;
@@ -992,7 +1029,7 @@ export default {
                   updateStatus(
                     controller,
                     "skipped",
-                    `Already on latest version (${matchingFirmware.version})`,
+                    `Already on latest version (${matchingFirmware.version})`
                   );
 
                   results.skipped++;
@@ -1010,13 +1047,13 @@ export default {
                 updateStatus(
                   controller,
                   "updating",
-                  `Updating to version ${matchingFirmware.version}`,
+                  `Updating to version ${matchingFirmware.version}`
                 );
 
                 const updateResult = await updateController(
                   matchingFirmware,
                   controller,
-                  uptime,
+                  uptime
                 );
 
                 if (updateResult.success) {
@@ -1034,7 +1071,7 @@ export default {
                     "success",
                     statusMessage,
                     git_version,
-                    matchingFirmware.version,
+                    matchingFirmware.version
                   );
 
                   results.success++;
@@ -1059,10 +1096,7 @@ export default {
 
                 updateUI();
               } catch (error) {
-                console.error(
-                  `Error processing ${controller.hostname}:`,
-                  error,
-                );
+                console.error(`Error processing ${controller.hostname}:`, error);
 
                 updateStatus(controller, "failed", `Error: ${error.message}`);
 
@@ -1089,15 +1123,14 @@ export default {
               updateLocalBtn.onclick = async () => {
                 // Hide the button to prevent multiple clicks
                 const localControllerUpdateDiv = document.getElementById(
-                  "local-controller-update",
+                  "local-controller-update"
                 );
                 if (localControllerUpdateDiv) {
                   localControllerUpdateDiv.style.display = "none";
                 }
 
                 // Show the local controller in the list
-                const localControllerEl =
-                  document.getElementById("status-local");
+                const localControllerEl = document.getElementById("status-local");
                 if (localControllerEl) {
                   localControllerEl.style.display = "block";
                 }
@@ -1198,17 +1231,17 @@ export default {
 }
 
 .text-positive img {
-  filter: invert(48%) sepia(79%) saturate(2476%) hue-rotate(86deg)
-    brightness(90%) contrast(85%);
+  filter: invert(48%) sepia(79%) saturate(2476%) hue-rotate(86deg) brightness(90%)
+    contrast(85%);
 }
 
 .text-negative img {
-  filter: invert(27%) sepia(51%) saturate(7497%) hue-rotate(346deg)
-    brightness(97%) contrast(105%);
+  filter: invert(27%) sepia(51%) saturate(7497%) hue-rotate(346deg) brightness(97%)
+    contrast(105%);
 }
 
 .text-amber img {
-  filter: invert(63%) sepia(57%) saturate(4548%) hue-rotate(2deg)
-    brightness(109%) contrast(102%);
+  filter: invert(63%) sepia(57%) saturate(4548%) hue-rotate(2deg) brightness(109%)
+    contrast(102%);
 }
 </style>
