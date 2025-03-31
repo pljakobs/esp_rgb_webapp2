@@ -96,9 +96,14 @@
                 option-value="id"
                 class="version-select"
                 :disable="!selectedType"
+                @update:model-value="
+                  (val) => {
+                    console.log('Version selected:', val);
+                  }
+                "
               >
                 <template v-slot:option="scope">
-                  <q-item v-close-popup>
+                  <q-item v-bind="scope.itemProps">
                     <q-item-section>
                       <q-item-label>{{ scope.opt.label }}</q-item-label>
                       <q-item-label caption v-if="scope.opt.date">{{
@@ -114,7 +119,7 @@
           <!-- Selected firmware summary -->
           <div
             v-if="selectedFirmware"
-            class="selected-firmware q-pa-sm q-mt-md bg-blue-1 rounded-borders"
+            class="selected-firmware q-pa-sm q-mt-md rounded-borders"
           >
             <div class="text-subtitle2 text-center">Selected Firmware:</div>
             <div><strong>Branch:</strong> {{ selectedFirmware.branch || "stable" }}</div>
@@ -128,7 +133,7 @@
         <q-btn flat label="Cancel" color="primary" @click="onDialogCancel" />
         <q-btn
           flat
-          label="Update"
+          :label="updateButtonLabel"
           color="primary"
           :disable="!selectedFirmware"
           @click="startUpdate"
@@ -257,7 +262,11 @@ export default {
       if (!selectedBranch.value || !selectedType.value || !props.firmwareOptions)
         return [];
 
-      return props.firmwareOptions
+      console.log(
+        `DEBUG: Getting versions for branch=${selectedBranch.value}, type=${selectedType.value}`
+      );
+
+      const result = props.firmwareOptions
         .filter(
           (fw) =>
             (fw.branch || "stable") === selectedBranch.value &&
@@ -274,6 +283,19 @@ export default {
           // Sort by version in descending order (newest first)
           return b.value.localeCompare(a.value, undefined, { numeric: true });
         });
+
+      console.log("DEBUG: Available versions:", result);
+      return result;
+    });
+
+    // Add this watch right after the existing watch handlers (around line 310)
+    // Add this after the watch for selectedType
+    watch(selectedVersionId, (newId) => {
+      console.log("DEBUG: Selected version ID changed to:", newId);
+      if (newId) {
+        const version = availableVersions.value.find((v) => v.id === newId);
+        console.log("DEBUG: Selected firmware:", version ? version.fw : "not found");
+      }
     });
 
     // The selected firmware object
@@ -364,7 +386,63 @@ export default {
       // Send the selected firmware back to the parent
       onDialogOK(preparedFirmware);
     };
+    const compareVersions = (version1, version2) => {
+      // Extract version components (only consider major.minor-build)
+      const extractComponents = (ver) => {
+        // Match patterns like "1.2-3" or "1.2.3-4"
+        const match = /^(\d+)\.(\d+)(?:\.\d+)?-(\d+)/.exec(ver);
+        if (match) {
+          return {
+            major: parseInt(match[1], 10),
+            minor: parseInt(match[2], 10),
+            build: parseInt(match[3], 10),
+          };
+        }
+        return { major: 0, minor: 0, build: 0 }; // Default if pattern doesn't match
+      };
 
+      const v1 = extractComponents(version1);
+      const v2 = extractComponents(version2);
+
+      // Compare major version
+      if (v1.major !== v2.major) {
+        return v1.major - v2.major;
+      }
+
+      // If major is the same, compare minor version
+      if (v1.minor !== v2.minor) {
+        return v1.minor - v2.minor;
+      }
+
+      // If major and minor are the same, compare build
+      return v1.build - v2.build;
+    };
+
+    // Determine the button label based on version comparison
+    const updateButtonLabel = computed(() => {
+      if (!selectedFirmware.value) return "Update";
+
+      const currentVersion = props.currentInfo.git_version;
+      const selectedVersion = selectedFirmware.value.fw_version;
+      const currentBranch = props.currentInfo.branch || "stable";
+      const selectedBranch = selectedFirmware.value.branch || "stable";
+      const currentType = props.currentInfo.build_type;
+      const selectedType = selectedFirmware.value.type;
+
+      // Check if branch or build type is changing
+      if (currentBranch !== selectedBranch || currentType !== selectedType) {
+        return "Switch";
+      }
+
+      // Check if downgrading version
+      const versionComparison = compareVersions(selectedVersion, currentVersion);
+      if (versionComparison < 0) {
+        return "Downgrade";
+      }
+
+      // Default case - upgrading
+      return "Update";
+    });
     // Initialize on mount
     onMounted(() => {
       console.log(
@@ -395,6 +473,7 @@ export default {
       formatDate,
       getBranchColor,
       startUpdate,
+      updateButtonLabel,
     };
   },
 };
@@ -440,5 +519,13 @@ export default {
 
 .selected-firmware {
   text-align: left;
+  color: var(--field-value-color, var(--field-value-color-light));
+  background-color: var(--table-item-bg, var(--table-item-bg-light)) !important;
+}
+
+/* Dark mode specific styles */
+.body--dark .selected-firmware {
+  color: var(--field-value-color-dark);
+  background-color: var(--table-item-bg-dark) !important;
 }
 </style>
