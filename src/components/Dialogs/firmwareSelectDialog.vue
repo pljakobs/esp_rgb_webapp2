@@ -1,6 +1,9 @@
 <template>
   <q-dialog ref="dialogRef" @hide="onDialogHide" persistent>
-    <q-card class="shadow-4 q-pa-md" style="max-width: 500px; max-height: 640px">
+    <q-card
+      class="shadow-4 q-pa-md"
+      style="max-width: 500px; max-height: 640px"
+    >
       <q-card-section>
         <div class="text-h6">
           <q-icon name="img:icons/systemsecurityupdate_outlined.svg" />
@@ -122,9 +125,13 @@
             class="selected-firmware q-pa-sm q-mt-md rounded-borders"
           >
             <div class="text-subtitle2 text-center">Selected Firmware:</div>
-            <div><strong>Branch:</strong> {{ selectedFirmware.branch || "stable" }}</div>
+            <div>
+              <strong>Branch:</strong> {{ selectedFirmware.branch || "stable" }}
+            </div>
             <div><strong>Type:</strong> {{ selectedFirmware.type }}</div>
-            <div><strong>Version:</strong> {{ selectedFirmware.fw_version }}</div>
+            <div>
+              <strong>Version:</strong> {{ selectedFirmware.fw_version }}
+            </div>
           </div>
         </div>
       </q-card-section>
@@ -166,12 +173,8 @@ export default {
   emits: [...useDialogPluginComponent.emits],
 
   setup(props, { emit }) {
-    const {
-      dialogRef,
-      onDialogHide,
-      onDialogOK,
-      onDialogCancel,
-    } = useDialogPluginComponent();
+    const { dialogRef, onDialogHide, onDialogOK, onDialogCancel } =
+      useDialogPluginComponent();
 
     // Selection state - initialize with current values
     const selectedBranch = ref(props.currentInfo.branch || "stable");
@@ -199,7 +202,9 @@ export default {
       if (!props.firmwareOptions || !Array.isArray(props.firmwareOptions)) {
         return [];
       }
-      return [...new Set(props.firmwareOptions.map((fw) => fw.branch || "stable"))];
+      return [
+        ...new Set(props.firmwareOptions.map((fw) => fw.branch || "stable")),
+      ];
     };
 
     // Available branches
@@ -240,7 +245,7 @@ export default {
         ...new Set(
           props.firmwareOptions
             .filter((fw) => (fw.branch || "stable") === selectedBranch.value)
-            .map((fw) => fw.type)
+            .map((fw) => fw.type),
         ),
       ];
 
@@ -259,18 +264,22 @@ export default {
 
     // Available versions for selected branch and type
     const availableVersions = computed(() => {
-      if (!selectedBranch.value || !selectedType.value || !props.firmwareOptions)
+      if (
+        !selectedBranch.value ||
+        !selectedType.value ||
+        !props.firmwareOptions
+      )
         return [];
 
       console.log(
-        `DEBUG: Getting versions for branch=${selectedBranch.value}, type=${selectedType.value}`
+        `DEBUG: Getting versions for branch=${selectedBranch.value}, type=${selectedType.value}`,
       );
 
       const result = props.firmwareOptions
         .filter(
           (fw) =>
             (fw.branch || "stable") === selectedBranch.value &&
-            fw.type === selectedType.value
+            fw.type === selectedType.value,
         )
         .map((fw, index) => ({
           label: fw.fw_version,
@@ -294,7 +303,10 @@ export default {
       console.log("DEBUG: Selected version ID changed to:", newId);
       if (newId) {
         const version = availableVersions.value.find((v) => v.id === newId);
-        console.log("DEBUG: Selected firmware:", version ? version.fw : "not found");
+        console.log(
+          "DEBUG: Selected firmware:",
+          version ? version.fw : "not found",
+        );
       }
     });
 
@@ -303,7 +315,7 @@ export default {
       if (!selectedVersionId.value || !availableVersions.value) return null;
 
       const version = availableVersions.value.find(
-        (v) => v.id === selectedVersionId.value
+        (v) => v.id === selectedVersionId.value,
       );
       return version ? version.fw : null;
     });
@@ -380,7 +392,9 @@ export default {
       }
 
       // Create a deep copy to avoid mutating props
-      const preparedFirmware = JSON.parse(JSON.stringify(selectedFirmware.value));
+      const preparedFirmware = JSON.parse(
+        JSON.stringify(selectedFirmware.value),
+      );
       preparedFirmware.files.rom.url = fullUrl;
 
       // Send the selected firmware back to the parent
@@ -435,7 +449,10 @@ export default {
       }
 
       // Check if downgrading version
-      const versionComparison = compareVersions(selectedVersion, currentVersion);
+      const versionComparison = compareVersions(
+        selectedVersion,
+        currentVersion,
+      );
       if (versionComparison < 0) {
         return "Downgrade";
       }
@@ -447,7 +464,7 @@ export default {
     onMounted(() => {
       console.log(
         "FirmwareSelectDialog mounted with options:",
-        props.firmwareOptions ? props.firmwareOptions.length : 0
+        props.firmwareOptions ? props.firmwareOptions.length : 0,
       );
 
       // Wait for the next tick to ensure computed properties are ready
