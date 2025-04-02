@@ -21,7 +21,7 @@
                 {{ props.opt.ssid }}
               </q-item-section>
               <q-item-section style="flex: 1">
-                <q-icon
+                <svgIcon
                   class="network-icon-class"
                   :name="getSignalIcon(props.opt.signal, props.opt.encryption)"
                 />
@@ -37,23 +37,20 @@
           hint="Enter the SSID of the network"
           style="width: 80%"
         />
-
         <transition name="shake" mode="out-in">
           <q-input
             v-model="password"
             :type="isPwd ? 'password' : 'text'"
-            :label="selectedNetwork ? 'SSID' : 'Enter SSID'"
-            hint="Enter the SSID of the network"
+            :label="selectedNetwork ? 'Password' : 'Network Password'"
+            hint="Enter the password for the network"
             :class="{ shake: wifiData.message === 'Wrong password' }"
             filled
             style="width: 80%"
           >
             <template #append>
-              <q-icon
+              <svgIcon
                 :name="
-                  isPwd
-                    ? 'img:icons/visibility_off_outlined.svg'
-                    : 'img:icons/visibility-outlined-24.svg'
+                  isPwd ? 'visibility_off_outlined' : 'visibility-outlined-24'
                 "
                 class="cursor-pointer"
                 @click="isPwd = !isPwd"
@@ -61,7 +58,19 @@
             </template>
           </q-input>
         </transition>
+      </q-card-section>
 
+      <q-card-actions class="row justify-center">
+        <div style="width: 80%; display: flex; justify-content: flex-end">
+          <q-btn
+            color="primary"
+            label="Connect"
+            style="margin-top: 16px"
+            @click="connectToNetwork"
+          />
+        </div>
+      </q-card-actions>
+      <q-card-section>
         {{ wifiData.message }}
         <div v-if="wifiData.message === 'Wrong password'">
           <p>password authentication failed, please try again</p>
@@ -429,28 +438,28 @@ export default {
         case "WPA2_PSK":
         case "WPA_WPA2_PSK": {
           if (signalStrength >= -50) {
-            return "img:icons/network_wifi_locked_FILL0_wght400_GRAD0_opsz24.svg";
+            return "network_wifi_locked_FILL0_wght400_GRAD0_opsz24";
           } else if (signalStrength >= -65) {
-            return "img:icons/network_wifi_3_bar_locked_FILL0_wght400_GRAD0_opsz24.svg";
+            return "network_wifi_3_bar_locked_FILL0_wght400_GRAD0_opsz24";
           } else if (signalStrength >= -750) {
-            return "img:icons/network_wifi_2_bar_locked_FILL0_wght400_GRAD0_opsz24.svg";
+            return "network_wifi_2_bar_locked_FILL0_wght400_GRAD0_opsz24";
           } else if (signalStrength >= -90) {
-            return "img:icons/network_wifi_1_bar_locked_FILL0_wght400_GRAD0_opsz24.svg";
+            return "network_wifi_1_bar_locked_FILL0_wght400_GRAD0_opsz24";
           } else {
-            return "img:icons/signal_wifi_statusbar_null_FILL0_wght400_GRAD0_opsz24.svg";
+            return "signal_wifi_statusbar_null_FILL0_wght400_GRAD0_opsz24";
           }
         }
         default: {
           if (signalStrength >= -50) {
-            return "img:icons/network_wifi_FILL0_wght400_GRAD0_opsz24.svg";
+            return "network_wifi_FILL0_wght400_GRAD0_opsz24";
           } else if (signalStrength >= -65) {
-            return "img:icons/network_wifi_3_bar_FILL0_wght400_GRAD0_opsz24.svg";
+            return "network_wifi_3_bar_FILL0_wght400_GRAD0_opsz24";
           } else if (signalStrength >= -750) {
-            return "img:icons/network_wifi_2_bar_FILL0_wght400_GRAD0_opsz24.svg";
+            return "network_wifi_2_bar_FILL0_wght400_GRAD0_opsz24";
           } else if (signalStrength >= -90) {
-            return "img:icons/network_wifi_1_bar_FILL0_wght400_GRAD0_opsz24.svg";
+            return "network_wifi_1_bar_FILL0_wght400_GRAD0_opsz24";
           } else {
-            return "img:icons/signal_wifi_statusbar_null_FILL0_wght400_GRAD0_opsz24.svg";
+            return "signal_wifi_statusbar_null_FILL0_wght400_GRAD0_opsz24";
           }
         }
       }
