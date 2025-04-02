@@ -240,7 +240,12 @@
             class="ws-status-btn"
             :color="buttonColor"
             :icon="buttonIcon"
-          />
+          >
+            <q-tooltip
+              >shows the status of the Websocket connection to the selected
+              controller</q-tooltip
+            >
+          </q-btn>
         </q-toolbar>
       </q-footer>
     </q-layout>
