@@ -42,3 +42,6 @@ package-lock.json
 # deploy fragments
 src/layouts/RgbwwLayout.vue.1
 src/layouts/RgbwwLayout.vue.2
+
+minify_iconfont.js
+analyze-stats.js
