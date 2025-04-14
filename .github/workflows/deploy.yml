@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - devel
+    pull_request:
+      branches:
+        - devel
 
 jobs:
   build:
@@ -53,10 +56,21 @@ jobs:
       - name: Create download page
         run: |
           mkdir -p dist/download
+          VERSION=$(cat dist/spa/VERSION)
+          BUILD_DATE=$(date)
           echo "<html><body><h1>Download Artifacts</h1><ul>" > dist/download/index.html
+          echo "<p>Build Date: ${BUILD_DATE}</p>" >> dist/download/index.html
+          echo "<p>Version: ${VERSION}</p>" >> dist/download/index.html
           echo "<li><a href='spa-files.zip'>Download SPA Files</a></li>" >> dist/download/index.html
           echo "<li><a href='fileList.h'>Download fileList.h</a></li>" >> dist/download/index.html
-          echo "</ul></body></html>" >> dist/download/index.html
+          echo "</ul>" >> dist/download/index.html
+          echo "</body></html>" >> dist/download/index.html
+
+      - name: Copy SPA files to download directory
+        run: zip -r dist/download/spa-files.zip dist/spa/*
+
+      - name: Copy fileList.h to download directory
+        run: cp ./fileList.h dist/download/
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3

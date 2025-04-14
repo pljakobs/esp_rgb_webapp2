@@ -10,6 +10,7 @@
 
 import { configure } from "quasar/wrappers";
 import path from "path";
+import { visualizer } from "rollup-plugin-visualizer"; // Import visualizer
 
 export default configure(function (/* ctx */) {
   return {
@@ -41,7 +42,7 @@ export default configure(function (/* ctx */) {
       // 'eva-icons',
       // 'themify',
       // 'line-awesome',
-      // 'roboto-font-latin-ext', // this or either 'roboto-font', NEVER both!
+      // 'roboto-font-latin-ext', // this
       // "roboto-font", // optional, you are not bound to it
       // "material-icons", // optional, you are not bound to it
       // "material-icons-outlined",
@@ -70,6 +71,7 @@ export default configure(function (/* ctx */) {
       minify: true,
       polyfillModulePreload: true,
       sourcemap: false,
+      //sourcemap: true,
       // distDir
 
       // extendViteConf (viteConf) {},
@@ -89,6 +91,10 @@ export default configure(function (/* ctx */) {
             include: path.resolve("./src/i18n/**"),
           },
         ],
+        visualizer({
+          filename: "./dist/stats.json",
+          json: true,
+        }),
       ],
     },
     // Full list of options: https://v2.quasar.dev/quasar-cli-vite/quasar-config-js#devServer
@@ -107,7 +113,7 @@ export default configure(function (/* ctx */) {
       },
 
       // Quasar plugins
-      plugins: [],
+      plugins: ["Notify", "Dialog"],
       lang: "en-US",
     },
 

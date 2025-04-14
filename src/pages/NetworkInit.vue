@@ -2,7 +2,7 @@
   <div>
     <MyCard title="connect to Network" icon="wifi_outlined">
       <q-card-section class="row justify-center">
-        <q-select
+        <mySelect
           v-model="selectedNetwork"
           filled
           :options="networks"
@@ -11,7 +11,6 @@
           option-label="ssid"
           option-value="ssid"
           style="width: 80%"
-          dropdown-icon="img:icons/arrow_drop_down.svg"
         >
           <template #option="props">
             <q-item
@@ -29,7 +28,7 @@
               </q-item-section>
             </q-item>
           </template>
-        </q-select>
+        </mySelect>
 
         <q-input
           v-model="selectedNetwork.ssid"
@@ -179,8 +178,8 @@
 <script>
 import { ref, onMounted, watch } from "vue";
 //import useWebSocket, { wsStatus } from "../services/websocket";
-import useWebSocket from "../services/websocket";
-import { controllersStore } from "src/stores/controllersStore.js";
+import useWebSocket from "src/services/websocket";
+import { useControllersStore } from "src/stores/controllersStore.js";
 import { infoDataStore } from "src/stores/infoDataStore.js";
 import { storeStatus } from "src/stores/storeConstants";
 import systemCommand from "src/services/systemCommands.js";
@@ -191,7 +190,7 @@ export default {
     MyCard,
   },
   setup() {
-    const controllers = controllersStore();
+    const controllers = useControllersStore();
     const infoData = infoDataStore();
     const wifiData = ref({
       connected: false,
@@ -345,9 +344,7 @@ export default {
           if (response.status === 429 && retryCount < maxRetries) {
             // Too many requests, retry after a delay
             console.log(
-              `Request limit reached, retrying after ${
-                retryDelay * 2 ** retryCount
-              }ms...`,
+              `Request limit reached, retrying after ${retryDelay * 2 ** retryCount}ms...`,
             );
             setTimeout(
               () => fetchNetworks(retryCount + 1),
@@ -372,9 +369,7 @@ export default {
           if (response.status === 429 && retryCount < maxRetries) {
             // Too many requests, retry after a delay
             console.log(
-              `Request limit reached, retrying after ${
-                retryDelay * 2 ** retryCount
-              }ms...`,
+              `Request limit reached, retrying after ${retryDelay * 2 ** retryCount}ms...`,
             );
             setTimeout(
               () => fetchNetworks(retryCount + 1),

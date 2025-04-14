@@ -1,5 +1,6 @@
 <template>
   <div
+    v-if="name !== ''"
     :class="['svg-icon', { selected: isSelected }]"
     v-html="svgContent"
   ></div>
@@ -24,20 +25,33 @@ export default {
     };
   },
   async mounted() {
-    console.log("trying to fetch icon", this.name);
-    try {
-      const response = await fetch(`icons/${this.name}.svg`);
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      this.svgContent = await response.text();
-    } catch (error) {
-      console.error("Error loading SVG:", error);
-    }
+    await this.fetchIcon();
   },
   watch: {
-    name(newVal) {
-      console.log("fetching icon:", newVal);
+    name: {
+      immediate: true,
+      handler(newVal) {
+        console.log("fetching icon:", newVal);
+        this.fetchIcon();
+      },
+    },
+  },
+  methods: {
+    async fetchIcon() {
+      if (this.name === "") {
+        this.svgContent = "";
+        return;
+      }
+      console.log("trying to fetch icon", this.name);
+      try {
+        const response = await fetch(`icons/${this.name}.svg`);
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        this.svgContent = await response.text();
+      } catch (error) {
+        console.error("Error loading SVG:", error);
+      }
     },
   },
 };

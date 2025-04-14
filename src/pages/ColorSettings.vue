@@ -7,9 +7,9 @@
 <script>
 import { ref, watch, onMounted } from "vue";
 import { configDataStore } from "src/stores/configDataStore";
-import TransitionModeCard from "src/components/TransitionModeCard.vue";
-import ColorModelCard from "src/components/ColorModelCard.vue";
-import WhiteBalanceCard from "src/components/WhiteBalanceCard.vue";
+import TransitionModeCard from "src/components/cards/TransitionModeCard.vue";
+import ColorModelCard from "src/components/cards/ColorModelCard.vue";
+import WhiteBalanceCard from "src/components/cards/WhiteBalanceCard.vue";
 
 export default {
   components: {

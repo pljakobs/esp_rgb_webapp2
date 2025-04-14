@@ -10,6 +10,8 @@ export const storeStatus = {
   LOADING: "loading",
   READY: "ready",
   ERROR: "error",
+  SYNCING: "syncing",
+  SYNCED: "synced",
 };
 
 export const maxRetries = 5; // Maximum number of retries

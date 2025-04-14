@@ -1,8 +1,8 @@
-import { controllersStore } from "src/stores/controllersStore";
+import { useControllersStore } from "src/stores/controllersStore";
 import initializeStores from "./initializeStores";
 
 const sysCmd = async (cmd, data) => {
-  const controllers = controllersStore();
+  const controllers = useControllersStore();
   console.log(`Sending command: ${cmd}`);
   console.log("Additional body:", data);
   try {
