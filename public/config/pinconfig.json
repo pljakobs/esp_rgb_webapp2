@@ -43,6 +43,18 @@
       ]
     },
     {
+      "name": "Lightinator Mini",
+      "soc": "esp32c3",
+      "model": "rgbww",
+      "channels": [
+        { "name": "red", "pin": "18" },
+        { "name": "green", "pin": "7" },
+        { "name": "blue", "pin": "6" },
+        { "name": "warmwhite", "pin": "4" },
+        { "name": "coldwhite", "pin": "5" }
+      ]
+    },
+    {
       "name": "Shojo PCB (WemosD1 mini)",
       "soc": "esp8266",
       "model": "rgbww",
