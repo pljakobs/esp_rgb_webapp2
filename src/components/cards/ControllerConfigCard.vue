@@ -155,9 +155,23 @@ export default {
     const loadPinConfigData = async () => {
       console.log("loading pinConfigData");
       try {
-        const response = await fetch(configData.data.general.pin_config_url);
-        if (!response.ok) throw new Error("Error loading pin config from URL");
-        const remotePinConfigData = await response.json();
+        const owner = "pljakobs";
+        const repo = "esp_rgb_webapp2";
+        const path = "public/config/pinconfig.json";
+        const branch = "devel";
+
+        /*
+         * use the Github API to fetch newer pinconfig.json file - this avoids CORS issues
+         * and allows us to fetch the file directly from the repo
+         * this allows us to just update the pinconfig in the repo and make the new configuration available to
+         * controllers without necessitating a firmware update
+         */
+        const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${path}?ref=${branch}`;
+
+        const response = await fetch(apiUrl);
+        const data = await response.json();
+        const remotePinConfigData = JSON.parse(atob(data.content));
+
         const remoteVersion = remotePinConfigData.version;
 
         if (remoteVersion > configData.data.hardware.version) {
