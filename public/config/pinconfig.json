@@ -1,5 +1,5 @@
 {
-  "version": 5,
+  "version": 6,
   "available_pins": [
     {
       "soc": "esp8266",
@@ -47,11 +47,11 @@
       "soc": "esp32c3",
       "model": "rgbww",
       "channels": [
-        { "name": "red", "pin": "18" },
-        { "name": "green", "pin": "7" },
-        { "name": "blue", "pin": "6" },
-        { "name": "warmwhite", "pin": "4" },
-        { "name": "coldwhite", "pin": "5" }
+        { "name": "red", "pin": "0" },
+        { "name": "green", "pin": "5" },
+        { "name": "blue", "pin": "4" },
+        { "name": "warmwhite", "pin": "6" },
+        { "name": "coldwhite", "pin": "7" }
       ]
     },
     {
