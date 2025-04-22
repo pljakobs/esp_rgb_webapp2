@@ -22,6 +22,7 @@
       "name": "mrpj",
       "soc": "esp8266",
       "model": "rgbww",
+      "clear_pin": 16,
       "channels": [
         { "name": "red", "pin": "13" },
         { "name": "green", "pin": "12" },
@@ -34,6 +35,7 @@
       "name": "NodeMC esp32c3 01M",
       "soc": "esp32c3",
       "model": "rgbww",
+      "clear_pin": 21,
       "channels": [
         { "name": "red", "pin": "5" },
         { "name": "green", "pin": "7" },
@@ -46,6 +48,7 @@
       "name": "Lightinator Mini",
       "soc": "esp32c3",
       "model": "rgbww",
+      "clear_pin": 18,
       "channels": [
         { "name": "red", "pin": "18" },
         { "name": "green", "pin": "7" },
@@ -58,6 +61,7 @@
       "name": "Shojo PCB (WemosD1 mini)",
       "soc": "esp8266",
       "model": "rgbww",
+      "clear_pin": 16,
       "channels": [
         { "name": "red", "pin": "14" },
         { "name": "green", "pin": "4" },
@@ -70,6 +74,7 @@
       "name": "test",
       "soc": "esp8266",
       "model": "rgbww",
+      "clear_pin": 16,
       "channels": [
         { "name": "red", "pin": "14" },
         { "name": "green", "pin": "4" },

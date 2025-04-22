@@ -17,22 +17,35 @@
       <q-separator />
 
       <q-card-section class="q-pa-md">
-        <q-input
-          v-model="configName"
-          label="Configuration Name"
-          class="q-mb-md"
-          :rules="[(val) => !!val || 'Name is required']"
-        />
+        <div class="clear-pin-section q-mb-md">
+          <div class="section-title">Clear Pin</div>
 
-        <div class="soc-info q-mb-md">
-          <q-chip color="primary" text-color="white">
-            <svgIcon name="memory_outlined" class="q-mr-xs" />
-            {{ soc.toUpperCase() }}
-          </q-chip>
-          <span class="text-caption q-ml-sm">
-            This configuration will only be available on
-            {{ soc.toUpperCase() }} devices
-          </span>
+          <div class="soc-info q-mb-md">
+            <q-chip color="primary" text-color="white">
+              <svgIcon name="memory_outlined" class="q-mr-xs" />
+              {{ soc.toUpperCase() }}
+            </q-chip>
+            <span class="text-caption q-ml-sm">
+              This configuration will only be available on
+              {{ soc.toUpperCase() }} devices
+            </span>
+          </div>
+
+          <div class="q-my-sm">
+            <span class="text-caption">
+              The clear pin is used to reset all channels. Optional but
+              recommended.
+            </span>
+          </div>
+          <mySelect
+            v-model="clearPin"
+            :options="filteredClearPins"
+            label="Clear Pin"
+            class="clear-pin-select q-mb-md"
+            emit-value
+            map-options
+            clearable
+          />
         </div>
 
         <div class="channel-pins q-mb-md">
@@ -115,6 +128,15 @@ export default {
         : "",
     );
 
+    // Add this - initialize clearPin based on existing config
+    const clearPin = ref(
+      props.mode === "edit" &&
+        props.existingConfig &&
+        props.existingConfig.clearPin
+        ? props.existingConfig.clearPin
+        : null,
+    );
+
     // Initialize channels based on mode
     const configChannels = ref([]);
 
@@ -152,10 +174,25 @@ export default {
         .filter((ch) => ch.name !== currentChannel.name && ch.pin !== null)
         .map((ch) => ch.pin);
 
+      // Also exclude the clear pin if it's set
+      if (clearPin.value !== null) {
+        selectedPins.push(clearPin.value);
+      }
+
       return props.availablePins.filter(
         (pin) => !selectedPins.includes(pin.value),
       );
     };
+
+    const filteredClearPins = computed(() => {
+      const selectedChannelPins = configChannels.value
+        .filter((ch) => ch.pin !== null)
+        .map((ch) => ch.pin);
+
+      return props.availablePins.filter(
+        (pin) => !selectedChannelPins.includes(pin.value),
+      );
+    });
 
     // Validate the form
     const isFormValid = computed(() => {
@@ -168,8 +205,9 @@ export default {
 
       const config = {
         name: configName.value,
-        soc: props.soc.toLowerCase(), // Ensure consistent casing
+        soc: props.soc.toLowerCase(),
         channels: configChannels.value,
+        clearPin: clearPin.value, // Include the clear pin
       };
 
       onDialogOK(config);
@@ -181,6 +219,8 @@ export default {
       onDialogCancel,
       configName,
       configChannels,
+      clearPin, // Add this
+      filteredClearPins, // Add this
       filteredPinsFor,
       isFormValid,
       hasEmptyRequiredChannels,

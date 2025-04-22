@@ -165,6 +165,8 @@ export default {
          * and allows us to fetch the file directly from the repo
          * this allows us to just update the pinconfig in the repo and make the new configuration available to
          * controllers without necessitating a firmware update
+         * once new pin configs are fetched, the local list is updated, so whenever the frontend is used, the controller learns all
+         * new pin configs
          */
         const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${path}?ref=${branch}`;
 
