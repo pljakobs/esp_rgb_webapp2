@@ -1,8 +1,9 @@
 <template>
   <div
     v-if="name !== ''"
-    :class="['svg-icon', { selected: isSelected }]"
-    v-html="svgContent"
+    :class="['svg-icon', { 'q-icon': isInStepper, selected: isSelected }]"
+    :style="getIconStyle"
+    v-html="processedSvgContent"
   ></div>
 </template>
 
@@ -18,22 +19,55 @@ export default {
       type: Boolean,
       default: false,
     },
+    size: {
+      type: String,
+      default: null,
+    },
+    color: {
+      type: String,
+      default: null,
+    },
+    isInStepper: {
+      type: Boolean,
+      default: false,
+    },
   },
   data() {
     return {
-      svgContent: "",
+      svgContent: "", // Missing data property was causing the issue
     };
   },
-  async mounted() {
-    await this.fetchIcon();
-  },
-  watch: {
-    name: {
-      immediate: true,
-      handler(newVal) {
-        console.log("fetching icon:", newVal);
-        this.fetchIcon();
-      },
+  computed: {
+    processedSvgContent() {
+      // Add fill="currentColor" to inherit text color
+      if (this.svgContent) {
+        return this.svgContent.replace("<svg", '<svg fill="currentColor"');
+      }
+      return "";
+    },
+    getIconStyle() {
+      const style = {};
+
+      if (this.color) {
+        style.color = this.color;
+      }
+
+      if (this.size) {
+        style.width = this.size;
+        style.height = this.size;
+      }
+
+      if (this.isInStepper) {
+        // Styles for q-stepper compatibility
+        style.display = "inline-flex";
+        style.alignItems = "center";
+        style.justifyContent = "center";
+        style.width = "1em";
+        style.height = "1em";
+        style.fontSize = this.size || "24px";
+      }
+
+      return style;
     },
   },
   methods: {
@@ -42,37 +76,59 @@ export default {
         this.svgContent = "";
         return;
       }
-      console.log("trying to fetch icon", this.name);
+
       try {
+        // Add console logging to debug fetch issues
+        console.log(`Fetching icon: icons/${this.name}.svg`);
         const response = await fetch(`icons/${this.name}.svg`);
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
         this.svgContent = await response.text();
+        console.log(`Icon loaded: ${this.name}`, this.svgContent.length);
       } catch (error) {
         console.error("Error loading SVG:", error);
       }
     },
   },
+  mounted() {
+    this.fetchIcon();
+  },
+  watch: {
+    name: {
+      handler() {
+        this.fetchIcon();
+      },
+    },
+  },
 };
 </script>
 
-<style scoped>
-.svg-icon {
-  display: inline-block;
-  width: 1em;
-  height: 1em;
-  fill: var(--icon-color);
-}
+<style>
 .svg-icon {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 2em;
-  height: 2em;
-  fill: var(--icon-color);
+  width: 1.5em;
+  height: 1.5em;
+  color: var(--icon-color); /* Changed from fill to color */
 }
+
+/* Special styles for q-stepper compatibility */
+.svg-icon.q-icon {
+  font-size: 24px;
+  width: 1em;
+  height: 1em;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  white-space: nowrap;
+  direction: ltr;
+  text-align: center;
+  position: relative;
+}
+
 .selected {
-  fill: var(--icon-select-color);
+  color: var(--icon-select-color); /* Changed from fill to color */
 }
 </style>
