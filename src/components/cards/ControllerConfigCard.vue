@@ -107,6 +107,13 @@ export default {
 
       if (currentConfig) {
         pinConfigData.value = currentConfig.channels;
+        if (
+          currentConfig.clearPin !== undefined &&
+          currentConfig.clearPin !== -1
+        ) {
+          console.log("Updating clear pin:", currentConfig.clearPin);
+          configData.updateData("general.clear_pin", currentConfig.clearPin);
+        }
       } else if (socSpecificConfigs.value.length > 0) {
         // Fallback to first compatible config if current one not found
         currentPinConfigName.value = socSpecificConfigs.value[0].name;
@@ -133,6 +140,13 @@ export default {
           "general.current_pin_config_name",
           currentPinConfigName.value,
         );
+        if (
+          currentConfig.clearPin !== undefined &&
+          currentConfig.clearPin !== -1
+        ) {
+          console.log("Updating clear pin:", currentConfig.clearPin);
+          configData.updateData("general.clear_pin", currentConfig.clearPin);
+        }
       }
     };
 
@@ -250,6 +264,12 @@ export default {
           message: "No configuration selected",
         });
         return;
+      }
+      if (
+        currentConfig.clearPin === undefined &&
+        configData.data.general.clear_pin !== undefined
+      ) {
+        currentConfig.clearPin = configData.data.general.clear_pin;
       }
 
       Dialog.create({
