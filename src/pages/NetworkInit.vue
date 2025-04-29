@@ -98,10 +98,7 @@
           @update:model-value="handlePinConfigChange"
         />
 
-        <div
-          v-if="socSpecificConfigs.length === 0"
-          class="text-negative q-mt-md"
-        >
+        <div v-if="socSpecificConfigs.length === 0" class="text-negative q-mt-md">
           No pin configurations available for
           {{ infoData.data.soc.toUpperCase() }} device. Please contact support.
         </div>
@@ -109,10 +106,7 @@
         <div v-else class="q-mt-md">
           <div class="text-subtitle2">Selected Configuration Details:</div>
           <q-list dense class="q-mt-sm">
-            <q-item
-              v-for="(channel, index) in currentPinConfig.channels"
-              :key="index"
-            >
+            <q-item v-for="(channel, index) in currentPinConfig.channels" :key="index">
               <q-item-section>
                 <div class="row items-center">
                   <div class="color-circle q-mr-md" :class="channel.name"></div>
@@ -147,9 +141,7 @@
                 {{ props.opt.ssid }}
               </q-item-section>
               <q-item-section avatar>
-                <svgIcon
-                  :name="getSignalIcon(props.opt.signal, props.opt.encryption)"
-                />
+                <svgIcon :name="getSignalIcon(props.opt.signal, props.opt.encryption)" />
               </q-item-section>
             </q-item>
           </template>
@@ -173,25 +165,17 @@
         >
           <template #append>
             <svgIcon
-              :name="
-                isPwd ? 'visibility_off_outlined' : 'visibility-outlined-24'
-              "
+              :name="isPwd ? 'visibility_off_outlined' : 'visibility-outlined-24'"
               class="cursor-pointer"
               @click="isPwd = !isPwd"
             />
           </template>
         </q-input>
 
-        <div
-          v-if="wifiData.message === 'Wrong password'"
-          class="text-negative q-my-md"
-        >
+        <div v-if="wifiData.message === 'Wrong password'" class="text-negative q-my-md">
           Password authentication failed, please try again.
         </div>
-        <div
-          v-if="wifiData.message === 'AP not found.'"
-          class="text-negative q-my-md"
-        >
+        <div v-if="wifiData.message === 'AP not found.'" class="text-negative q-my-md">
           Access point {{ wifiData.ssid }} could not be found, please try again.
         </div>
       </div>
@@ -215,9 +199,7 @@
             class="q-mb-md block"
           />
 
-          <div class="text-h6 text-positive q-mb-md">
-            Connection Successful!
-          </div>
+          <div class="text-h6 text-positive q-mb-md">Connection Successful!</div>
 
           <q-list bordered separator>
             <q-item>
@@ -254,29 +236,15 @@
 
           <div class="text-center q-mt-lg">
             <p>Your device will restart in {{ countdown }} seconds</p>
-            <q-btn
-              color="primary"
-              label="Restart Now"
-              @click="restartController"
-            />
+            <q-btn color="primary" label="Restart Now" @click="restartController" />
           </div>
         </div>
 
         <div v-else class="q-my-lg">
-          <svgIcon
-            name="error"
-            color="negative"
-            size="3em"
-            class="q-mb-md block"
-          />
+          <svgIcon name="error" color="negative" size="3em" class="q-mb-md block" />
           <div class="text-h6 text-negative q-mb-md">Connection Failed</div>
           <p>{{ wifiData.message || "Unable to connect to the network" }}</p>
-          <q-btn
-            color="primary"
-            label="Try Again"
-            @click="step = 3"
-            class="q-mt-md"
-          />
+          <q-btn color="primary" label="Try Again" @click="step = 3" class="q-mt-md" />
         </div>
       </div>
 
@@ -344,9 +312,7 @@ export default {
     const hostname = ref(configData.data.general.device_name || "");
 
     // Step 2: Pin Configuration
-    const currentPinConfigName = ref(
-      configData.data.general.current_pin_config_name,
-    );
+    const currentPinConfigName = ref(configData.data.general.current_pin_config_name);
     const pinConfigNames = ref([]);
     const currentPinConfig = ref({});
 
@@ -374,9 +340,7 @@ export default {
       if (step.value === 1) {
         return hostname.value && hostname.value.trim() !== "";
       } else if (step.value === 2) {
-        return (
-          currentPinConfigName.value && socSpecificConfigs.value.length > 0
-        );
+        return currentPinConfigName.value && socSpecificConfigs.value.length > 0;
       }
       return true;
     });
@@ -392,8 +356,7 @@ export default {
     // Computed property for SOC-specific pin configs
     const socSpecificConfigs = computed(() => {
       return configData.data.hardware.pinconfigs.filter(
-        (config) =>
-          config.soc.toLowerCase() === infoData.data.soc.toLowerCase(),
+        (config) => config.soc.toLowerCase() === infoData.data.soc.toLowerCase()
       );
     });
 
@@ -417,7 +380,7 @@ export default {
       // Set current pin config
       if (currentPinConfigName.value) {
         const config = socSpecificConfigs.value.find(
-          (c) => c.name === currentPinConfigName.value,
+          (c) => c.name === currentPinConfigName.value
         );
         if (config) {
           currentPinConfig.value = config;
@@ -430,9 +393,7 @@ export default {
     };
 
     const handlePinConfigChange = (newConfigName) => {
-      const config = socSpecificConfigs.value.find(
-        (c) => c.name === newConfigName,
-      );
+      const config = socSpecificConfigs.value.find((c) => c.name === newConfigName);
 
       if (config) {
         currentPinConfig.value = config;
@@ -464,7 +425,7 @@ export default {
               ssid: new_ssid,
               password: new_password,
             }),
-          },
+          }
         );
 
         if (response.ok) {
@@ -528,7 +489,7 @@ export default {
           console.log("Fetching networks");
           const response = await fetch(
             `http://${controllers.currentController.ip_address}/networks`,
-            { method: "GET" },
+            { method: "GET" }
           );
           const responseJson = await response.json();
           responseJson.available.sort((a, b) => b.signal - a.signal);
@@ -537,7 +498,7 @@ export default {
           // Initiate another scan
           await fetch(
             `http://${controllers.currentController.ip_address}/scan_networks`,
-            { method: "POST" },
+            { method: "POST" }
           );
         }
       } catch (error) {
@@ -597,7 +558,7 @@ export default {
         if (infoData.data.soc) {
           getPinConfigNames();
         }
-      },
+      }
     );
 
     // Watch for successful WiFi connection
@@ -607,7 +568,7 @@ export default {
         if (oldVal === "Connecting to WiFi" && newVal === "Connected to WiFi") {
           console.log("Connected to network, stopping access point");
         }
-      },
+      }
     );
 
     return {
