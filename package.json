@@ -36,7 +36,7 @@
     "postcss": "^8.5.1",
     "prettier": "^3.3.3",
     "rollup-plugin-visualizer": "^5.14.0",
-    "vite-plugin-vue-devtools": "^7.7.1"
+    "vite-plugin-vue-devtools": "^8.0.0"
   },
   "engines": {
     "node": "^18 || ^16 || ^14.19",
