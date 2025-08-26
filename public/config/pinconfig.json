@@ -50,11 +50,11 @@
       "model": "rgbww",
       "clear_pin": 18,
       "channels": [
-        { "name": "red", "pin": "0" },
+        { "name": "red", "pin": "3" },
         { "name": "green", "pin": "4" },
         { "name": "blue", "pin": "5" },
-        { "name": "warmwhite", "pin": "6" },
-        { "name": "coldwhite", "pin": "7" }
+        { "name": "warmwhite", "pin": "18" },
+        { "name": "coldwhite", "pin": "19" }
       ]
     },
     {
@@ -71,16 +71,15 @@
       ]
     },
     {
-      "name": "test",
-      "soc": "esp8266",
+      "name": "test32",
+      "soc": "esp32",
       "model": "rgbww",
-      "clear_pin": 16,
       "channels": [
-        { "name": "red", "pin": "14" },
+        { "name": "red", "pin": "3" },
         { "name": "green", "pin": "4" },
         { "name": "blue", "pin": "5" },
-        { "name": "warmwhite", "pin": "15" },
-        { "name": "coldwhite", "pin": "12" }
+        { "name": "warmwhite", "pin": "18" },
+        { "name": "coldwhite", "pin": "19" }
       ]
     }
   ]
