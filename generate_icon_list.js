@@ -1,5 +1,9 @@
-const fs = require('fs');
-const path = require('path');
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+
+// ES module __dirname workaround
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // Function to recursively find all files in a directory
 function findFiles(dir, fileList = []) {
@@ -18,20 +22,22 @@ function findFiles(dir, fileList = []) {
 
 // Function to generate the file list
 function generateFileList(files, baseDir) {
-  return files.map((file, index) => {
-    const relativePath = path.relative(baseDir, file).replace(/\\/g, '/');
-    const key = path.basename(file, path.extname(file)).replace(/[-.]/g, '_');
-    const line = `\tXX(${key}, "${relativePath}")`;
-    return index === files.length - 1 ? line : `${line} \\`;
-  }).join('\n');
+  return files
+    .map((file, index) => {
+      const relativePath = path.relative(baseDir, file).replace(/\\/g, "/");
+      const key = path.basename(file, path.extname(file)).replace(/[-.]/g, "_");
+      const line = `\tXX(${key}, "${relativePath}")`;
+      return index === files.length - 1 ? line : `${line} \\`;
+    })
+    .join("\n");
 }
 
 // Main function
 function main() {
-  const baseDir = path.resolve(__dirname, 'dist/spa');
+  const baseDir = path.resolve(__dirname, "dist/spa");
   const files = findFiles(baseDir);
   const fileList = generateFileList(files, baseDir);
-  console.log("#define FILE_LIST(XX) \\")
+  console.log("#define FILE_LIST(XX) \\");
   console.log(fileList);
 }
 

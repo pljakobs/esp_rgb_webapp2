@@ -5,6 +5,7 @@
   "productName": "Lightinator",
   "author": "Peter Jakobs <pjakobs@mobileme.de>",
   "private": true,
+  "type": "module",
   "scripts": {
     "lint": "eslint --ext .js,.vue ./",
     "format": "prettier --write \"**/*.{js,vue,scss,html,md,json}\" --ignore-path .gitignore",
@@ -17,7 +18,7 @@
     "@quasar/cli": "^2.5.0",
     "@quasar/extras": "^1.16.16",
     "@vue/eslint-config-standard": "^9.0.0",
-    "pinia": "^3.0.1",
+    "pinia": "^2.3.1",
     "quasar": "^2.17.7",
     "vue": "^3.5.8",
     "vue-i18n": "^11.1.0",
@@ -26,8 +27,8 @@
   },
   "devDependencies": {
     "@intlify/unplugin-vue-i18n": "^6.0.2",
-    "@quasar/app-vite": "^2.0.8",
-    "@vue/devtools": "^8.0.1",
+    "@quasar/app-vite": "^2.3.0",
+    "@vue/devtools": "^6.6.4",
     "autoprefixer": "^10.4.17",
     "eslint": "^9.19.0",
     "eslint-config-prettier": "^10.0.1",
@@ -36,10 +37,10 @@
     "postcss": "^8.5.1",
     "prettier": "^3.3.3",
     "rollup-plugin-visualizer": "^5.14.0",
-    "vite-plugin-vue-devtools": "^8.0.1"
+    "vite": "^4.5.14"
   },
   "engines": {
-    "node": "^18 || ^16 || ^14.19",
+    "node": ">=20",
     "npm": ">= 6.13.4",
     "yarn": ">= 1.21.1"
   }
