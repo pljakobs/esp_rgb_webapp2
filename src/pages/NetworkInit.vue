@@ -566,6 +566,8 @@ export default {
           wifiData.value.message = "Failed to initiate connection";
           log.value.push("Failed to initiate connection");
           connecting.value = false;
+          // Stay on WiFi step
+          step.value = 4;
           return;
         }
 
@@ -593,9 +595,17 @@ export default {
           // Send color model here
           const modelIndex = colorOptions.value.indexOf(colorModel.value);
           configData.updateData("color.outputmode", modelIndex);
+        } else {
+          // WiFi never connected, go back to WiFi step
+          wifiData.value.message =
+            "Unable to connect to the network. Please try again.";
+          step.value = 4;
+          connecting.value = false;
+          return;
         }
       } catch (error) {
         wifiData.value.message = `Connection error: ${error.message}`;
+        step.value = 4;
       } finally {
         setTimeout(() => {
           connecting.value = false;

@@ -19,7 +19,7 @@ export const useControllersStore = defineStore("controllersStore", {
         const infoData = infoDataStore();
         console.log("controllers start fetching data");
 
-        const { jsonData, error } = await fetchApi("hosts", retryCount);
+        const { jsonData, error } = await fetchApi("hosts?all", retryCount);
         if (error) {
           throw error;
         }
