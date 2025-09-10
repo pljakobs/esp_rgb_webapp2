@@ -16,12 +16,19 @@
           @click="restartController"
         />
       </q-btn-group>
+      <br />
       <q-toggle
         v-model="debugEnabled"
         label="Debug Logging"
         color="primary"
         class="q-mt-md"
         @update:model-value="toggleDebug"
+      />
+      <q-btn
+        label="Forget Controllers"
+        color="primary"
+        class="q-mt-md"
+        @click="forgetControllers"
       />
     </q-card-section>
   </MyCard>
@@ -56,6 +63,10 @@ export default {
       systemCommand.restartController();
     };
 
+    const forgetControllers = () => {
+      systemCommand.forgetControllers();
+    };
+
     // Watch for changes in configData to update debugEnabled
     watch(
       () => configData.data.general.debug,
@@ -68,6 +79,7 @@ export default {
       switchRom,
       toggleDebug,
       restartController,
+      forgetControllers,
       infoData,
       debugEnabled,
     };

@@ -82,6 +82,10 @@ const systemCommand = {
   debug: (enable) => {
     sysCmd("debug", { enable });
   },
+  forgetControllers: () => {
+    console.log("tell the controller to forget all other controllers");
+    sysCmd("forget_controllers");
+  },
 };
 
 export default systemCommand;
