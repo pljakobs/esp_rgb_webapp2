@@ -5,6 +5,7 @@
   "productName": "Lightinator",
   "author": "Peter Jakobs <pjakobs@mobileme.de>",
   "private": true,
+  "type": "module",
   "scripts": {
     "lint": "eslint --ext .js,.vue ./",
     "format": "prettier --write \"**/*.{js,vue,scss,html,md,json}\" --ignore-path .gitignore",
@@ -14,33 +15,32 @@
   },
   "dependencies": {
     "@intlify/unplugin-vue-i18n": "^6.0.2",
-    "@material-ui/icons": "^4.11.3",
-    "@quasar/cli": "^2.4.1",
+    "@quasar/cli": "^2.5.0",
     "@quasar/extras": "^1.16.16",
-    "pinia": "^2.3.0",
+    "@vue/eslint-config-standard": "^9.0.0",
+    "pinia": "^2.3.1",
     "quasar": "^2.17.7",
-    "typescript": "^5.7.3",
     "vue": "^3.5.8",
     "vue-i18n": "^11.1.0",
     "vue-router": "^4.4.5",
-    "vue-toastification": "^2.0.0-rc.5",
-    "vue-toastify": "^2.0.0-alpha.2"
+    "vuedraggable": "^4.1.0"
   },
   "devDependencies": {
     "@intlify/unplugin-vue-i18n": "^6.0.2",
-    "@quasar/app-vite": "^2.0.8",
-    "@vue/devtools": "^7.7.1",
+    "@quasar/app-vite": "^2.3.0",
+    "@vue/devtools": "^6.6.4",
     "autoprefixer": "^10.4.17",
     "eslint": "^9.19.0",
     "eslint-config-prettier": "^10.0.1",
     "eslint-plugin-quasar": "^1.1.0",
-    "eslint-plugin-vue": "^9.32.0",
+    "eslint-plugin-vue": "^10.0.0",
     "postcss": "^8.5.1",
     "prettier": "^3.3.3",
-    "vite-plugin-vue-devtools": "^7.7.1"
+    "rollup-plugin-visualizer": "^6.0.3",
+    "vite": "^4.5.14"
   },
   "engines": {
-    "node": "^18 || ^16 || ^14.19",
+    "node": ">=20",
     "npm": ">= 6.13.4",
     "yarn": ">= 1.21.1"
   }

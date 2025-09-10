@@ -26,7 +26,7 @@
 
 <script>
 import { ref } from "vue";
-import ColorPicker from "src/components/ColorPicker.vue";
+import ColorPicker from "src/components/cards/ColorPickerCard.vue";
 
 export default {
   components: {

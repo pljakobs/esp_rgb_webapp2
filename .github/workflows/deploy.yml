@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - devel
+    pull_request:
+      branches:
+        - devel
 
 jobs:
   build:
@@ -23,9 +26,33 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      # Generate version information
+      - name: Get branch name
+        id: get_branch
+        run: echo "branch=$(git rev-parse --abbrev-ref HEAD)" >> $GITHUB_OUTPUT
+
+      - name: Create version file
+        id: create_version
+        run: |
+          BUILD_NUM=${{ github.run_number }}
+          BRANCH=${{ steps.get_branch.outputs.branch }}
+          VERSION="V5.0-${BUILD_NUM}-${BRANCH}"
+          BUILD_DATE=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
+
+          # Generate version.js file with actual values
+          sed -i "s/__APP_VERSION__/${VERSION}/g" src/version.js
+          sed -i "s/__APP_BRANCH__/${BRANCH}/g" src/version.js
+          sed -i "s/__BUILD_NUMBER__/${BUILD_NUM}/g" src/version.js
+          sed -i "s/__BUILD_DATE__/${BUILD_DATE}/g" src/version.js
+
+          # Save version to GITHUB_OUTPUT for later steps
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "build_date=${BUILD_DATE}" >> $GITHUB_OUTPUT
+
       - name: Build Quasar App
         run: npx quasar build
 
+      # Rest of your workflow remains the same
       - name: Run minifyFontnames.sh
         run: ./minifyFontnames.sh
 
@@ -35,8 +62,11 @@ jobs:
       - name: Generate icon list
         run: node generate_icon_list.js > ./fileList.h
 
+      # Replace git describe with our consistent version
       - name: Create VERSION file
-        run: echo $(git describe --abbrev=4 --dirty --always --tags)-[$(git rev-parse --abbrev-ref HEAD)] > dist/spa/VERSION
+        run: |
+          VERSION="${{ steps.create_version.outputs.version }}"
+          echo "${VERSION}" > dist/spa/VERSION
 
       - name: Upload SPA files to GitHub
         uses: actions/upload-artifact@v4
@@ -53,10 +83,21 @@ jobs:
       - name: Create download page
         run: |
           mkdir -p dist/download
+          VERSION="${{ steps.create_version.outputs.version }}"
+          BUILD_DATE=$(date)
           echo "<html><body><h1>Download Artifacts</h1><ul>" > dist/download/index.html
+          echo "<p>Build Date: ${BUILD_DATE}</p>" >> dist/download/index.html
+          echo "<p>Version: ${VERSION}</p>" >> dist/download/index.html
           echo "<li><a href='spa-files.zip'>Download SPA Files</a></li>" >> dist/download/index.html
           echo "<li><a href='fileList.h'>Download fileList.h</a></li>" >> dist/download/index.html
-          echo "</ul></body></html>" >> dist/download/index.html
+          echo "</ul>" >> dist/download/index.html
+          echo "</body></html>" >> dist/download/index.html
+
+      - name: Copy SPA files to download directory
+        run: zip -r dist/download/spa-files.zip dist/spa/*
+
+      - name: Copy fileList.h to download directory
+        run: cp ./fileList.h dist/download/
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3

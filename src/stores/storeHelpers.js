@@ -1,5 +1,5 @@
-import { controllersStore } from "./controllersStore";
-import { retryDelay } from "./storeConstants";
+import { useControllersStore } from "./controllersStore";
+import { retryDelay, requestTimeout } from "./storeConstants";
 
 export function safeStringify(obj) {
   const cache = new Set();
@@ -16,8 +16,12 @@ export function safeStringify(obj) {
   });
 }
 
-export async function fetchApi(endpoint, retryCount = 0) {
-  const controllers = controllersStore();
+export async function fetchApi(
+  endpoint,
+  retryCount = 0,
+  timeoutMs = requestTimeout,
+) {
+  const controllers = useControllersStore();
   const maxRetries = 10;
   let error = null;
   let jsonData = null;
@@ -25,9 +29,15 @@ export async function fetchApi(endpoint, retryCount = 0) {
 
   try {
     console.log(endpoint, " start fetching data");
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
     const response = await fetch(
       `http://${controllers.currentController["ip_address"]}/${endpoint}`,
+      { signal: controller.signal }, // Add signal to fetch
     );
+
+    clearTimeout(timeoutId); // Clear timeout on successful response
     status = response.status;
 
     if (response.status === 429 && retryCount < maxRetries) {
@@ -57,11 +67,19 @@ export async function fetchApi(endpoint, retryCount = 0) {
     console.log(endpoint, " data fetched: ", JSON.stringify(jsonData));
   } catch (err) {
     console.error("Error fetching data:", err);
-    error = err;
+
+    // Check if it's a timeout error
+    if (err.name === "AbortError") {
+      console.log(`Request timed out after ${timeoutMs}ms`);
+      error = { ...err, isTimeout: true };
+    } else {
+      error = err;
+    }
+
     if (retryCount < maxRetries) {
       return new Promise((resolve) =>
         setTimeout(
-          () => resolve(fetchApi(endpoint, retryCount + 1)),
+          () => resolve(fetchApi(endpoint, retryCount + 1, timeoutMs)),
           retryDelay * 2 ** retryCount,
         ),
       );

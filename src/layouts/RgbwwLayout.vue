@@ -48,16 +48,21 @@
           <span v-else class="text-danger">❌ {{ colorData.error }}</span
           ><br />
           Presets and Scenes:
-          <span
-            v-if="presetsData.status === storeStatus.READY"
-            class="text-success"
+          <span v-if="appData.status === storeStatus.READY" class="text-success"
             >✔️</span
           >
           <q-spinner
-            v-else-if="presetsData.status === storeStatus.LOADING"
+            v-else-if="appData.status === storeStatus.LOADING"
             color="light-blue"
           />
-          <span v-else class="text-danger">❌ {{ presetsData.error }}</span>
+
+          <span
+            v-else-if="appData.status === storeStatus.SYNCING"
+            color="light-blue"
+          >
+            <q-spinner-radio /> synching
+          </span>
+          <span v-else class="text-danger">❌ {{ appData.error }}</span>
         </div>
       </div>
     </div>
@@ -89,7 +94,7 @@
         show-if-above
         bordered
       >
-        <q-select
+        <mySelect
           v-if="controllers.status === storeStatus.READY"
           v-model="controllers.currentController"
           filled
@@ -97,12 +102,22 @@
           option-label="hostname"
           option-value="ip_address"
           label="Select a controller"
-          dropdown-icon="img:icons/arrow_drop_down.svg"
           @input="handleControllerSelection"
           @popup-show="() => $nextTick(() => (isSelectOpen.value = true))"
           @popup-hide="() => $nextTick(() => (isSelectOpen.value = false))"
         >
-        </q-select>
+          <template v-slot:option="scope">
+            <q-item clickable @click="handleControllerSelection(scope.opt)">
+              <q-item-section avatar>
+                <svgIcon :name="getIconForController(scope.opt)" />
+              </q-item-section>
+              <q-item-section>
+                <q-item-label>{{ scope.opt.hostname }}</q-item-label>
+                <q-item-label caption>{{ scope.opt.ip_address }}</q-item-label>
+              </q-item-section>
+            </q-item>
+          </template>
+        </mySelect>
 
         <q-list>
           <q-item-label header>main menu</q-item-label>
@@ -114,6 +129,19 @@
             <q-item-section class="text-section">
               <q-item-label>Color</q-item-label>
               <q-item-label caption>Set the current output color</q-item-label>
+            </q-item-section>
+          </q-item>
+
+          <q-item clickable tag="router-link" to="/GroupsAndScenes">
+            <q-item-section class="icon-section"
+              ><svgIcon name="light_group" class="icon" />
+            </q-item-section>
+
+            <q-item-section class="text-section">
+              <q-item-label>Groups and Scenes</q-item-label>
+              <q-item-label caption>
+                configure groups of controlelrs and scenes
+              </q-item-label>
             </q-item-section>
           </q-item>
 
@@ -212,7 +240,12 @@
             class="ws-status-btn"
             :color="buttonColor"
             :icon="buttonIcon"
-          />
+          >
+            <q-tooltip
+              >shows the status of the Websocket connection to the selected
+              controller</q-tooltip
+            >
+          </q-btn>
         </q-toolbar>
       </q-footer>
     </q-layout>
@@ -229,10 +262,10 @@ import {
   computed,
 } from "vue";
 import { configDataStore } from "src/stores/configDataStore";
-import { colorDataStore } from "src/stores/colorDataStore";
-import { presetDataStore } from "src/stores/presetDataStore";
+import { useColorDataStore } from "src/stores/colorDataStore";
+import { useAppDataStore } from "src/stores/appDataStore";
 import { infoDataStore } from "src/stores/infoDataStore";
-import { controllersStore } from "src/stores/controllersStore";
+import { useControllersStore } from "src/stores/controllersStore";
 
 import { storeStatus } from "src/stores/storeConstants";
 import useWebSocket, { wsStatus } from "src/services/websocket.js";
@@ -243,17 +276,21 @@ export default defineComponent({
   name: "MainLayout",
 
   setup() {
+    console.log("RgbwwLayout.vue setup start");
     const isDarkMode = ref(Dark.isActive);
 
     try {
       const leftDrawerOpen = ref(false);
 
-      const controllers = controllersStore();
+      console.log("RgbwwLayout.vue setup define stores");
+      const controllers = useControllersStore();
       const configData = configDataStore();
       const infoData = infoDataStore();
-      const colorData = colorDataStore();
-      const presetsData = presetDataStore();
+      const colorData = useColorDataStore();
+      const appData = useAppDataStore();
       const intervalId = ref(null);
+
+      console.log("RgbwwLayout.vue setup useWebSocket");
       const ws = useWebSocket();
 
       const isSelectOpen = ref(false);
@@ -375,7 +412,7 @@ export default defineComponent({
           toggleLeftDrawer();
         },
       );
-
+      /*
       watch(
         () => isSelectOpen.value,
         (isSelectOpen) => {
@@ -397,6 +434,7 @@ export default defineComponent({
         },
         { immediate: true },
       );
+      */
 
       const toggleLeftDrawer = () => {
         if (isSmallScreen.value) {
@@ -404,12 +442,30 @@ export default defineComponent({
         }
       };
 
+      const getIconForController = (controller) => {
+        // Logic to determine the icon based on the controller properties
+        console.log("getIconForController", controller.hostname);
+        if (controller.ip_address === controllers.homeController.ip_address) {
+          console.log("home icon for ", controller.ip_address);
+          return "home";
+        } else if (
+          controller.ip_address === controllers.currentController.ip_address
+        ) {
+          console.log("api icon for", controller.ip_address);
+          return "api";
+        } else {
+          console.log("no icon for ", controller.ip_address);
+          return "";
+        }
+        //return "controller_default_icon"; // Replace with your default icon
+      };
+
       return {
         leftDrawerOpen,
         configData,
         infoData,
         colorData,
-        presetsData,
+        appData,
         controllers,
         storeStatus,
         isSelectOpen,
@@ -419,6 +475,7 @@ export default defineComponent({
         buttonIcon,
         isDarkMode,
         toggleDarkMode,
+        getIconForController,
       };
     } catch (error) {
       console.error("Error in setup function:", error);

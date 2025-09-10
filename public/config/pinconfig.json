@@ -1,5 +1,5 @@
 {
-  "version": 3,
+  "version": 8,
   "available_pins": [
     {
       "soc": "esp8266",
@@ -22,6 +22,7 @@
       "name": "mrpj",
       "soc": "esp8266",
       "model": "rgbww",
+      "clear_pin": 16,
       "channels": [
         { "name": "red", "pin": "13" },
         { "name": "green", "pin": "12" },
@@ -31,33 +32,36 @@
       ]
     },
     {
-      "name": "Lightinator mini",
+      "name": "NodeMC esp32c3 01M",
       "soc": "esp32c3",
       "model": "rgbww",
+      "clear_pin": 21,
       "channels": [
-        { "name": "red", "pin": "7" },
-        { "name": "green", "pin": "6" },
+        { "name": "red", "pin": "5" },
+        { "name": "green", "pin": "7" },
+        { "name": "blue", "pin": "6" },
+        { "name": "warmwhite", "pin": "9" },
+        { "name": "coldwhite", "pin": "10" }
+      ]
+    },
+    {
+      "name": "Lightinator Mini",
+      "soc": "esp32c3",
+      "model": "rgbww",
+      "clear_pin": 18,
+      "channels": [
+        { "name": "red", "pin": "3" },
+        { "name": "green", "pin": "4" },
         { "name": "blue", "pin": "5" },
-        { "name": "warmwhite", "pin": "4" },
-        { "name": "coldwhite", "pin": "0" }
+        { "name": "warmwhite", "pin": "18" },
+        { "name": "coldwhite", "pin": "19" }
       ]
     },
     {
       "name": "Shojo PCB (WemosD1 mini)",
       "soc": "esp8266",
       "model": "rgbww",
-      "channels": [
-        { "name": "red", "pin": "14" },
-        { "name": "green", "pin": "4" },
-        { "name": "blue", "pin": "5" },
-        { "name": "warmwhite", "pin": "15" },
-        { "name": "coldwhite", "pin": "12" }
-      ]
-    },
-    {
-      "name": "test",
-      "soc": "esp8266",
-      "model": "rgbww",
+      "clear_pin": 16,
       "channels": [
         { "name": "red", "pin": "14" },
         { "name": "green", "pin": "4" },
