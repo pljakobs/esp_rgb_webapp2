@@ -14,5 +14,6 @@ export const storeStatus = {
   SYNCED: "synced",
 };
 
-export const maxRetries = 5; // Maximum number of retries
-export const retryDelay = 1000; // Delay for the first retry in milliseconds
+export const maxRetries = 3; // Maximum number of retries
+export const retryDelay = 500; // Delay for the first retry in milliseconds
+export const requestTimeout = 2000;

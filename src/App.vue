@@ -9,7 +9,7 @@ import initializeStores from "src/services/initializeStores";
 import initializeNotifications from "src/services/notifications";
 import initializeAppCommands from "src/services/appCommands";
 import initializeLogService from "src/services/logServices";
-import { useQuasar } from "quasar"; // Use this instead
+import { useQuasar } from "quasar";
 
 export default defineComponent({
   name: "App",
