@@ -1,17 +1,23 @@
 <template>
   <MyCard title="Controller config" icon="memory_outlined">
     <q-card-section>
+      <div class="text-caption q-mb-md text-orange">
+        Controller configuration changes require a restart to take effect. Make
+        your changes and click "Apply and Restart" to save and restart the
+        controller.
+      </div>
+
+      <!-- Pin Configuration Section -->
+      <div class="text-h6 q-mb-md">Pin Configuration</div>
       <div class="row items-center q-mb-md">
         <mySelect
-          v-model="currentPinConfigName"
+          v-model="localCurrentPinConfigName"
           class="custom-select col-6"
           :options="pinConfigNames"
           label="Pin configuration"
           emit-value
           map-options
-          @update:model-value="handlePinConfigChange"
-        >
-        </mySelect>
+        />
         <div class="col-6 q-pl-md">
           <q-btn
             color="primary"
@@ -19,7 +25,7 @@
             dense
             round
             @click="editCurrentConfig"
-            :disable="!currentPinConfigName"
+            :disable="!localCurrentPinConfigName"
             title="Edit current configuration"
           >
             <svgIcon name="edit" />
@@ -37,8 +43,273 @@
         </div>
       </div>
 
-      <q-toggle v-model="showDetails" label="Show Details" />
-      <data-table v-if="showDetails" :items="formattedPinConfigData" />
+      <q-toggle v-model="showPinDetails" label="Show Pin Details" />
+      <data-table v-if="showPinDetails" :items="formattedPinConfigData" />
+
+      <!-- PWM Configuration Section (only for non-ESP8266) -->
+      <div
+        v-if="
+          infoData.data.soc && infoData.data.soc.toLowerCase() !== 'esp8266'
+        "
+      >
+        <q-separator class="q-my-lg" />
+        <div class="text-h6 q-mb-md">PWM Configuration</div>
+
+        <!-- Timer Settings -->
+        <q-expansion-item
+          label="Timer Settings"
+          default-opened
+          header-class="text-subtitle1"
+          expand-icon-class="hidden"
+        >
+          <template #header="{ expanded }">
+            <q-item-section avatar>
+              <svgIcon name="timer" />
+            </q-item-section>
+            <q-item-section>
+              <q-item-label class="text-subtitle1">Timer Settings</q-item-label>
+            </q-item-section>
+            <q-item-section side>
+              <svgIcon
+                name="arrow_drop_down"
+                :class="{ 'rotate-icon': !expanded }"
+              />
+            </q-item-section>
+          </template>
+
+          <div class="q-pa-md">
+            <div class="row q-gutter-md">
+              <div class="col-12 col-md-5">
+                <mySelect
+                  v-model="pwmSpeedMode"
+                  :options="speedModeOptions"
+                  label="Speed Mode"
+                  emit-value
+                  map-options
+                >
+                </mySelect>
+                <q-tooltip class="custom-tooltip">
+                  Only the ESP32 supports high speed mode
+                </q-tooltip>
+              </div>
+              <div class="col-12 col-md-3">
+                <q-input
+                  v-model.number="pwmFrequency"
+                  type="number"
+                  label="Frequency (Hz)"
+                >
+                  <q-tooltip class="custom-tooltip">
+                    Select the PWM base frequency. This controls how fast your
+                    LEDs will "flicker". ESP32 hardware (all types) support
+                    values in the kHz range. Depending on your spreadSpectrum
+                    settings, higher values may lead to sluggish response from
+                    the controller due to higher load.
+                  </q-tooltip>
+                </q-input>
+              </div>
+              <div class="col-12 col-md-3">
+                <q-input
+                  v-model.number="pwmResolution"
+                  type="number"
+                  label="Resolution Bits"
+                  :min="1"
+                  :max="16"
+                >
+                  <q-tooltip class="custom-tooltip">
+                    Select the number of bits used for PWM resolution. Higher
+                    values allow for finer control of the PWM signal. Note that
+                    higher resolution may limit the maximum achievable
+                    frequency. The default for this firmware is 10bits for 1024
+                    distinct levels. More is not really necessary.
+                  </q-tooltip>
+                </q-input>
+              </div>
+            </div>
+            <div class="row q-mt-md">
+              <div class="col-12 col-md-6">
+                <mySelect
+                  v-model="pwmTimerNumber"
+                  :options="timerNumberOptions"
+                  label="Timer Number"
+                  emit-value
+                  map-options
+                >
+                </mySelect>
+                <q-tooltip class="custom-tooltip">
+                  Select which hardware timer to use for PWM generation. Each
+                  timer can be configured independently. This may be used in the
+                  future if the firmware supports multiple virtual lights.
+                </q-tooltip>
+              </div>
+            </div>
+          </div>
+        </q-expansion-item>
+
+        <!-- Spread Spectrum Settings -->
+        <q-expansion-item
+          label="Spread Spectrum Settings"
+          header-class="text-subtitle1"
+          expand-icon-class="hidden"
+        >
+          <template #header="{ expanded }">
+            <q-item-section avatar>
+              <svgIcon name="blur" />
+            </q-item-section>
+            <q-item-section>
+              <q-item-label class="text-subtitle1"
+                >Spread Spectrum Settings</q-item-label
+              >
+            </q-item-section>
+            <q-item-section side>
+              <svgIcon
+                name="arrow_drop_down"
+                :class="{ 'rotate-icon': !expanded }"
+              />
+            </q-item-section>
+          </template>
+
+          <div class="q-pa-md">
+            <div class="row q-gutter-md">
+              <div class="col-12 col-md-4">
+                <mySelect
+                  v-model="pwmSpreadSpectrumMode"
+                  :options="spreadSpectrumModeOptions"
+                  label="Spread Spectrum Mode"
+                  emit-value
+                  map-options
+                >
+                </mySelect>
+                <q-tooltip class="custom-tooltip">
+                  Spread spectrum reduces EMI (electromagnetic interference) by
+                  slightly varying the PWM frequency over time. leave on "Auto"
+                  to enable this feature. Switching this to "off" will have a
+                  negative effect on EMI emissions, especially with longer LED
+                  strips. This could lead to radio interference and especially
+                  to noise on the 12V power lines which may act as antennas. In
+                  extreme cases, it might even lead to the controller being
+                  unstable.
+                </q-tooltip>
+              </div>
+              <div class="col-12 col-md-4">
+                <q-input
+                  v-model.number="pwmSpreadSpectrumWidth"
+                  type="number"
+                  label="Width (%)"
+                  :min="0"
+                  :max="100"
+                  :disable="pwmSpreadSpectrumMode === 'off'"
+                >
+                </q-input>
+                <q-tooltip class="custom-tooltip">
+                  This controls the width of the spread spectrum modulation. The
+                  frequency will be smeared out by this many percent above and
+                  below the PWM center frequency.
+                </q-tooltip>
+              </div>
+              <div class="col-12 col-md-4">
+                <q-input
+                  v-model.number="pwmSpreadSpectrumSubsampling"
+                  type="number"
+                  label="Subsampling"
+                  :min="1"
+                  :disable="pwmSpreadSpectrumMode === 'off'"
+                >
+                </q-input>
+                <q-tooltip class="custom-tooltip">
+                  This controls how often the PWM frequency hops around. The
+                  value is in base frequency cycles, so let's say your base
+                  frequency is set at 4kHz (4000Hz) and you set subsampling to
+                  4, the frequency will change every 4 cycles or every 1ms.
+                  Higher values lead to less frequent changes. Lower values will
+                  create more interrupts and therefore are more CPU intensive.
+                  This value influences the quality of the spread spectrum
+                  effect: the longer the PWM frequency stays the same, the more
+                  energy will be emitted at that frequency, potentially
+                  defeating the purpose of spread spectrum. Something between 1
+                  and 8 is a good start.
+                </q-tooltip>
+              </div>
+            </div>
+          </div>
+        </q-expansion-item>
+
+        <!-- Phase Shift Settings -->
+        <q-expansion-item
+          label="Phase Shift Settings"
+          header-class="text-subtitle1"
+          expand-icon-class="hidden"
+        >
+          <template #header="{ expanded }">
+            <q-item-section avatar>
+              <svgIcon name="swap_horiz" />
+            </q-item-section>
+            <q-item-section>
+              <q-item-label class="text-subtitle1"
+                >Phase Shift Settings</q-item-label
+              >
+            </q-item-section>
+            <q-item-section side>
+              <svgIcon
+                name="arrow_drop_down"
+                :class="{ 'rotate-icon': !expanded }"
+              />
+            </q-item-section>
+          </template>
+
+          <div class="q-pa-md">
+            <div class="row">
+              <div class="col-12 col-md-6">
+                <mySelect
+                  v-model="pwmPhaseShiftMode"
+                  :options="phaseShiftModeOptions"
+                  label="Phase Shift Mode"
+                  emit-value
+                  map-options
+                >
+                </mySelect>
+                <q-tooltip class="custom-tooltip">
+                  Phase shifting delays the phase between the three, four or
+                  five LED channels and thus helps distribute switching noise
+                  across different time intervals, reducing peak EMI. If you
+                  have long LED strips and all channels switch on at the same
+                  time, you potentially switch 10s of A on the 12V line in that
+                  instance, creating a lot of noise and, depending on wire
+                  length, a decent voltage dip. Setting Phase Shift to "Auto"
+                  distributes the switching time for the configured channels
+                  equally along the PWM cycle type (1/freq) without impacting
+                  the color quality.
+                </q-tooltip>
+              </div>
+            </div>
+          </div>
+        </q-expansion-item>
+      </div>
+
+      <!-- Universal Action Buttons -->
+      <q-separator class="q-my-lg" />
+      <div class="row justify-between items-center">
+        <div class="col">
+          <q-btn
+            v-if="hasAnyChanges"
+            color="orange"
+            label="Reset All Changes"
+            @click="resetAllChanges"
+            class="q-mr-sm"
+          >
+            <svgIcon name="refresh" />
+          </q-btn>
+        </div>
+        <div class="col-auto">
+          <q-btn
+            color="primary"
+            label="Apply and Restart"
+            :disable="!hasAnyChanges"
+            @click="applyAllAndRestart"
+          >
+            <svgIcon name="restart_alt" />
+          </q-btn>
+        </div>
+      </div>
     </q-card-section>
   </MyCard>
 </template>
@@ -51,6 +322,7 @@ import { infoDataStore } from "src/stores/infoDataStore";
 import MyCard from "src/components/myCard.vue";
 import DataTable from "src/components/dataTable.vue";
 import PinConfigDialog from "src/components/Dialogs/pinConfigDialog.vue";
+import systemCommand from "src/services/systemCommands.js";
 
 export default {
   name: "ControllerConfigCard",
@@ -63,14 +335,233 @@ export default {
     const configData = configDataStore();
     const infoData = infoDataStore();
     const pinConfigData = ref([]);
-    const currentPinConfigName = ref(
-      configData.data.general.current_pin_config_name,
-    );
-    const showDetails = ref(false);
+    const showPinDetails = ref(false);
     const pinConfigNames = ref([]);
     const availablePins = ref([]);
 
-    // Add a computed property for SOC-specific configs
+    // Helper function to show notifications with SVG icons
+    const showNotification = (type, iconName, message, timeout = 3000) => {
+      $q.notify({
+        type,
+        html: true,
+        message: `<div class="row items-center q-gutter-sm no-wrap">
+          <svgIcon name="${iconName}" class="text-${type} q-mr-sm" style="font-size: 20px;"></svgIcon>
+          <span>${message}</span>
+        </div>`,
+        timeout,
+      });
+    };
+
+    // Store original values for all settings
+    const originalValues = {
+      pinConfigName: configData.data.general.current_pin_config_name,
+      // PWM values with safe defaults - using correct schema property names
+      pwmSpeedMode:
+        configData.data.hardware?.pwm?.timer?.speed_mode || "low_speed",
+      pwmFrequency: configData.data.hardware?.pwm?.timer?.frequency || 1000,
+      pwmResolution: configData.data.hardware?.pwm?.timer?.resolution || 10,
+      pwmTimerNumber: configData.data.hardware?.pwm?.timer?.number || 0,
+      pwmSpreadSpectrumMode:
+        configData.data.hardware?.pwm?.spreadSpectrum?.mode || "auto",
+      pwmSpreadSpectrumWidth:
+        configData.data.hardware?.pwm?.spreadSpectrum?.width || 15,
+      pwmSpreadSpectrumSubsampling:
+        configData.data.hardware?.pwm?.spreadSpectrum?.subsampling || 4,
+      pwmPhaseShiftMode:
+        configData.data.hardware?.pwm?.phaseShift?.mode || "auto",
+    };
+
+    // Local reactive values (not immediately applied to store)
+    const localCurrentPinConfigName = ref(originalValues.pinConfigName);
+    const pwmSpeedMode = ref(originalValues.pwmSpeedMode);
+    const pwmFrequency = ref(originalValues.pwmFrequency);
+    const pwmResolution = ref(originalValues.pwmResolution);
+    const pwmTimerNumber = ref(originalValues.pwmTimerNumber);
+    const pwmSpreadSpectrumMode = ref(originalValues.pwmSpreadSpectrumMode);
+    const pwmSpreadSpectrumWidth = ref(originalValues.pwmSpreadSpectrumWidth);
+    const pwmSpreadSpectrumSubsampling = ref(
+      originalValues.pwmSpreadSpectrumSubsampling,
+    );
+    const pwmPhaseShiftMode = ref(originalValues.pwmPhaseShiftMode);
+
+    // Check if there are any changes
+    const hasAnyChanges = computed(() => {
+      const pinConfigChanged =
+        localCurrentPinConfigName.value !== originalValues.pinConfigName;
+
+      // Only check PWM changes if PWM is supported
+      const isPwmSupported =
+        infoData.data.soc && infoData.data.soc.toLowerCase() !== "esp8266";
+      const pwmChanged =
+        isPwmSupported &&
+        (pwmSpeedMode.value !== originalValues.pwmSpeedMode ||
+          pwmFrequency.value !== originalValues.pwmFrequency ||
+          pwmResolution.value !== originalValues.pwmResolution ||
+          pwmTimerNumber.value !== originalValues.pwmTimerNumber ||
+          pwmSpreadSpectrumMode.value !==
+            originalValues.pwmSpreadSpectrumMode ||
+          pwmSpreadSpectrumWidth.value !==
+            originalValues.pwmSpreadSpectrumWidth ||
+          pwmSpreadSpectrumSubsampling.value !==
+            originalValues.pwmSpreadSpectrumSubsampling ||
+          pwmPhaseShiftMode.value !== originalValues.pwmPhaseShiftMode);
+
+      return pinConfigChanged || pwmChanged;
+    });
+
+    // PWM Options
+    const speedModeOptions = [
+      { label: "Low Speed", value: "low_speed" },
+      { label: "High Speed", value: "high_speed" },
+    ];
+
+    const timerNumberOptions = [
+      { label: "Timer 0", value: 0 },
+      { label: "Timer 1", value: 1 },
+      { label: "Timer 2", value: 2 },
+      { label: "Timer 3", value: 3 },
+    ];
+
+    const spreadSpectrumModeOptions = [
+      { label: "Off", value: "off" },
+      { label: "Auto", value: "auto" },
+    ];
+
+    const phaseShiftModeOptions = [
+      { label: "Off", value: "off" },
+      { label: "Auto", value: "auto" },
+    ];
+
+    // Reset all changes
+    const resetAllChanges = () => {
+      localCurrentPinConfigName.value = originalValues.pinConfigName;
+      pwmSpeedMode.value = originalValues.pwmSpeedMode;
+      pwmFrequency.value = originalValues.pwmFrequency;
+      pwmResolution.value = originalValues.pwmResolution;
+      pwmTimerNumber.value = originalValues.pwmTimerNumber;
+      pwmSpreadSpectrumMode.value = originalValues.pwmSpreadSpectrumMode;
+      pwmSpreadSpectrumWidth.value = originalValues.pwmSpreadSpectrumWidth;
+      pwmSpreadSpectrumSubsampling.value =
+        originalValues.pwmSpreadSpectrumSubsampling;
+      pwmPhaseShiftMode.value = originalValues.pwmPhaseShiftMode;
+    };
+
+    // Apply all changes and restart
+    // Apply all changes and restart - ATOMIC VERSION
+    const applyAllAndRestart = async () => {
+      const updates = {};
+
+      // Prepare pin configuration changes
+      if (localCurrentPinConfigName.value !== originalValues.pinConfigName) {
+        const currentConfig = socSpecificConfigs.value.find(
+          (config) => config.name === localCurrentPinConfigName.value,
+        );
+
+        if (currentConfig) {
+          updates["general.channels"] = currentConfig.channels;
+          updates["general.current_pin_config_name"] =
+            localCurrentPinConfigName.value;
+
+          if (
+            currentConfig.clearPin !== undefined &&
+            currentConfig.clearPin !== -1
+          ) {
+            updates["general.clear_pin"] = currentConfig.clearPin;
+          }
+        }
+      }
+
+      // Prepare PWM configuration changes (only if supported)
+      const isPwmSupported =
+        infoData.data.soc && infoData.data.soc.toLowerCase() !== "esp8266";
+      if (isPwmSupported) {
+        // Only add PWM updates if values have changed
+        if (pwmSpeedMode.value !== originalValues.pwmSpeedMode) {
+          updates["hardware.pwm.timer.speed_mode"] = pwmSpeedMode.value;
+        }
+        if (pwmFrequency.value !== originalValues.pwmFrequency) {
+          updates["hardware.pwm.timer.frequency"] = pwmFrequency.value;
+        }
+        if (pwmResolution.value !== originalValues.pwmResolution) {
+          updates["hardware.pwm.timer.resolution"] = pwmResolution.value;
+        }
+        if (pwmTimerNumber.value !== originalValues.pwmTimerNumber) {
+          updates["hardware.pwm.timer.number"] = pwmTimerNumber.value;
+        }
+        if (
+          pwmSpreadSpectrumMode.value !== originalValues.pwmSpreadSpectrumMode
+        ) {
+          updates["hardware.pwm.spreadSpectrum.mode"] =
+            pwmSpreadSpectrumMode.value;
+        }
+        if (
+          pwmSpreadSpectrumWidth.value !== originalValues.pwmSpreadSpectrumWidth
+        ) {
+          updates["hardware.pwm.spreadSpectrum.width"] =
+            pwmSpreadSpectrumWidth.value;
+        }
+        if (
+          pwmSpreadSpectrumSubsampling.value !==
+          originalValues.pwmSpreadSpectrumSubsampling
+        ) {
+          updates["hardware.pwm.spreadSpectrum.subsampling"] =
+            pwmSpreadSpectrumSubsampling.value;
+        }
+        if (pwmPhaseShiftMode.value !== originalValues.pwmPhaseShiftMode) {
+          updates["hardware.pwm.phaseShift.mode"] = pwmPhaseShiftMode.value;
+        }
+      }
+
+      // Apply all updates atomically
+      if (Object.keys(updates).length > 0) {
+        // Use atomic update if available, otherwise fall back to individual updates
+        if (configData.updateMultipleData) {
+          configData.updateMultipleData(updates, true);
+        } else {
+          // Fallback to individual updates for backward compatibility
+          Object.entries(updates).forEach(([path, value]) => {
+            configData.updateData(path, value, true);
+          });
+        }
+
+        // Update original values to reflect the new state
+        Object.assign(originalValues, {
+          pinConfigName: localCurrentPinConfigName.value,
+          pwmSpeedMode: pwmSpeedMode.value,
+          pwmFrequency: pwmFrequency.value,
+          pwmResolution: pwmResolution.value,
+          pwmTimerNumber: pwmTimerNumber.value,
+          pwmSpreadSpectrumMode: pwmSpreadSpectrumMode.value,
+          pwmSpreadSpectrumWidth: pwmSpreadSpectrumWidth.value,
+          pwmSpreadSpectrumSubsampling: pwmSpreadSpectrumSubsampling.value,
+          pwmPhaseShiftMode: pwmPhaseShiftMode.value,
+        });
+
+        showNotification(
+          "positive",
+          "check_circle",
+          "Controller configuration updated. Controller is restarting...",
+          3000,
+        );
+
+        // Actually restart the controller
+        try {
+          await systemCommand.restartController();
+        } catch (error) {
+          console.error("Error restarting controller:", error);
+          showNotification(
+            "negative",
+            "error",
+            "Failed to restart controller. Please restart manually.",
+            5000,
+          );
+        }
+      } else {
+        showNotification("info", "info", "No changes to apply", 2000);
+      }
+    };
+
+    // Pin configuration functions (modified to not auto-apply)
     const socSpecificConfigs = computed(() => {
       return configData.data.hardware.pinconfigs.filter(
         (config) =>
@@ -79,74 +570,37 @@ export default {
     });
 
     const getPinConfigNames = () => {
-      // Use the computed property instead of filtering again
       pinConfigNames.value = socSpecificConfigs.value.map(
         (config) => config.name,
       );
     };
 
     const getCurrentPinConfig = () => {
-      // First check if the current config is compatible with this SOC
       const isSocCompatible = socSpecificConfigs.value.some(
-        (config) => config.name === currentPinConfigName.value,
+        (config) => config.name === localCurrentPinConfigName.value,
       );
 
       if (!isSocCompatible && socSpecificConfigs.value.length > 0) {
-        // Current config is not compatible, select the first compatible one
-        currentPinConfigName.value = socSpecificConfigs.value[0].name;
-        $q.notify({
-          type: "warning",
-          message: `Selected pin configuration not compatible with ${infoData.data.soc}. Switching to a compatible configuration.`,
-          timeout: 3000,
-        });
+        localCurrentPinConfigName.value = socSpecificConfigs.value[0].name;
+        showNotification(
+          "warning",
+          "warning",
+          `Selected pin configuration not compatible with ${infoData.data.soc}. Switching to a compatible configuration.`,
+          3000,
+        );
       }
 
       const currentConfig = socSpecificConfigs.value.find(
-        (config) => config.name === currentPinConfigName.value,
+        (config) => config.name === localCurrentPinConfigName.value,
       );
 
       if (currentConfig) {
         pinConfigData.value = currentConfig.channels;
-        if (
-          currentConfig.clearPin !== undefined &&
-          currentConfig.clearPin !== -1
-        ) {
-          console.log("Updating clear pin:", currentConfig.clearPin);
-          configData.updateData("general.clear_pin", currentConfig.clearPin);
-        }
       } else if (socSpecificConfigs.value.length > 0) {
-        // Fallback to first compatible config if current one not found
-        currentPinConfigName.value = socSpecificConfigs.value[0].name;
+        localCurrentPinConfigName.value = socSpecificConfigs.value[0].name;
         pinConfigData.value = socSpecificConfigs.value[0].channels;
       } else {
         pinConfigData.value = [];
-      }
-    };
-
-    const handlePinConfigChange = (newConfigName) => {
-      currentPinConfigName.value = newConfigName;
-      getCurrentPinConfig();
-      updatePinConfig();
-    };
-
-    const updatePinConfig = async () => {
-      const currentConfig = socSpecificConfigs.value.find(
-        (config) => config.name === currentPinConfigName.value,
-      );
-
-      if (currentConfig) {
-        configData.updateData("general.channels", currentConfig.channels);
-        configData.updateData(
-          "general.current_pin_config_name",
-          currentPinConfigName.value,
-        );
-        if (
-          currentConfig.clearPin !== undefined &&
-          currentConfig.clearPin !== -1
-        ) {
-          console.log("Updating clear pin:", currentConfig.clearPin);
-          configData.updateData("general.clear_pin", currentConfig.clearPin);
-        }
       }
     };
 
@@ -174,14 +628,6 @@ export default {
         const path = "public/config/pinconfig.json";
         const branch = "devel";
 
-        /*
-         * use the Github API to fetch newer pinconfig.json file - this avoids CORS issues
-         * and allows us to fetch the file directly from the repo
-         * this allows us to just update the pinconfig in the repo and make the new configuration available to
-         * controllers without necessitating a firmware update
-         * once new pin configs are fetched, the local list is updated, so whenever the frontend is used, the controller learns all
-         * new pin configs
-         */
         const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${path}?ref=${branch}`;
 
         const response = await fetch(apiUrl);
@@ -194,7 +640,6 @@ export default {
           const localPinConfigs = configData.data.hardware.pinconfigs;
           const remotePinConfigs = remotePinConfigData.pinconfigs;
 
-          // Merge arrays, avoiding duplicates based on the 'name' property
           const mergedPinConfigs = [
             ...localPinConfigs,
             ...remotePinConfigs.filter(
@@ -210,13 +655,13 @@ export default {
         }
       } catch (error) {
         console.error("Error loading pin config:", error);
-        $q.notify({
-          type: "negative",
-          message: `Error loading pin config: ${error.message}`,
-        });
+        showNotification(
+          "negative",
+          "error",
+          `Error loading pin config: ${error.message}`,
+        );
       }
 
-      // After loading data, update the UI based on SOC-specific configs
       getPinConfigNames();
       getCurrentPinConfig();
       loadAvailablePins();
@@ -231,38 +676,30 @@ export default {
           soc: infoData.data.soc,
         },
       }).onOk((newConfig) => {
-        // Add the new configuration
         configData.updateData("hardware.pinconfigs", [
           ...configData.data.hardware.pinconfigs,
           newConfig,
         ]);
 
-        // Update the available configurations list
         getPinConfigNames();
-
-        // Select the new configuration
-        currentPinConfigName.value = newConfig.name;
+        localCurrentPinConfigName.value = newConfig.name;
         getCurrentPinConfig();
-        updatePinConfig();
 
-        $q.notify({
-          type: "positive",
-          message: `Pin configuration "${newConfig.name}" created`,
-        });
+        showNotification(
+          "positive",
+          "check_circle",
+          `Pin configuration "${newConfig.name}" created`,
+        );
       });
     };
 
     const editCurrentConfig = () => {
-      // Find the current configuration
       const currentConfig = socSpecificConfigs.value.find(
-        (config) => config.name === currentPinConfigName.value,
+        (config) => config.name === localCurrentPinConfigName.value,
       );
 
       if (!currentConfig) {
-        $q.notify({
-          type: "negative",
-          message: "No configuration selected",
-        });
+        showNotification("negative", "error", "No configuration selected");
         return;
       }
       if (
@@ -281,29 +718,27 @@ export default {
           soc: infoData.data.soc,
         },
       }).onOk((updatedConfig) => {
-        // Update the configuration in the store
         const configs = configData.data.hardware.pinconfigs;
         const index = configs.findIndex(
-          (c) => c.name === currentPinConfigName.value,
+          (c) => c.name === localCurrentPinConfigName.value,
         );
 
         if (index !== -1) {
           configs[index] = updatedConfig;
           configData.updateData("hardware.pinconfigs", configs);
 
-          // If the name changed, update the selection
-          if (updatedConfig.name !== currentPinConfigName.value) {
-            currentPinConfigName.value = updatedConfig.name;
+          if (updatedConfig.name !== localCurrentPinConfigName.value) {
+            localCurrentPinConfigName.value = updatedConfig.name;
             getPinConfigNames();
           }
 
           getCurrentPinConfig();
-          updatePinConfig();
 
-          $q.notify({
-            type: "positive",
-            message: `Pin configuration "${updatedConfig.name}" updated`,
-          });
+          showNotification(
+            "positive",
+            "check_circle",
+            `Pin configuration "${updatedConfig.name}" updated`,
+          );
         }
       });
     };
@@ -319,15 +754,12 @@ export default {
       loadPinConfigData();
     });
 
-    // Watch for changes in showDetails to ensure reactivity
-    watch(showDetails, (newVal) => {
+    watch(showPinDetails, (newVal) => {
       if (newVal) {
-        // Force re-render or perform any necessary updates
         getCurrentPinConfig();
       }
     });
 
-    // Add a watch for changes in SOC
     watch(
       () => infoData.data.soc,
       () => {
@@ -340,20 +772,53 @@ export default {
     );
 
     return {
-      currentPinConfigName,
-      pinConfigData,
-      showDetails,
-      handlePinConfigChange,
-      updatePinConfig,
-      getPinConfigNames,
-      getCurrentPinConfig,
-      loadPinConfigData,
+      infoData,
+      // Local values
+      localCurrentPinConfigName,
+      pwmSpeedMode,
+      pwmFrequency,
+      pwmResolution,
+      pwmTimerNumber,
+      pwmSpreadSpectrumMode,
+      pwmSpreadSpectrumWidth,
+      pwmSpreadSpectrumSubsampling,
+      pwmPhaseShiftMode,
+      // Computed
+      hasAnyChanges,
+      // Options
+      speedModeOptions,
+      timerNumberOptions,
+      spreadSpectrumModeOptions,
+      phaseShiftModeOptions,
+      // Functions
+      resetAllChanges,
+      applyAllAndRestart,
+      // Pin config
       pinConfigNames,
+      showPinDetails,
       formattedPinConfigData,
       showAddConfigDialog,
       editCurrentConfig,
-      socSpecificConfigs, // Add to return object for template access
+      socSpecificConfigs,
+      getCurrentPinConfig,
+      getPinConfigNames,
+      loadPinConfigData,
     };
   },
 };
 </script>
+
+<style scoped>
+.rotate-icon {
+  transform: rotate(-90deg);
+  transition: transform 0.3s ease;
+}
+
+.hidden {
+  display: none !important;
+}
+
+.custom-tooltip {
+  max-width: 150px;
+}
+</style>
