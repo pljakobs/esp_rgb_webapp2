@@ -27,13 +27,10 @@
 
 <script>
 import { ref } from "vue";
-import svgIcon from "./svgIcon.vue";
 
 export default {
   name: "MySelect",
-  components: {
-    svgIcon,
-  },
+
   inheritAttrs: false,
   setup() {
     const isDropdownOpen = ref(false);
