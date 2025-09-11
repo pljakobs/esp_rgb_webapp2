@@ -86,14 +86,26 @@
                   label="Speed Mode"
                   emit-value
                   map-options
-                />
+                >
+                  <q-tooltip>
+                    Only the ESP32 supports high speed mode
+                  </q-tooltip>
+                </mySelect>
               </div>
               <div class="col-12 col-md-3">
                 <q-input
                   v-model.number="pwmFrequency"
                   type="number"
                   label="Frequency (Hz)"
-                />
+                >
+                  <q-tooltip>
+                    Select the PWM base frequency. This controls how fast your
+                    LEDs will "flicker". ESP32 hardware (all types) support
+                    values in the kHz range. Depending on your spreadSpectrum
+                    settings, higher values may lead to sluggish response from
+                    the controller due to higher load.
+                  </q-tooltip>
+                </q-input>
               </div>
               <div class="col-12 col-md-3">
                 <q-input
@@ -102,7 +114,15 @@
                   label="Resolution Bits"
                   :min="1"
                   :max="16"
-                />
+                >
+                  <q-tooltip>
+                    Select the number of bits used for PWM resolution. Higher
+                    values allow for finer control of the PWM signal. Note that
+                    higher resolution may limit the maximum achievable
+                    frequency. The default for this firmware is 10bits for 1024
+                    distinct levels. More is not really necessary.
+                  </q-tooltip>
+                </q-input>
               </div>
             </div>
             <div class="row q-mt-md">
@@ -113,7 +133,13 @@
                   label="Timer Number"
                   emit-value
                   map-options
-                />
+                >
+                  <q-tooltip>
+                    Select which hardware timer to use for PWM generation. Each
+                    timer can be configured independently. This may be used in
+                    the future if the firmware supports multiple virtual lights.
+                  </q-tooltip>
+                </mySelect>
               </div>
             </div>
           </div>
@@ -151,7 +177,18 @@
                   label="Spread Spectrum Mode"
                   emit-value
                   map-options
-                />
+                >
+                  <q-tooltip>
+                    Spread spectrum reduces EMI (electromagnetic interference)
+                    by slightly varying the PWM frequency over time. leave on
+                    "Auto" to enable this feature. Switching this to "off" will
+                    have a negative effect on EMI emissions, especially with
+                    longer LED strips. This could lead to radio interference and
+                    especially to noise on the 12V power lines which may act as
+                    antennas. In extreme cases, it might even lead to the
+                    controller being unstable.
+                  </q-tooltip>
+                </mySelect>
               </div>
               <div class="col-12 col-md-4">
                 <q-input
@@ -161,7 +198,13 @@
                   :min="0"
                   :max="100"
                   :disable="pwmSpreadSpectrumMode === 'off'"
-                />
+                >
+                  <q-tooltip>
+                    This controls the width of the spread spectrum modulation.
+                    The frequency will be smeared out by this many percent above
+                    and below the PWM center frequency.
+                  </q-tooltip>
+                </q-input>
               </div>
               <div class="col-12 col-md-4">
                 <q-input
@@ -170,7 +213,21 @@
                   label="Subsampling"
                   :min="1"
                   :disable="pwmSpreadSpectrumMode === 'off'"
-                />
+                >
+                  <q-tooltip>
+                    This controls how often the PWM frequency hops around. The
+                    value is in base frequency cycles, so let's say your base
+                    frequency is set at 4kHz (4000Hz) and you set subsampling to
+                    4, the frequency will change every 4 cycles or every 1ms.
+                    Higher values lead to less frequent changes. Lower values
+                    will create more interrupts and therefore are more CPU
+                    intensive. This value influences the quality of the spread
+                    spectrum effect: the longer the PWM frequency stays the
+                    same, the more energy will be emitted at that frequency,
+                    potentially defeating the purpose of spread spectrum.
+                    Something between 1 and 8 is a good start.
+                  </q-tooltip>
+                </q-input>
               </div>
             </div>
           </div>
@@ -208,7 +265,20 @@
                   label="Phase Shift Mode"
                   emit-value
                   map-options
-                />
+                >
+                  <q-tooltip>
+                    Phase shifting delays the phase between the three, four or
+                    five LED channels and thus helps distribute switching noise
+                    across different time intervals, reducing peak EMI. If you
+                    have long LED strips and all channels switch on at the same
+                    time, you potentially switch 10s of A on the 12V line in
+                    that instance, creating a lot of noise and, depending on
+                    wire length, a decent voltage dip. Setting Phase Shift to
+                    "Auto" distributes the switching time for the configured
+                    channels equally along the PWM cycle type (1/freq) without
+                    impacting the color quality.
+                  </q-tooltip>
+                </mySelect>
               </div>
             </div>
           </div>
@@ -268,6 +338,19 @@ export default {
     const showPinDetails = ref(false);
     const pinConfigNames = ref([]);
     const availablePins = ref([]);
+
+    // Helper function to show notifications with SVG icons
+    const showNotification = (type, iconName, message, timeout = 3000) => {
+      $q.notify({
+        type,
+        html: true,
+        message: `<div class="row items-center q-gutter-sm no-wrap">
+          <svgIcon name="${iconName}" class="text-${type} q-mr-sm" style="font-size: 20px;"></svgIcon>
+          <span>${message}</span>
+        </div>`,
+        timeout,
+      });
+    };
 
     // Store original values for all settings
     const originalValues = {
@@ -454,30 +537,27 @@ export default {
           pwmPhaseShiftMode: pwmPhaseShiftMode.value,
         });
 
-        $q.notify({
-          type: "positive",
-          message:
-            "Controller configuration updated. Controller is restarting...",
-          timeout: 3000,
-        });
+        showNotification(
+          "positive",
+          "check_circle",
+          "Controller configuration updated. Controller is restarting...",
+          3000,
+        );
 
         // Actually restart the controller
         try {
           await systemCommand.restartController();
         } catch (error) {
           console.error("Error restarting controller:", error);
-          $q.notify({
-            type: "negative",
-            message: "Failed to restart controller. Please restart manually.",
-            timeout: 5000,
-          });
+          showNotification(
+            "negative",
+            "error",
+            "Failed to restart controller. Please restart manually.",
+            5000,
+          );
         }
       } else {
-        $q.notify({
-          type: "info",
-          message: "No changes to apply",
-          timeout: 2000,
-        });
+        showNotification("info", "info", "No changes to apply", 2000);
       }
     };
 
@@ -502,11 +582,12 @@ export default {
 
       if (!isSocCompatible && socSpecificConfigs.value.length > 0) {
         localCurrentPinConfigName.value = socSpecificConfigs.value[0].name;
-        $q.notify({
-          type: "warning",
-          message: `Selected pin configuration not compatible with ${infoData.data.soc}. Switching to a compatible configuration.`,
-          timeout: 3000,
-        });
+        showNotification(
+          "warning",
+          "warning",
+          `Selected pin configuration not compatible with ${infoData.data.soc}. Switching to a compatible configuration.`,
+          3000,
+        );
       }
 
       const currentConfig = socSpecificConfigs.value.find(
@@ -574,10 +655,11 @@ export default {
         }
       } catch (error) {
         console.error("Error loading pin config:", error);
-        $q.notify({
-          type: "negative",
-          message: `Error loading pin config: ${error.message}`,
-        });
+        showNotification(
+          "negative",
+          "error",
+          `Error loading pin config: ${error.message}`,
+        );
       }
 
       getPinConfigNames();
@@ -603,10 +685,11 @@ export default {
         localCurrentPinConfigName.value = newConfig.name;
         getCurrentPinConfig();
 
-        $q.notify({
-          type: "positive",
-          message: `Pin configuration "${newConfig.name}" created`,
-        });
+        showNotification(
+          "positive",
+          "check_circle",
+          `Pin configuration "${newConfig.name}" created`,
+        );
       });
     };
 
@@ -616,10 +699,7 @@ export default {
       );
 
       if (!currentConfig) {
-        $q.notify({
-          type: "negative",
-          message: "No configuration selected",
-        });
+        showNotification("negative", "error", "No configuration selected");
         return;
       }
       if (
@@ -654,10 +734,11 @@ export default {
 
           getCurrentPinConfig();
 
-          $q.notify({
-            type: "positive",
-            message: `Pin configuration "${updatedConfig.name}" updated`,
-          });
+          showNotification(
+            "positive",
+            "check_circle",
+            `Pin configuration "${updatedConfig.name}" updated`,
+          );
         }
       });
     };
