@@ -87,10 +87,10 @@
                   emit-value
                   map-options
                 >
-                  <q-tooltip>
-                    Only the ESP32 supports high speed mode
-                  </q-tooltip>
                 </mySelect>
+                <q-tooltip class="custom-tooltip">
+                  Only the ESP32 supports high speed mode
+                </q-tooltip>
               </div>
               <div class="col-12 col-md-3">
                 <q-input
@@ -98,7 +98,7 @@
                   type="number"
                   label="Frequency (Hz)"
                 >
-                  <q-tooltip>
+                  <q-tooltip class="custom-tooltip">
                     Select the PWM base frequency. This controls how fast your
                     LEDs will "flicker". ESP32 hardware (all types) support
                     values in the kHz range. Depending on your spreadSpectrum
@@ -115,7 +115,7 @@
                   :min="1"
                   :max="16"
                 >
-                  <q-tooltip>
+                  <q-tooltip class="custom-tooltip">
                     Select the number of bits used for PWM resolution. Higher
                     values allow for finer control of the PWM signal. Note that
                     higher resolution may limit the maximum achievable
@@ -134,12 +134,12 @@
                   emit-value
                   map-options
                 >
-                  <q-tooltip>
-                    Select which hardware timer to use for PWM generation. Each
-                    timer can be configured independently. This may be used in
-                    the future if the firmware supports multiple virtual lights.
-                  </q-tooltip>
                 </mySelect>
+                <q-tooltip class="custom-tooltip">
+                  Select which hardware timer to use for PWM generation. Each
+                  timer can be configured independently. This may be used in the
+                  future if the firmware supports multiple virtual lights.
+                </q-tooltip>
               </div>
             </div>
           </div>
@@ -178,17 +178,17 @@
                   emit-value
                   map-options
                 >
-                  <q-tooltip>
-                    Spread spectrum reduces EMI (electromagnetic interference)
-                    by slightly varying the PWM frequency over time. leave on
-                    "Auto" to enable this feature. Switching this to "off" will
-                    have a negative effect on EMI emissions, especially with
-                    longer LED strips. This could lead to radio interference and
-                    especially to noise on the 12V power lines which may act as
-                    antennas. In extreme cases, it might even lead to the
-                    controller being unstable.
-                  </q-tooltip>
                 </mySelect>
+                <q-tooltip class="custom-tooltip">
+                  Spread spectrum reduces EMI (electromagnetic interference) by
+                  slightly varying the PWM frequency over time. leave on "Auto"
+                  to enable this feature. Switching this to "off" will have a
+                  negative effect on EMI emissions, especially with longer LED
+                  strips. This could lead to radio interference and especially
+                  to noise on the 12V power lines which may act as antennas. In
+                  extreme cases, it might even lead to the controller being
+                  unstable.
+                </q-tooltip>
               </div>
               <div class="col-12 col-md-4">
                 <q-input
@@ -199,12 +199,12 @@
                   :max="100"
                   :disable="pwmSpreadSpectrumMode === 'off'"
                 >
-                  <q-tooltip>
-                    This controls the width of the spread spectrum modulation.
-                    The frequency will be smeared out by this many percent above
-                    and below the PWM center frequency.
-                  </q-tooltip>
                 </q-input>
+                <q-tooltip class="custom-tooltip">
+                  This controls the width of the spread spectrum modulation. The
+                  frequency will be smeared out by this many percent above and
+                  below the PWM center frequency.
+                </q-tooltip>
               </div>
               <div class="col-12 col-md-4">
                 <q-input
@@ -214,20 +214,20 @@
                   :min="1"
                   :disable="pwmSpreadSpectrumMode === 'off'"
                 >
-                  <q-tooltip>
-                    This controls how often the PWM frequency hops around. The
-                    value is in base frequency cycles, so let's say your base
-                    frequency is set at 4kHz (4000Hz) and you set subsampling to
-                    4, the frequency will change every 4 cycles or every 1ms.
-                    Higher values lead to less frequent changes. Lower values
-                    will create more interrupts and therefore are more CPU
-                    intensive. This value influences the quality of the spread
-                    spectrum effect: the longer the PWM frequency stays the
-                    same, the more energy will be emitted at that frequency,
-                    potentially defeating the purpose of spread spectrum.
-                    Something between 1 and 8 is a good start.
-                  </q-tooltip>
                 </q-input>
+                <q-tooltip class="custom-tooltip">
+                  This controls how often the PWM frequency hops around. The
+                  value is in base frequency cycles, so let's say your base
+                  frequency is set at 4kHz (4000Hz) and you set subsampling to
+                  4, the frequency will change every 4 cycles or every 1ms.
+                  Higher values lead to less frequent changes. Lower values will
+                  create more interrupts and therefore are more CPU intensive.
+                  This value influences the quality of the spread spectrum
+                  effect: the longer the PWM frequency stays the same, the more
+                  energy will be emitted at that frequency, potentially
+                  defeating the purpose of spread spectrum. Something between 1
+                  and 8 is a good start.
+                </q-tooltip>
               </div>
             </div>
           </div>
@@ -266,19 +266,19 @@
                   emit-value
                   map-options
                 >
-                  <q-tooltip>
-                    Phase shifting delays the phase between the three, four or
-                    five LED channels and thus helps distribute switching noise
-                    across different time intervals, reducing peak EMI. If you
-                    have long LED strips and all channels switch on at the same
-                    time, you potentially switch 10s of A on the 12V line in
-                    that instance, creating a lot of noise and, depending on
-                    wire length, a decent voltage dip. Setting Phase Shift to
-                    "Auto" distributes the switching time for the configured
-                    channels equally along the PWM cycle type (1/freq) without
-                    impacting the color quality.
-                  </q-tooltip>
                 </mySelect>
+                <q-tooltip class="custom-tooltip">
+                  Phase shifting delays the phase between the three, four or
+                  five LED channels and thus helps distribute switching noise
+                  across different time intervals, reducing peak EMI. If you
+                  have long LED strips and all channels switch on at the same
+                  time, you potentially switch 10s of A on the 12V line in that
+                  instance, creating a lot of noise and, depending on wire
+                  length, a decent voltage dip. Setting Phase Shift to "Auto"
+                  distributes the switching time for the configured channels
+                  equally along the PWM cycle type (1/freq) without impacting
+                  the color quality.
+                </q-tooltip>
               </div>
             </div>
           </div>
@@ -816,5 +816,9 @@ export default {
 
 .hidden {
   display: none !important;
+}
+
+.custom-tooltip {
+  max-width: 150px;
 }
 </style>
