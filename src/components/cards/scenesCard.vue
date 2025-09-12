@@ -373,9 +373,51 @@ export default {
           }
         };
 
-        // Completion handler will close the dialog
-        const completeCallback = () => {
-          console.log("Save operation complete, closing dialog");
+        // Completion handler will close the dialog and show notifications
+        const completeCallback = (result) => {
+          console.log("🎬 Save operation complete, closing dialog");
+          console.log(
+            "🎬 Save result received:",
+            JSON.stringify(result, null, 2),
+          );
+          console.log("🎬 Result type:", typeof result);
+          console.log("🎬 Result success value:", result?.success);
+          console.log("🎬 Result errors:", result?.errors);
+
+          // Show appropriate notification based on result
+          if (result && result.success === true) {
+            if (result.errors && result.errors.length > 0) {
+              // Partial success - some controllers failed
+              console.log("🟡 Showing partial success notification");
+              Notify.create({
+                type: "warning",
+                message: `Scene "${sceneToSave.name}" saved locally and to ${result.successCount} controllers, but ${result.errors.length} controller(s) unreachable`,
+                timeout: 5000,
+                actions: [{ icon: "close", color: "white" }],
+              });
+            } else {
+              // Full success
+              console.log("🟢 Showing full success notification");
+              Notify.create({
+                type: "positive",
+                message: `Scene "${sceneToSave.name}" saved successfully to all controllers`,
+                timeout: 3000,
+              });
+            }
+          } else {
+            // Failed to save or no result
+            const errorMessage = result?.error || "Unknown error occurred";
+            console.log("🔴 Showing error notification:", errorMessage);
+            console.error("Scene save failed:", errorMessage, result);
+
+            Notify.create({
+              type: "negative",
+              message: `Failed to save scene "${sceneToSave.name}": ${errorMessage}`,
+              timeout: 5000,
+              actions: [{ icon: "close", color: "white" }],
+            });
+          }
+
           if (saveComplete) {
             saveComplete();
           }
@@ -498,9 +540,37 @@ export default {
       applyScene,
 
       // Toggle favorite directly through appData store
-      toggleFavoriteScene: (scene) => {
+      toggleFavoriteScene: async (scene) => {
+        const oldFavorite = scene.favorite;
         scene.favorite = !scene.favorite;
-        appData.saveScene(scene);
+
+        try {
+          const result = await appData.saveScene(scene);
+
+          if (result.errors && result.errors.length > 0) {
+            console.warn(
+              `⚠️ Scene favorite toggled locally, but some controllers unreachable:`,
+              result.errors,
+            );
+            Notify.create({
+              type: "warning",
+              message: `Favorite toggled locally, but ${result.errors.length} controller(s) unreachable`,
+              timeout: 3000,
+            });
+          } else {
+            console.log(`✅ Scene favorite toggled successfully`);
+          }
+        } catch (error) {
+          console.error("Error toggling scene favorite:", error);
+          // Revert the change on error
+          scene.favorite = oldFavorite;
+          Notify.create({
+            type: "negative",
+            message: `Failed to toggle favorite: ${error.message}`,
+            timeout: 5000,
+            actions: [{ icon: "close", color: "white" }],
+          });
+        }
       },
     };
   },

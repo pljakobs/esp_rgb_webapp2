@@ -3,11 +3,19 @@
     <q-card-section class="flex justify-center">
       <q-scroll-area class="inset-scroll-area">
         <q-list separator style="overflow-y: auto; height: 100%" dense>
-          <div v-if="groups && groups.length > 0">
+          <div v-if="isLoading" class="text-center q-pa-md">
+            <q-spinner color="primary" size="lg" />
+            <div class="q-mt-sm">Processing...</div>
+          </div>
+          <div v-else-if="groups && groups.length > 0">
             <div v-for="group in groups" :key="group.name">
               <q-item
                 class="q-my-sm"
                 style="padding-bottom: 0px; margin-bottom: 0px"
+                clickable
+                :aria-expanded="expandedGroup === group.id"
+                role="button"
+                :aria-label="`Group ${group.name}, click to ${expandedGroup === group.id ? 'collapse' : 'expand'}`"
               >
                 <q-item-section
                   avatar
@@ -15,8 +23,13 @@
                   top
                   class="group"
                 >
-                  <q-tooltip>expand group</q-tooltip>
-                  <svg-icon
+                  <q-tooltip
+                    >{{
+                      expandedGroup === group.id ? "Collapse" : "Expand"
+                    }}
+                    group</q-tooltip
+                  >
+                  <svgIcon
                     name="arrow_drop_down"
                     :class="{
                       'rotated-arrow': expandedGroup !== group.id,
@@ -27,24 +40,45 @@
                   <q-item-label>{{ group.name }}</q-item-label>
                 </q-item-section>
                 <q-item-section side>
-                  <q-tooltip>edit group</q-tooltip>
-                  <div class="icon-wraper" @click.stop="editGroup(group)">
+                  <q-tooltip>Edit group</q-tooltip>
+                  <div
+                    class="icon-wraper"
+                    @click.stop="editGroup(group)"
+                    role="button"
+                    tabindex="0"
+                    :aria-label="`Edit group ${group.name}`"
+                    @keydown.enter="editGroup(group)"
+                    @keydown.space="editGroup(group)"
+                  >
                     <svgIcon name="edit" />
                   </div>
                 </q-item-section>
                 <q-item-section side>
-                  <q-tooltip>delete group</q-tooltip>
-                  <div class="icon-wraper" @click.stop="deleteGroup(group)">
+                  <q-tooltip>Delete group</q-tooltip>
+                  <div
+                    class="icon-wraper"
+                    @click.stop="deleteGroup(group)"
+                    role="button"
+                    tabindex="0"
+                    :aria-label="`Delete group ${group.name}`"
+                    @keydown.enter="deleteGroup(group)"
+                    @keydown.space="deleteGroup(group)"
+                  >
                     <svgIcon name="delete" />
                   </div>
                 </q-item-section>
               </q-item>
-              <div v-if="expandedGroup === group.id" class="indented-list">
+              <div
+                v-if="expandedGroup === group.id"
+                class="indented-list"
+                role="list"
+              >
                 <q-list dense>
                   <q-item
                     v-for="controller in getControllers(group.controller_ids)"
                     :key="controller.id"
                     class="controller-item"
+                    role="listitem"
                   >
                     <q-item-section>{{ controller.hostname }}</q-item-section>
                   </q-item>
@@ -61,7 +95,13 @@
       </q-scroll-area>
     </q-card-section>
     <q-card-section class="flex justify-center">
-      <q-btn flat color="primary" @click="openDialog">
+      <q-btn
+        flat
+        color="primary"
+        @click="openDialog"
+        :disable="isLoading"
+        :aria-label="'Add new group'"
+      >
         <template v-slot:default>
           <svgIcon name="light_group" />
           <span>Add Group</span>
@@ -73,7 +113,7 @@
 
 <script>
 import { ref, computed } from "vue";
-import { Dialog } from "quasar";
+import { Dialog, useQuasar } from "quasar";
 import { useAppDataStore } from "src/stores/appDataStore";
 import { useControllersStore } from "src/stores/controllersStore";
 import MyCard from "src/components/myCard.vue";
@@ -88,9 +128,9 @@ export default {
     const appData = useAppDataStore();
     const controllersStore = useControllersStore();
     const expandedGroup = ref(null);
+    const $q = useQuasar();
+    const isLoading = ref(false);
 
-    console.log("groups data:", appData.data.groups);
-    console.log("controllers data:", controllersStore.data);
     const groups = computed(() => {
       return appData.data.groups;
     });
@@ -98,21 +138,23 @@ export default {
     const controllers = computed(() => {
       return controllersStore.data;
     });
+
+    const showNotification = (type, message, timeout = 3000) => {
+      $q.notify({
+        type,
+        message,
+        timeout,
+        position: "top",
+      });
+    };
     const toggleGroup = (groupId) => {
       expandedGroup.value = expandedGroup.value === groupId ? null : groupId;
     };
 
     const getControllers = (controller_ids) => {
-      console.log(
-        "getControllers. controllers:",
-        JSON.stringify(controller_ids),
-        "\n",
-        JSON.stringify(controllers.value),
-      );
       const controllers_in_group = controllers.value.filter((controller) =>
         controller_ids.map(Number).includes(controller.id),
       );
-      console.log("controllers_in_group:", controllers_in_group);
       return controllers_in_group;
     };
 
@@ -124,10 +166,10 @@ export default {
           handleSave(group);
         })
         .onCancel(() => {
-          console.log("Dialog canceled");
+          // Dialog canceled - no action needed
         })
         .onDismiss(() => {
-          console.log("Dialog dismissed");
+          // Dialog dismissed - no action needed
         });
     };
 
@@ -142,21 +184,70 @@ export default {
           handleSave(group);
         })
         .onCancel(() => {
-          console.log("Dialog canceled");
+          // Dialog canceled - no action needed
         })
         .onDismiss(() => {
-          console.log("Dialog dismissed");
+          // Dialog dismissed - no action needed
         });
     };
 
-    const handleSave = (group) => {
-      //console.log("Saving group", group);
-      //appData.saveGroup(group);
+    const handleSave = async (group) => {
+      if (isLoading.value) return;
+
+      isLoading.value = true;
+      try {
+        await appData.saveGroup(group, (completed, total) => {
+          // Optional: Show progress if needed
+          // console.log(`Save progress: ${completed}/${total}`);
+        });
+        showNotification(
+          "positive",
+          `Group "${group.name}" saved successfully`,
+        );
+      } catch (error) {
+        console.error("Error saving group:", error);
+        showNotification("negative", `Failed to save group: ${error.message}`);
+      } finally {
+        isLoading.value = false;
+      }
     };
 
-    const deleteGroup = (group) => {
-      console.log("Deleting group", group);
-      appData.deleteGroup(group);
+    const deleteGroup = async (group) => {
+      // Confirm deletion
+      Dialog.create({
+        title: "Confirm Deletion",
+        message: `Are you sure you want to delete the group "${group.name}"? This action cannot be undone.`,
+        cancel: true,
+        persistent: true,
+        color: "negative",
+      }).onOk(async () => {
+        if (isLoading.value) return;
+
+        isLoading.value = true;
+        try {
+          await appData.deleteGroup(group, (completed, total) => {
+            // Optional: Show progress if needed
+            // console.log(`Delete progress: ${completed}/${total}`);
+          });
+          showNotification(
+            "positive",
+            `Group "${group.name}" deleted successfully`,
+          );
+
+          // Close expanded group if it was the one being deleted
+          if (expandedGroup.value === group.id) {
+            expandedGroup.value = null;
+          }
+        } catch (error) {
+          console.error("Error deleting group:", error);
+          showNotification(
+            "negative",
+            `Failed to delete group: ${error.message}`,
+          );
+        } finally {
+          isLoading.value = false;
+        }
+      });
     };
 
     return {
@@ -167,6 +258,7 @@ export default {
       deleteGroup,
       expandedGroup,
       toggleGroup,
+      isLoading,
     };
   },
 };
@@ -217,6 +309,26 @@ export default {
   margin-bottom: 0px;
   padding-top: 0px; /* Adjust as needed */
   padding-bottom: 5px; /* Adjust as needed */
+}
+
+.icon-wraper {
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.icon-wraper:hover {
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+.icon-wraper:focus {
+  outline: 2px solid var(--q-primary);
+  outline-offset: 2px;
+}
+
+.icon-wraper:active {
+  transform: scale(0.95);
 }
 </style>
 >

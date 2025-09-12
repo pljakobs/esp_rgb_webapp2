@@ -79,20 +79,33 @@
 
           <div class="q-pa-md">
             <div class="row q-gutter-md">
-              <div class="col-12 col-md-5">
+              <div class="col-12 col-md-4">
                 <mySelect
                   v-model="pwmSpeedMode"
                   :options="speedModeOptions"
                   label="Speed Mode"
                   emit-value
                   map-options
-                >
-                </mySelect>
+                />
                 <q-tooltip class="custom-tooltip">
                   Only the ESP32 supports high speed mode
                 </q-tooltip>
               </div>
-              <div class="col-12 col-md-3">
+              <div class="col-12 col-md-4">
+                <mySelect
+                  v-model="pwmTimerNumber"
+                  :options="timerNumberOptions"
+                  label="Timer Number"
+                  emit-value
+                  map-options
+                />
+                <q-tooltip class="custom-tooltip">
+                  Select which hardware timer to use for PWM generation. Each
+                  timer can be configured independently. This may be used in the
+                  future if the firmware supports multiple virtual lights.
+                </q-tooltip>
+              </div>
+              <div class="col-12 col-md-4">
                 <q-input
                   v-model.number="pwmFrequency"
                   type="number"
@@ -107,7 +120,7 @@
                   </q-tooltip>
                 </q-input>
               </div>
-              <div class="col-12 col-md-3">
+              <div class="col-12 col-md-4">
                 <q-input
                   v-model.number="pwmResolution"
                   type="number"
@@ -123,23 +136,6 @@
                     distinct levels. More is not really necessary.
                   </q-tooltip>
                 </q-input>
-              </div>
-            </div>
-            <div class="row q-mt-md">
-              <div class="col-12 col-md-6">
-                <mySelect
-                  v-model="pwmTimerNumber"
-                  :options="timerNumberOptions"
-                  label="Timer Number"
-                  emit-value
-                  map-options
-                >
-                </mySelect>
-                <q-tooltip class="custom-tooltip">
-                  Select which hardware timer to use for PWM generation. Each
-                  timer can be configured independently. This may be used in the
-                  future if the firmware supports multiple virtual lights.
-                </q-tooltip>
               </div>
             </div>
           </div>
@@ -177,8 +173,7 @@
                   label="Spread Spectrum Mode"
                   emit-value
                   map-options
-                >
-                </mySelect>
+                />
                 <q-tooltip class="custom-tooltip">
                   Spread spectrum reduces EMI (electromagnetic interference) by
                   slightly varying the PWM frequency over time. leave on "Auto"
@@ -199,12 +194,12 @@
                   :max="100"
                   :disable="pwmSpreadSpectrumMode === 'off'"
                 >
+                  <q-tooltip class="custom-tooltip">
+                    This controls the width of the spread spectrum modulation.
+                    The frequency will be smeared out by this many percent above
+                    and below the PWM center frequency.
+                  </q-tooltip>
                 </q-input>
-                <q-tooltip class="custom-tooltip">
-                  This controls the width of the spread spectrum modulation. The
-                  frequency will be smeared out by this many percent above and
-                  below the PWM center frequency.
-                </q-tooltip>
               </div>
               <div class="col-12 col-md-4">
                 <q-input
@@ -214,20 +209,20 @@
                   :min="1"
                   :disable="pwmSpreadSpectrumMode === 'off'"
                 >
+                  <q-tooltip class="custom-tooltip">
+                    This controls how often the PWM frequency hops around. The
+                    value is in base frequency cycles, so let's say your base
+                    frequency is set at 4kHz (4000Hz) and you set subsampling to
+                    4, the frequency will change every 4 cycles or every 1ms.
+                    Higher values lead to less frequent changes. Lower values
+                    will create more interrupts and therefore are more CPU
+                    intensive. This value influences the quality of the spread
+                    spectrum effect: the longer the PWM frequency stays the
+                    same, the more energy will be emitted at that frequency,
+                    potentially defeating the purpose of spread spectrum.
+                    Something between 1 and 8 is a good start.
+                  </q-tooltip>
                 </q-input>
-                <q-tooltip class="custom-tooltip">
-                  This controls how often the PWM frequency hops around. The
-                  value is in base frequency cycles, so let's say your base
-                  frequency is set at 4kHz (4000Hz) and you set subsampling to
-                  4, the frequency will change every 4 cycles or every 1ms.
-                  Higher values lead to less frequent changes. Lower values will
-                  create more interrupts and therefore are more CPU intensive.
-                  This value influences the quality of the spread spectrum
-                  effect: the longer the PWM frequency stays the same, the more
-                  energy will be emitted at that frequency, potentially
-                  defeating the purpose of spread spectrum. Something between 1
-                  and 8 is a good start.
-                </q-tooltip>
               </div>
             </div>
           </div>
@@ -258,15 +253,14 @@
 
           <div class="q-pa-md">
             <div class="row">
-              <div class="col-12 col-md-6">
+              <div class="col-12 col-md-4">
                 <mySelect
                   v-model="pwmPhaseShiftMode"
                   :options="phaseShiftModeOptions"
                   label="Phase Shift Mode"
                   emit-value
                   map-options
-                >
-                </mySelect>
+                />
                 <q-tooltip class="custom-tooltip">
                   Phase shifting delays the phase between the three, four or
                   five LED channels and thus helps distribute switching noise
@@ -410,10 +404,16 @@ export default {
     });
 
     // PWM Options
-    const speedModeOptions = [
-      { label: "Low Speed", value: "low_speed" },
-      { label: "High Speed", value: "high_speed" },
-    ];
+    const speedModeOptions = computed(() => {
+      const options = [{ label: "Low Speed", value: "low_speed" }];
+
+      // Only add High Speed option for ESP32 (exactly)
+      if (infoData.data.soc && infoData.data.soc.toLowerCase() === "esp32") {
+        options.push({ label: "High Speed", value: "high_speed" });
+      }
+
+      return options;
+    });
 
     const timerNumberOptions = [
       { label: "Timer 0", value: 0 },
@@ -767,6 +767,14 @@ export default {
           getPinConfigNames();
           getCurrentPinConfig();
           loadAvailablePins();
+
+          // Reset speed mode to low_speed if current SoC doesn't support high speed
+          if (
+            infoData.data.soc.toLowerCase() !== "esp32" &&
+            pwmSpeedMode.value === "high_speed"
+          ) {
+            pwmSpeedMode.value = "low_speed";
+          }
         }
       },
     );
@@ -817,8 +825,13 @@ export default {
 .hidden {
   display: none !important;
 }
-
+</style>
+<style>
 .custom-tooltip {
-  max-width: 150px;
+  max-width: 250px;
+  font-size: 14px;
+  font-weight: 500; /* Makes text slightly bolder */
+  line-height: 1.4; /* Improves readability */
+  padding: 8px 12px; /* Adds more internal spacing */
 }
 </style>

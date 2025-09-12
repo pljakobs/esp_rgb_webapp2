@@ -36,16 +36,6 @@
         <q-input v-model="groupName" label="Group Name" filled autofocus />
       </q-card-section>
 
-      <q-card-section v-if="progress.total > 0">
-        <q-linear-progress
-          :value="progress.completed / progress.total"
-          color="primary"
-        />
-        <div>
-          {{ progress.completed }} / {{ progress.total }} controllers updated
-        </div>
-      </q-card-section>
-
       <q-card-actions align="right">
         <q-btn
           color="primary"
@@ -62,6 +52,47 @@
           :disable="isSaveDisabled"
         />
       </q-card-actions>
+    </q-card>
+  </q-dialog>
+
+  <!-- Modal Progress Overlay -->
+  <q-dialog
+    v-model="showProgressModal"
+    persistent
+    no-esc-dismiss
+    no-route-dismiss
+    position="standard"
+  >
+    <q-card class="progress-modal-card">
+      <q-card-section class="text-center q-pa-lg">
+        <div class="text-h6 q-mb-md">Saving Group</div>
+        <q-circular-progress
+          v-if="progress.total === 0"
+          indeterminate
+          size="80px"
+          :thickness="0.15"
+          color="primary"
+          class="q-mb-md"
+        />
+        <q-circular-progress
+          v-else
+          :value="(progress.completed / progress.total) * 100"
+          size="80px"
+          :thickness="0.15"
+          color="primary"
+          track-color="grey-3"
+          class="q-mb-md"
+        />
+        <div v-if="progress.total === 0" class="text-subtitle2 q-mb-xs">
+          Preparing to save...
+        </div>
+        <div v-else class="text-subtitle2 q-mb-xs">
+          {{ progress.completed }} / {{ progress.total }} controllers updated
+        </div>
+        <div class="text-caption text-grey-6">
+          Please wait while the group is being saved...
+        </div>
+      </q-card-section>
     </q-card>
   </q-dialog>
 </template>
@@ -98,6 +129,7 @@ export default {
     const internalSelectedControllers = ref([]);
     const isEditMode = computed(() => !!props.group);
     const progress = ref({ completed: 0, total: 0 });
+    const showProgressModal = ref(false);
     const groupExists = ref(false);
     const saving = ref(false);
 
@@ -152,6 +184,12 @@ export default {
         return;
       }
 
+      // Show progress modal immediately when save starts
+      console.log(
+        "🎯 Group Dialog - Save button clicked - showing progress modal immediately",
+      );
+      showProgressModal.value = true;
+
       // Set saving state
       saving.value = true;
 
@@ -165,12 +203,22 @@ export default {
 
       // Create progress update callback
       const updateProgress = (completed, total) => {
-        console.log(`Updating progress: ${completed}/${total}`);
+        console.log(
+          `🎯 Group Dialog - Updating progress: ${completed}/${total}`,
+        );
         // Use nextTick to ensure Vue updates the UI
         nextTick(() => {
           progress.value = { completed, total };
           // Emit progress for anyone listening
           emit("progress", { completed, total });
+
+          // Hide modal when save is complete
+          if (completed >= total && total > 0) {
+            console.log(
+              "🎯 Group Dialog - Hiding progress modal - save complete",
+            );
+            showProgressModal.value = false;
+          }
         });
       };
 
@@ -179,7 +227,10 @@ export default {
         ...newGroup,
         // Function parent will call when save is complete
         saveComplete: () => {
-          console.log("saveComplete called, closing dialog");
+          console.log(
+            "🎯 Group Dialog - saveComplete called, closing dialog and hiding progress modal",
+          );
+          showProgressModal.value = false;
           saving.value = false;
           // Directly hide the dialog instead of calling onDialogOK
           dialogRef.value.hide();
@@ -250,6 +301,7 @@ export default {
       updateSelectedControllers,
       isEditMode,
       progress,
+      showProgressModal,
       isSaveDisabled,
       groupExists,
       toolbarClass,
@@ -278,5 +330,11 @@ export default {
   max-width: 400px;
   box-shadow: inset 0 0 10px rgba(255, 255, 255, 0.1);
   margin: 10px;
+}
+
+/* Progress Modal */
+.progress-modal-card {
+  min-width: 300px;
+  max-width: 400px;
 }
 </style>

@@ -224,12 +224,20 @@ export const useScenesStore = defineStore("scenes", {
     },
 
     async saveScene(scene, progressCallback, completeCallback) {
+      console.error("🔥🔥🔥 SCENESSTORE SAVESCENE CALLED 🔥🔥🔥");
+      console.error("Scene name:", scene.name);
+      console.error("Has completeCallback:", !!completeCallback);
+
       const appData = useAppDataStore();
       console.log("Saving scene:", scene);
 
       try {
         // Pass the scene to the appData store to save it
-        await appData.saveScene(scene, progressCallback);
+        const result = await appData.saveScene(scene, progressCallback);
+        console.log(
+          "🎬 ScenesStore received result from AppDataStore:",
+          JSON.stringify(result, null, 2),
+        );
 
         // Expand the scene's group node for better UX
         const groupNodeId = `group-${scene.group_id}`;
@@ -237,15 +245,50 @@ export const useScenesStore = defineStore("scenes", {
           this.expandedNodes.push(groupNodeId);
         }
 
-        // Call the completion callback if provided
-        if (completeCallback) {
-          completeCallback();
+        // Log the save result
+        if (result && result.success === true) {
+          if (result.errors && result.errors.length > 0) {
+            console.warn(
+              `⚠️ Scene "${scene.name}" saved with some controller errors:`,
+              result.errors,
+            );
+          } else {
+            console.log(
+              `✅ Scene "${scene.name}" saved successfully to all controllers`,
+            );
+          }
+        } else {
+          console.error(`❌ Scene "${scene.name}" save failed:`, result);
         }
 
-        return true;
+        // Call the completion callback if provided
+        if (completeCallback) {
+          console.log(
+            "🎬 ScenesStore calling completeCallback with result:",
+            result,
+          );
+          completeCallback(result);
+        }
+
+        return result;
       } catch (error) {
         console.error("Error saving scene:", error);
-        return false;
+
+        const errorResult = {
+          success: false,
+          error:
+            error?.message || error?.toString() || "Unknown error occurred",
+          successCount: 0,
+          errors: [],
+          totalControllers: 0,
+        };
+
+        // Call the completion callback with error info
+        if (completeCallback) {
+          completeCallback(errorResult);
+        }
+
+        return errorResult;
       }
     },
 
