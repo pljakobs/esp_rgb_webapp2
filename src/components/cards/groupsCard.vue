@@ -79,6 +79,9 @@
                     :key="controller.id"
                     class="controller-item"
                     role="listitem"
+                    :class="{
+                      'controller-invisible': controller.visible === false,
+                    }"
                   >
                     <q-item-section>{{ controller.hostname }}</q-item-section>
                   </q-item>
@@ -330,5 +333,10 @@ export default {
 .icon-wraper:active {
   transform: scale(0.95);
 }
+
+.controller-invisible {
+  color: #bbb !important;
+  opacity: 0.6;
+}
 </style>
->
+
