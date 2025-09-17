@@ -18,16 +18,51 @@
             <div class="step-label">Hostname</div>
           </div>
           <!-- Step 2: Pin Configuration -->
-          <div
-            class="step-indicator"
-            :class="{ active: step === 2, completed: step > 2 }"
-            @click="step > 2 ? (step = 2) : null"
-          >
-            <div class="step-icon">
-              <svgIcon v-if="step > 2" name="check_outlined" />
-              <svgIcon v-else name="memory_outlined" />
+          <div v-if="step === 2" class="q-pa-md">
+            <div class="text-h6 q-mb-md">Configure Device Pins</div>
+            <div class="text-subtitle2 q-mb-lg">
+              Select a pin configuration for your
+              {{ infoData.data.soc.toUpperCase() }} device
             </div>
-            <div class="step-label">Pin Config</div>
+            <mySelect
+              v-model="currentPinConfigName"
+              filled
+              :options="pinConfigNames"
+              label="Pin Configuration"
+              class="q-mb-md"
+              emit-value
+              map-options
+              @update:model-value="handlePinConfigChange"
+              :disable="socSpecificConfigs.length === 0"
+            />
+            <div
+              v-if="socSpecificConfigs.length === 0"
+              class="text-negative q-mt-md"
+            >
+              No pin configurations available for
+              {{ infoData.data.soc.toUpperCase() }} device. You can configure
+              the pin settings later.
+            </div>
+            <div v-else class="q-mt-md">
+              <div class="text-subtitle2">Selected Configuration Details:</div>
+              <q-list dense class="q-mt-sm">
+                <q-item
+                  v-for="(channel, index) in currentPinConfig.channels"
+                  :key="index"
+                >
+                  <q-item-section>
+                    <div class="row items-center">
+                      <div
+                        class="color-circle q-mr-md"
+                        :class="channel.name"
+                      ></div>
+                      <div class="text-capitalize">{{ channel.name }}:</div>
+                      <div class="q-ml-md">Pin {{ channel.pin }}</div>
+                    </div>
+                  </q-item-section>
+                </q-item>
+              </q-list>
+            </div>
           </div>
           <!-- Step 3: Color Model -->
           <div
@@ -451,14 +486,14 @@ export default {
       if (step.value === 1) {
         return hostname.value && hostname.value.trim() !== "";
       } else if (step.value === 2) {
-        return (
-          currentPinConfigName.value && socSpecificConfigs.value.length > 0
-        );
+        // Allow proceeding even if no pin configurations are available
+        return true;
       } else if (step.value === 3) {
         return colorModel.value && colorOptions.value.length > 0;
       }
       return true;
     });
+
     const canConnectToWifi = computed(() => {
       return (
         selectedNetwork.value &&

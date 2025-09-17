@@ -34,7 +34,7 @@ export default {
   },
   data() {
     return {
-      svgContent: "", // Missing data property was causing the issue
+      svgContent: "", 
     };
   },
   computed: {
