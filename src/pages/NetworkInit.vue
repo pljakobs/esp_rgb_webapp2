@@ -12,57 +12,30 @@
             @click="step > 1 ? (step = 1) : null"
           >
             <div class="step-icon">
-              <svgIcon v-if="step > 1" name="check_outlined" />
-              <svgIcon v-else name="badge_outlined" />
+              <svgIcon name="badge_outlined" />
+              <svgIcon
+                v-if="step > 1"
+                name="check_outlined"
+                class="step-check-overlay"
+              />
             </div>
             <div class="step-label">Hostname</div>
           </div>
           <!-- Step 2: Pin Configuration -->
-          <div v-if="step === 2" class="q-pa-md">
-            <div class="text-h6 q-mb-md">Configure Device Pins</div>
-            <div class="text-subtitle2 q-mb-lg">
-              Select a pin configuration for your
-              {{ infoData.data.soc.toUpperCase() }} device
+          <div
+            class="step-indicator"
+            :class="{ active: step === 2, completed: step > 2 }"
+            @click="step > 2 ? (step = 2) : null"
+          >
+            <div class="step-icon">
+              <svgIcon name="memory_outlined" />
+              <svgIcon
+                v-if="step > 2"
+                name="check_outlined"
+                class="step-check-overlay"
+              />
             </div>
-            <mySelect
-              v-model="currentPinConfigName"
-              filled
-              :options="pinConfigNames"
-              label="Pin Configuration"
-              class="q-mb-md"
-              emit-value
-              map-options
-              @update:model-value="handlePinConfigChange"
-              :disable="socSpecificConfigs.length === 0"
-            />
-            <div
-              v-if="socSpecificConfigs.length === 0"
-              class="text-negative q-mt-md"
-            >
-              No pin configurations available for
-              {{ infoData.data.soc.toUpperCase() }} device. You can configure
-              the pin settings later.
-            </div>
-            <div v-else class="q-mt-md">
-              <div class="text-subtitle2">Selected Configuration Details:</div>
-              <q-list dense class="q-mt-sm">
-                <q-item
-                  v-for="(channel, index) in currentPinConfig.channels"
-                  :key="index"
-                >
-                  <q-item-section>
-                    <div class="row items-center">
-                      <div
-                        class="color-circle q-mr-md"
-                        :class="channel.name"
-                      ></div>
-                      <div class="text-capitalize">{{ channel.name }}:</div>
-                      <div class="q-ml-md">Pin {{ channel.pin }}</div>
-                    </div>
-                  </q-item-section>
-                </q-item>
-              </q-list>
-            </div>
+            <div class="step-label">Pin Config</div>
           </div>
           <!-- Step 3: Color Model -->
           <div
@@ -71,8 +44,12 @@
             @click="step > 3 ? (step = 3) : null"
           >
             <div class="step-icon">
-              <svgIcon v-if="step > 3" name="check_outlined" />
-              <svgIcon v-else name="palette_outlined" />
+              <svgIcon name="palette_outlined" />
+              <svgIcon
+                v-if="step > 3"
+                name="check_outlined"
+                class="step-check-overlay"
+              />
             </div>
             <div class="step-label">Color Model</div>
           </div>
@@ -83,8 +60,12 @@
             @click="step > 4 ? (step = 4) : null"
           >
             <div class="step-icon">
-              <svgIcon v-if="step > 4" name="check_outlined" />
-              <svgIcon v-else name="wifi_outlined" />
+              <svgIcon name="wifi_outlined" />
+              <svgIcon
+                v-if="step > 4"
+                name="check_outlined"
+                class="step-check-overlay"
+              />
             </div>
             <div class="step-label">WiFi</div>
           </div>
@@ -113,6 +94,7 @@
           filled
           class="q-mb-md"
           :rules="[(val) => !!val || 'Hostname is required']"
+          @blur="trimHostname"
         />
         <div class="text-caption q-mb-lg">
           The hostname will be used to access the device on your local network
@@ -126,39 +108,49 @@
           Select a pin configuration for your
           {{ infoData.data.soc.toUpperCase() }} device
         </div>
-        <mySelect
-          v-model="currentPinConfigName"
-          filled
-          :options="pinConfigNames"
-          label="Pin Configuration"
-          class="q-mb-md"
-          emit-value
-          map-options
-          @update:model-value="handlePinConfigChange"
-        />
-        <div
-          v-if="socSpecificConfigs.length === 0"
-          class="text-negative q-mt-md"
-        >
-          No pin configurations available for
-          {{ infoData.data.soc.toUpperCase() }} device. Please contact support.
+        <div v-if="socSpecificConfigs.length === 0" class="q-mt-md">
+          <q-banner class="text-warning bg-warning-light q-mb-md" rounded>
+            <template #avatar>
+              <svgIcon name="info_outlined" />
+            </template>
+            <div class="text-subtitle2">No Default Pin Configuration Available</div>
+            <div class="text-body2 q-mt-sm">
+              No pre-configured pin layouts are available for your {{ infoData.data.soc.toUpperCase() }} device.
+              You can continue with the setup and configure the pins manually in the main interface later.
+            </div>
+          </q-banner>
+          <div class="text-caption text-grey-7">
+            Pin configuration can be set up after completing the initial setup process.
+          </div>
         </div>
-        <div v-else class="q-mt-md">
-          <div class="text-subtitle2">Selected Configuration Details:</div>
-          <q-list dense class="q-mt-sm">
-            <q-item
-              v-for="(channel, index) in currentPinConfig.channels"
-              :key="index"
-            >
-              <q-item-section>
-                <div class="row items-center">
-                  <div class="color-circle q-mr-md" :class="channel.name"></div>
-                  <div class="text-capitalize">{{ channel.name }}:</div>
-                  <div class="q-ml-md">Pin {{ channel.pin }}</div>
-                </div>
-              </q-item-section>
-            </q-item>
-          </q-list>
+        <div v-else>
+          <mySelect
+            v-model="currentPinConfigName"
+            filled
+            :options="pinConfigNames"
+            label="Pin Configuration"
+            class="q-mb-md"
+            emit-value
+            map-options
+            @update:model-value="handlePinConfigChange"
+          />
+          <div class="q-mt-md">
+            <div class="text-subtitle2">Selected Configuration Details:</div>
+            <q-list dense class="q-mt-sm">
+              <q-item
+                v-for="(channel, index) in currentPinConfig.channels"
+                :key="index"
+              >
+                <q-item-section>
+                  <div class="row items-center">
+                    <div class="color-circle q-mr-md" :class="channel.name"></div>
+                    <div class="text-capitalize">{{ channel.name }}:</div>
+                    <div class="q-ml-md">Pin {{ channel.pin }}</div>
+                  </div>
+                </q-item-section>
+              </q-item>
+            </q-list>
+          </div>
         </div>
       </div>
 
@@ -224,6 +216,7 @@
           label="Network Name (SSID)"
           :disable="false"
           class="q-mb-md"
+          @blur="trimNetworkName"
         />
         <q-input
           v-model="password"
@@ -232,6 +225,7 @@
           label="Password"
           class="q-mb-md"
           :class="{ shake: wifiData.message === 'Wrong password' }"
+          @blur="trimPassword"
         >
           <template #append>
             <svgIcon
@@ -481,19 +475,35 @@ export default {
     });
     const log = ref([]);
 
+    // Input trimming helpers
+    const trimHostname = () => {
+      if (hostname.value) {
+        hostname.value = hostname.value.trim();
+      }
+    };
+    const trimNetworkName = () => {
+      if (selectedNetwork.value.ssid) {
+        selectedNetwork.value.ssid = selectedNetwork.value.ssid.trim();
+      }
+    };
+    const trimPassword = () => {
+      if (password.value) {
+        password.value = password.value.trim();
+      }
+    };
+
     // Validation
     const canProceed = computed(() => {
       if (step.value === 1) {
         return hostname.value && hostname.value.trim() !== "";
       } else if (step.value === 2) {
-        // Allow proceeding even if no pin configurations are available
+        // Allow proceeding even if no pin configs are available
         return true;
       } else if (step.value === 3) {
         return colorModel.value && colorOptions.value.length > 0;
       }
       return true;
     });
-
     const canConnectToWifi = computed(() => {
       return (
         selectedNetwork.value &&
@@ -619,14 +629,17 @@ export default {
         // 3. Send config data (hostname & pin config) after WiFi is up
         if (connected) {
           configData.updateData("general.device_name", hostname.value);
-          configData.updateData(
-            "general.current_pin_config_name",
-            currentPinConfigName.value,
-          );
-          configData.updateData(
-            "general.channels",
-            currentPinConfig.value.channels,
-          );
+          // Only update pin config if one is selected
+          if (currentPinConfigName.value && currentPinConfig.value.channels) {
+            configData.updateData(
+              "general.current_pin_config_name",
+              currentPinConfigName.value,
+            );
+            configData.updateData(
+              "general.channels",
+              currentPinConfig.value.channels,
+            );
+          }
           // Send color model here
           const modelIndex = colorOptions.value.indexOf(colorModel.value);
           configData.updateData("color.outputmode", modelIndex);
@@ -745,6 +758,32 @@ export default {
       },
     );
 
+    // Watchers for automatic whitespace trimming
+    watch(
+      () => hostname.value,
+      () => {
+        if (hostname.value && hostname.value !== hostname.value.trim()) {
+          hostname.value = hostname.value.trim();
+        }
+      },
+    );
+    watch(
+      () => selectedNetwork.value.ssid,
+      () => {
+        if (selectedNetwork.value.ssid && selectedNetwork.value.ssid !== selectedNetwork.value.ssid.trim()) {
+          selectedNetwork.value.ssid = selectedNetwork.value.ssid.trim();
+        }
+      },
+    );
+    watch(
+      () => password.value,
+      () => {
+        if (password.value && password.value !== password.value.trim()) {
+          password.value = password.value.trim();
+        }
+      },
+    );
+
     return {
       step,
       connecting,
@@ -775,11 +814,36 @@ export default {
       getColorSliderValue,
       updateColorSlider,
       emitColorModel,
+      trimHostname,
+      trimNetworkName,
+      trimPassword,
     };
   },
 };
 </script>
 
 <style scoped>
-/* ...existing styles unchanged... */
+.step-indicator {
+  position: relative;
+  display: inline-block;
+}
+
+.step-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.step-overlay .q-icon {
+  color: #4caf50;
+  background-color: rgba(255, 255, 255, 0.9);
+  border-radius: 50%;
+  padding: 2px;
+}
 </style>
