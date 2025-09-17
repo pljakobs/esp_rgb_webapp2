@@ -113,14 +113,19 @@
             <template #avatar>
               <svgIcon name="info_outlined" />
             </template>
-            <div class="text-subtitle2">No Default Pin Configuration Available</div>
+            <div class="text-subtitle2">
+              No Default Pin Configuration Available
+            </div>
             <div class="text-body2 q-mt-sm">
-              No pre-configured pin layouts are available for your {{ infoData.data.soc.toUpperCase() }} device.
-              You can continue with the setup and configure the pins manually in the main interface later.
+              No pre-configured pin layouts are available for your
+              {{ infoData.data.soc.toUpperCase() }} device. You can continue
+              with the setup and configure the pins manually in the main
+              interface later.
             </div>
           </q-banner>
           <div class="text-caption text-grey-7">
-            Pin configuration can be set up after completing the initial setup process.
+            Pin configuration can be set up after completing the initial setup
+            process.
           </div>
         </div>
         <div v-else>
@@ -143,7 +148,10 @@
               >
                 <q-item-section>
                   <div class="row items-center">
-                    <div class="color-circle q-mr-md" :class="channel.name"></div>
+                    <div
+                      class="color-circle q-mr-md"
+                      :class="channel.name"
+                    ></div>
                     <div class="text-capitalize">{{ channel.name }}:</div>
                     <div class="q-ml-md">Pin {{ channel.pin }}</div>
                   </div>
@@ -770,7 +778,10 @@ export default {
     watch(
       () => selectedNetwork.value.ssid,
       () => {
-        if (selectedNetwork.value.ssid && selectedNetwork.value.ssid !== selectedNetwork.value.ssid.trim()) {
+        if (
+          selectedNetwork.value.ssid &&
+          selectedNetwork.value.ssid !== selectedNetwork.value.ssid.trim()
+        ) {
           selectedNetwork.value.ssid = selectedNetwork.value.ssid.trim();
         }
       },
@@ -828,22 +839,28 @@ export default {
   display: inline-block;
 }
 
-.step-overlay {
+.step-check-overlay {
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  bottom: -2px;
+  right: -2px;
+  width: 16px;
+  height: 16px;
+  color: #4caf50;
+  background-color: white;
+  border-radius: 50%;
+  border: 1px solid #4caf50;
   display: flex;
   align-items: center;
   justify-content: center;
+  font-size: 12px;
   pointer-events: none;
+  z-index: 1;
 }
 
-.step-overlay .q-icon {
-  color: #4caf50;
-  background-color: rgba(255, 255, 255, 0.9);
-  border-radius: 50%;
-  padding: 2px;
+.step-icon {
+  position: relative;
+  display: inline-block;
+  width: 24px;
+  height: 24px;
 }
 </style>
