@@ -1050,6 +1050,42 @@ export const useAppDataStore = defineStore("appData", {
       try {
         for (const controller of reachableControllers) {
           try {
+            // First, check if this controller already has a lock
+            const checkResponse = await fetch(
+              `http://${controller["ip-address"]}/data`,
+              {
+                method: "GET",
+                timeout: 5000,
+              },
+            );
+
+            if (checkResponse.ok) {
+              const data = await checkResponse.json();
+              const existingLock = data["sync-lock"];
+              
+              if (existingLock && existingLock.id && existingLock.id !== controllerId) {
+                // Check if the existing lock is still valid (not stale)
+                const lockAge = Date.now() - existingLock.ts;
+                if (lockAge < 5 * 60 * 1000) { // 5 minutes
+                  console.error(
+                    `❌ Controller ${controller.hostname || controller["ip-address"]} already has active lock from ${existingLock.id} (age: ${Math.round(lockAge/1000)}s)`,
+                  );
+                  // Roll back all acquired locks
+                  await this.releaseSyncLock(controllerId, acquiredLocks);
+                  return false;
+                }
+                console.log(
+                  `⏰ Overriding stale lock from ${existingLock.id} on ${controller.hostname || controller["ip-address"]} (age: ${Math.round(lockAge/1000)}s)`,
+                );
+              }
+            }
+
+            // Proceed to acquire the lock
+            const lockData = {
+              id: controllerId,
+              ts: Date.now(),
+            };
+            
             const response = await fetch(
               `http://${controller["ip-address"]}/data`,
               {
@@ -1058,20 +1094,42 @@ export const useAppDataStore = defineStore("appData", {
                   "Content-Type": "application/json",
                 },
                 body: JSON.stringify({
-                  "sync-lock": {
-                    id: controllerId,
-                    ts: Date.now(),
-                  },
+                  "sync-lock": lockData,
                 }),
                 timeout: 5000,
               },
             );
 
             if (response.ok) {
-              console.log(
-                `🔒 Acquired sync lock on ${controller.hostname || controller["ip-address"]}`,
+              // Verify that our lock was actually set by reading the current state
+              const verifyResponse = await fetch(
+                `http://${controller["ip-address"]}/data`,
+                {
+                  method: "GET",
+                  timeout: 5000,
+                },
               );
-              acquiredLocks.push(controller);
+              
+              if (verifyResponse.ok) {
+                const currentData = await verifyResponse.json();
+                const actualLock = currentData["sync-lock"];
+                
+                if (actualLock && actualLock.id === controllerId) {
+                  console.log(
+                    `🔒 Successfully acquired sync lock on ${controller.hostname || controller["ip-address"]}`,
+                  );
+                  acquiredLocks.push(controller);
+                } else {
+                  // The firmware didn't set our lock (another controller's lock is still there)
+                  const existingControllerId = actualLock?.id || "no lock";
+                  console.error(
+                    `❌ Lock acquisition failed on ${controller.hostname || controller["ip-address"]}: found ${existingControllerId}`,
+                  );
+                  throw new Error(`Lock not acquired, found: ${existingControllerId}`);
+                }
+              } else {
+                throw new Error(`Verification GET failed: HTTP ${verifyResponse.status}`);
+              }
             } else {
               throw new Error(`HTTP ${response.status}`);
             }
