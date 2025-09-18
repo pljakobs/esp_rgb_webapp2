@@ -12,6 +12,7 @@ export const useAppDataStore = defineStore("appData", {
       presets: [],
       scenes: [],
       groups: [],
+      "sync-lock": null, // Object with {id, ts} structure for distributed sync lock
     },
     status: storeStatus.IDLE,
     abortSaveOperation: false,
@@ -939,6 +940,210 @@ export const useAppDataStore = defineStore("appData", {
      *
      **************************************************************/
 
+    // Utility function to normalize controller ID for sync lock timing
+    normalizeControllerId(controllerId) {
+      // Convert controller ID to a consistent format for timing calculations
+      // ESP32 IDs are longer, ESP8266 IDs are shorter - normalize to 8 digits
+      const idStr = String(controllerId);
+      const hash = idStr.split("").reduce((a, b) => {
+        a = (a << 5) - a + b.charCodeAt(0);
+        return a & a; // Convert to 32-bit integer
+      }, 0);
+      return Math.abs(hash) % 100000000; // 8-digit normalized ID
+    },
+
+    // Get the current controller ID (this would be determined by the context)
+    getCurrentControllerId() {
+      // TODO: This should be determined by the application context
+      // For now, we'll try to get it from the URL or configuration
+      // This might need to be passed as a parameter or stored in the app state
+
+      // Try to get from current URL or configuration
+      const urlParams = new URLSearchParams(window.location.search);
+      const controllerIdFromUrl = urlParams.get("controller_id");
+
+      if (controllerIdFromUrl) {
+        return controllerIdFromUrl;
+      }
+
+      // Fallback: try to determine from hostname or configuration
+      // This is a placeholder - you'll need to implement the actual logic
+      // based on how your application determines the current controller
+      console.warn(
+        "⚠️ Could not determine current controller ID, using fallback method",
+      );
+
+      // As a last resort, use the first available controller
+      const controllers = useControllersStore();
+      const firstController = controllers.data.find(
+        (c) => c.id && c["ip-address"],
+      );
+      return firstController?.id || "unknown";
+    },
+
+    // Check if sync lock is available across all controllers
+    async checkSyncLockAvailable(controllerId) {
+      const controllers = useControllersStore();
+      const reachableControllers = controllers.data.filter(
+        (c) => c.id !== null && c.id !== undefined && c["ip-address"],
+      );
+
+      console.log(
+        `🔐 Checking sync locks across ${reachableControllers.length} controllers for ${controllerId}`,
+      );
+
+      for (const controller of reachableControllers) {
+        try {
+          const response = await fetch(
+            `http://${controller["ip-address"]}/data`,
+            {
+              method: "GET",
+              timeout: 5000,
+            },
+          );
+
+          if (response.ok) {
+            const data = await response.json();
+            const syncLock = data["sync-lock"];
+
+            if (syncLock && syncLock.id && syncLock.id !== controllerId) {
+              // Check if the lock is recent (less than 5 minutes old)
+              const lockAge = Date.now() - syncLock.ts;
+              if (lockAge < 5 * 60 * 1000) {
+                // 5 minutes
+                console.log(
+                  `🔒 Sync lock held by ${syncLock.id} on ${controller.hostname || controller["ip-address"]} (age: ${Math.round(lockAge / 1000)}s)`,
+                );
+                return false;
+              } else {
+                console.log(
+                  `⏰ Stale sync lock from ${syncLock.id} detected on ${controller.hostname || controller["ip-address"]} (age: ${Math.round(lockAge / 1000)}s), considering available`,
+                );
+              }
+            }
+          }
+        } catch (error) {
+          console.warn(
+            `⚠️ Could not check sync lock on ${controller.hostname || controller["ip-address"]}: ${error.message}`,
+          );
+          // Continue checking other controllers - unreachable controllers don't block sync
+        }
+      }
+
+      console.log(`✅ Sync lock available for ${controllerId}`);
+      return true;
+    },
+
+    // Acquire sync lock on all reachable controllers
+    async acquireSyncLock(controllerId) {
+      const controllers = useControllersStore();
+      const reachableControllers = controllers.data.filter(
+        (c) => c.id !== null && c.id !== undefined && c["ip-address"],
+      );
+
+      console.log(
+        `🔐 Acquiring sync lock for ${controllerId} across ${reachableControllers.length} controllers`,
+      );
+
+      const acquiredLocks = [];
+
+      try {
+        for (const controller of reachableControllers) {
+          try {
+            const response = await fetch(
+              `http://${controller["ip-address"]}/data`,
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  "sync-lock": {
+                    id: controllerId,
+                    ts: Date.now(),
+                  },
+                }),
+                timeout: 5000,
+              },
+            );
+
+            if (response.ok) {
+              console.log(
+                `🔒 Acquired sync lock on ${controller.hostname || controller["ip-address"]}`,
+              );
+              acquiredLocks.push(controller);
+            } else {
+              throw new Error(`HTTP ${response.status}`);
+            }
+          } catch (error) {
+            console.error(
+              `❌ Failed to acquire sync lock on ${controller.hostname || controller["ip-address"]}: ${error.message}`,
+            );
+            // Roll back all acquired locks
+            await this.releaseSyncLock(controllerId, acquiredLocks);
+            return false;
+          }
+        }
+
+        console.log(
+          `✅ Successfully acquired sync lock on all ${acquiredLocks.length} controllers`,
+        );
+        return true;
+      } catch (error) {
+        console.error(
+          `❌ Error during sync lock acquisition: ${error.message}`,
+        );
+        await this.releaseSyncLock(controllerId, acquiredLocks);
+        return false;
+      }
+    },
+
+    // Release sync lock on specified controllers (or all if not specified)
+    async releaseSyncLock(controllerId, specificControllers = null) {
+      const controllers = useControllersStore();
+      const controllersToRelease =
+        specificControllers ||
+        controllers.data.filter(
+          (c) => c.id !== null && c.id !== undefined && c["ip-address"],
+        );
+
+      console.log(
+        `🔓 Releasing sync lock for ${controllerId} on ${controllersToRelease.length} controllers`,
+      );
+
+      for (const controller of controllersToRelease) {
+        try {
+          const response = await fetch(
+            `http://${controller["ip-address"]}/data`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                "sync-lock": null,
+              }),
+              timeout: 5000,
+            },
+          );
+
+          if (response.ok) {
+            console.log(
+              `🔓 Released sync lock on ${controller.hostname || controller["ip-address"]}`,
+            );
+          } else {
+            console.warn(
+              `⚠️ Failed to release sync lock on ${controller.hostname || controller["ip-address"]}: HTTP ${response.status}`,
+            );
+          }
+        } catch (error) {
+          console.warn(
+            `⚠️ Could not release sync lock on ${controller.hostname || controller["ip-address"]}: ${error.message}`,
+          );
+        }
+      }
+    },
+
     async synchronizeAllData(progressCallback) {
       const controllers = useControllersStore();
 
@@ -951,6 +1156,55 @@ export const useAppDataStore = defineStore("appData", {
       if (this.status === storeStatus.SYNCED) {
         console.log("✅ Synchronization already completed, skipping");
         return true;
+      }
+
+      // Get the current controller's ID (from the active connection or configuration)
+      const currentControllerId = this.getCurrentControllerId();
+      if (!currentControllerId) {
+        console.error(
+          "❌ Cannot determine current controller ID for sync lock",
+        );
+        return false;
+      }
+
+      console.log(
+        `🔐 Starting sync process from controller ${currentControllerId}`,
+      );
+
+      // SYNC LOCK PHASE: Acquire distributed lock
+      console.log("🔐 Phase 0: Acquiring distributed sync lock...");
+
+      // Check if sync lock is available
+      const lockAvailable =
+        await this.checkSyncLockAvailable(currentControllerId);
+      if (!lockAvailable) {
+        console.log("🔒 Sync lock not available, waiting...");
+
+        // Calculate wait time based on normalized controller ID to avoid thundering herd
+        const normalizedId = this.normalizeControllerId(currentControllerId);
+        const waitTime = 2000 + (normalizedId % 8000); // Wait 2-10 seconds based on ID
+
+        console.log(
+          `⏳ Waiting ${waitTime}ms before retry (based on controller ID ${normalizedId})`,
+        );
+        await new Promise((resolve) => setTimeout(resolve, waitTime));
+
+        // Retry once more
+        const retryLockAvailable =
+          await this.checkSyncLockAvailable(currentControllerId);
+        if (!retryLockAvailable) {
+          console.log(
+            "🔒 Sync lock still not available after retry, aborting sync",
+          );
+          return false;
+        }
+      }
+
+      // Try to acquire the lock
+      const lockAcquired = await this.acquireSyncLock(currentControllerId);
+      if (!lockAcquired) {
+        console.log("❌ Failed to acquire sync lock, aborting sync");
+        return false;
       }
 
       // Set status to SYNCING to prevent duplicate syncs
@@ -1051,6 +1305,7 @@ export const useAppDataStore = defineStore("appData", {
               presets: new Map(),
               scenes: new Map(),
               groups: new Map(),
+              invalidPresets: [],
               invalidScenes: [],
               invalidGroups: [],
             };
@@ -1058,7 +1313,7 @@ export const useAppDataStore = defineStore("appData", {
             // Add all items to our collection arrays
             if (Array.isArray(data.presets)) {
               data.presets.forEach((preset) => {
-                if (preset.id && preset.ts) {
+                if (preset.id && preset.id !== "" && preset.ts) {
                   // Check if we already have this preset (deduplicate by ID)
                   const existingPreset = allData.presets.find(
                     (p) => p.id === preset.id,
@@ -1077,6 +1332,15 @@ export const useAppDataStore = defineStore("appData", {
                     preset.id,
                     preset.ts,
                   );
+                } else {
+                  console.log(
+                    `🗑️ Found preset with invalid ID: "${preset.name}" (ID: "${preset.id}", TS: ${preset.ts}) - will be deleted`,
+                  );
+                  // Track invalid presets for deletion - store the actual preset object
+                  if (!controllerObjects[controller.id].invalidPresets) {
+                    controllerObjects[controller.id].invalidPresets = [];
+                  }
+                  controllerObjects[controller.id].invalidPresets.push(preset);
                 }
               });
             }
@@ -1422,6 +1686,7 @@ export const useAppDataStore = defineStore("appData", {
             updates[controllerKey] = {
               presetsToAdd: [],
               presetsToUpdate: [],
+              presetsToDelete: [], // Initialize this array
               scenesToAdd: [],
               scenesToUpdate: [],
               groupsToAdd: [],
@@ -1446,6 +1711,36 @@ export const useAppDataStore = defineStore("appData", {
               updates[controllerKey].presetsToUpdate.push(preset);
               console.log(
                 `📝 Will UPDATE preset "${preset.name}" on ${controller.hostname}`,
+              );
+            }
+          }
+
+          // Check for extra presets on this controller that aren't in our master valid list
+          for (const [presetId] of controllerObjects[
+            controllerKey
+          ].presets.entries()) {
+            if (!latestItems.presets.has(presetId)) {
+              // Controller has a preset that's not in our valid master list - delete it
+              updates[controllerKey].presetsToDelete.push(presetId);
+              console.log(
+                `🗑️ Will DELETE extra preset (ID: ${presetId}) from ${controller.hostname} - not in master list`,
+              );
+            }
+          }
+
+          // Add invalid presets for deletion
+          if (controllerObjects[controllerKey].invalidPresets?.length > 0) {
+            for (const invalidPreset of controllerObjects[controllerKey]
+              .invalidPresets) {
+              // For invalid presets, we need to delete by a property that exists (like name or timestamp)
+              // Since the preset ID is invalid, we'll need to use a different approach
+              updates[controllerKey].presetsToDelete.push({
+                type: "invalid",
+                name: invalidPreset.name,
+                ts: invalidPreset.ts,
+              });
+              console.log(
+                `🗑️ Will DELETE invalid preset "${invalidPreset.name}" from ${controller.hostname} - has invalid ID`,
               );
             }
           }
@@ -1556,6 +1851,7 @@ export const useAppDataStore = defineStore("appData", {
           const totalOpsForController =
             updates[controllerKey].presetsToAdd.length +
             updates[controllerKey].presetsToUpdate.length +
+            (updates[controllerKey].presetsToDelete?.length || 0) +
             updates[controllerKey].scenesToAdd.length +
             updates[controllerKey].scenesToUpdate.length +
             updates[controllerKey].groupsToAdd.length +
@@ -1582,10 +1878,11 @@ export const useAppDataStore = defineStore("appData", {
             update.scenesToUpdate.length +
             update.groupsToAdd.length +
             update.groupsToUpdate.length +
+            (update.presetsToDelete?.length || 0) +
             (update.scenesToDelete?.length || 0) +
             (update.groupsToDelete?.length || 0);
           console.log(
-            `  ${name}: ${totalOps} total operations (+${update.presetsToAdd.length}/${update.presetsToUpdate.length} presets, +${update.scenesToAdd.length}/${update.scenesToUpdate.length} scenes, +${update.groupsToAdd.length}/${update.groupsToUpdate.length} groups, -${update.scenesToDelete?.length || 0} scenes, -${update.groupsToDelete?.length || 0} groups)`,
+            `  ${name}: ${totalOps} total operations (+${update.presetsToAdd.length}/${update.presetsToUpdate.length} presets, +${update.scenesToAdd.length}/${update.scenesToUpdate.length} scenes, +${update.groupsToAdd.length}/${update.groupsToUpdate.length} groups, -${update.presetsToDelete?.length || 0} presets, -${update.scenesToDelete?.length || 0} scenes, -${update.groupsToDelete?.length || 0} groups)`,
           );
         }
 
@@ -1598,6 +1895,7 @@ export const useAppDataStore = defineStore("appData", {
             sum +
             update.presetsToAdd.length +
             update.presetsToUpdate.length +
+            (update.presetsToDelete ? update.presetsToDelete.length : 0) +
             update.scenesToAdd.length +
             update.scenesToUpdate.length +
             (update.scenesToDelete ? update.scenesToDelete.length : 0) +
@@ -1711,6 +2009,81 @@ export const useAppDataStore = defineStore("appData", {
             }
             if (progressCallback) {
               progressCallback(completedUpdates, totalUpdates);
+            }
+          }
+
+          // Delete orphaned presets
+          if (update.presetsToDelete && update.presetsToDelete.length > 0) {
+            for (const presetToDelete of update.presetsToDelete) {
+              try {
+                let payload;
+                let description;
+
+                if (
+                  typeof presetToDelete === "object" &&
+                  presetToDelete.type === "invalid"
+                ) {
+                  // For invalid presets without proper IDs, we need to use a different approach
+                  // We'll need to get the current presets list and find the matching preset by properties
+                  const presetsResponse = await robustRequest(
+                    { presets: [] },
+                    `getting presets from ${controller.name || controller.hostname} for invalid preset cleanup`,
+                  );
+
+                  if (presetsResponse?.presets) {
+                    // Find the preset by name and timestamp to get its actual array index
+                    const presetIndex = presetsResponse.presets.findIndex(
+                      (preset) =>
+                        preset.name === presetToDelete.name &&
+                        preset.ts === presetToDelete.ts,
+                    );
+
+                    if (presetIndex !== -1) {
+                      payload = { [`presets[${presetIndex}]`]: [] };
+                      description = `deleting invalid preset "${presetToDelete.name}" at index ${presetIndex}`;
+                    } else {
+                      console.log(
+                        `⚠️ Invalid preset "${presetToDelete.name}" not found on ${controller.name || controller.hostname}, may have been already deleted`,
+                      );
+                      completedUpdates++;
+                      continue;
+                    }
+                  } else {
+                    console.error(
+                      `❌ Could not retrieve presets list from ${controller.name || controller.hostname} for invalid preset cleanup`,
+                    );
+                    failedOperations++;
+                    completedUpdates++;
+                    continue;
+                  }
+                } else {
+                  // Regular preset deletion by ID
+                  const presetId =
+                    typeof presetToDelete === "object"
+                      ? presetToDelete.id
+                      : presetToDelete;
+                  payload = { [`presets[id=${presetId}]`]: [] };
+                  description = `deleting orphaned preset ${presetId}`;
+                }
+
+                if (payload) {
+                  await robustRequest(payload, description);
+                  console.log(
+                    `✅ Deleted ${typeof presetToDelete === "object" && presetToDelete.type === "invalid" ? "invalid" : "orphaned"} preset from ${controller.name || controller.hostname}`,
+                  );
+                }
+                completedUpdates++;
+              } catch (error) {
+                console.error(
+                  `❌ Failed to delete preset from ${controller.name || controller.hostname}:`,
+                  error.message,
+                );
+                failedOperations++;
+                completedUpdates++; // Count as completed to avoid hanging
+              }
+              if (progressCallback) {
+                progressCallback(completedUpdates, totalUpdates);
+              }
             }
           }
 
@@ -1982,10 +2355,22 @@ export const useAppDataStore = defineStore("appData", {
         }
 
         this.status = storeStatus.SYNCED;
+
+        // Release the sync lock
+        await this.releaseSyncLock(currentControllerId);
+        console.log(`🔓 Released sync lock for ${currentControllerId}`);
+
         return true;
       } catch (error) {
         console.error("❌ Critical error during synchronization:", error);
         this.status = storeStatus.ERROR;
+
+        // Always release the sync lock on error
+        await this.releaseSyncLock(currentControllerId);
+        console.log(
+          `🔓 Released sync lock for ${currentControllerId} after error`,
+        );
+
         return false;
       }
     },
