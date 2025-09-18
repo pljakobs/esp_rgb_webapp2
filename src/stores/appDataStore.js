@@ -514,12 +514,16 @@ export const useAppDataStore = defineStore("appData", {
       try {
         let completed = 0;
         const totalControllers = controllers.data.length;
-        
-        console.log(`🗑️ Deleting group '${group.name}' from ${totalControllers} controllers`);
-        
+
+        console.log(
+          `🗑️ Deleting group '${group.name}' from ${totalControllers} controllers`,
+        );
+
         for (const controller of controllers.data) {
-          console.log(`📡 Processing controller ${controller.name} (${controller.ip_address})`);
-          
+          console.log(
+            `📡 Processing controller ${controller.name} (${controller.ip_address})`,
+          );
+
           if (!controller.ip_address) {
             console.log(`⏭️ Skipping ${controller.name} - no IP address`);
             completed++;
@@ -534,7 +538,9 @@ export const useAppDataStore = defineStore("appData", {
             const timeoutMs = 8000; // 8 second timeout
             const abortController = new AbortController();
             const timeoutId = setTimeout(() => {
-              console.log(`⏰ Timeout reached for controller ${controller.name}`);
+              console.log(
+                `⏰ Timeout reached for controller ${controller.name}`,
+              );
               abortController.abort();
             }, timeoutMs);
 
@@ -543,9 +549,9 @@ export const useAppDataStore = defineStore("appData", {
                 `http://${controller.ip_address}/data`,
                 {
                   method: "POST",
-                  headers: { 
+                  headers: {
                     "Content-Type": "application/json",
-                    "Accept": "application/json"
+                    Accept: "application/json",
                   },
                   body: JSON.stringify(payload),
                   signal: abortController.signal,
@@ -555,30 +561,41 @@ export const useAppDataStore = defineStore("appData", {
               if (!response.ok) {
                 const errorText = await response.text();
                 if (errorText.includes("BadSelector")) {
-                  console.log(`⚠️ Group not found on ${controller.name}, already deleted`);
+                  console.log(
+                    `⚠️ Group not found on ${controller.name}, already deleted`,
+                  );
                 } else {
-                  console.warn(`⚠️ Error from ${controller.name}: ${errorText}`);
+                  console.warn(
+                    `⚠️ Error from ${controller.name}: ${errorText}`,
+                  );
                 }
               } else {
-                console.log(`✅ Successfully deleted group from ${controller.name}`);
+                console.log(
+                  `✅ Successfully deleted group from ${controller.name}`,
+                );
               }
-              
             } finally {
               clearTimeout(timeoutId);
             }
-            
           } catch (error) {
-            if (error.name === 'AbortError') {
-              console.error(`⏰ Timeout deleting from controller ${controller.name} after 8 seconds`);
+            if (error.name === "AbortError") {
+              console.error(
+                `⏰ Timeout deleting from controller ${controller.name} after 8 seconds`,
+              );
             } else {
-              console.warn(`❌ Network error with ${controller.name}:`, error.message);
+              console.warn(
+                `❌ Network error with ${controller.name}:`,
+                error.message,
+              );
             }
             // Continue with other controllers even if one fails
           }
 
           // Always increment counter and update progress
           completed++;
-          console.log(`📊 Group delete progress: ${completed}/${totalControllers}`);
+          console.log(
+            `📊 Group delete progress: ${completed}/${totalControllers}`,
+          );
           if (progressCallback) {
             progressCallback(completed, totalControllers);
           }
@@ -589,7 +606,6 @@ export const useAppDataStore = defineStore("appData", {
         console.log(`✅ Deleted local group: ${group.name}`);
         console.log(`🎉 Group delete completed successfully`);
         return true;
-        
       } catch (error) {
         console.error("❌ Critical error deleting group:", error);
         throw error;
@@ -606,7 +622,7 @@ export const useAppDataStore = defineStore("appData", {
      **************************************************************/
 
     async saveScene(scene, progressCallback) {
-      console.log("🚀🚀🚀 STARTING SCENE SAVE OPERATION 🚀🚀🚀");
+      console.log("Starting scene save operation");
       console.log("Scene to save:", scene.name, "ID:", scene.id);
 
       const controllers = useControllersStore();
@@ -625,121 +641,110 @@ export const useAppDataStore = defineStore("appData", {
 
       try {
         let completed = 0;
+        const totalControllers = controllers.data.length;
+
+        console.log(
+          `Saving scene '${scene.name}' to ${totalControllers} controllers`,
+        );
+
         for (const controller of controllers.data) {
           if (!controller.ip_address) {
+            console.log(`Skipping controller - no IP address`);
             completed++;
             if (progressCallback) {
-              progressCallback(completed, controllers.data.length);
+              progressCallback(completed, totalControllers);
             }
             continue;
           }
 
           try {
-            // Create AbortController for timeout
+            // Add timeout protection
+            const timeoutMs = 8000;
             const abortController = new AbortController();
-            const timeoutId = setTimeout(() => abortController.abort(), 10000); // 10 second timeout
+            const timeoutId = setTimeout(() => {
+              console.log(`Timeout reached for controller ${controller.name}`);
+              abortController.abort();
+            }, timeoutMs);
 
-            // Check existing scene with timeout
-            const existingDataResponse = await fetch(
-              `http://${controller.ip_address}/data`,
-              {
-                signal: abortController.signal,
-              },
-            );
-
-            if (!existingDataResponse.ok) {
-              throw new Error(
-                `HTTP ${existingDataResponse.status}: ${existingDataResponse.statusText}`,
-              );
-            }
-
-            const existingData = await existingDataResponse.json();
-            clearTimeout(timeoutId);
-
-            const existingScene = existingData.scenes.find(
-              (s) => s.id === scene.id,
-            );
-
-            if (existingScene) {
-              // Update existing scene
-              payload = { [`scenes[id=${scene.id}]`]: scene };
-              console.log("🧪 DEBUG: Updating existing scene");
-              console.log("🧪 Scene data:", JSON.stringify(scene, null, 2));
-              console.log("updateScene payload: ", JSON.stringify(payload));
-            } else {
-              // Add new scene
-              payload = { "scenes[]": [scene] };
-              console.log("🧪 DEBUG: Adding new scene");
-              console.log("🧪 Scene data:", JSON.stringify(scene, null, 2));
-              console.log("addScene payload: ", JSON.stringify(payload));
-            }
-
-            if (!existingScene || existingScene.ts < scene.ts) {
-              console.log(
-                "scene uri: ",
-                `http://${controller.ip_address}/data`,
-              );
-              console.log("scene payload: ", JSON.stringify(payload));
-
-              // Create new AbortController for save request
-              const saveAbortController = new AbortController();
-              const saveTimeoutId = setTimeout(
-                () => saveAbortController.abort(),
-                10000,
-              );
-
-              const response = await fetch(
+            try {
+              // Check existing scene
+              const existingDataResponse = await fetch(
                 `http://${controller.ip_address}/data`,
                 {
-                  method: "POST",
+                  signal: abortController.signal,
                   headers: {
-                    "Content-Type": "application/json",
+                    "Cache-Control": "no-cache",
+                    Accept: "application/json",
                   },
-                  body: JSON.stringify(payload),
-                  signal: saveAbortController.signal,
                 },
               );
 
-              clearTimeout(saveTimeoutId);
-
-              if (!response.ok) {
-                // Try to get error details from response
-                let errorDetails = `HTTP ${response.status}: ${response.statusText}`;
-                try {
-                  const errorText = await response.text();
-                  if (errorText) {
-                    errorDetails += ` - ${errorText}`;
-                  }
-                } catch (e) {
-                  // Ignore if we can't read response text
-                }
-                throw new Error(errorDetails);
+              if (!existingDataResponse.ok) {
+                throw new Error(
+                  `GET failed with status ${existingDataResponse.status}`,
+                );
               }
 
-              console.log(
-                `✅ Scene saved successfully to controller ${controller.hostname || controller.ip_address}`,
+              const existingData = await existingDataResponse.json();
+              const existingScene = existingData.scenes?.find(
+                (s) => s.id === scene.id,
               );
-              successCount++;
-            } else {
-              console.log(
-                `⏭️ Scene already up-to-date on controller ${controller.hostname || controller.ip_address}`,
-              );
-              successCount++;
+
+              if (existingScene) {
+                // Update existing scene
+                payload = { [`scenes[id=${scene.id}]`]: scene };
+                console.log("Updating existing scene on", controller.name);
+              } else {
+                // Add new scene
+                payload = { "scenes[]": [scene] };
+                console.log("Adding new scene to", controller.name);
+              }
+
+              // Only update if needed
+              if (!existingScene || existingScene.ts < scene.ts) {
+                console.log("Scene save payload:", JSON.stringify(payload));
+
+                const response = await fetch(
+                  `http://${controller.ip_address}/data`,
+                  {
+                    method: "POST",
+                    headers: {
+                      "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify(payload),
+                    signal: abortController.signal,
+                  },
+                );
+
+                if (!response.ok) {
+                  throw new Error(`POST failed with status ${response.status}`);
+                }
+
+                console.log(
+                  `✅ Successfully saved scene to ${controller.name}`,
+                );
+                successCount++;
+              } else {
+                console.log(`Skipping ${controller.name} - already up to date`);
+                successCount++;
+              }
+            } finally {
+              clearTimeout(timeoutId);
             }
           } catch (error) {
-            console.log("🔥 CONTROLLER ERROR CAUGHT:", error);
-            console.log(
-              "🔥 Controller:",
-              controller.hostname || controller.ip_address,
-            );
-            console.log("🔥 Error type:", error.name);
-            console.log("🔥 Error message:", error.message);
+            if (error.name === "AbortError") {
+              console.error(
+                `Timeout saving to controller ${controller.name} after 8 seconds`,
+              );
+            } else {
+              console.error(
+                `Error saving to controller ${controller.name}:`,
+                error.message,
+              );
+            }
 
             const errorMsg =
               error.message || error.toString() || "Network error";
-            console.warn(
-              `⚠️ Failed to save scene to controller ${controller.hostname || controller.ip_address}: ${errorMsg}`,
-            );
             saveErrors.push({
               controller: controller.hostname || controller.ip_address,
               error: errorMsg,
@@ -747,19 +752,17 @@ export const useAppDataStore = defineStore("appData", {
           }
 
           completed++;
+          console.log(`Scene save progress: ${completed}/${totalControllers}`);
           if (progressCallback) {
-            console.log("progressCallback: ", completed);
-            progressCallback(completed, controllers.data.length);
+            progressCallback(completed, totalControllers);
           }
         }
 
-        // Always update local store regardless of network errors
+        // Update local store
         if (existingSceneIndex !== -1) {
-          // Update the scene in the local store
           this.data.scenes[existingSceneIndex] = scene;
           console.log("✅ Updated scene locally:", scene.name);
         } else {
-          // Add the new scene to the local store
           this.data.scenes.push(scene);
           console.log(
             "✅ Added scene locally:",
@@ -770,14 +773,13 @@ export const useAppDataStore = defineStore("appData", {
         }
 
         // Log summary
-        console.log("🎯 SAVE OPERATION COMPLETE - GENERATING SUMMARY:");
-        console.log("🎯 Success count:", successCount);
-        console.log("🎯 Error count:", saveErrors.length);
-        console.log("🎯 Save errors:", saveErrors);
+        console.log("Scene save operation complete");
+        console.log("Success count:", successCount);
+        console.log("Error count:", saveErrors.length);
 
         if (saveErrors.length > 0) {
           console.warn(
-            `⚠️ Scene saved with ${saveErrors.length} controller(s) unreachable:`,
+            `Scene saved with ${saveErrors.length} controller(s) unreachable:`,
             saveErrors,
           );
         } else {
@@ -793,11 +795,7 @@ export const useAppDataStore = defineStore("appData", {
           totalControllers: controllers.data.length,
         };
 
-        console.log(
-          "🎬 AppDataStore returning result:",
-          JSON.stringify(result, null, 2),
-        );
-        console.log("🚀🚀🚀 SCENE SAVE OPERATION FINISHED 🚀🚀🚀");
+        console.log("Scene save result:", JSON.stringify(result, null, 2));
         return result;
       } catch (error) {
         console.error("❌ Critical error saving scene:", error);
@@ -832,6 +830,9 @@ export const useAppDataStore = defineStore("appData", {
           errors: saveErrors,
           totalControllers: controllers.data?.length || 0,
         };
+      } finally {
+        // Refresh data like other functions do
+        this.fetchData();
       }
     },
 
@@ -841,60 +842,97 @@ export const useAppDataStore = defineStore("appData", {
 
       try {
         let completed = 0;
+        const totalControllers = controllers.data.length;
+
+        console.log(
+          `Deleting scene '${scene.name}' from ${totalControllers} controllers`,
+        );
+
         for (const controller of controllers.data) {
           if (!controller.ip_address) {
+            console.log(`Skipping controller - no IP address`);
             completed++;
-            if (progressCallback)
-              progressCallback(completed, controllers.data.length);
+            if (progressCallback) {
+              progressCallback(completed, totalControllers);
+            }
             continue;
           }
 
           try {
-            // Wrap controller request in try/catch
-            const response = await fetch(
-              `http://${controller.ip_address}/data`,
-              {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload),
-              },
-            );
+            // Add timeout protection like other functions
+            const timeoutMs = 8000;
+            const abortController = new AbortController();
+            const timeoutId = setTimeout(() => {
+              console.log(`Timeout reached for controller ${controller.name}`);
+              abortController.abort();
+            }, timeoutMs);
 
-            if (!response.ok) {
-              const errorText = await response.text();
-              if (errorText.includes("BadSelector")) {
-                console.log(
-                  `Scene not found on ${controller.ip_address}, continuing...`,
-                );
+            try {
+              const response = await fetch(
+                `http://${controller.ip_address}/data`,
+                {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    Accept: "application/json",
+                  },
+                  body: JSON.stringify(payload),
+                  signal: abortController.signal,
+                },
+              );
+
+              if (!response.ok) {
+                const errorText = await response.text();
+                if (errorText.includes("BadSelector")) {
+                  console.log(
+                    `Scene not found on ${controller.name}, already deleted`,
+                  );
+                } else {
+                  console.warn(`Error from ${controller.name}: ${errorText}`);
+                }
               } else {
-                console.warn(
-                  `Error from ${controller.ip_address}: ${errorText}`,
+                console.log(
+                  `✅ Successfully deleted scene from ${controller.name}`,
                 );
               }
+            } finally {
+              clearTimeout(timeoutId);
             }
-          } catch (controllerError) {
-            // Log network errors but continue
-            console.warn(
-              `Network error with ${controller.ip_address}:`,
-              controllerError,
-            );
+          } catch (error) {
+            if (error.name === "AbortError") {
+              console.error(
+                `Timeout deleting from controller ${controller.name} after 8 seconds`,
+              );
+            } else {
+              console.warn(
+                `Network error with ${controller.name}:`,
+                error.message,
+              );
+            }
           }
 
-          // Always increment counter and update progress
           completed++;
+          console.log(
+            `Scene delete progress: ${completed}/${totalControllers}`,
+          );
           if (progressCallback) {
-            progressCallback(completed, controllers.data.length);
+            progressCallback(completed, totalControllers);
           }
         }
 
-        // Update local store regardless of individual controller errors
+        // Update local store
         this.data.scenes = this.data.scenes.filter((s) => s.id !== scene.id);
-        console.log("deleted scene", scene.name);
+        console.log(`✅ Deleted local scene: ${scene.name}`);
+        console.log(`Scene delete completed successfully`);
+        return true;
       } catch (error) {
-        console.error("error deleting scene:", error);
+        console.error("❌ Critical error deleting scene:", error);
+        throw error;
+      } finally {
+        // Refresh data like other functions do
+        this.fetchData();
       }
     },
-
     /*************************************************************
      *
      * sync function
@@ -919,7 +957,9 @@ export const useAppDataStore = defineStore("appData", {
       this.status = storeStatus.SYNCING;
 
       try {
-        console.log("🚀 Starting robust synchronization across all controllers...");
+        console.log(
+          "🚀 Starting robust synchronization across all controllers...",
+        );
 
         // PHASE 1: Collection - gather all data from all controllers
         const allData = {
@@ -932,7 +972,9 @@ export const useAppDataStore = defineStore("appData", {
         const controllerObjects = {};
         const unreachableControllers = [];
 
-        console.log(`📡 Phase 1: Collecting data from ${controllers.data.length} controllers...`);
+        console.log(
+          `📡 Phase 1: Collecting data from ${controllers.data.length} controllers...`,
+        );
 
         // Fetch data from all controllers with robust error handling
         for (const controller of controllers.data) {
@@ -942,8 +984,10 @@ export const useAppDataStore = defineStore("appData", {
           }
 
           try {
-            console.log(`📥 Fetching data from ${controller.hostname} (${controller.ip_address})`);
-            
+            console.log(
+              `📥 Fetching data from ${controller.hostname} (${controller.ip_address})`,
+            );
+
             // Add timeout to prevent hanging on unreachable controllers
             const abortController = new AbortController();
             const timeoutId = setTimeout(() => {
@@ -957,7 +1001,7 @@ export const useAppDataStore = defineStore("appData", {
                 signal: abortController.signal,
                 headers: {
                   Accept: "application/json",
-                  "Cache-Control": "no-cache"
+                  "Cache-Control": "no-cache",
                 },
               },
             );
@@ -965,26 +1009,70 @@ export const useAppDataStore = defineStore("appData", {
             clearTimeout(timeoutId);
 
             if (!response.ok) {
-              console.warn(`❌ HTTP ${response.status} from ${controller.hostname}`);
+              console.warn(
+                `❌ HTTP ${response.status} from ${controller.hostname}`,
+              );
               unreachableControllers.push(controller);
               continue;
             }
 
             const data = await response.json();
-            console.log(`✅ Got data from ${controller.hostname}: ${data.presets?.length || 0} presets, ${data.scenes?.length || 0} scenes, ${data.groups?.length || 0} groups`);
+
+            // CRITICAL DEBUG - This should always appear
+            console.log(
+              `CRITICAL DEBUG: Processing controller ${controller.hostname}`,
+            );
+            console.log(`CRITICAL DEBUG: data.scenes exists? ${!!data.scenes}`);
+            console.log(
+              `CRITICAL DEBUG: data.scenes.length = ${data.scenes?.length}`,
+            );
+
+            console.log(
+              `✅ Got data from ${controller.hostname}: ${data.presets?.length || 0} presets, ${data.scenes?.length || 0} scenes, ${data.groups?.length || 0} groups | DEBUG: scenes array? ${Array.isArray(data.scenes)} | scenes[0]: ${data.scenes?.[0] ? "exists" : "missing"}`,
+            );
+
+            // Debug: Always log scenes data structure, even if empty
+            console.log(
+              `DEBUG ${controller.hostname}: data.scenes is array? ${Array.isArray(data.scenes)}, length: ${data.scenes?.length || "undefined"}`,
+            );
+            if (data.scenes && data.scenes.length > 0) {
+              console.log(
+                `DEBUG: First scene from ${controller.hostname}:`,
+                data.scenes[0],
+              );
+            } else {
+              console.log(
+                `DEBUG: ${controller.hostname} has no scenes in data.scenes array`,
+              );
+            }
 
             // Track objects by controller for efficient updating
             controllerObjects[controller.id] = {
               presets: new Map(),
               scenes: new Map(),
               groups: new Map(),
+              invalidScenes: [],
+              invalidGroups: [],
             };
 
             // Add all items to our collection arrays
             if (Array.isArray(data.presets)) {
               data.presets.forEach((preset) => {
                 if (preset.id && preset.ts) {
-                  allData.presets.push(preset);
+                  // Check if we already have this preset (deduplicate by ID)
+                  const existingPreset = allData.presets.find(
+                    (p) => p.id === preset.id,
+                  );
+                  if (!existingPreset) {
+                    allData.presets.push(preset);
+                    console.log(
+                      `✅ Added new preset: ${preset.name} (ID: ${preset.id})`,
+                    );
+                  } else {
+                    console.log(
+                      `⚠️ Skipping duplicate preset: ${preset.name} (ID: ${preset.id}) - already exists`,
+                    );
+                  }
                   controllerObjects[controller.id].presets.set(
                     preset.id,
                     preset.ts,
@@ -994,38 +1082,128 @@ export const useAppDataStore = defineStore("appData", {
             }
 
             if (Array.isArray(data.scenes)) {
-              data.scenes.forEach((scene) => {
-                if (scene.id && scene.ts) {
-                  allData.scenes.push(scene);
+              console.log(
+                `🔍 Processing ${data.scenes.length} scenes from ${controller.hostname}`,
+              );
+              data.scenes.forEach((scene, index) => {
+                if (index < 2) {
+                  // Log first 2 scenes for debugging
+                  console.log(`🔍 Scene ${index}:`, scene);
+                  console.log(
+                    `🔍 Scene ID check: ${!!scene.id}, TS check: ${!!scene.ts}`,
+                  );
+                }
+
+                // Only process scenes with valid IDs for master list - but track ALL scenes for deletion detection
+                if (scene.id && scene.id !== "" && scene.ts) {
+                  // Check if we already have this scene (deduplicate by ID first)
+                  const existingSceneById = allData.scenes.find(
+                    (s) => s.id === scene.id,
+                  );
+
+                  // Also check for logical duplicates (same name, timestamp, group_id but different ID)
+                  const existingLogicalDuplicate = allData.scenes.find(
+                    (s) =>
+                      s.name === scene.name &&
+                      s.ts === scene.ts &&
+                      s.group_id === scene.group_id &&
+                      s.id !== scene.id,
+                  );
+
+                  if (existingSceneById) {
+                    console.log(
+                      `⚠️ Skipping duplicate scene by ID: ${scene.name} (ID: ${scene.id}) - already exists`,
+                    );
+                  } else if (existingLogicalDuplicate) {
+                    console.log(
+                      `🔄 Skipping logical duplicate scene: ${scene.name} (ID: ${scene.id}) - same scene already exists with ID: ${existingLogicalDuplicate.id}`,
+                    );
+                  } else {
+                    allData.scenes.push(scene);
+                    console.log(
+                      `✅ Added new scene: ${scene.name} (ID: ${scene.id})`,
+                    );
+                  }
+                  // Track this valid scene for comparison
                   controllerObjects[controller.id].scenes.set(
                     scene.id,
                     scene.ts,
                   );
+                } else {
+                  console.log(
+                    `� Found scene with missing/invalid ID: "${scene.name}" (ID: "${scene.id}", TS: ${scene.ts}) - checking for consolidation`,
+                  );
+
+                  // Track invalid scenes for deletion - store the actual scene object
+                  if (!controllerObjects[controller.id].invalidScenes) {
+                    controllerObjects[controller.id].invalidScenes = [];
+                  }
+                  controllerObjects[controller.id].invalidScenes.push(scene);
                 }
               });
             }
 
             if (Array.isArray(data.groups)) {
               data.groups.forEach((group) => {
-                if (group.id && group.ts) {
-                  allData.groups.push(group);
+                // Only process groups with valid IDs - groups without IDs should be deleted/ignored
+                if (group.id && group.id !== "" && group.ts) {
+                  // Check if we already have this group (deduplicate by ID)
+                  const existingGroup = allData.groups.find(
+                    (g) => g.id === group.id,
+                  );
+                  if (!existingGroup) {
+                    allData.groups.push(group);
+                    console.log(
+                      `✅ Added new group: ${group.name} (ID: ${group.id})`,
+                    );
+                  } else {
+                    console.log(
+                      `⚠️ Skipping duplicate group: ${group.name} (ID: ${group.id}) - already exists`,
+                    );
+                  }
+                  // Track this valid group for comparison
                   controllerObjects[controller.id].groups.set(
                     group.id,
                     group.ts,
                   );
+                } else {
+                  console.log(
+                    `� Found group with missing/invalid ID: "${group.name}" (ID: "${group.id}", TS: ${group.ts}) - checking for consolidation`,
+                  );
+
+                  // Track invalid groups for deletion - store the actual group object
+                  if (!controllerObjects[controller.id].invalidGroups) {
+                    controllerObjects[controller.id].invalidGroups = [];
+                  }
+                  controllerObjects[controller.id].invalidGroups.push(group);
                 }
               });
             }
           } catch (error) {
             // Handle different types of network errors more specifically
             if (error.name === "AbortError") {
-              console.warn(`⏰ Timeout fetching from ${controller.hostname} (8s timeout exceeded)`);
-            } else if (error instanceof TypeError && error.message.includes("NetworkError")) {
-              console.warn(`🔌 Network error with ${controller.hostname}: Controller may be offline`);
-            } else if (error instanceof TypeError && error.message.includes("fetch")) {
-              console.warn(`📡 Fetch error with ${controller.hostname}: ${error.message}`);
+              console.warn(
+                `⏰ Timeout fetching from ${controller.hostname} (8s timeout exceeded)`,
+              );
+            } else if (
+              error instanceof TypeError &&
+              error.message.includes("NetworkError")
+            ) {
+              console.warn(
+                `🔌 Network error with ${controller.hostname}: Controller may be offline`,
+              );
+            } else if (
+              error instanceof TypeError &&
+              error.message.includes("fetch")
+            ) {
+              console.warn(
+                `📡 Fetch error with ${controller.hostname}: ${error.message}`,
+              );
             } else {
-              console.warn(`❌ Unexpected error fetching from ${controller.hostname}:`, error.message);
+              console.warn(
+                `❌ Unexpected error fetching from ${controller.hostname}:`,
+                error.message,
+              );
             }
             unreachableControllers.push(controller);
             // Continue with next controller regardless of error type
@@ -1033,9 +1211,17 @@ export const useAppDataStore = defineStore("appData", {
           }
         }
 
-        console.log(`📊 Collection complete: Found ${allData.presets.length} presets, ${allData.scenes.length} scenes, ${allData.groups.length} groups across all controllers`);
+        console.log(
+          `Collection complete: Found ${allData.presets.length} presets, ${allData.scenes.length} scenes, ${allData.groups.length} groups across all controllers`,
+        );
+
+        // Debug: Log allData.scenes contents
+        console.log("Debug: allData.scenes content:", allData.scenes);
         if (unreachableControllers.length > 0) {
-          console.warn(`⚠️ ${unreachableControllers.length} controllers were unreachable:`, unreachableControllers.map(c => c.hostname));
+          console.warn(
+            `⚠️ ${unreachableControllers.length} controllers were unreachable:`,
+            unreachableControllers.map((c) => c.hostname),
+          );
         }
 
         // PHASE 2: Find the most recent versions
@@ -1120,63 +1306,292 @@ export const useAppDataStore = defineStore("appData", {
           }
         }
 
-        // PHASE 3: Prepare updates for each controller
-        for (const controller of controllers.data) {
-          if (!controller.ip_address || !controllerObjects[controller.id])
-            continue;
+        // Clean up scenes with NULL/invalid values
+        const invalidScenesToDelete = [];
+        console.log("🧹 Cleaning up scenes with NULL/invalid values...");
 
-          updates[controller.id] = {
-            presetsToAdd: [],
-            presetsToUpdate: [],
-            scenesToAdd: [],
-            scenesToUpdate: [],
-            groupsToAdd: [],
-            groupsToUpdate: [],
-          };
+        // Debug: Log a sample scene to see its structure
+        if (latestItems.scenes.size > 0) {
+          const firstScene = latestItems.scenes.values().next().value;
+          console.log("🔍 Sample scene structure:", firstScene);
+        }
+
+        for (const [sceneId, scene] of latestItems.scenes.entries()) {
+          let isInvalid = false;
+          const issues = [];
+
+          // Scenes don't have a separate controller_id field - controller info is in the scene ID
+          // The scene ID format appears to be "controllerId-sceneLocalId"
+          // So we validate that the scene ID has the correct format instead
+          if (
+            !sceneId ||
+            typeof sceneId !== "string" ||
+            !sceneId.includes("-")
+          ) {
+            issues.push("invalid scene ID format");
+            isInvalid = true;
+          }
+
+          // Check for NULL or invalid group_id - scenes without group_id are illegal
+          if (scene.group_id === null || scene.group_id === undefined) {
+            issues.push("NULL group_id");
+            isInvalid = true;
+          }
+
+          // Check for NULL or invalid name
+          if (
+            !scene.name ||
+            scene.name === null ||
+            scene.name === undefined ||
+            (typeof scene.name === "string" && scene.name.trim() === "")
+          ) {
+            issues.push("NULL/empty name");
+            isInvalid = true;
+          }
+
+          if (isInvalid) {
+            console.log(
+              `🗑️ ILLEGAL SCENE: "${scene.name || "unnamed"}" (ID: ${sceneId}) has invalid values: ${issues.join(", ")} - PRUNING from all controllers`,
+            );
+            latestItems.scenes.delete(sceneId);
+            invalidScenesToDelete.push(sceneId);
+          }
+        } // Add deletion tasks for invalid scenes to all controllers that have them
+        if (invalidScenesToDelete.length > 0) {
+          console.log(
+            `🗑️ Found ${invalidScenesToDelete.length} ILLEGAL scenes to PRUNE from all controllers`,
+          );
+
+          for (const [controllerId, controllerData] of Object.entries(
+            controllerObjects,
+          )) {
+            for (const sceneId of invalidScenesToDelete) {
+              if (controllerData.scenes.has(sceneId)) {
+                // Make sure we have this controller in our updates map
+                if (!updates[controllerId]) {
+                  updates[controllerId] = {
+                    presetsToAdd: [],
+                    presetsToUpdate: [],
+                    scenesToAdd: [],
+                    scenesToUpdate: [],
+                    scenesToDelete: [],
+                    groupsToAdd: [],
+                    groupsToUpdate: [],
+                  };
+                } else if (!updates[controllerId].scenesToDelete) {
+                  updates[controllerId].scenesToDelete = [];
+                }
+
+                // Add this scene ID to the delete list for this controller
+                updates[controllerId].scenesToDelete.push(sceneId);
+                console.log(
+                  `🗑️ PRUNING illegal scene ${sceneId} from controller ${controllerId}`,
+                );
+              }
+            }
+          }
+        }
+
+        // PHASE 3: Prepare updates for each controller
+        console.log("🔧 Phase 3: Preparing updates for each controller...");
+
+        for (const controller of controllers.data) {
+          if (!controller.ip_address) {
+            console.log(
+              `⏭️ Skipping ${controller.hostname || controller.name || "unknown"} - no IP address`,
+            );
+            continue;
+          }
+
+          // Use the same ID format that was used during collection
+          const controllerKey = String(controller.id);
+
+          if (!controllerObjects[controllerKey]) {
+            console.log(
+              `⏭️ Skipping ${controller.hostname || controller.name || "unknown"} - no data collected (was unreachable)`,
+            );
+            continue;
+          }
+
+          console.log(
+            `🔧 Preparing updates for ${controller.hostname || controller.name || controller.ip_address}`,
+          );
+
+          // Initialize the update object for this controller
+          if (!updates[controllerKey]) {
+            updates[controllerKey] = {
+              presetsToAdd: [],
+              presetsToUpdate: [],
+              scenesToAdd: [],
+              scenesToUpdate: [],
+              groupsToAdd: [],
+              groupsToUpdate: [],
+              scenesToDelete: [], // Initialize this array
+              groupsToDelete: [], // Initialize this array
+            };
+          }
 
           // Check each preset
           for (const [id, preset] of latestItems.presets.entries()) {
             const controllerTs =
-              controllerObjects[controller.id].presets.get(id);
+              controllerObjects[controllerKey].presets.get(id);
             if (!controllerTs) {
               // Controller doesn't have this preset - add it
-              updates[controller.id].presetsToAdd.push(preset);
+              updates[controllerKey].presetsToAdd.push(preset);
+              console.log(
+                `📝 Will ADD preset "${preset.name}" to ${controller.hostname}`,
+              );
             } else if (controllerTs < preset.ts) {
               // Controller has older version - update it
-              updates[controller.id].presetsToUpdate.push(preset);
+              updates[controllerKey].presetsToUpdate.push(preset);
+              console.log(
+                `📝 Will UPDATE preset "${preset.name}" on ${controller.hostname}`,
+              );
             }
           }
 
           // Check each scene
           for (const [id, scene] of latestItems.scenes.entries()) {
             const controllerTs =
-              controllerObjects[controller.id].scenes.get(id);
+              controllerObjects[controllerKey].scenes.get(id);
             if (!controllerTs) {
               // Controller doesn't have this scene - add it
-              updates[controller.id].scenesToAdd.push(scene);
+              updates[controllerKey].scenesToAdd.push(scene);
+              console.log(
+                `📝 Will ADD scene "${scene.name}" to ${controller.hostname}`,
+              );
             } else if (controllerTs < scene.ts) {
               // Controller has older version - update it
-              updates[controller.id].scenesToUpdate.push(scene);
+              updates[controllerKey].scenesToUpdate.push(scene);
+              console.log(
+                `📝 Will UPDATE scene "${scene.name}" on ${controller.hostname}`,
+              );
             }
           }
 
           // Check each group
           for (const [id, group] of latestItems.groups.entries()) {
             const controllerTs =
-              controllerObjects[controller.id].groups.get(id);
+              controllerObjects[controllerKey].groups.get(id);
             if (!controllerTs) {
               // Controller doesn't have this group - add it
-              updates[controller.id].groupsToAdd.push(group);
+              updates[controllerKey].groupsToAdd.push(group);
+              console.log(
+                `📝 Will ADD group "${group.name}" to ${controller.hostname}`,
+              );
             } else if (controllerTs < group.ts) {
               // Controller has older version - update it
-              updates[controller.id].groupsToUpdate.push(group);
+              updates[controllerKey].groupsToUpdate.push(group);
+              console.log(
+                `📝 Will UPDATE group "${group.name}" on ${controller.hostname}`,
+              );
             }
           }
+
+          // Check for extra scenes on this controller that aren't in our master valid list
+          for (const [sceneId] of controllerObjects[
+            controllerKey
+          ].scenes.entries()) {
+            if (!latestItems.scenes.has(sceneId)) {
+              // Controller has a scene that's not in our valid master list - delete it
+              updates[controllerKey].scenesToDelete.push(sceneId);
+              console.log(
+                `🗑️ Will DELETE extra scene (ID: ${sceneId}) from ${controller.hostname} - not in master list`,
+              );
+            }
+          }
+
+          // Add invalid scenes for deletion
+          if (controllerObjects[controllerKey].invalidScenes?.length > 0) {
+            for (const invalidScene of controllerObjects[controllerKey]
+              .invalidScenes) {
+              // For invalid scenes, we need to delete by a property that exists (like name or timestamp)
+              // Since the scene ID is invalid, we'll need to use a different approach
+              updates[controllerKey].scenesToDelete.push({
+                type: "invalid",
+                name: invalidScene.name,
+                ts: invalidScene.ts,
+                group_id: invalidScene.group_id,
+              });
+              console.log(
+                `🗑️ Will DELETE invalid scene "${invalidScene.name}" from ${controller.hostname} - has invalid ID`,
+              );
+            }
+          }
+
+          // Add invalid groups for deletion
+          if (controllerObjects[controllerKey].invalidGroups?.length > 0) {
+            for (const invalidGroup of controllerObjects[controllerKey]
+              .invalidGroups) {
+              if (!updates[controllerKey].groupsToDelete) {
+                updates[controllerKey].groupsToDelete = [];
+              }
+              updates[controllerKey].groupsToDelete.push({
+                type: "invalid",
+                name: invalidGroup.name,
+                ts: invalidGroup.ts,
+              });
+              console.log(
+                `🗑️ Will DELETE invalid group "${invalidGroup.name}" from ${controller.hostname} - has invalid ID`,
+              );
+            }
+          }
+
+          // Check for extra groups on this controller that aren't in our master valid list
+          for (const [groupId] of controllerObjects[
+            controllerKey
+          ].groups.entries()) {
+            if (!latestItems.groups.has(groupId)) {
+              // Controller has a group that's not in our valid master list - delete it
+              if (!updates[controllerKey].groupsToDelete) {
+                updates[controllerKey].groupsToDelete = [];
+              }
+              updates[controllerKey].groupsToDelete.push(groupId);
+              console.log(
+                `🗑️ Will DELETE extra group (ID: ${groupId}) from ${controller.hostname} - not in master list`,
+              );
+            }
+          }
+
+          const totalOpsForController =
+            updates[controllerKey].presetsToAdd.length +
+            updates[controllerKey].presetsToUpdate.length +
+            updates[controllerKey].scenesToAdd.length +
+            updates[controllerKey].scenesToUpdate.length +
+            updates[controllerKey].groupsToAdd.length +
+            updates[controllerKey].groupsToUpdate.length +
+            (updates[controllerKey].scenesToDelete?.length || 0) +
+            (updates[controllerKey].groupsToDelete?.length || 0);
+
+          console.log(
+            `📊 Controller ${controller.hostname || controller.name}: ${totalOpsForController} operations planned`,
+          );
+        }
+
+        // Log summary before Phase 4
+        console.log("📋 Update Summary:");
+        for (const [controllerKey, update] of Object.entries(updates)) {
+          const controller = controllers.data.find(
+            (c) => String(c.id) === controllerKey,
+          );
+          const name = controller?.hostname || controller?.name || "Unknown";
+          const totalOps =
+            update.presetsToAdd.length +
+            update.presetsToUpdate.length +
+            update.scenesToAdd.length +
+            update.scenesToUpdate.length +
+            update.groupsToAdd.length +
+            update.groupsToUpdate.length +
+            (update.scenesToDelete?.length || 0) +
+            (update.groupsToDelete?.length || 0);
+          console.log(
+            `  ${name}: ${totalOps} total operations (+${update.presetsToAdd.length}/${update.presetsToUpdate.length} presets, +${update.scenesToAdd.length}/${update.scenesToUpdate.length} scenes, +${update.groupsToAdd.length}/${update.groupsToUpdate.length} groups, -${update.scenesToDelete?.length || 0} scenes, -${update.groupsToDelete?.length || 0} groups)`,
+          );
         }
 
         // PHASE 4: Execute updates with robust error handling
         console.log("🚀 Phase 4: Executing updates across controllers...");
-        
+
         // Calculate total updates for progress
         const totalUpdates = Object.values(updates).reduce((sum, update) => {
           return (
@@ -1187,7 +1602,8 @@ export const useAppDataStore = defineStore("appData", {
             update.scenesToUpdate.length +
             (update.scenesToDelete ? update.scenesToDelete.length : 0) +
             update.groupsToAdd.length +
-            update.groupsToUpdate.length
+            update.groupsToUpdate.length +
+            (update.groupsToDelete ? update.groupsToDelete.length : 0)
           );
         }, 0);
 
@@ -1202,13 +1618,20 @@ export const useAppDataStore = defineStore("appData", {
           );
           if (!controller || !controller.ip_address) continue;
 
-          console.log(`🔄 Synchronizing ${controller.name}...`);
+          const controllerName =
+            controller?.hostname ||
+            controller?.name ||
+            controller?.ip_address ||
+            "Unknown";
+          console.log(
+            `🔄 Synchronizing ${controllerName}... (${Object.keys(update).reduce((sum, key) => sum + (Array.isArray(update[key]) ? update[key].length : 0), 0)} operations)`,
+          );
 
           // Helper function for robust HTTP requests with timeout
           const robustRequest = async (payload, operation) => {
             const abortController = new AbortController();
             const timeoutId = setTimeout(() => {
-              console.log(`⏰ Timeout for ${operation} on ${controller.name}`);
+              console.log(`⏰ Timeout for ${operation} on ${controllerName}`);
               abortController.abort();
             }, 8000); // 8 second timeout
 
@@ -1217,9 +1640,9 @@ export const useAppDataStore = defineStore("appData", {
                 `http://${controller.ip_address}/data`,
                 {
                   method: "POST",
-                  headers: { 
+                  headers: {
                     "Content-Type": "application/json",
-                    "Accept": "application/json" 
+                    Accept: "application/json",
                   },
                   body: JSON.stringify(payload),
                   signal: abortController.signal,
@@ -1229,13 +1652,15 @@ export const useAppDataStore = defineStore("appData", {
               clearTimeout(timeoutId);
 
               if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+                throw new Error(
+                  `HTTP ${response.status}: ${await response.text()}`,
+                );
               }
 
               return { success: true };
             } catch (error) {
               clearTimeout(timeoutId);
-              if (error.name === 'AbortError') {
+              if (error.name === "AbortError") {
                 throw new Error(`Timeout after 8 seconds`);
               }
               throw error;
@@ -1246,11 +1671,19 @@ export const useAppDataStore = defineStore("appData", {
           if (update.presetsToAdd.length > 0) {
             try {
               const payload = { "presets[]": update.presetsToAdd };
-              await robustRequest(payload, `adding ${update.presetsToAdd.length} presets`);
-              console.log(`✅ Added ${update.presetsToAdd.length} presets to ${controller.name}`);
+              await robustRequest(
+                payload,
+                `adding ${update.presetsToAdd.length} presets`,
+              );
+              console.log(
+                `✅ Added ${update.presetsToAdd.length} presets to ${controllerName}`,
+              );
               completedUpdates += update.presetsToAdd.length;
             } catch (error) {
-              console.error(`❌ Failed to add presets to ${controller.name}:`, error.message);
+              console.error(
+                `❌ Failed to add presets to ${controllerName}:`,
+                error.message,
+              );
               failedOperations += update.presetsToAdd.length;
               completedUpdates += update.presetsToAdd.length; // Count as completed to avoid hanging
             }
@@ -1264,10 +1697,15 @@ export const useAppDataStore = defineStore("appData", {
             try {
               const payload = { [`presets[id=${preset.id}]`]: preset };
               await robustRequest(payload, `updating preset ${preset.name}`);
-              console.log(`✅ Updated preset ${preset.name} on ${controller.name}`);
+              console.log(
+                `✅ Updated preset ${preset.name} on ${controllerName}`,
+              );
               completedUpdates++;
             } catch (error) {
-              console.error(`❌ Failed to update preset ${preset.name} on ${controller.name}:`, error.message);
+              console.error(
+                `❌ Failed to update preset ${preset.name} on ${controllerName}:`,
+                error.message,
+              );
               failedOperations++;
               completedUpdates++; // Count as completed to avoid hanging
             }
@@ -1278,14 +1716,71 @@ export const useAppDataStore = defineStore("appData", {
 
           // Delete orphaned scenes
           if (update.scenesToDelete && update.scenesToDelete.length > 0) {
-            for (const sceneId of update.scenesToDelete) {
+            for (const sceneToDelete of update.scenesToDelete) {
               try {
-                const payload = { [`scenes[id=${sceneId}]`]: [] };
-                await robustRequest(payload, `deleting orphaned scene ${sceneId}`);
-                console.log(`✅ Deleted orphaned scene ${sceneId} from ${controller.name}`);
+                let payload;
+                let description;
+
+                if (
+                  typeof sceneToDelete === "object" &&
+                  sceneToDelete.type === "invalid"
+                ) {
+                  // For invalid scenes without proper IDs, we need to use a different approach
+                  // We'll need to get the current scenes list and find the matching scene by properties
+                  const scenesResponse = await robustRequest(
+                    { scenes: [] },
+                    `getting scenes from ${controller.name || controller.hostname} for invalid scene cleanup`,
+                  );
+
+                  if (scenesResponse?.scenes) {
+                    // Find the scene by name and timestamp to get its actual array index
+                    const sceneIndex = scenesResponse.scenes.findIndex(
+                      (scene) =>
+                        scene.name === sceneToDelete.name &&
+                        scene.ts === sceneToDelete.ts &&
+                        scene.group_id === sceneToDelete.group_id,
+                    );
+
+                    if (sceneIndex !== -1) {
+                      payload = { [`scenes[${sceneIndex}]`]: [] };
+                      description = `deleting invalid scene "${sceneToDelete.name}" at index ${sceneIndex}`;
+                    } else {
+                      console.log(
+                        `⚠️ Invalid scene "${sceneToDelete.name}" not found on ${controller.name || controller.hostname}, may have been already deleted`,
+                      );
+                      completedUpdates++;
+                      continue;
+                    }
+                  } else {
+                    console.error(
+                      `❌ Could not retrieve scenes list from ${controller.name || controller.hostname} for invalid scene cleanup`,
+                    );
+                    failedOperations++;
+                    completedUpdates++;
+                    continue;
+                  }
+                } else {
+                  // Regular scene deletion by ID
+                  const sceneId =
+                    typeof sceneToDelete === "object"
+                      ? sceneToDelete.id
+                      : sceneToDelete;
+                  payload = { [`scenes[id=${sceneId}]`]: [] };
+                  description = `deleting orphaned scene ${sceneId}`;
+                }
+
+                if (payload) {
+                  await robustRequest(payload, description);
+                  console.log(
+                    `✅ Deleted ${typeof sceneToDelete === "object" && sceneToDelete.type === "invalid" ? "invalid" : "orphaned"} scene from ${controller.name || controller.hostname}`,
+                  );
+                }
                 completedUpdates++;
               } catch (error) {
-                console.error(`❌ Failed to delete orphaned scene ${sceneId} from ${controller.name}:`, error.message);
+                console.error(
+                  `❌ Failed to delete scene from ${controller.name || controller.hostname}:`,
+                  error.message,
+                );
                 failedOperations++;
                 completedUpdates++; // Count as completed to avoid hanging
               }
@@ -1299,11 +1794,19 @@ export const useAppDataStore = defineStore("appData", {
           if (update.scenesToAdd.length > 0) {
             try {
               const payload = { "scenes[]": update.scenesToAdd };
-              await robustRequest(payload, `adding ${update.scenesToAdd.length} scenes`);
-              console.log(`✅ Added ${update.scenesToAdd.length} scenes to ${controller.hostname}`);
+              await robustRequest(
+                payload,
+                `adding ${update.scenesToAdd.length} scenes`,
+              );
+              console.log(
+                `✅ Added ${update.scenesToAdd.length} scenes to ${controllerName}`,
+              );
               completedUpdates += update.scenesToAdd.length;
             } catch (error) {
-              console.error(`❌ Failed to add scenes to ${controller.hostname}:`, error.message);
+              console.error(
+                `❌ Failed to add scenes to ${controllerName}:`,
+                error.message,
+              );
               failedOperations += update.scenesToAdd.length;
               completedUpdates += update.scenesToAdd.length; // Count as completed to avoid hanging
             }
@@ -1317,10 +1820,15 @@ export const useAppDataStore = defineStore("appData", {
             try {
               const payload = { [`scenes[id=${scene.id}]`]: scene };
               await robustRequest(payload, `updating scene ${scene.name}`);
-              console.log(`✅ Updated scene ${scene.name} on ${controller.hostname}`);
+              console.log(
+                `✅ Updated scene ${scene.name} on ${controllerName}`,
+              );
               completedUpdates++;
             } catch (error) {
-              console.error(`❌ Failed to update scene ${scene.name} on ${controller.hostname}:`, error.message);
+              console.error(
+                `❌ Failed to update scene ${scene.name} on ${controllerName}:`,
+                error.message,
+              );
               failedOperations++;
               completedUpdates++; // Count as completed to avoid hanging
             }
@@ -1329,15 +1837,98 @@ export const useAppDataStore = defineStore("appData", {
             }
           }
 
+          // Delete orphaned groups
+          if (update.groupsToDelete && update.groupsToDelete.length > 0) {
+            for (const groupToDelete of update.groupsToDelete) {
+              try {
+                let payload;
+                let description;
+
+                if (
+                  typeof groupToDelete === "object" &&
+                  groupToDelete.type === "invalid"
+                ) {
+                  // For invalid groups without proper IDs, we need to use a different approach
+                  // We'll need to get the current groups list and find the matching group by properties
+                  const groupsResponse = await robustRequest(
+                    { groups: [] },
+                    `getting groups from ${controller.name || controller.hostname} for invalid group cleanup`,
+                  );
+
+                  if (groupsResponse?.groups) {
+                    // Find the group by name and timestamp to get its actual array index
+                    const groupIndex = groupsResponse.groups.findIndex(
+                      (group) =>
+                        group.name === groupToDelete.name &&
+                        group.ts === groupToDelete.ts,
+                    );
+
+                    if (groupIndex !== -1) {
+                      payload = { [`groups[${groupIndex}]`]: [] };
+                      description = `deleting invalid group "${groupToDelete.name}" at index ${groupIndex}`;
+                    } else {
+                      console.log(
+                        `⚠️ Invalid group "${groupToDelete.name}" not found on ${controller.name || controller.hostname}, may have been already deleted`,
+                      );
+                      completedUpdates++;
+                      continue;
+                    }
+                  } else {
+                    console.error(
+                      `❌ Could not retrieve groups list from ${controller.name || controller.hostname} for invalid group cleanup`,
+                    );
+                    failedOperations++;
+                    completedUpdates++;
+                    continue;
+                  }
+                } else {
+                  // Regular group deletion by ID
+                  const groupId =
+                    typeof groupToDelete === "object"
+                      ? groupToDelete.id
+                      : groupToDelete;
+                  payload = { [`groups[id=${groupId}]`]: [] };
+                  description = `deleting orphaned group ${groupId}`;
+                }
+
+                if (payload) {
+                  await robustRequest(payload, description);
+                  console.log(
+                    `✅ Deleted ${typeof groupToDelete === "object" && groupToDelete.type === "invalid" ? "invalid" : "orphaned"} group from ${controller.name || controller.hostname}`,
+                  );
+                }
+                completedUpdates++;
+              } catch (error) {
+                console.error(
+                  `❌ Failed to delete group from ${controller.name || controller.hostname}:`,
+                  error.message,
+                );
+                failedOperations++;
+                completedUpdates++; // Count as completed to avoid hanging
+              }
+              if (progressCallback) {
+                progressCallback(completedUpdates, totalUpdates);
+              }
+            }
+          }
+
           // Batch add groups
           if (update.groupsToAdd.length > 0) {
             try {
               const payload = { "groups[]": update.groupsToAdd };
-              await robustRequest(payload, `adding ${update.groupsToAdd.length} groups`);
-              console.log(`✅ Added ${update.groupsToAdd.length} groups to ${controller.hostname}`);
+              await robustRequest(
+                payload,
+                `adding ${update.groupsToAdd.length} groups`,
+              );
+              console.log(
+                `✅ Added ${update.groupsToAdd.length} groups to ${controllerName}`,
+              );
               completedUpdates += update.groupsToAdd.length;
             } catch (error) {
-              console.error(`❌ Failed to add groups to ${controller.hostname}:`, error.message);
+              console.error(
+                `❌ Failed to add groups to ${controllerName}:`,
+                error.message,
+              );
               failedOperations += update.groupsToAdd.length;
               completedUpdates += update.groupsToAdd.length; // Count as completed to avoid hanging
             }
@@ -1351,10 +1942,15 @@ export const useAppDataStore = defineStore("appData", {
             try {
               const payload = { [`groups[id=${group.id}]`]: group };
               await robustRequest(payload, `updating group ${group.name}`);
-              console.log(`✅ Updated group ${group.name} on ${controller.hostname}`);
+              console.log(
+                `✅ Updated group ${group.name} on ${controllerName}`,
+              );
               completedUpdates++;
             } catch (error) {
-              console.error(`❌ Failed to update group ${group.name} on ${controller.hostname}:`, error.message);
+              console.error(
+                `❌ Failed to update group ${group.name} on ${controllerName}:`,
+                error.message,
+              );
               failedOperations++;
               completedUpdates++; // Count as completed to avoid hanging
             }
@@ -1365,20 +1961,26 @@ export const useAppDataStore = defineStore("appData", {
         }
 
         // PHASE 5: Update local state and complete synchronization
-        console.log("📝 Phase 5: Updating local state with synchronized data...");
-        
+        console.log(
+          "📝 Phase 5: Updating local state with synchronized data...",
+        );
+
         // Update local state with the latest versions
         this.data.presets = Array.from(latestItems.presets.values());
         this.data.scenes = Array.from(latestItems.scenes.values());
         this.data.groups = Array.from(latestItems.groups.values());
 
         console.log("🎉 Synchronization completed successfully!");
-        console.log(`📊 Final stats: ${completedUpdates} operations completed, ${failedOperations} operations failed`);
-        
+        console.log(
+          `📊 Final stats: ${completedUpdates} operations completed, ${failedOperations} operations failed`,
+        );
+
         if (unreachableControllers.length > 0) {
-          console.warn(`⚠️ Note: ${unreachableControllers.length} controllers were unreachable and may need manual synchronization`);
+          console.warn(
+            `⚠️ Note: ${unreachableControllers.length} controllers were unreachable and may need manual synchronization`,
+          );
         }
-        
+
         this.status = storeStatus.SYNCED;
         return true;
       } catch (error) {
