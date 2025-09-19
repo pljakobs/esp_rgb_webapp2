@@ -985,7 +985,11 @@ export const useAppDataStore = defineStore("appData", {
     async checkSyncLockAvailable(controllerId) {
       const controllers = useControllersStore();
       const reachableControllers = controllers.data.filter(
-        (c) => c.id !== null && c.id !== undefined && c.ip_address && c.visible === true,
+        (c) =>
+          c.id !== null &&
+          c.id !== undefined &&
+          c.ip_address &&
+          c.visible === true,
       );
 
       console.log(
@@ -1035,7 +1039,11 @@ export const useAppDataStore = defineStore("appData", {
     async acquireSyncLock(controllerId) {
       const controllers = useControllersStore();
       const reachableControllers = controllers.data.filter(
-        (c) => c.id !== null && c.id !== undefined && c.ip_address && c.visible === true,
+        (c) =>
+          c.id !== null &&
+          c.id !== undefined &&
+          c.ip_address &&
+          c.visible === true,
       );
 
       console.log(
@@ -1168,7 +1176,11 @@ export const useAppDataStore = defineStore("appData", {
       const controllersToRelease =
         specificControllers ||
         controllers.data.filter(
-          (c) => c.id !== null && c.id !== undefined && c.ip_address && c.visible === true,
+          (c) =>
+            c.id !== null &&
+            c.id !== undefined &&
+            c.ip_address &&
+            c.visible === true,
         );
 
       console.log(
@@ -1230,7 +1242,11 @@ export const useAppDataStore = defineStore("appData", {
 
       // Validate that we have visible controllers to sync with
       const reachableControllers = controllers.data.filter(
-        (c) => c.id !== null && c.id !== undefined && c.ip_address && c.visible === true,
+        (c) =>
+          c.id !== null &&
+          c.id !== undefined &&
+          c.ip_address &&
+          c.visible === true,
       );
 
       if (reachableControllers.length === 0) {
@@ -1398,20 +1414,11 @@ export const useAppDataStore = defineStore("appData", {
             if (Array.isArray(data.presets)) {
               data.presets.forEach((preset) => {
                 if (preset.id && preset.id !== "" && preset.ts) {
-                  // Check if we already have this preset (deduplicate by ID)
-                  const existingPreset = allData.presets.find(
-                    (p) => p.id === preset.id,
+                  // Collect ALL versions - let Phase 2 handle timestamp-based deduplication
+                  allData.presets.push(preset);
+                  console.log(
+                    `✅ Collected preset: ${preset.name} (ID: ${preset.id}, TS: ${preset.ts})`,
                   );
-                  if (!existingPreset) {
-                    allData.presets.push(preset);
-                    console.log(
-                      `✅ Added new preset: ${preset.name} (ID: ${preset.id})`,
-                    );
-                  } else {
-                    console.log(
-                      `⚠️ Skipping duplicate preset: ${preset.name} (ID: ${preset.id}) - already exists`,
-                    );
-                  }
                   controllerObjects[controller.id].presets.set(
                     preset.id,
                     preset.ts,
@@ -1444,34 +1451,11 @@ export const useAppDataStore = defineStore("appData", {
 
                 // Only process scenes with valid IDs for master list - but track ALL scenes for deletion detection
                 if (scene.id && scene.id !== "" && scene.ts) {
-                  // Check if we already have this scene (deduplicate by ID first)
-                  const existingSceneById = allData.scenes.find(
-                    (s) => s.id === scene.id,
+                  // Collect ALL versions - let Phase 2 handle timestamp-based deduplication
+                  allData.scenes.push(scene);
+                  console.log(
+                    `✅ Collected scene: ${scene.name} (ID: ${scene.id}, TS: ${scene.ts})`,
                   );
-
-                  // Also check for logical duplicates (same name, timestamp, group_id but different ID)
-                  const existingLogicalDuplicate = allData.scenes.find(
-                    (s) =>
-                      s.name === scene.name &&
-                      s.ts === scene.ts &&
-                      s.group_id === scene.group_id &&
-                      s.id !== scene.id,
-                  );
-
-                  if (existingSceneById) {
-                    console.log(
-                      `⚠️ Skipping duplicate scene by ID: ${scene.name} (ID: ${scene.id}) - already exists`,
-                    );
-                  } else if (existingLogicalDuplicate) {
-                    console.log(
-                      `🔄 Skipping logical duplicate scene: ${scene.name} (ID: ${scene.id}) - same scene already exists with ID: ${existingLogicalDuplicate.id}`,
-                    );
-                  } else {
-                    allData.scenes.push(scene);
-                    console.log(
-                      `✅ Added new scene: ${scene.name} (ID: ${scene.id})`,
-                    );
-                  }
                   // Track this valid scene for comparison
                   controllerObjects[controller.id].scenes.set(
                     scene.id,
@@ -1495,20 +1479,11 @@ export const useAppDataStore = defineStore("appData", {
               data.groups.forEach((group) => {
                 // Only process groups with valid IDs - groups without IDs should be deleted/ignored
                 if (group.id && group.id !== "" && group.ts) {
-                  // Check if we already have this group (deduplicate by ID)
-                  const existingGroup = allData.groups.find(
-                    (g) => g.id === group.id,
+                  // Collect ALL versions - let Phase 2 handle timestamp-based deduplication
+                  allData.groups.push(group);
+                  console.log(
+                    `✅ Collected group: ${group.name} (ID: ${group.id}, TS: ${group.ts})`,
                   );
-                  if (!existingGroup) {
-                    allData.groups.push(group);
-                    console.log(
-                      `✅ Added new group: ${group.name} (ID: ${group.id})`,
-                    );
-                  } else {
-                    console.log(
-                      `⚠️ Skipping duplicate group: ${group.name} (ID: ${group.id}) - already exists`,
-                    );
-                  }
                   // Track this valid group for comparison
                   controllerObjects[controller.id].groups.set(
                     group.id,
@@ -1560,7 +1535,7 @@ export const useAppDataStore = defineStore("appData", {
         }
 
         console.log(
-          `Collection complete: Found ${allData.presets.length} presets, ${allData.scenes.length} scenes, ${allData.groups.length} groups across all controllers`,
+          `Collection complete: Found ${allData.presets.length} preset versions, ${allData.scenes.length} scene versions, ${allData.groups.length} group versions across all controllers`,
         );
 
         // Debug: Log allData.scenes contents
@@ -1608,6 +1583,10 @@ export const useAppDataStore = defineStore("appData", {
             latestItems.groups.set(group.id, group);
           }
         }
+
+        console.log(
+          `Phase 2 complete: After timestamp-based deduplication: ${latestItems.presets.size} unique presets, ${latestItems.scenes.size} unique scenes, ${latestItems.groups.size} unique groups`,
+        );
 
         const validGroupIds = new Set(Array.from(latestItems.groups.keys()));
         const scenesToDelete = [];
@@ -1971,7 +1950,9 @@ export const useAppDataStore = defineStore("appData", {
         }
 
         // PHASE 4: Execute updates with robust error handling
-        console.log("🚀 Phase 4: Executing updates across visible controllers...");
+        console.log(
+          "🚀 Phase 4: Executing updates across visible controllers...",
+        );
 
         // Calculate total updates for progress
         const totalUpdates = Object.values(updates).reduce((sum, update) => {
