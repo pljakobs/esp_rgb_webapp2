@@ -973,10 +973,10 @@ export const useAppDataStore = defineStore("appData", {
         "⚠️ Could not determine current controller ID, using fallback method",
       );
 
-      // As a last resort, use the first available controller
+      // As a last resort, use the first available visible controller
       const controllers = useControllersStore();
       const firstController = controllers.data.find(
-        (c) => c.id && c.ip_address,
+        (c) => c.id && c.ip_address && c.visible === true,
       );
       return firstController?.id || "unknown";
     },
@@ -985,22 +985,19 @@ export const useAppDataStore = defineStore("appData", {
     async checkSyncLockAvailable(controllerId) {
       const controllers = useControllersStore();
       const reachableControllers = controllers.data.filter(
-        (c) => c.id !== null && c.id !== undefined && c.ip_address,
+        (c) => c.id !== null && c.id !== undefined && c.ip_address && c.visible === true,
       );
 
       console.log(
-        `🔐 Checking sync locks across ${reachableControllers.length} controllers for ${controllerId}`,
+        `🔐 Checking sync locks across ${reachableControllers.length} visible controllers for ${controllerId}`,
       );
 
       for (const controller of reachableControllers) {
         try {
-          const response = await fetch(
-            `http://${controller.ip_address}/data`,
-            {
-              method: "GET",
-              timeout: 5000,
-            },
-          );
+          const response = await fetch(`http://${controller.ip_address}/data`, {
+            method: "GET",
+            timeout: 5000,
+          });
 
           if (response.ok) {
             const data = await response.json();
@@ -1038,11 +1035,11 @@ export const useAppDataStore = defineStore("appData", {
     async acquireSyncLock(controllerId) {
       const controllers = useControllersStore();
       const reachableControllers = controllers.data.filter(
-        (c) => c.id !== null && c.id !== undefined && c.ip_address,
+        (c) => c.id !== null && c.id !== undefined && c.ip_address && c.visible === true,
       );
 
       console.log(
-        `🔐 Acquiring sync lock for ${controllerId} across ${reachableControllers.length} controllers`,
+        `🔐 Acquiring sync lock for ${controllerId} across ${reachableControllers.length} visible controllers`,
       );
 
       const acquiredLocks = [];
@@ -1171,28 +1168,25 @@ export const useAppDataStore = defineStore("appData", {
       const controllersToRelease =
         specificControllers ||
         controllers.data.filter(
-          (c) => c.id !== null && c.id !== undefined && c.ip_address,
+          (c) => c.id !== null && c.id !== undefined && c.ip_address && c.visible === true,
         );
 
       console.log(
-        `🔓 Releasing sync lock for ${controllerId} on ${controllersToRelease.length} controllers`,
+        `🔓 Releasing sync lock for ${controllerId} on ${controllersToRelease.length} visible controllers`,
       );
 
       for (const controller of controllersToRelease) {
         try {
-          const response = await fetch(
-            `http://${controller.ip_address}/data`,
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                "sync-lock": null,
-              }),
-              timeout: 5000,
+          const response = await fetch(`http://${controller.ip_address}/data`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
             },
-          );
+            body: JSON.stringify({
+              "sync-lock": { id: "", ts: 0 },
+            }),
+            timeout: 5000,
+          });
 
           if (response.ok) {
             console.log(
@@ -1234,14 +1228,14 @@ export const useAppDataStore = defineStore("appData", {
         return false;
       }
 
-      // Validate that we have controllers to sync with
+      // Validate that we have visible controllers to sync with
       const reachableControllers = controllers.data.filter(
-        (c) => c.id !== null && c.id !== undefined && c.ip_address,
+        (c) => c.id !== null && c.id !== undefined && c.ip_address && c.visible === true,
       );
 
       if (reachableControllers.length === 0) {
         console.error(
-          "❌ No reachable controllers found - sync cannot proceed",
+          "❌ No visible reachable controllers found - sync cannot proceed",
         );
         return false;
       }
@@ -1252,13 +1246,13 @@ export const useAppDataStore = defineStore("appData", {
       );
       if (!currentControllerExists) {
         console.error(
-          `❌ Current controller ID '${currentControllerId}' not found in reachable controllers`,
+          `❌ Current controller ID '${currentControllerId}' not found in visible reachable controllers`,
         );
         return false;
       }
 
       console.log(
-        `🔐 Starting sync process from controller ${currentControllerId} with ${reachableControllers.length} reachable controllers`,
+        `🔐 Starting sync process from controller ${currentControllerId} with ${reachableControllers.length} visible reachable controllers`,
       );
 
       // SYNC LOCK PHASE: Acquire distributed lock
@@ -1317,11 +1311,11 @@ export const useAppDataStore = defineStore("appData", {
         const unreachableControllers = [];
 
         console.log(
-          `📡 Phase 1: Collecting data from ${controllers.data.length} controllers...`,
+          `📡 Phase 1: Collecting data from ${reachableControllers.length} visible controllers...`,
         );
 
-        // Fetch data from all controllers with robust error handling
-        for (const controller of controllers.data) {
+        // Fetch data from all visible controllers with robust error handling
+        for (const controller of reachableControllers) {
           if (!controller.ip_address) {
             console.log(`⏭️ Skipping ${controller.hostname} - no IP address`);
             continue;
@@ -1977,7 +1971,7 @@ export const useAppDataStore = defineStore("appData", {
         }
 
         // PHASE 4: Execute updates with robust error handling
-        console.log("🚀 Phase 4: Executing updates across controllers...");
+        console.log("🚀 Phase 4: Executing updates across visible controllers...");
 
         // Calculate total updates for progress
         const totalUpdates = Object.values(updates).reduce((sum, update) => {
