@@ -109,7 +109,20 @@
           <template v-slot:option="scope">
             <q-item clickable @click="handleControllerSelection(scope.opt)">
               <q-item-section avatar>
-                <svgIcon :name="getIconForController(scope.opt)" />
+                <div class="row items-center">
+                  <!-- Custom controller icon -->
+                  <svgIcon
+                    :name="getCustomControllerIcon(scope.opt)"
+                    size="20px"
+                  />
+                  <!-- Role-based icon (home/api) if applicable -->
+                  <svgIcon
+                    v-if="getIconForController(scope.opt)"
+                    :name="getIconForController(scope.opt)"
+                    size="16px"
+                    class="q-ml-xs"
+                  />
+                </div>
               </q-item-section>
               <q-item-section>
                 <q-item-label>{{ scope.opt.hostname }}</q-item-label>
@@ -123,7 +136,7 @@
           <q-item-label header>main menu</q-item-label>
           <q-item clickable tag="router-link" to="/ColorPage">
             <q-item-section class="icon-section"
-              ><svgIcon name="lightbulb_outlined" class="icon" />
+              ><svgIcon name="lights/lightbulb_outlined" class="icon" />
             </q-item-section>
 
             <q-item-section class="text-section">
@@ -134,7 +147,7 @@
 
           <q-item clickable tag="router-link" to="/GroupsAndScenes">
             <q-item-section class="icon-section"
-              ><svgIcon name="light_group" class="icon" />
+              ><svgIcon name="lights/light_group" class="icon" />
             </q-item-section>
 
             <q-item-section class="text-section">
@@ -460,6 +473,38 @@ export default defineComponent({
         //return "controller_default_icon"; // Replace with your default icon
       };
 
+      const getCustomControllerIcon = (controller) => {
+        // Get custom controller icon from appDataStore by matching controller ID
+        console.log(
+          "getCustomControllerIcon called for",
+          controller?.hostname,
+          "ID:",
+          controller?.id,
+        );
+
+        if (
+          controller &&
+          controller.id &&
+          appData.data &&
+          appData.data.controllers
+        ) {
+          const controllerMetadata = appData.data.controllers.find(
+            (c) => c.id === controller.id,
+          );
+          if (controllerMetadata && controllerMetadata.icon) {
+            console.log(
+              "Found controller icon in appDataStore:",
+              controllerMetadata.icon,
+            );
+            return controllerMetadata.icon; // Should already include 'lights/' prefix
+          }
+        }
+
+        // Fallback to default light icon
+        console.log("No icon found in appDataStore, using default");
+        return "lights/lightbulb-outlined";
+      };
+
       return {
         leftDrawerOpen,
         configData,
@@ -476,6 +521,7 @@ export default defineComponent({
         isDarkMode,
         toggleDarkMode,
         getIconForController,
+        getCustomControllerIcon,
       };
     } catch (error) {
       console.error("Error in setup function:", error);

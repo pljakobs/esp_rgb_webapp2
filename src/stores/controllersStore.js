@@ -44,19 +44,27 @@ export const useControllersStore = defineStore("controllersStore", {
         if (this.currentController.hostname === "localhost") {
           let matchingController = this.data.find(
             (controller) =>
-              this.data.ip_address === this.currentController.ip_address,
+              controller.ip_address === this.currentController.ip_address,
           );
           if (matchingController) {
             this.currentController = matchingController;
+            console.log(
+              "Updated currentController with ID:",
+              this.currentController.id,
+            );
           }
         }
         if (this.homeController.hostname === "localhost") {
           let matchingController = this.data.find(
             (controller) =>
-              this.data.ip_address === this.currentController.ip_address,
+              controller.ip_address === this.currentController.ip_address,
           );
           if (matchingController) {
             this.homeController = matchingController;
+            console.log(
+              "Updated homeController with ID:",
+              this.homeController.id,
+            );
           }
         }
         console.log("store: ", JSON.stringify(this.data));
@@ -116,6 +124,97 @@ export const useControllersStore = defineStore("controllersStore", {
         "with IP address ",
         controller["ip_address"],
       );
+    },
+
+    async updateControllerMetadata(controller, metadata) {
+      try {
+        // Save controller metadata to the backend in the controllers section
+        console.log(
+          `DEBUG: Updating metadata for controller ${controller.hostname}:`,
+          JSON.stringify(metadata, null, 2),
+        );
+
+        // Check if controller metadata already exists
+        console.log(
+          `DEBUG: Fetching existing data from http://${controller.ip_address}/data`,
+        );
+        const existingDataResponse = await fetch(
+          `http://${controller.ip_address}/data`,
+          {
+            headers: { Accept: "application/json" },
+          },
+        );
+
+        let payload;
+        if (existingDataResponse.ok) {
+          const existingData = await existingDataResponse.json();
+          console.log("DEBUG: Existing data structure:", {
+            hasControllers: !!existingData.controllers,
+            controllersLength: existingData.controllers?.length || 0,
+            controllers: existingData.controllers,
+          });
+
+          const existingController = existingData.controllers?.find(
+            (c) => c.id === metadata.id,
+          );
+
+          if (existingController) {
+            // Update existing controller metadata
+            payload = { [`controllers[id=${metadata.id}]`]: metadata };
+            console.log(
+              "DEBUG: Updating existing controller metadata with payload:",
+              JSON.stringify(payload, null, 2),
+            );
+          } else {
+            // Add new controller metadata
+            payload = { "controllers[]": [metadata] };
+            console.log(
+              "DEBUG: Adding new controller metadata with payload:",
+              JSON.stringify(payload, null, 2),
+            );
+          }
+        } else {
+          // Add new controller metadata if we can't check existing
+          payload = { "controllers[]": [metadata] };
+          console.log(
+            "DEBUG: Adding new controller metadata (couldn't check existing) with payload:",
+            JSON.stringify(payload, null, 2),
+          );
+        }
+
+        console.log(`DEBUG: POSTing to http://${controller.ip_address}/data`);
+        const response = await fetch(`http://${controller.ip_address}/data`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        });
+
+        console.log(`DEBUG: POST response status: ${response.status}`);
+
+        if (!response.ok) {
+          const responseText = await response.text();
+          console.error(`DEBUG: POST response error text:`, responseText);
+          throw new Error(
+            `HTTP error! status: ${response.status}, response: ${responseText}`,
+          );
+        }
+
+        const responseData = await response.text();
+        console.log(`DEBUG: POST response data:`, responseData);
+
+        console.log(
+          `Successfully saved metadata for controller ${controller.hostname}`,
+        );
+        return true;
+      } catch (error) {
+        console.error(
+          `Failed to save metadata for controller ${controller.hostname}:`,
+          error,
+        );
+        return false;
+      }
     },
   },
 });

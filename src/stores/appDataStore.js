@@ -12,6 +12,7 @@ export const useAppDataStore = defineStore("appData", {
       presets: [],
       scenes: [],
       groups: [],
+      controllers: [], // Add controllers metadata
       "sync-lock": null, // Object with {id, ts} structure for distributed sync lock
     },
     status: storeStatus.IDLE,
@@ -34,6 +35,10 @@ export const useAppDataStore = defineStore("appData", {
           console.log("presets data: ", JSON.stringify(this.data.presets));
           console.log("scenes data: ", JSON.stringify(this.data.scenes));
           console.log("groups data: ", JSON.stringify(this.data.groups));
+          console.log(
+            "controllers data: ",
+            JSON.stringify(this.data.controllers || []),
+          );
         }
       } catch (error) {
         console.error("error fetching app-data:", error);
@@ -936,6 +941,168 @@ export const useAppDataStore = defineStore("appData", {
     },
     /*************************************************************
      *
+     * controller metadata functions
+     *
+     **************************************************************/
+
+    async saveControllerMetadata(controllerId, metadata, progressCallback) {
+      const controllers = useControllersStore();
+      this.abortSaveOperation = false;
+
+      // Ensure we have a valid controller ID
+      if (!controllerId) {
+        console.error("No controller ID provided for metadata save");
+        return false;
+      }
+
+      // Add timestamp to the metadata
+      metadata.ts = Date.now();
+      metadata.id = controllerId;
+
+      console.log(
+        "Saving controller metadata:",
+        JSON.stringify(metadata, null, 2),
+      );
+
+      const existingControllerIndex = this.data.controllers.findIndex(
+        (c) => c.id === controllerId,
+      );
+
+      try {
+        let completed = 0;
+        const totalControllers = controllers.data.length;
+
+        console.log(
+          `🔄 Saving controller metadata for '${metadata.name || metadata.hostname}' to ${totalControllers} controllers`,
+        );
+
+        for (const controller of controllers.data) {
+          if (this.abortSaveOperation) {
+            console.log("Save operation aborted");
+            break;
+          }
+
+          if (!controller.ip_address) {
+            console.warn(
+              `Controller ${controller.name || controller.hostname} has no IP address, skipping`,
+            );
+            completed++;
+            if (progressCallback) {
+              progressCallback(completed, totalControllers);
+            }
+            continue;
+          }
+
+          // Check if the controller already has this metadata
+          let existingMetadata = null;
+          try {
+            const response = await fetch(
+              `http://${controller.ip_address}/data`,
+              {
+                method: "GET",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+              },
+            );
+
+            if (response.ok) {
+              const data = await response.json();
+              if (data.controllers && Array.isArray(data.controllers)) {
+                existingMetadata = data.controllers.find(
+                  (c) => c.id === controllerId,
+                );
+              }
+            }
+          } catch (fetchError) {
+            console.warn(
+              `Failed to fetch existing metadata from ${controller.name || controller.hostname}: ${fetchError.message}`,
+            );
+          }
+
+          if (existingMetadata) {
+            console.log(
+              `Controller ${controller.name || controller.hostname} has existing metadata with ts: ${existingMetadata.ts}`,
+            );
+          } else {
+            console.log(
+              `Controller ${controller.name || controller.hostname} has no existing metadata`,
+            );
+          }
+
+          if (!existingMetadata || existingMetadata.ts < metadata.ts) {
+            let payload;
+            if (existingMetadata) {
+              // Update existing metadata
+              payload = { [`controllers[id=${controllerId}]`]: metadata };
+            } else {
+              // Add new metadata
+              payload = { controllers: [metadata] };
+            }
+
+            console.log(
+              `Sending metadata to ${controller.name || controller.hostname}: ${JSON.stringify(payload)}`,
+            );
+
+            try {
+              const response = await fetch(
+                `http://${controller.ip_address}/data`,
+                {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify(payload),
+                },
+              );
+
+              if (!response.ok) {
+                console.error(
+                  `Failed to save metadata to ${controller.name || controller.hostname}: ${response.status} ${response.statusText}`,
+                );
+              } else {
+                console.log(
+                  `Successfully saved metadata to ${controller.name || controller.hostname}`,
+                );
+              }
+            } catch (saveError) {
+              console.error(
+                `Error saving metadata to ${controller.name || controller.hostname}: ${saveError.message}`,
+              );
+            }
+          } else {
+            console.log(
+              `Controller ${controller.name || controller.hostname} already has newer metadata (${existingMetadata.ts} >= ${metadata.ts})`,
+            );
+          }
+
+          completed++;
+          if (progressCallback) {
+            progressCallback(completed, totalControllers);
+          }
+        }
+
+        if (!this.abortSaveOperation) {
+          // Update local appDataStore
+          if (existingControllerIndex !== -1) {
+            this.data.controllers[existingControllerIndex] = metadata;
+            console.log("Updated existing controller metadata locally");
+          } else {
+            this.data.controllers.push(metadata);
+            console.log("Added new controller metadata locally");
+          }
+        }
+
+        console.log("Controller metadata save operation completed");
+        return true;
+      } catch (error) {
+        console.error("Error saving controller metadata:", error);
+        return false;
+      }
+    },
+
+    /*************************************************************
+     *
      * sync function
      *
      **************************************************************/
@@ -1320,6 +1487,7 @@ export const useAppDataStore = defineStore("appData", {
           presets: [],
           scenes: [],
           groups: [],
+          controllers: [],
         };
 
         // Keep track of which objects each controller has
@@ -1405,9 +1573,11 @@ export const useAppDataStore = defineStore("appData", {
               presets: new Map(),
               scenes: new Map(),
               groups: new Map(),
+              controllers: new Map(),
               invalidPresets: [],
               invalidScenes: [],
               invalidGroups: [],
+              invalidControllers: [],
             };
 
             // Add all items to our collection arrays
@@ -1502,6 +1672,40 @@ export const useAppDataStore = defineStore("appData", {
                 }
               });
             }
+
+            if (Array.isArray(data.controllers)) {
+              data.controllers.forEach((controllerMetadata) => {
+                // Only process controllers with valid hostnames
+                if (
+                  controllerMetadata.hostname &&
+                  controllerMetadata.hostname !== "" &&
+                  controllerMetadata.ts
+                ) {
+                  // Collect ALL versions - let Phase 2 handle timestamp-based deduplication
+                  allData.controllers.push(controllerMetadata);
+                  console.log(
+                    `✅ Collected controller metadata: ${controllerMetadata.hostname} (TS: ${controllerMetadata.ts})`,
+                  );
+                  // Track this valid controller metadata for comparison
+                  controllerObjects[controller.id].controllers.set(
+                    controllerMetadata.hostname,
+                    controllerMetadata.ts,
+                  );
+                } else {
+                  console.log(
+                    `� Found controller with missing/invalid hostname: "${controllerMetadata.hostname}" (TS: ${controllerMetadata.ts}) - checking for consolidation`,
+                  );
+
+                  // Track invalid controllers for deletion - store the actual controller object
+                  if (!controllerObjects[controller.id].invalidControllers) {
+                    controllerObjects[controller.id].invalidControllers = [];
+                  }
+                  controllerObjects[controller.id].invalidControllers.push(
+                    controllerMetadata,
+                  );
+                }
+              });
+            }
           } catch (error) {
             // Handle different types of network errors more specifically
             if (error.name === "AbortError") {
@@ -1552,6 +1756,7 @@ export const useAppDataStore = defineStore("appData", {
           presets: new Map(),
           scenes: new Map(),
           groups: new Map(),
+          controllers: new Map(),
         };
 
         // Process presets
@@ -1584,8 +1789,23 @@ export const useAppDataStore = defineStore("appData", {
           }
         }
 
+        // Process controllers
+        for (const controllerMetadata of allData.controllers) {
+          if (!controllerMetadata.hostname) continue;
+
+          const existing = latestItems.controllers.get(
+            controllerMetadata.hostname,
+          );
+          if (!existing || controllerMetadata.ts > existing.ts) {
+            latestItems.controllers.set(
+              controllerMetadata.hostname,
+              controllerMetadata,
+            );
+          }
+        }
+
         console.log(
-          `Phase 2 complete: After timestamp-based deduplication: ${latestItems.presets.size} unique presets, ${latestItems.scenes.size} unique scenes, ${latestItems.groups.size} unique groups`,
+          `Phase 2 complete: After timestamp-based deduplication: ${latestItems.presets.size} unique presets, ${latestItems.scenes.size} unique scenes, ${latestItems.groups.size} unique groups, ${latestItems.controllers.size} unique controllers`,
         );
 
         const validGroupIds = new Set(Array.from(latestItems.groups.keys()));
@@ -1756,6 +1976,9 @@ export const useAppDataStore = defineStore("appData", {
               groupsToUpdate: [],
               scenesToDelete: [], // Initialize this array
               groupsToDelete: [], // Initialize this array
+              controllersToAdd: [],
+              controllersToUpdate: [],
+              controllersToDelete: [],
             };
           }
 
@@ -1842,6 +2065,30 @@ export const useAppDataStore = defineStore("appData", {
               updates[controllerKey].groupsToUpdate.push(group);
               console.log(
                 `📝 Will UPDATE group "${group.name}" on ${controller.hostname}`,
+              );
+            }
+          }
+
+          // Check each controller metadata
+          for (const [
+            hostname,
+            controllerMetadata,
+          ] of latestItems.controllers.entries()) {
+            const controllerTs =
+              controllerObjects[controllerKey].controllers.get(hostname);
+            if (!controllerTs) {
+              // Controller doesn't have this controller metadata - add it
+              updates[controllerKey].controllersToAdd.push(controllerMetadata);
+              console.log(
+                `📝 Will ADD controller metadata "${controllerMetadata.hostname}" to ${controller.hostname}`,
+              );
+            } else if (controllerTs < controllerMetadata.ts) {
+              // Controller has older version - update it
+              updates[controllerKey].controllersToUpdate.push(
+                controllerMetadata,
+              );
+              console.log(
+                `📝 Will UPDATE controller metadata "${controllerMetadata.hostname}" on ${controller.hostname}`,
               );
             }
           }
@@ -2407,6 +2654,7 @@ export const useAppDataStore = defineStore("appData", {
         this.data.presets = Array.from(latestItems.presets.values());
         this.data.scenes = Array.from(latestItems.scenes.values());
         this.data.groups = Array.from(latestItems.groups.values());
+        this.data.controllers = Array.from(latestItems.controllers.values());
 
         console.log("🎉 Synchronization completed successfully!");
         console.log(

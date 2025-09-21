@@ -81,7 +81,7 @@
         v-if="favoritePresets.length === 0 && favoriteSceneGroups.length === 0"
         class="no-favorites"
       >
-        <svgIcon name="star_border" size="48px" class="q-mb-sm" />
+        <svgIcon name="star_outlined" size="48px" class="q-mb-sm" />
         <div>No favorites set</div>
         <div class="text-caption">
           Mark colors or scenes as favorites to see them here
