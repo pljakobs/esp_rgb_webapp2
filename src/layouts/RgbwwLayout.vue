@@ -86,7 +86,11 @@
           <q-toolbar-title>
             <div class="row items-center q-gutter-sm">
               <!-- Controller icon -->
-              <svgIcon :name="currentControllerIcon" size="24px" />
+              <svgIcon
+                :name="currentControllerIcon"
+                size="24px"
+                fallbackIcon="lightbulb-outlined"
+              />
               <!-- Controller hostname -->
               <span>{{ currentControllerHostname }}</span>
               <!-- Lightinator 5 text -->
@@ -123,6 +127,7 @@
                   <svgIcon
                     :name="getCustomControllerIcon(scope.opt)"
                     size="20px"
+                    fallbackIcon="lightbulb-outlined"
                   />
                   <!-- Role-based icon (home/api) if applicable -->
                   <svgIcon
@@ -145,7 +150,7 @@
           <q-item-label header>main menu</q-item-label>
           <q-item clickable tag="router-link" to="/ColorPage">
             <q-item-section class="icon-section"
-              ><svgIcon name="lights/lightbulb_outlined" class="icon" />
+              ><svgIcon name="lightbulb_outlined" class="icon" />
             </q-item-section>
 
             <q-item-section class="text-section">
@@ -156,7 +161,7 @@
 
           <q-item clickable tag="router-link" to="/GroupsAndScenes">
             <q-item-section class="icon-section"
-              ><svgIcon name="lights/light_group" class="icon" />
+              ><svgIcon name="light_group" class="icon" />
             </q-item-section>
 
             <q-item-section class="text-section">
@@ -511,7 +516,7 @@ export default defineComponent({
 
         // Fallback to default light icon
         console.log("No icon found in appDataStore, using default");
-        return "lights/lightbulb-outlined";
+        return "lightbulb-outlined";
       };
 
       // Computed property for current controller's icon
@@ -519,7 +524,7 @@ export default defineComponent({
         if (controllers.currentController) {
           return getCustomControllerIcon(controllers.currentController);
         }
-        return "lights/lightbulb-outlined"; // Default icon
+        return "lightbulb-outlined"; // Default icon
       });
 
       // Computed property for current controller's hostname

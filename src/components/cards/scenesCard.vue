@@ -53,11 +53,11 @@
                   <div class="q-mr-sm">
                     <svgIcon
                       v-if="prop.node.nodeType === 'group'"
-                      name="lights/light_group"
+                      name="light_group"
                     />
                     <svgIcon
                       v-else-if="prop.node.nodeType === 'scene'"
-                      name="lights/scene"
+                      name="scene"
                       class="scene-icon"
                     />
                     <svgIcon
@@ -541,7 +541,7 @@ export default {
 
       // Fallback to default light icon
       console.log("No icon found in appDataStore, using default");
-      return "lights/lightbulb_outlined";
+      return "lightbulb_outlined";
     };
 
     return {

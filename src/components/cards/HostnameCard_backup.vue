@@ -16,6 +16,12 @@
       <div class="icon-selector-section">
         <div class="text-subtitle2 q-mb-sm">Controller Icon</div>
 
+        <!-- Debug info -->
+        <div class="q-mb-sm text-caption">
+          Debug: selectedIcon = "{{ selectedIcon }}", options count =
+          {{ iconOptions.length }}
+        </div>
+
         <!-- Current selection display with change button -->
         <div class="current-icon-display q-mb-md">
           <div class="row items-center q-gutter-md">
@@ -23,6 +29,7 @@
               <svgIcon
                 v-if="selectedIcon"
                 :name="selectedIcon"
+                :allowWebFetch="isWebIcon(selectedIcon)"
                 :fallbackIcon="defaultWebIcon"
                 size="32px"
               />
@@ -48,22 +55,15 @@
                 @click="showMaterialBrowser = true"
                 label="Browse Icons"
               >
-                <svgIcon name="search" size="18px" style="margin-right: 8px" />
+                <svgIcon
+                  name="search"
+                  :allowWebFetch="false"
+                  :fallbackIcon="'search'"
+                  size="18px"
+                  style="margin-right: 8px"
+                />
                 <q-tooltip>Browse Material Design Icons</q-tooltip>
               </q-btn>
-
-              <!-- Test Web Icon -->
-              <div
-                class="q-ml-md"
-                style="display: flex; align-items: center; gap: 8px"
-              >
-                <span class="text-caption">look at me:</span>
-                <svgIcon
-                  name="https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsoutlined/local_see/default/24px.svg"
-                  :fallbackIcon="'search'"
-                  size="24px"
-                />
-              </div>
             </div>
           </div>
         </div>
@@ -79,19 +79,19 @@
 </template>
 
 <script>
-import { ref, onMounted, watch } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
 import { configDataStore } from "src/stores/configDataStore";
 import { useControllersStore } from "src/stores/controllersStore";
 import { useAppDataStore } from "src/stores/appDataStore";
 import MyCard from "src/components/myCard.vue";
+import mySelect from "src/components/mySelect.vue";
 import MaterialIconBrowser from "src/components/MaterialIconBrowser.vue";
-import svgIcon from "src/components/svgIcon.vue";
 
 export default {
   components: {
     MyCard,
+    mySelect,
     MaterialIconBrowser,
-    svgIcon,
   },
   setup() {
     const configData = configDataStore();
@@ -99,11 +99,214 @@ export default {
     const appDataStore = useAppDataStore();
 
     const selectedIcon = ref("");
+    const availableIcons = ref([]);
+    const showIconGrid = ref(false);
     const showMaterialBrowser = ref(false);
 
-    // Default web icon fallback
+    // Simple fallback icon system - no local icons, just web defaults
     const defaultWebIcon =
       "https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsoutlined/lightbulb/default/24px.svg";
+
+    // Define lighting hardware icons first (referenced below)
+    const lightHardwareIcons = [
+      // LED Strips
+      { value: "led-strip-variant", label: "LED Strip" },
+      { value: "lightbulb", label: "Light Bulb" },
+      { value: "light_mode", label: "Light Mode" },
+    ];
+
+    // Define room and location icons
+    const roomLocationIcons = [
+      // Bedrooms
+      { value: "bed", label: "Bedroom" },
+      { value: "bedroom_baby", label: "Baby's Room" },
+      { value: "bedroom_child", label: "Child's Room" },
+      { value: "bedroom_parent", label: "Master Bedroom" },
+      { value: "single_bed", label: "Guest Room" },
+      { value: "king_bed", label: "King Bedroom" },
+      { value: "crib", label: "Nursery" },
+
+      // Living Areas
+      { value: "living", label: "Living Room" },
+      { value: "chair", label: "Seating Area" },
+      { value: "deck", label: "Deck" },
+      { value: "balcony", label: "Balcony" },
+
+      // Kitchen & Dining
+      { value: "kitchen", label: "Kitchen" },
+      { value: "dining", label: "Dining Room" },
+      { value: "brunch_dining", label: "Brunch Area" },
+      { value: "local_dining", label: "Casual Dining" },
+      { value: "dinner_dining", label: "Formal Dining" },
+      { value: "restaurant", label: "Restaurant Style" },
+      { value: "coffee_maker", label: "Coffee Station" },
+
+      // Bathrooms
+      { value: "bathroom", label: "Bathroom" },
+      { value: "bathtub", label: "Bath" },
+      { value: "shower", label: "Shower" },
+      { value: "hot_tub", label: "Spa Bath" },
+
+      // Utility & Storage
+      { value: "garage", label: "Garage" },
+      { value: "door_front", label: "Front Door" },
+      { value: "door_back", label: "Back Door" },
+      { value: "door_sliding", label: "Patio Door" },
+      { value: "stairs", label: "Stairway" },
+      { value: "elevator", label: "Elevator" },
+      { value: "escalator", label: "Escalator" },
+
+      // Outdoor Areas
+      { value: "outdoor_grill", label: "BBQ Area" },
+      { value: "pool", label: "Pool" },
+      { value: "spa", label: "Spa" },
+      { value: "cabin", label: "Cabin" },
+      { value: "cottage", label: "Cottage" },
+      { value: "bungalow", label: "Bungalow" },
+
+      // Office & Study
+      { value: "desk", label: "Home Office" },
+      { value: "computer", label: "Computer Room" },
+
+      // Special Areas
+      { value: "meeting_room", label: "Conference Room" },
+      { value: "family_restroom", label: "Family Room" },
+      { value: "camera_indoor", label: "Security (Indoor)" },
+      { value: "camera_outdoor", label: "Security (Outdoor)" },
+
+      // Building Types
+      { value: "apartment", label: "Apartment" },
+      { value: "house", label: "House" },
+      { value: "house_siding", label: "House (Siding)" },
+      { value: "home_work", label: "Home Office" },
+
+      // Interior Features
+      { value: "room_preferences", label: "Room Settings" },
+      { value: "fireplace", label: "Fireplace" },
+      { value: "countertops", label: "Countertops" },
+      { value: "curtains", label: "Curtains" },
+
+      // Security & Access
+      { value: "sensor_door", label: "Door Sensor" },
+      { value: "sensor_window", label: "Window Sensor" },
+    ];
+
+    // Office & Workspace specific icons
+    const officeWorkspaceIcons = [
+      { value: "corporate_fare", label: "Corporate Office" },
+      { value: "business", label: "Business Space" },
+      { value: "store", label: "Store/Retail" },
+      { value: "storefront", label: "Storefront" },
+      { value: "local_convenience_store", label: "Convenience Store" },
+      { value: "warehouse", label: "Warehouse" },
+      { value: "work", label: "Work Area" },
+    ];
+
+    // Kitchen & Appliance specific icons
+    const kitchenApplianceIcons = [
+      { value: "dishwasher", label: "Dishwasher" },
+      { value: "oven", label: "Oven" },
+      { value: "range_hood", label: "Range Hood" },
+      { value: "kettle", label: "Kettle Area" },
+      { value: "flatware", label: "Flatware/Utensils" },
+      { value: "local_bar", label: "Bar Area" },
+      { value: "local_cafe", label: "Cafe Area" },
+      { value: "bakery_dining", label: "Bakery Area" },
+    ];
+
+    // Street & Outdoor Lighting specific icons
+    const streetOutdoorIcons = [
+      { value: "light_mode", label: "Light Mode" },
+      { value: "flashlight_on", label: "Flashlight On" },
+      { value: "highlight", label: "Highlight Area" },
+      { value: "garage_door", label: "Garage Door" },
+      { value: "gate", label: "Gate/Entry" },
+      { value: "fence", label: "Fence Area" },
+    ];
+
+    // Garden & Outdoor Space specific icons
+    const gardenOutdoorIcons = [
+      { value: "yard", label: "Yard" },
+      { value: "grass", label: "Grass Area" },
+      { value: "nature", label: "Nature Area" },
+      { value: "park", label: "Park" },
+      { value: "forest", label: "Forest Area" },
+      { value: "local_florist", label: "Flower Area" },
+      { value: "outdoor_garden", label: "Outdoor Garden" },
+      { value: "potted_plant", label: "Potted Plants" },
+      { value: "landscape", label: "Landscape" },
+    ];
+
+    // Entertainment & Recreation icons
+    const entertainmentIcons = [
+      { value: "tv", label: "TV Area" },
+      { value: "speaker", label: "Speaker/Audio" },
+      { value: "theaters", label: "Theater" },
+      { value: "movie", label: "Movie Area" },
+      { value: "music_note", label: "Music Area" },
+      { value: "piano", label: "Piano/Music" },
+    ];
+
+    // Utility & Technical icons
+    const utilityTechnicalIcons = [
+      { value: "power", label: "Power/Electrical" },
+      { value: "construction", label: "Construction Area" },
+      { value: "build", label: "Build/Construction" },
+      { value: "water_heater", label: "Water Heater" },
+      { value: "propane_tank", label: "Propane Tank" },
+      { value: "wash", label: "Wash Area" },
+      { value: "local_laundry_service", label: "Laundry Service" },
+      { value: "shelves", label: "Shelves/Storage" },
+      { value: "markunread_mailbox", label: "Mailbox" },
+    ];
+
+    // Health & Wellness icons
+    const healthWellnessIcons = [
+      { value: "fitness_center", label: "Fitness Center" },
+      { value: "sauna", label: "Sauna" },
+      { value: "self_improvement", label: "Self Improvement" },
+      { value: "local_hospital", label: "Hospital/Medical" },
+      { value: "favorite", label: "Favorite/Heart" },
+      { value: "pets", label: "Pets" },
+    ];
+
+    // Transportation & Access icons
+    const transportationIcons = [
+      { value: "car_repair", label: "Car Repair" },
+      { value: "directions_car", label: "Car/Vehicle" },
+      { value: "motorcycle", label: "Motorcycle" },
+      { value: "accessible", label: "Accessible" },
+    ];
+
+    // Special Effects & Modes
+    const specialEffectsIcons = [
+      { value: "scene", label: "Scene Mode" },
+      { value: "whatshot", label: "Hot/Fire Effect" },
+    ];
+
+    // Combine all icons
+    const lightIcons = [
+      ...lightHardwareIcons,
+      ...roomLocationIcons,
+      ...officeWorkspaceIcons,
+      ...kitchenApplianceIcons,
+      ...streetOutdoorIcons,
+      ...gardenOutdoorIcons,
+      ...entertainmentIcons,
+      ...utilityTechnicalIcons,
+      ...healthWellnessIcons,
+      ...transportationIcons,
+      ...specialEffectsIcons,
+    ];
+
+    const iconOptions = computed(() => {
+      const options = lightIcons.map((icon) => ({
+        label: icon.label,
+        value: icon.value,
+      }));
+      console.log("iconOptions computed:", options.length, "options");
+      return options;
+    });
 
     const getCurrentController = () => {
       return controllersStore.currentController;
@@ -126,18 +329,6 @@ export default {
         );
 
         if (controllerMetadata && controllerMetadata.icon) {
-          // Check if it's a corrupted web icon URL and fix it
-          if (controllerMetadata.icon.includes("[object Object]")) {
-            console.warn(
-              "Found corrupted icon URL, using default:",
-              controllerMetadata.icon,
-            );
-            selectedIcon.value = defaultWebIcon;
-            // Automatically fix the corrupted URL in the database
-            updateIcon(defaultWebIcon);
-            return;
-          }
-
           // Check if it's a web icon URL or local icon
           if (isWebIcon(controllerMetadata.icon)) {
             // Use web icon URL directly
@@ -147,25 +338,23 @@ export default {
               controllerMetadata.icon,
             );
           } else {
-            // For legacy local icons, convert to web equivalent or use default
-            selectedIcon.value = defaultWebIcon;
+            // Use local icon directly (icons are now in main icons folder)
+            selectedIcon.value = controllerMetadata.icon;
             console.log(
-              "Legacy local icon found, using default web icon:",
-              defaultWebIcon,
+              "Set selectedIcon from appDataStore to local icon:",
+              controllerMetadata.icon,
             );
           }
         } else {
-          selectedIcon.value = defaultWebIcon; // Default icon
+          selectedIcon.value = "led-strip-variant"; // Default icon
           console.log(
-            "No icon found in appDataStore, set selectedIcon to default:",
-            defaultWebIcon,
+            "No icon found in appDataStore, set selectedIcon to default: led-strip-variant",
           );
         }
       } else {
-        selectedIcon.value = defaultWebIcon; // Default fallback
+        selectedIcon.value = "led-strip-variant"; // Default icon
         console.log(
-          "No controller metadata available, using default icon:",
-          defaultWebIcon,
+          "No current controller or appDataStore, set selectedIcon to default: led-strip-variant",
         );
       }
     };
@@ -240,12 +429,12 @@ export default {
           (c) => c.id === currentController.id,
         );
 
-        // Prepare metadata with correct property names
+        // Prepare metadata with correct property names (using 'name' instead of 'hostname')
         const metadata = {
           id: currentController.id,
-          name: newHostname, // Use the new hostname as the name
+          name: newHostname, // Use 'name' to match database schema
           "ip-address": currentController.ip_address, // Use 'ip-address' to match database schema
-          icon: existingMetadata?.icon || defaultWebIcon, // Preserve existing icon or use default
+          icon: existingMetadata?.icon || "led-strip-variant", // Preserve existing icon or use default
         };
 
         console.log(
@@ -253,13 +442,11 @@ export default {
           JSON.stringify(metadata, null, 2),
         );
 
-        // Save using the new appDataStore method
+        // Save the hostname using the new appDataStore method
         const success = await appDataStore.saveControllerMetadata(
           currentController.id,
           metadata,
         );
-
-        console.log("DEBUG: Save operation result:", success);
 
         if (success) {
           console.log(`Successfully persisted controller hostname to backend`);
@@ -337,8 +524,9 @@ export default {
         return getWebIconName(iconValue);
       }
 
-      // Fallback for any local icon names
-      return iconValue || "Default Icon";
+      // Find in local icons
+      const icon = lightIcons.find((icon) => icon.value === iconValue);
+      return icon ? icon.label : iconValue;
     };
 
     const isWebIcon = (iconValue) => {
@@ -377,6 +565,13 @@ export default {
       showMaterialBrowser.value = false;
       // Save the selected web icon URL to the backend
       updateIcon(iconData.url);
+    };
+
+    const selectIcon = (iconName) => {
+      selectedIcon.value = iconName;
+      showIconGrid.value = false;
+      // Save the selected icon to the backend
+      updateIcon(iconName);
     };
 
     onMounted(() => {
@@ -423,12 +618,15 @@ export default {
     return {
       configData,
       selectedIcon,
+      iconOptions,
+      lightIcons,
+      showIconGrid,
       showMaterialBrowser,
-      defaultWebIcon,
       updateConfig,
       updateHostname,
       updateIcon,
       getIconDisplayName,
+      selectIcon,
       loadCurrentControllerData,
       isWebIcon,
       getWebIconName,
@@ -444,10 +642,53 @@ export default {
   padding-top: 16px;
 }
 
-.current-icon-display {
+.icon-grid-container {
+  max-height: 300px;
+  overflow-y: auto;
   border: 1px solid rgba(0, 0, 0, 0.12);
   border-radius: 4px;
-  padding: 12px;
+  padding: 8px;
+}
+
+.icon-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
+  gap: 8px;
+  align-items: center;
+  justify-items: center;
+}
+
+.icon-grid-item {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
   background-color: rgba(0, 0, 0, 0.02);
+}
+
+.icon-grid-item:hover {
+  background-color: rgba(25, 118, 210, 0.1);
+  border-color: rgba(25, 118, 210, 0.3);
+  transform: scale(1.05);
+}
+
+.icon-grid-item.selected {
+  background-color: rgba(25, 118, 210, 0.15);
+  border-color: #1976d2;
+  box-shadow: 0 2px 4px rgba(25, 118, 210, 0.3);
+}
+
+.icon-grid-item.selected:hover {
+  background-color: rgba(25, 118, 210, 0.2);
+}
+
+.icon {
+  color: var(--icon-color);
+  fill: var(--icon-color);
 }
 </style>
