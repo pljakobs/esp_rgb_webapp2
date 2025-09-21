@@ -53,16 +53,16 @@
                   <div class="q-mr-sm">
                     <svgIcon
                       v-if="prop.node.nodeType === 'group'"
-                      name="light_group"
+                      name="lights/light_group"
                     />
                     <svgIcon
                       v-else-if="prop.node.nodeType === 'scene'"
-                      name="scene"
+                      name="lights/scene"
                       class="scene-icon"
                     />
                     <svgIcon
                       v-else-if="prop.node.nodeType === 'controller'"
-                      :name="prop.node.data.icon || 'led-strip-variant'"
+                      :name="getCustomControllerIcon(prop.node.data)"
                     />
                   </div>
                   <div
@@ -300,7 +300,7 @@ export default {
 
     // Handle expanded nodes change from q-tree
     const onExpandedChange = (expanded) => {
-      console.log("🌳 Tree reports expanded nodes changed to:", expanded);
+      console.log(" Tree reports expanded nodes changed to:", expanded);
       scenesStore.expandedNodes = expanded;
     };
 
@@ -514,6 +514,36 @@ export default {
       });
     };
 
+    // Function to get custom controller icon from appDataStore
+    const getCustomControllerIcon = (controllerData) => {
+      console.log(
+        "getCustomControllerIcon called for scene controller:",
+        controllerData?.controller_id,
+      );
+
+      if (
+        controllerData &&
+        controllerData.controller_id &&
+        appData.data &&
+        appData.data.controllers
+      ) {
+        const controllerMetadata = appData.data.controllers.find(
+          (c) => c.id === controllerData.controller_id,
+        );
+        if (controllerMetadata && controllerMetadata.icon) {
+          console.log(
+            "Found controller icon in appDataStore:",
+            controllerMetadata.icon,
+          );
+          return controllerMetadata.icon; // Should already include 'lights/' prefix
+        }
+      }
+
+      // Fallback to default light icon
+      console.log("No icon found in appDataStore, using default");
+      return "lights/lightbulb_outlined";
+    };
+
     return {
       // Store refs
       groupNodes: computed(() => scenesStore.groupNodes),
@@ -538,6 +568,7 @@ export default {
       hsvToRgb,
       getPresetName,
       applyScene,
+      getCustomControllerIcon,
 
       // Toggle favorite directly through appData store
       toggleFavoriteScene: async (scene) => {

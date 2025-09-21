@@ -9,56 +9,173 @@
 	XX(pinconfig, "config/pinconfig.json") \
 	XX(add_svg, "icons/add.svg.gz") \
 	XX(add_circle_svg, "icons/add_circle.svg.gz") \
-	XX(alarm_light_outline_svg, "icons/alarm-light-outline.svg.gz") \
 	XX(api_svg, "icons/api.svg.gz") \
 	XX(arrow_drop_down_svg, "icons/arrow_drop_down.svg.gz") \
 	XX(arrow_forward_svg, "icons/arrow_forward.svg.gz") \
 	XX(article_svg, "icons/article.svg.gz") \
 	XX(badge_outlined_svg, "icons/badge_outlined.svg.gz") \
 	XX(blur_svg, "icons/blur.svg.gz") \
-	XX(bulkhead_light_svg, "icons/bulkhead-light.svg.gz") \
-	XX(ceiling_fan_light_svg, "icons/ceiling-fan-light.svg.gz") \
-	XX(ceiling_light_multiple_outline_svg, "icons/ceiling-light-multiple-outline.svg.gz") \
-	XX(ceiling_light_multiple_svg, "icons/ceiling-light-multiple.svg.gz") \
-	XX(ceiling_light_outline_svg, "icons/ceiling-light-outline.svg.gz") \
-	XX(ceiling_light_svg, "icons/ceiling-light.svg.gz") \
-	XX(chandelier_svg, "icons/chandelier.svg.gz") \
 	XX(check_circle_svg, "icons/check_circle.svg.gz") \
 	XX(check_outlined_svg, "icons/check_outlined.svg.gz") \
 	XX(close_outlined_svg, "icons/close_outlined.svg.gz") \
 	XX(cloud_download_svg, "icons/cloud_download.svg.gz") \
 	XX(cloud_upload_svg, "icons/cloud_upload.svg.gz") \
-	XX(coach_lamp_variant_svg, "icons/coach-lamp-variant.svg.gz") \
-	XX(coach_lamp_svg, "icons/coach-lamp.svg.gz") \
 	XX(delete_svg, "icons/delete.svg.gz") \
 	XX(delete_forever_svg, "icons/delete_forever.svg.gz") \
 	XX(description_svg, "icons/description.svg.gz") \
-	XX(dome_light_svg, "icons/dome-light.svg.gz") \
 	XX(drag_indicator_svg, "icons/drag_indicator.svg.gz") \
 	XX(edit_svg, "icons/edit.svg.gz") \
 	XX(error_svg, "icons/error.svg.gz") \
 	XX(exposure_outlined_svg, "icons/exposure_outlined.svg.gz") \
 	XX(favicon, "icons/favicon.ico") \
-	XX(floor_lamp_dual_outline_svg, "icons/floor-lamp-dual-outline.svg.gz") \
-	XX(floor_lamp_dual_svg, "icons/floor-lamp-dual.svg.gz") \
-	XX(floor_lamp_outline_svg, "icons/floor-lamp-outline.svg.gz") \
-	XX(floor_lamp_torchiere_variant_outline_svg, "icons/floor-lamp-torchiere-variant-outline.svg.gz") \
-	XX(floor_lamp_torchiere_variant_svg, "icons/floor-lamp-torchiere-variant.svg.gz") \
-	XX(floor_lamp_torchiere_svg, "icons/floor-lamp-torchiere.svg.gz") \
-	XX(floor_lamp_svg, "icons/floor-lamp.svg.gz") \
-	XX(globe_light_outline_svg, "icons/globe-light-outline.svg.gz") \
 	XX(help_outlined_svg, "icons/help_outlined.svg.gz") \
 	XX(home_svg, "icons/home.svg.gz") \
 	XX(hub_outlined_svg, "icons/hub_outlined.svg.gz") \
 	XX(info_svg, "icons/info.svg.gz") \
 	XX(info_outlined_svg, "icons/info_outlined.svg.gz") \
-	XX(led_strip_variant_svg, "icons/led-strip-variant.svg.gz") \
-	XX(led_strip_svg, "icons/led-strip.svg.gz") \
-	XX(light_flood_down_svg, "icons/light-flood-down.svg.gz") \
-	XX(light_flood_up_svg, "icons/light-flood-up.svg.gz") \
-	XX(light_recessed_svg, "icons/light-recessed.svg.gz") \
-	XX(light_group_svg, "icons/light_group.svg.gz") \
-	XX(lightbulb_outlined_svg, "icons/lightbulb_outlined.svg.gz") \
+	XX(accessible_svg, "icons/lights/accessible.svg.gz") \
+	XX(alarm_light_outline_svg, "icons/lights/alarm-light-outline.svg.gz") \
+	XX(alarm_svg, "icons/lights/alarm.svg.gz") \
+	XX(apartment_svg, "icons/lights/apartment.svg.gz") \
+	XX(bakery_dining_svg, "icons/lights/bakery_dining.svg.gz") \
+	XX(balcony_svg, "icons/lights/balcony.svg.gz") \
+	XX(bathroom_svg, "icons/lights/bathroom.svg.gz") \
+	XX(bathtub_svg, "icons/lights/bathtub.svg.gz") \
+	XX(bed_svg, "icons/lights/bed.svg.gz") \
+	XX(bedroom_baby_svg, "icons/lights/bedroom_baby.svg.gz") \
+	XX(bedroom_child_svg, "icons/lights/bedroom_child.svg.gz") \
+	XX(bedroom_parent_svg, "icons/lights/bedroom_parent.svg.gz") \
+	XX(brunch_dining_svg, "icons/lights/brunch_dining.svg.gz") \
+	XX(build_svg, "icons/lights/build.svg.gz") \
+	XX(bulkhead_light_svg, "icons/lights/bulkhead-light.svg.gz") \
+	XX(bungalow_svg, "icons/lights/bungalow.svg.gz") \
+	XX(business_svg, "icons/lights/business.svg.gz") \
+	XX(cabin_svg, "icons/lights/cabin.svg.gz") \
+	XX(camera_indoor_svg, "icons/lights/camera_indoor.svg.gz") \
+	XX(camera_outdoor_svg, "icons/lights/camera_outdoor.svg.gz") \
+	XX(car_repair_svg, "icons/lights/car_repair.svg.gz") \
+	XX(ceiling_fan_light_svg, "icons/lights/ceiling-fan-light.svg.gz") \
+	XX(ceiling_light_multiple_outline_svg, "icons/lights/ceiling-light-multiple-outline.svg.gz") \
+	XX(ceiling_light_multiple_svg, "icons/lights/ceiling-light-multiple.svg.gz") \
+	XX(ceiling_light_outline_svg, "icons/lights/ceiling-light-outline.svg.gz") \
+	XX(ceiling_light_svg, "icons/lights/ceiling-light.svg.gz") \
+	XX(chair_svg, "icons/lights/chair.svg.gz") \
+	XX(chandelier_svg, "icons/lights/chandelier.svg.gz") \
+	XX(coach_lamp_variant_svg, "icons/lights/coach-lamp-variant.svg.gz") \
+	XX(coach_lamp_svg, "icons/lights/coach-lamp.svg.gz") \
+	XX(coffee_maker_svg, "icons/lights/coffee_maker.svg.gz") \
+	XX(computer_svg, "icons/lights/computer.svg.gz") \
+	XX(construction_svg, "icons/lights/construction.svg.gz") \
+	XX(corporate_fare_svg, "icons/lights/corporate_fare.svg.gz") \
+	XX(cottage_svg, "icons/lights/cottage.svg.gz") \
+	XX(countertops_svg, "icons/lights/countertops.svg.gz") \
+	XX(crib_svg, "icons/lights/crib.svg.gz") \
+	XX(curtains_svg, "icons/lights/curtains.svg.gz") \
+	XX(deck_svg, "icons/lights/deck.svg.gz") \
+	XX(desk_svg, "icons/lights/desk.svg.gz") \
+	XX(dining_svg, "icons/lights/dining.svg.gz") \
+	XX(dinner_dining_svg, "icons/lights/dinner_dining.svg.gz") \
+	XX(directions_car_svg, "icons/lights/directions_car.svg.gz") \
+	XX(dishwasher_svg, "icons/lights/dishwasher.svg.gz") \
+	XX(dome_light_svg, "icons/lights/dome-light.svg.gz") \
+	XX(door_back_svg, "icons/lights/door_back.svg.gz") \
+	XX(door_front_svg, "icons/lights/door_front.svg.gz") \
+	XX(door_sliding_svg, "icons/lights/door_sliding.svg.gz") \
+	XX(elevator_svg, "icons/lights/elevator.svg.gz") \
+	XX(escalator_svg, "icons/lights/escalator.svg.gz") \
+	XX(family_restroom_svg, "icons/lights/family_restroom.svg.gz") \
+	XX(favorite_svg, "icons/lights/favorite.svg.gz") \
+	XX(fence_svg, "icons/lights/fence.svg.gz") \
+	XX(fireplace_svg, "icons/lights/fireplace.svg.gz") \
+	XX(fitness_center_svg, "icons/lights/fitness_center.svg.gz") \
+	XX(flashlight_on_svg, "icons/lights/flashlight_on.svg.gz") \
+	XX(flatware_svg, "icons/lights/flatware.svg.gz") \
+	XX(floor_lamp_dual_outline_svg, "icons/lights/floor-lamp-dual-outline.svg.gz") \
+	XX(floor_lamp_dual_svg, "icons/lights/floor-lamp-dual.svg.gz") \
+	XX(floor_lamp_outline_svg, "icons/lights/floor-lamp-outline.svg.gz") \
+	XX(floor_lamp_torchiere_variant_outline_svg, "icons/lights/floor-lamp-torchiere-variant-outline.svg.gz") \
+	XX(floor_lamp_torchiere_variant_svg, "icons/lights/floor-lamp-torchiere-variant.svg.gz") \
+	XX(floor_lamp_torchiere_svg, "icons/lights/floor-lamp-torchiere.svg.gz") \
+	XX(floor_lamp_svg, "icons/lights/floor-lamp.svg.gz") \
+	XX(forest_svg, "icons/lights/forest.svg.gz") \
+	XX(garage_svg, "icons/lights/garage.svg.gz") \
+	XX(garage_door_svg, "icons/lights/garage_door.svg.gz") \
+	XX(gate_svg, "icons/lights/gate.svg.gz") \
+	XX(globe_light_outline_svg, "icons/lights/globe-light-outline.svg.gz") \
+	XX(grass_svg, "icons/lights/grass.svg.gz") \
+	XX(highlight_svg, "icons/lights/highlight.svg.gz") \
+	XX(home_work_svg, "icons/lights/home_work.svg.gz") \
+	XX(hot_tub_svg, "icons/lights/hot_tub.svg.gz") \
+	XX(house_svg, "icons/lights/house.svg.gz") \
+	XX(house_siding_svg, "icons/lights/house_siding.svg.gz") \
+	XX(kettle_svg, "icons/lights/kettle.svg.gz") \
+	XX(king_bed_svg, "icons/lights/king_bed.svg.gz") \
+	XX(kitchen_svg, "icons/lights/kitchen.svg.gz") \
+	XX(landscape_svg, "icons/lights/landscape.svg.gz") \
+	XX(led_strip_variant_svg, "icons/lights/led-strip-variant.svg.gz") \
+	XX(led_strip_svg, "icons/lights/led-strip.svg.gz") \
+	XX(light_flood_down_svg, "icons/lights/light-flood-down.svg.gz") \
+	XX(light_flood_up_svg, "icons/lights/light-flood-up.svg.gz") \
+	XX(light_recessed_svg, "icons/lights/light-recessed.svg.gz") \
+	XX(light_group_svg, "icons/lights/light_group.svg.gz") \
+	XX(light_mode_svg, "icons/lights/light_mode.svg.gz") \
+	XX(lightbulb_outlined_svg, "icons/lights/lightbulb_outlined.svg.gz") \
+	XX(living_svg, "icons/lights/living.svg.gz") \
+	XX(local_bar_svg, "icons/lights/local_bar.svg.gz") \
+	XX(local_cafe_svg, "icons/lights/local_cafe.svg.gz") \
+	XX(local_convenience_store_svg, "icons/lights/local_convenience_store.svg.gz") \
+	XX(local_dining_svg, "icons/lights/local_dining.svg.gz") \
+	XX(local_florist_svg, "icons/lights/local_florist.svg.gz") \
+	XX(local_hospital_svg, "icons/lights/local_hospital.svg.gz") \
+	XX(local_laundry_service_svg, "icons/lights/local_laundry_service.svg.gz") \
+	XX(markunread_mailbox_svg, "icons/lights/markunread_mailbox.svg.gz") \
+	XX(meeting_room_svg, "icons/lights/meeting_room.svg.gz") \
+	XX(motorcycle_svg, "icons/lights/motorcycle.svg.gz") \
+	XX(movie_svg, "icons/lights/movie.svg.gz") \
+	XX(music_note_svg, "icons/lights/music_note.svg.gz") \
+	XX(nature_svg, "icons/lights/nature.svg.gz") \
+	XX(outdoor_lamp_svg, "icons/lights/outdoor-lamp.svg.gz") \
+	XX(outdoor_garden_svg, "icons/lights/outdoor_garden.svg.gz") \
+	XX(outdoor_grill_svg, "icons/lights/outdoor_grill.svg.gz") \
+	XX(oven_svg, "icons/lights/oven.svg.gz") \
+	XX(park_svg, "icons/lights/park.svg.gz") \
+	XX(pets_svg, "icons/lights/pets.svg.gz") \
+	XX(piano_svg, "icons/lights/piano.svg.gz") \
+	XX(pool_svg, "icons/lights/pool.svg.gz") \
+	XX(post_lamp_svg, "icons/lights/post-lamp.svg.gz") \
+	XX(potted_plant_svg, "icons/lights/potted_plant.svg.gz") \
+	XX(power_svg, "icons/lights/power.svg.gz") \
+	XX(propane_tank_svg, "icons/lights/propane_tank.svg.gz") \
+	XX(range_hood_svg, "icons/lights/range_hood.svg.gz") \
+	XX(restaurant_svg, "icons/lights/restaurant.svg.gz") \
+	XX(room_preferences_svg, "icons/lights/room_preferences.svg.gz") \
+	XX(sauna_svg, "icons/lights/sauna.svg.gz") \
+	XX(scene_svg, "icons/lights/scene.svg.gz") \
+	XX(self_improvement_svg, "icons/lights/self_improvement.svg.gz") \
+	XX(sensor_door_svg, "icons/lights/sensor_door.svg.gz") \
+	XX(sensor_window_svg, "icons/lights/sensor_window.svg.gz") \
+	XX(shelves_svg, "icons/lights/shelves.svg.gz") \
+	XX(shower_svg, "icons/lights/shower.svg.gz") \
+	XX(single_bed_svg, "icons/lights/single_bed.svg.gz") \
+	XX(spa_svg, "icons/lights/spa.svg.gz") \
+	XX(speaker_svg, "icons/lights/speaker.svg.gz") \
+	XX(stairs_svg, "icons/lights/stairs.svg.gz") \
+	XX(store_svg, "icons/lights/store.svg.gz") \
+	XX(storefront_svg, "icons/lights/storefront.svg.gz") \
+	XX(theaters_svg, "icons/lights/theaters.svg.gz") \
+	XX(track_light_svg, "icons/lights/track-light.svg.gz") \
+	XX(tv_svg, "icons/lights/tv.svg.gz") \
+	XX(vanity_light_svg, "icons/lights/vanity-light.svg.gz") \
+	XX(wall_sconce_flat_variant_svg, "icons/lights/wall-sconce-flat-variant.svg.gz") \
+	XX(wall_sconce_flat_svg, "icons/lights/wall-sconce-flat.svg.gz") \
+	XX(wall_sconce_round_variant_svg, "icons/lights/wall-sconce-round-variant.svg.gz") \
+	XX(wall_sconce_round_svg, "icons/lights/wall-sconce-round.svg.gz") \
+	XX(warehouse_svg, "icons/lights/warehouse.svg.gz") \
+	XX(wash_svg, "icons/lights/wash.svg.gz") \
+	XX(water_heater_svg, "icons/lights/water_heater.svg.gz") \
+	XX(whatshot_svg, "icons/lights/whatshot.svg.gz") \
+	XX(work_svg, "icons/lights/work.svg.gz") \
+	XX(yard_svg, "icons/lights/yard.svg.gz") \
 	XX(linked_services_svg, "icons/linked_services.svg.gz") \
 	XX(memory_outlined_svg, "icons/memory_outlined.svg.gz") \
 	XX(menu_outlined_24_svg, "icons/menu_outlined_24.svg.gz") \
@@ -71,16 +188,13 @@
 	XX(network_wifi_FILL0_wght400_GRAD0_opsz24_svg, "icons/network_wifi_FILL0_wght400_GRAD0_opsz24.svg.gz") \
 	XX(network_wifi_locked_FILL0_wght400_GRAD0_opsz24_svg, "icons/network_wifi_locked_FILL0_wght400_GRAD0_opsz24.svg.gz") \
 	XX(open_in_new_svg, "icons/open_in_new.svg.gz") \
-	XX(outdoor_lamp_svg, "icons/outdoor-lamp.svg.gz") \
 	XX(palette_outlined_svg, "icons/palette_outlined.svg.gz") \
 	XX(photo_svg, "icons/photo.svg.gz") \
 	XX(play_arrow_svg, "icons/play_arrow.svg.gz") \
-	XX(post_lamp_svg, "icons/post-lamp.svg.gz") \
 	XX(refresh_svg, "icons/refresh.svg.gz") \
 	XX(report_problem_outlined_svg, "icons/report_problem_outlined.svg.gz") \
 	XX(restart_alt_svg, "icons/restart_alt.svg.gz") \
 	XX(save_outlined_svg, "icons/save_outlined.svg.gz") \
-	XX(scene_svg, "icons/scene.svg.gz") \
 	XX(security_outlined_svg, "icons/security_outlined.svg.gz") \
 	XX(settings_outlined_svg, "icons/settings_outlined.svg.gz") \
 	XX(signal_wifi_statusbar_null_FILL0_wght400_GRAD0_opsz24_svg, "icons/signal_wifi_statusbar_null_FILL0_wght400_GRAD0_opsz24.svg.gz") \
@@ -89,15 +203,9 @@
 	XX(systemsecurityupdate_outlined_svg, "icons/systemsecurityupdate_outlined.svg.gz") \
 	XX(television_ambient_light_svg, "icons/television-ambient-light.svg.gz") \
 	XX(timer_svg, "icons/timer.svg.gz") \
-	XX(track_light_svg, "icons/track-light.svg.gz") \
 	XX(tune_outlined_svg, "icons/tune_outlined.svg.gz") \
-	XX(vanity_light_svg, "icons/vanity-light.svg.gz") \
 	XX(visibility_outlined_24_svg, "icons/visibility-outlined-24.svg.gz") \
 	XX(visibility_off_outlined_svg, "icons/visibility_off_outlined.svg.gz") \
-	XX(wall_sconce_flat_variant_svg, "icons/wall-sconce-flat-variant.svg.gz") \
-	XX(wall_sconce_flat_svg, "icons/wall-sconce-flat.svg.gz") \
-	XX(wall_sconce_round_variant_svg, "icons/wall-sconce-round-variant.svg.gz") \
-	XX(wall_sconce_round_svg, "icons/wall-sconce-round.svg.gz") \
 	XX(warning_svg, "icons/warning.svg.gz") \
 	XX(wb_incandescent_outline_24_svg, "icons/wb_incandescent_outline_24.svg.gz") \
 	XX(wifi_lock_FILL0_wght400_GRAD0_opsz24_svg, "icons/wifi_lock_FILL0_wght400_GRAD0_opsz24.svg.gz") \
