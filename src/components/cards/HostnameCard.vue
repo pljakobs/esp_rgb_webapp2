@@ -1,5 +1,5 @@
 <template>
-  <MyCard title="Hostname" icon="badge_outlined">
+  <MyCard title="Hostname and Icon" icon="badge_outlined">
     <q-card-section>
       <q-input
         v-model="configData.data.general.device_name"
@@ -61,7 +61,7 @@
 </template>
 
 <script>
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
 import { configDataStore } from "src/stores/configDataStore";
 import { useControllersStore } from "src/stores/controllersStore";
 import { useAppDataStore } from "src/stores/appDataStore";
@@ -179,6 +179,49 @@ export default {
         console.log(
           "No current controller or appDataStore, set selectedIcon to default: led-strip-variant",
         );
+      }
+    };
+
+    const loadCurrentControllerData = () => {
+      console.log("loadCurrentControllerData called");
+      const currentController = getCurrentController();
+      console.log("Current controller:", currentController);
+
+      if (currentController) {
+        // Update hostname field from controller metadata or controller data
+        if (appDataStore.data && appDataStore.data.controllers) {
+          const controllerMetadata = appDataStore.data.controllers.find(
+            (c) => c.id === currentController.id,
+          );
+
+          if (controllerMetadata && controllerMetadata.name) {
+            // Use the name from metadata
+            configData.data.general.device_name = controllerMetadata.name;
+            console.log(
+              "Set hostname from appDataStore metadata:",
+              controllerMetadata.name,
+            );
+          } else if (currentController.hostname) {
+            // Fallback to hostname from controller data
+            configData.data.general.device_name = currentController.hostname;
+            console.log(
+              "Set hostname from controller data:",
+              currentController.hostname,
+            );
+          }
+        } else if (currentController.hostname) {
+          // No metadata available, use controller hostname
+          configData.data.general.device_name = currentController.hostname;
+          console.log(
+            "Set hostname from controller data (no metadata):",
+            currentController.hostname,
+          );
+        }
+
+        // Update icon
+        loadCurrentIcon();
+      } else {
+        console.log("No current controller available");
       }
     };
 
@@ -303,8 +346,45 @@ export default {
     };
 
     onMounted(() => {
-      loadCurrentIcon();
+      loadCurrentControllerData();
     });
+
+    // Watch for changes in the current controller
+    watch(
+      () => controllersStore.currentController,
+      (newController, oldController) => {
+        console.log("Current controller changed:", {
+          old: oldController?.hostname,
+          new: newController?.hostname,
+        });
+        if (newController && newController !== oldController) {
+          loadCurrentControllerData();
+        }
+      },
+      { deep: true },
+    );
+
+    // Watch for changes in appDataStore controllers metadata
+    watch(
+      () => appDataStore.data.controllers,
+      (newControllers) => {
+        console.log("AppDataStore controllers metadata changed");
+        const currentController = getCurrentController();
+        if (currentController) {
+          // Only update if the current controller's metadata might have changed
+          const controllerMetadata = newControllers?.find(
+            (c) => c.id === currentController.id,
+          );
+          if (controllerMetadata) {
+            console.log(
+              "Found updated metadata for current controller, reloading data",
+            );
+            loadCurrentControllerData();
+          }
+        }
+      },
+      { deep: true },
+    );
 
     return {
       configData,
@@ -314,6 +394,7 @@ export default {
       updateHostname,
       updateIcon,
       getIconDisplayName,
+      loadCurrentControllerData,
     };
   },
 };
