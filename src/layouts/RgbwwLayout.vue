@@ -83,7 +83,16 @@
               <img src="icons/menu_outlined_24.svg" class="icon" />
             </q-avatar>
           </q-btn>
-          <q-toolbar-title> Lightinator 5 </q-toolbar-title>
+          <q-toolbar-title>
+            <div class="row items-center q-gutter-sm">
+              <!-- Controller icon -->
+              <svgIcon :name="currentControllerIcon" size="24px" />
+              <!-- Controller hostname -->
+              <span>{{ currentControllerHostname }}</span>
+              <!-- Lightinator 5 text -->
+              <span>- Lightinator 5</span>
+            </div>
+          </q-toolbar-title>
         </q-toolbar>
       </q-header>
       <q-drawer
@@ -505,6 +514,37 @@ export default defineComponent({
         return "lights/lightbulb-outlined";
       };
 
+      // Computed property for current controller's icon
+      const currentControllerIcon = computed(() => {
+        if (controllers.currentController) {
+          return getCustomControllerIcon(controllers.currentController);
+        }
+        return "lights/lightbulb-outlined"; // Default icon
+      });
+
+      // Computed property for current controller's hostname
+      const currentControllerHostname = computed(() => {
+        if (controllers.currentController) {
+          // First try to get name from appDataStore metadata
+          if (appData.data && appData.data.controllers) {
+            const controllerMetadata = appData.data.controllers.find(
+              (c) => c.id === controllers.currentController.id,
+            );
+            if (controllerMetadata && controllerMetadata.name) {
+              return controllerMetadata.name;
+            }
+          }
+
+          // Fallback to hostname from controllers data or configData
+          return (
+            controllers.currentController.hostname ||
+            configData.data?.general?.device_name ||
+            "Unknown"
+          );
+        }
+        return "Unknown";
+      });
+
       return {
         leftDrawerOpen,
         configData,
@@ -522,6 +562,8 @@ export default defineComponent({
         toggleDarkMode,
         getIconForController,
         getCustomControllerIcon,
+        currentControllerIcon,
+        currentControllerHostname,
       };
     } catch (error) {
       console.error("Error in setup function:", error);
