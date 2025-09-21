@@ -17,6 +17,22 @@
       <q-separator />
 
       <q-card-section class="q-pa-md">
+        <div class="config-name-section q-mb-md">
+          <q-input
+            v-model="configName"
+            label="Configuration Name"
+            hint="Enter a name to identify this pin configuration"
+            :rules="[
+              (val) =>
+                (val && val.trim().length > 0) ||
+                'Configuration name is required',
+            ]"
+            outlined
+            dense
+            class="q-mb-md"
+          />
+        </div>
+
         <div class="clear-pin-section q-mb-md">
           <div class="section-title">Clear Pin</div>
 
@@ -194,9 +210,45 @@ export default {
       );
     });
 
+    // Check if the configuration has changed from the original
+    const hasChanges = computed(() => {
+      if (props.mode === "add") {
+        // For add mode, changes mean any required fields are filled
+        return (
+          configName.value.trim() !== "" ||
+          configChannels.value.some((ch) => ch.pin !== null) ||
+          clearPin.value !== null
+        );
+      }
+
+      // For edit mode, check if anything has changed from the original
+      if (!props.existingConfig) return false;
+
+      // Check if name changed
+      if (configName.value !== props.existingConfig.name) return true;
+
+      // Check if clear pin changed
+      const originalClearPin = props.existingConfig.clearPin || null;
+      if (clearPin.value !== originalClearPin) return true;
+
+      // Check if any channel pin changed
+      const originalChannels = props.existingConfig.channels || [];
+      for (const channel of configChannels.value) {
+        const originalChannel = originalChannels.find(
+          (ch) => ch.name === channel.name,
+        );
+        const originalPin = originalChannel ? originalChannel.pin : null;
+        if (channel.pin !== originalPin) return true;
+      }
+
+      return false;
+    });
+
     // Validate the form
     const isFormValid = computed(() => {
-      return configName.value.trim() !== "";
+      const nameValid = configName.value.trim() !== "";
+      const changesExist = hasChanges.value;
+      return nameValid && (props.mode === "add" || changesExist);
     });
 
     // Save the configuration
@@ -223,6 +275,7 @@ export default {
       filteredClearPins, // Add this
       filteredPinsFor,
       isFormValid,
+      hasChanges,
       hasEmptyRequiredChannels,
       saveConfig,
     };

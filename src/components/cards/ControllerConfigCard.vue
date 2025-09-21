@@ -176,7 +176,7 @@
                 />
                 <q-tooltip class="custom-tooltip">
                   Spread spectrum reduces EMI (electromagnetic interference) by
-                  slightly varying the PWM frequency over time. leave on "Auto"
+                  slightly varying the PWM frequency over time. leave this "ON"
                   to enable this feature. Switching this to "off" will have a
                   negative effect on EMI emissions, especially with longer LED
                   strips. This could lead to radio interference and especially
@@ -268,7 +268,7 @@
                   have long LED strips and all channels switch on at the same
                   time, you potentially switch 10s of A on the 12V line in that
                   instance, creating a lot of noise and, depending on wire
-                  length, a decent voltage dip. Setting Phase Shift to "Auto"
+                  length, a decent voltage dip. Setting Phase Shift to "ON"
                   distributes the switching time for the configured channels
                   equally along the PWM cycle type (1/freq) without impacting
                   the color quality.
@@ -356,13 +356,13 @@ export default {
       pwmResolution: configData.data.hardware?.pwm?.timer?.resolution || 10,
       pwmTimerNumber: configData.data.hardware?.pwm?.timer?.number || 0,
       pwmSpreadSpectrumMode:
-        configData.data.hardware?.pwm?.spreadSpectrum?.mode || "auto",
+        configData.data.hardware?.pwm?.spreadSpectrum?.mode || "ON",
       pwmSpreadSpectrumWidth:
         configData.data.hardware?.pwm?.spreadSpectrum?.width || 15,
       pwmSpreadSpectrumSubsampling:
         configData.data.hardware?.pwm?.spreadSpectrum?.subsampling || 4,
       pwmPhaseShiftMode:
-        configData.data.hardware?.pwm?.phaseShift?.mode || "auto",
+        configData.data.hardware?.pwm?.phaseShift?.mode || "ON",
     };
 
     // Local reactive values (not immediately applied to store)
@@ -378,10 +378,14 @@ export default {
     );
     const pwmPhaseShiftMode = ref(originalValues.pwmPhaseShiftMode);
 
+    // Flag to track when active pin config content has been modified
+    const activePinConfigModified = ref(false);
+
     // Check if there are any changes
     const hasAnyChanges = computed(() => {
       const pinConfigChanged =
-        localCurrentPinConfigName.value !== originalValues.pinConfigName;
+        localCurrentPinConfigName.value !== originalValues.pinConfigName ||
+        activePinConfigModified.value;
 
       // Only check PWM changes if PWM is supported
       const isPwmSupported =
@@ -423,13 +427,13 @@ export default {
     ];
 
     const spreadSpectrumModeOptions = [
-      { label: "Off", value: "off" },
-      { label: "Auto", value: "auto" },
+      { label: "Off", value: "OFF" },
+      { label: "On", value: "ON" },
     ];
 
     const phaseShiftModeOptions = [
-      { label: "Off", value: "off" },
-      { label: "Auto", value: "auto" },
+      { label: "Off", value: "OFF" },
+      { label: "On", value: "ON" },
     ];
 
     // Reset all changes
@@ -444,6 +448,7 @@ export default {
       pwmSpreadSpectrumSubsampling.value =
         originalValues.pwmSpreadSpectrumSubsampling;
       pwmPhaseShiftMode.value = originalValues.pwmPhaseShiftMode;
+      activePinConfigModified.value = false;
     };
 
     // Apply all changes and restart
@@ -543,6 +548,9 @@ export default {
           "Controller configuration updated. Controller is restarting...",
           3000,
         );
+
+        // Reset the flag since changes have been applied
+        activePinConfigModified.value = false;
 
         // Actually restart the controller
         try {
@@ -725,7 +733,26 @@ export default {
 
         if (index !== -1) {
           configs[index] = updatedConfig;
+
+          // Update the stored pin configurations
           configData.updateData("hardware.pinconfigs", configs);
+
+          // Since this is the currently active pin config, also update the active configuration
+          configData.updateData("general.channels", updatedConfig.channels);
+          configData.updateData(
+            "general.current_pin_config_name",
+            updatedConfig.name,
+          );
+
+          if (
+            updatedConfig.clearPin !== undefined &&
+            updatedConfig.clearPin !== null
+          ) {
+            configData.updateData("general.clear_pin", updatedConfig.clearPin);
+          }
+
+          // Mark that the active pin config has been modified (requires restart)
+          activePinConfigModified.value = true;
 
           if (updatedConfig.name !== localCurrentPinConfigName.value) {
             localCurrentPinConfigName.value = updatedConfig.name;
@@ -737,7 +764,7 @@ export default {
           showNotification(
             "positive",
             "check_circle",
-            `Pin configuration "${updatedConfig.name}" updated`,
+            `Pin configuration "${updatedConfig.name}" updated and applied`,
           );
         }
       });

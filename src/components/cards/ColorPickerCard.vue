@@ -87,7 +87,7 @@
 </template>
 
 <script>
-import { ref, watch, computed } from "vue";
+import { ref, watch, computed, onMounted } from "vue";
 import { useAppDataStore } from "src/stores/appDataStore";
 import { storeStatus } from "src/stores/storeConstants";
 import { useColorDataStore } from "src/stores/colorDataStore";
@@ -130,6 +130,13 @@ export default {
     const appData = useAppDataStore();
     const colorStore = useColorDataStore();
 
+    // Load preset/scene data on component mount
+    onMounted(() => {
+      if (appData.status === storeStatus.IDLE) {
+        appData.fetchData();
+      }
+    });
+
     // Local state to track the current color
     const colorValue = ref({});
 
@@ -146,8 +153,10 @@ export default {
       { deep: true, immediate: true },
     );
 
-    const hasFavorites = computed(() =>
-      appData.data.presets.some((preset) => preset.favorite),
+    const hasFavorites = computed(
+      () =>
+        appData.data.presets.some((preset) => preset.favorite) ||
+        appData.data.scenes.some((scene) => scene.favorite),
     );
 
     watch(
