@@ -2,113 +2,151 @@
   <MyCard icon="light_group" title="Groups">
     <q-card-section class="flex justify-center">
       <q-scroll-area class="inset-scroll-area">
-        <q-list separator style="overflow-y: auto; height: 100%" dense>
-          <div v-if="isLoading" class="text-center q-pa-md">
-            <q-spinner color="primary" size="lg" />
-            <div class="q-mt-sm">Processing...</div>
-          </div>
-          <div v-else-if="groups && groups.length > 0">
-            <div v-for="group in groups" :key="group.name">
-              <q-item
-                class="q-my-sm"
-                style="padding-bottom: 0px; margin-bottom: 0px"
-                clickable
-                :aria-expanded="expandedGroup === group.id"
-                role="button"
-                :aria-label="`Group ${group.name}, click to ${expandedGroup === group.id ? 'collapse' : 'expand'}`"
-              >
-                <q-item-section
-                  avatar
-                  @click="toggleGroup(group.id)"
-                  top
-                  class="group"
+        <div v-if="isLoading" class="text-center q-pa-md">
+          <q-spinner color="primary" size="lg" />
+          <div class="q-mt-sm">Processing...</div>
+        </div>
+        <div v-else-if="treeNodes && treeNodes.length > 0">
+          <q-tree
+            :nodes="treeNodes"
+            node-key="id"
+            :expanded="expandedNodes"
+            @update:expanded="onExpandedChange"
+            :accordion="true"
+            no-icons
+          >
+            <template v-slot:default-header="prop">
+              <div class="row items-center full-width q-py-xs">
+                <!-- Custom expand/collapse toggle -->
+                <div
+                  v-if="prop.node.children && prop.node.children.length > 0"
+                  class="q-mr-xs cursor-pointer"
+                  @click.stop="toggleNode(prop.node)"
                 >
-                  <q-tooltip
-                    >{{
-                      expandedGroup === group.id ? "Collapse" : "Expand"
-                    }}
-                    group</q-tooltip
-                  >
-                  <svgIcon
+                  <q-icon
                     name="arrow_drop_down"
-                    :class="{
-                      'rotated-arrow': expandedGroup !== group.id,
-                    }"
+                    :class="{ 'rotate-right': !isExpanded(prop.node.id) }"
                   />
-                </q-item-section>
-                <q-item-section @click="toggleGroup(group.id)">
-                  <q-item-label>{{ group.name }}</q-item-label>
-                </q-item-section>
-                <q-item-section side>
-                  <q-tooltip>Edit group</q-tooltip>
-                  <div
-                    class="icon-wraper"
-                    @click.stop="editGroup(group)"
-                    role="button"
-                    tabindex="0"
-                    :aria-label="`Edit group ${group.name}`"
-                    @keydown.enter="editGroup(group)"
-                    @keydown.space="editGroup(group)"
-                  >
-                    <svgIcon name="edit" />
+                </div>
+                <div
+                  v-else
+                  class="q-mr-xs"
+                  style="width: 24px; height: 24px"
+                ></div>
+
+                <!-- Node icon and label -->
+                <div class="col row items-center no-wrap">
+                  <div class="q-mr-sm">
+                    <q-icon
+                      v-if="prop.node.nodeType === 'group'"
+                      name="light_group"
+                      color="primary"
+                    />
+                    <q-icon
+                      v-else-if="prop.node.nodeType === 'controller'"
+                      :name="
+                        prop.node.data.visible === false
+                          ? 'visibility_off'
+                          : 'router'
+                      "
+                      :color="
+                        prop.node.data.visible === false ? 'grey' : 'primary'
+                      "
+                      size="sm"
+                    />
                   </div>
-                </q-item-section>
-                <q-item-section side>
-                  <q-tooltip>Delete group</q-tooltip>
-                  <div
-                    class="icon-wraper"
-                    @click.stop="deleteGroup(group)"
-                    role="button"
-                    tabindex="0"
-                    :aria-label="`Delete group ${group.name}`"
-                    @keydown.enter="deleteGroup(group)"
-                    @keydown.space="deleteGroup(group)"
-                  >
-                    <svgIcon name="delete" />
+                  <div class="text-weight-medium">
+                    <div>{{ prop.node.label }}</div>
+                    <div
+                      v-if="prop.node.nodeType === 'group'"
+                      class="text-caption text-grey-6"
+                    >
+                      {{ prop.node.controllerCount }} controllers
+                    </div>
+                    <div
+                      v-else-if="prop.node.nodeType === 'controller'"
+                      class="text-caption text-grey-6"
+                    >
+                      {{ prop.node.data.ip_address }}
+                    </div>
                   </div>
-                </q-item-section>
-              </q-item>
-              <div
-                v-if="expandedGroup === group.id"
-                class="indented-list"
-                role="list"
-              >
-                <q-list dense>
-                  <q-item
-                    v-for="controller in getControllers(group.controller_ids)"
-                    :key="controller.id"
-                    class="controller-item"
-                    role="listitem"
-                    :class="{
-                      'controller-invisible': controller.visible === false,
-                    }"
-                  >
-                    <q-item-section>{{ controller.hostname }}</q-item-section>
-                  </q-item>
-                </q-list>
+                </div>
+
+                <!-- Status badge for controllers -->
+                <div
+                  class="col-auto"
+                  v-if="prop.node.nodeType === 'controller'"
+                >
+                  <q-badge
+                    :color="
+                      prop.node.data.visible === false ? 'grey' : 'positive'
+                    "
+                    :label="
+                      prop.node.data.visible === false ? 'Hidden' : 'Active'
+                    "
+                  />
+                </div>
+
+                <!-- Action buttons for groups -->
+                <div class="col-auto" v-if="prop.node.nodeType === 'group'">
+                  <div class="row q-gutter-xs">
+                    <q-btn
+                      flat
+                      round
+                      dense
+                      size="sm"
+                      icon="edit"
+                      color="primary"
+                      @click.stop="editGroup(prop.node.data)"
+                      :disable="isLoading"
+                    >
+                      <q-tooltip>Edit group</q-tooltip>
+                    </q-btn>
+                    <q-btn
+                      flat
+                      round
+                      dense
+                      size="sm"
+                      icon="delete"
+                      color="negative"
+                      @click.stop="deleteGroup(prop.node.data)"
+                      :disable="isLoading"
+                    >
+                      <q-tooltip>Delete group</q-tooltip>
+                    </q-btn>
+                  </div>
+                </div>
               </div>
-            </div>
+            </template>
+          </q-tree>
+        </div>
+        <div v-else>
+          <div class="no-groups-container">
+            <q-card flat class="text-center q-pa-lg">
+              <q-card-section>
+                <q-icon name="light_group" size="3rem" color="grey-5" />
+                <div class="text-h6 q-mt-md text-grey-6">
+                  No groups available
+                </div>
+                <div class="text-body2 text-grey-5 q-mt-sm">
+                  Create your first group to organize controllers
+                </div>
+              </q-card-section>
+            </q-card>
           </div>
-          <div v-else>
-            <div class="no-groups-container">
-              <div class="no-groups-message">No groups available</div>
-            </div>
-          </div>
-        </q-list>
+        </div>
       </q-scroll-area>
     </q-card-section>
     <q-card-section class="flex justify-center">
       <q-btn
-        flat
         color="primary"
         @click="openDialog"
         :disable="isLoading"
-        :aria-label="'Add new group'"
+        :loading="isLoading"
+        no-caps
       >
-        <template v-slot:default>
-          <svgIcon name="light_group" />
-          <span>Add Group</span>
-        </template>
+        <q-icon name="add" class="q-mr-sm" />
+        Add Group
       </q-btn>
     </q-card-section>
   </MyCard>
@@ -130,9 +168,9 @@ export default {
   setup() {
     const appData = useAppDataStore();
     const controllersStore = useControllersStore();
-    const expandedGroup = ref(null);
     const $q = useQuasar();
     const isLoading = ref(false);
+    const expandedNodes = ref([]);
 
     const groups = computed(() => {
       return appData.data.groups;
@@ -140,6 +178,31 @@ export default {
 
     const controllers = computed(() => {
       return controllersStore.data;
+    });
+
+    // Build tree structure for q-tree
+    const treeNodes = computed(() => {
+      if (!groups.value || groups.value.length === 0) {
+        return [];
+      }
+
+      return groups.value.map((group) => {
+        const groupControllers = getControllers(group.controller_ids);
+
+        return {
+          id: `group-${group.id}`,
+          label: group.name,
+          nodeType: "group",
+          data: group,
+          controllerCount: groupControllers.length,
+          children: groupControllers.map((controller) => ({
+            id: `controller-${group.id}-${controller.id}`,
+            label: controller.hostname,
+            nodeType: "controller",
+            data: controller,
+          })),
+        };
+      });
     });
 
     const showNotification = (type, message, timeout = 3000) => {
@@ -150,15 +213,34 @@ export default {
         position: "top",
       });
     };
-    const toggleGroup = (groupId) => {
-      expandedGroup.value = expandedGroup.value === groupId ? null : groupId;
-    };
 
     const getControllers = (controller_ids) => {
       const controllers_in_group = controllers.value.filter((controller) =>
         controller_ids.map(Number).includes(controller.id),
       );
       return controllers_in_group;
+    };
+
+    // Tree interaction methods
+    const isExpanded = (nodeId) => {
+      return expandedNodes.value.includes(nodeId);
+    };
+
+    const toggleNode = (node) => {
+      const nodeId = node.id;
+      const currentIndex = expandedNodes.value.indexOf(nodeId);
+
+      if (currentIndex >= 0) {
+        // Node is expanded, collapse it
+        expandedNodes.value = expandedNodes.value.filter((id) => id !== nodeId);
+      } else {
+        // Node is collapsed, expand it
+        expandedNodes.value = [...expandedNodes.value, nodeId];
+      }
+    };
+
+    const onExpandedChange = (expanded) => {
+      expandedNodes.value = expanded;
     };
 
     const addGroup = () => {
@@ -236,11 +318,6 @@ export default {
             "positive",
             `Group "${group.name}" deleted successfully`,
           );
-
-          // Close expanded group if it was the one being deleted
-          if (expandedGroup.value === group.id) {
-            expandedGroup.value = null;
-          }
         } catch (error) {
           console.error("Error deleting group:", error);
           showNotification(
@@ -255,12 +332,15 @@ export default {
 
     return {
       groups,
+      treeNodes,
+      expandedNodes,
       getControllers,
+      isExpanded,
+      toggleNode,
+      onExpandedChange,
       openDialog: addGroup,
       editGroup,
       deleteGroup,
-      expandedGroup,
-      toggleGroup,
       isLoading,
     };
   },
@@ -272,33 +352,10 @@ export default {
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 100%;
+  height: 200px;
   width: 100%;
-  vertical-align: middle;
 }
-.no-groups-message {
-  background-color: #f0f0f0;
-  padding: 20px;
-  border-radius: 10px;
-  text-align: center;
-  vertical-align: middle;
-  color: #333;
-}
-.indented-list {
-  padding-left: 55px;
-  padding-top: 0px;
-  margin-top: 0; /* Remove extra spacing */
-}
-.controller-item {
-  font-size: 0.875em; /* Smaller font size */
-}
-.rotated-arrow {
-  transform: rotate(-90deg);
-  transition: transform 0.3s;
-}
-.rotated-arrow.expanded {
-  transform: rotate(0deg);
-}
+
 .inset-scroll-area {
   height: 300px;
   width: 100%;
@@ -306,37 +363,30 @@ export default {
   box-shadow: inset 0 0 10px rgba(255, 255, 255, 0.1);
   margin: 10px;
 }
-.group {
-  cursor: pointer;
-  margin-top: 0px;
-  margin-bottom: 0px;
-  padding-top: 0px; /* Adjust as needed */
-  padding-bottom: 5px; /* Adjust as needed */
-}
 
-.icon-wraper {
-  cursor: pointer;
-  padding: 4px;
-  border-radius: 4px;
-  transition: background-color 0.2s;
-}
-
-.icon-wraper:hover {
-  background-color: rgba(0, 0, 0, 0.1);
-}
-
-.icon-wraper:focus {
-  outline: 2px solid var(--q-primary);
-  outline-offset: 2px;
-}
-
-.icon-wraper:active {
-  transform: scale(0.95);
+.controller-item {
+  font-size: 0.875em;
 }
 
 .controller-invisible {
-  color: #bbb !important;
   opacity: 0.6;
 }
-</style>
 
+.controller-invisible .q-item-label {
+  color: #bbb !important;
+}
+
+.controller-invisible .q-icon {
+  color: #bbb !important;
+}
+
+.rotate-right {
+  transform: rotate(-90deg);
+  transition: transform 0.3s;
+}
+
+/* Hide default q-tree arrows since we're using custom ones */
+:deep(.q-tree__arrow) {
+  display: none !important;
+}
+</style>

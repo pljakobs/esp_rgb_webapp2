@@ -125,7 +125,7 @@
                 <div class="row items-center">
                   <!-- Custom controller icon -->
                   <svgIcon
-                    :name="getCustomControllerIcon(scope.opt)"
+                    :name="getCustomControllerIconReactive(scope.opt)"
                     size="20px"
                     fallbackIcon="lightbulb-outlined"
                   />
@@ -496,6 +496,12 @@ export default defineComponent({
           controller?.id,
         );
 
+        // Check if appData store is ready before proceeding
+        if (appData.status !== storeStatus.READY) {
+          console.log("AppData store not ready yet, using default icon");
+          return "lightbulb-outlined";
+        }
+
         if (
           controller &&
           controller.id &&
@@ -505,12 +511,13 @@ export default defineComponent({
           const controllerMetadata = appData.data.controllers.find(
             (c) => c.id === controller.id,
           );
+
           if (controllerMetadata && controllerMetadata.icon) {
             console.log(
               "Found controller icon in appDataStore:",
               controllerMetadata.icon,
             );
-            return controllerMetadata.icon; // Should already include 'lights/' prefix
+            return controllerMetadata.icon;
           }
         }
 
@@ -521,7 +528,12 @@ export default defineComponent({
 
       // Computed property for current controller's icon
       const currentControllerIcon = computed(() => {
-        if (controllers.currentController) {
+        // Make this computed property reactive to appData changes
+        if (
+          controllers.currentController &&
+          appData.status === storeStatus.READY &&
+          appData.data
+        ) {
           return getCustomControllerIcon(controllers.currentController);
         }
         return "lightbulb-outlined"; // Default icon
@@ -550,6 +562,45 @@ export default defineComponent({
         return "Unknown";
       });
 
+      // Computed property for controller icons - reactive to appData changes
+      const controllerIcons = computed(() => {
+        // Create a reactive map of controller ID to icon
+        const iconMap = {};
+
+        if (
+          controllers.data &&
+          appData.status === storeStatus.READY &&
+          appData.data?.controllers
+        ) {
+          controllers.data.forEach((controller) => {
+            if (controller && controller.id) {
+              const controllerMetadata = appData.data.controllers.find(
+                (c) => c.id === controller.id,
+              );
+              iconMap[controller.id] =
+                controllerMetadata?.icon || "lightbulb-outlined";
+            }
+          });
+        } else {
+          // Default icons when appData is not ready
+          controllers.data?.forEach((controller) => {
+            if (controller && controller.id) {
+              iconMap[controller.id] = "lightbulb-outlined";
+            }
+          });
+        }
+
+        return iconMap;
+      });
+
+      // Updated function to use the computed property
+      const getCustomControllerIconReactive = (controller) => {
+        if (controller && controller.id) {
+          return controllerIcons.value[controller.id] || "lightbulb-outlined";
+        }
+        return "lightbulb-outlined";
+      };
+
       return {
         leftDrawerOpen,
         configData,
@@ -567,6 +618,7 @@ export default defineComponent({
         toggleDarkMode,
         getIconForController,
         getCustomControllerIcon,
+        getCustomControllerIconReactive,
         currentControllerIcon,
         currentControllerHostname,
       };

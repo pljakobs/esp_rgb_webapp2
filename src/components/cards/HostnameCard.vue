@@ -27,28 +27,14 @@
                 size="32px"
               />
             </div>
-            <div class="col">
-              <div class="text-body2">
-                <strong>{{
-                  selectedIcon
-                    ? getIconDisplayName(selectedIcon)
-                    : "No icon selected"
-                }}</strong>
-              </div>
-              <div
-                v-if="isWebIcon(selectedIcon)"
-                class="text-caption text-grey-6"
-              >
-                Web icon: {{ getWebIconName(selectedIcon) }}
-              </div>
-            </div>
+
             <div class="col-auto">
               <q-btn
                 color="primary"
                 @click="showMaterialBrowser = true"
-                label="Browse Icons"
+                label="change Icon"
               >
-                <svgIcon name="search" size="18px" style="margin-right: 8px" />
+                <svgIcon name="search" size="24px" style="margin-left: 8px" />
                 <q-tooltip>Browse Material Design Icons</q-tooltip>
               </q-btn>
 
@@ -56,14 +42,7 @@
               <div
                 class="q-ml-md"
                 style="display: flex; align-items: center; gap: 8px"
-              >
-                <span class="text-caption">look at me:</span>
-                <svgIcon
-                  name="https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsoutlined/local_see/default/24px.svg"
-                  :fallbackIcon="'search'"
-                  size="24px"
-                />
-              </div>
+              ></div>
             </div>
           </div>
         </div>

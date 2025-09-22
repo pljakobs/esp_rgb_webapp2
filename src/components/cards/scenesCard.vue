@@ -4,7 +4,7 @@
       <q-scroll-area class="inset-scroll-area">
         <div v-if="groupNodes && groupNodes.length > 0">
           <q-tree
-            :nodes="groupNodes"
+            :nodes="enhancedGroupNodes"
             node-key="id"
             :expanded="expandedNodes"
             @update:expanded="onExpandedChange"
@@ -62,7 +62,7 @@
                     />
                     <svgIcon
                       v-else-if="prop.node.nodeType === 'controller'"
-                      :name="getCustomControllerIcon(prop.node.data)"
+                      :name="prop.node.icon || 'lightbulb_outlined'"
                     />
                   </div>
                   <div
@@ -236,6 +236,7 @@ import { Dialog, colors, Notify } from "quasar";
 import { useAppDataStore } from "src/stores/appDataStore";
 import { useControllersStore } from "src/stores/controllersStore";
 import { useScenesStore } from "src/stores/scenesStore";
+import { storeStatus } from "src/stores/storeConstants";
 import MyCard from "src/components/myCard.vue";
 import sceneDialog from "src/components/Dialogs/sceneDialog.vue";
 import groupDialog from "src/components/Dialogs/groupDialog.vue";
@@ -272,6 +273,24 @@ export default {
           scenesStore.expandedNodes = [firstGroupId];
         }
       }, 1000);
+    });
+
+    // Computed property to enhance group nodes with resolved controller icons
+    const enhancedGroupNodes = computed(() => {
+      if (!scenesStore.groupNodes || appData.status !== storeStatus.READY) {
+        return scenesStore.groupNodes || [];
+      }
+
+      return scenesStore.groupNodes.map((groupNode) => ({
+        ...groupNode,
+        children: groupNode.children?.map((sceneNode) => ({
+          ...sceneNode,
+          children: sceneNode.children?.map((controllerNode) => ({
+            ...controllerNode,
+            icon: getCustomControllerIcon(controllerNode.data),
+          })),
+        })),
+      }));
     });
 
     const isExpanded = (nodeId) => {
@@ -521,6 +540,12 @@ export default {
         controllerData?.controller_id,
       );
 
+      // Check if appData store is ready before proceeding
+      if (appData.status !== storeStatus.READY) {
+        console.log("AppData store not ready yet, using default icon");
+        return "lightbulb_outlined";
+      }
+
       if (
         controllerData &&
         controllerData.controller_id &&
@@ -535,7 +560,7 @@ export default {
             "Found controller icon in appDataStore:",
             controllerMetadata.icon,
           );
-          return controllerMetadata.icon; // Should already include 'lights/' prefix
+          return controllerMetadata.icon;
         }
       }
 
@@ -547,6 +572,7 @@ export default {
     return {
       // Store refs
       groupNodes: computed(() => scenesStore.groupNodes),
+      enhancedGroupNodes,
       expandedNodes: computed(() => scenesStore.expandedNodes),
       debugStatus: computed(() => scenesStore.debugStatus),
 

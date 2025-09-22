@@ -7,12 +7,14 @@
       <q-card-section class="row items-center q-pb-none">
         <div class="text-h6">Google Material Icons Browser</div>
         <q-space />
-        <q-btn icon="close" flat round dense v-close-popup />
+        <q-btn flat round dense v-close-popup>
+          <svgIcon name="close" size="18px" />
+        </q-btn>
       </q-card-section>
 
       <q-card-section
-        class="q-pt-sm"
-        style="max-height: calc(80vh - 200px); overflow-y: auto"
+        class="q-pt-sm icon-browser-content"
+        style="flex: 1; display: flex; flex-direction: column; overflow: hidden"
       >
         <!-- Category and Variant selectors at top -->
         <div class="row q-gutter-md q-mb-md">
@@ -46,48 +48,28 @@
           </div>
         </div>
 
-        <!-- Search within category -->
-        <div class="search-section q-mb-md">
-          <q-input
-            v-model="searchQuery"
-            outlined
-            dense
-            placeholder="Search icons by name..."
-            @input="filterCategoryIcons"
-            clearable
-            @clear="clearSearch"
-          >
-            <template v-slot:prepend>
-              <q-icon name="search" />
-            </template>
-          </q-input>
-        </div>
-
         <!-- Results grid - shows all icons in category -->
         <div v-if="categoryIcons.length > 0" class="icon-results">
           <div class="results-header q-mb-md">
             <span class="text-body2">
               {{ categoryIcons.length }} icons in {{ getCategoryLabel() }}
-              <span
-                v-if="filteredCategoryIcons.length !== categoryIcons.length"
-              >
-                ({{ filteredCategoryIcons.length }} shown after search)
-              </span>
             </span>
           </div>
 
-          <div class="icon-grid">
-            <div
-              v-for="icon in displayedIcons"
-              :key="icon.name"
-              class="icon-item"
-              :class="{ selected: selectedIcon === icon.name }"
-              @click="selectIcon(icon)"
-            >
-              <div class="icon-preview">
-                <svgIcon :name="icon.url" size="56px" color="black" />
+          <div class="icon-grid-container">
+            <div class="icon-grid">
+              <div
+                v-for="icon in displayedIcons"
+                :key="icon.name"
+                class="icon-item"
+                :class="{ selected: selectedIcon === icon.name }"
+                @click="selectIcon(icon)"
+              >
+                <div class="icon-preview">
+                  <svgIcon :name="icon.url" size="56px" color="black" />
+                </div>
+                <div class="icon-name">{{ icon.name }}</div>
               </div>
-              <div class="icon-name">{{ icon.name }}</div>
             </div>
           </div>
 
@@ -101,14 +83,6 @@
               @update:model-value="updatePage"
             />
           </div>
-        </div>
-
-        <!-- No results message -->
-        <div
-          v-if="filteredCategoryIcons.length === 0 && searchQuery.trim()"
-          class="text-center q-mt-md text-body2 text-grey-6"
-        >
-          No icons found matching "{{ searchQuery }}"
         </div>
 
         <!-- Loading indicator -->
@@ -159,7 +133,6 @@ export default {
     });
 
     // Reactive data
-    const searchQuery = ref("");
     const selectedVariant = ref("outlined");
     const selectedCategory = ref("lighting");
     const isLoading = ref(false);
@@ -167,7 +140,6 @@ export default {
     const selectedIcon = ref("");
     const selectedIconData = ref({});
     const categoryIcons = ref([]);
-    const filteredCategoryIcons = ref([]);
     const iconsPerPage = 50;
 
     // Options for dropdowns
@@ -204,7 +176,6 @@ export default {
         "table_bar",
         "table_large",
         "table_restaurant",
-        "sofa",
         "bed",
         "king_bed",
         "single_bed",
@@ -238,6 +209,8 @@ export default {
         "candle",
         "nest_cam_floodlight",
         "wand_shine",
+        "dine_lamp",
+        "light_group",
       ],
 
       devices: [
@@ -268,10 +241,10 @@ export default {
     const displayedIcons = computed(() => {
       const start = (currentPage.value - 1) * iconsPerPage;
       const end = start + iconsPerPage;
-      return filteredCategoryIcons.value.slice(start, end);
+      return categoryIcons.value.slice(start, end);
     });
 
-    const totalResults = computed(() => filteredCategoryIcons.value.length);
+    const totalResults = computed(() => categoryIcons.value.length);
     const totalPages = computed(() =>
       Math.ceil(totalResults.value / iconsPerPage),
     );
@@ -309,32 +282,9 @@ export default {
         }));
       }
 
-      // Reset search and pagination
-      searchQuery.value = "";
-      filteredCategoryIcons.value = [...categoryIcons.value];
+      // Reset pagination
       currentPage.value = 1;
       isLoading.value = false;
-    };
-
-    // Filter icons within current category based on search
-    const filterCategoryIcons = () => {
-      if (!searchQuery.value.trim()) {
-        filteredCategoryIcons.value = [...categoryIcons.value];
-        return;
-      }
-
-      const query = searchQuery.value.toLowerCase().trim();
-      filteredCategoryIcons.value = categoryIcons.value.filter((icon) =>
-        icon.name.toLowerCase().includes(query),
-      );
-
-      currentPage.value = 1; // Reset to first page after search
-    };
-
-    const clearSearch = () => {
-      searchQuery.value = "";
-      filteredCategoryIcons.value = [...categoryIcons.value];
-      currentPage.value = 1;
     };
 
     const selectIcon = (icon) => {
@@ -363,7 +313,6 @@ export default {
 
     return {
       showDialog,
-      searchQuery,
       selectedVariant,
       selectedCategory,
       isLoading,
@@ -371,7 +320,6 @@ export default {
       selectedIcon,
       selectedIconData,
       categoryIcons,
-      filteredCategoryIcons,
       displayedIcons,
       totalResults,
       totalPages,
@@ -379,8 +327,6 @@ export default {
       categoryOptions,
       getCategoryLabel,
       loadCategoryIcons,
-      filterCategoryIcons,
-      clearSearch,
       selectIcon,
       confirmSelection,
       updatePage,
@@ -391,17 +337,36 @@ export default {
 
 <style scoped>
 .material-icon-browser {
-  height: 100vh;
+  height: 80vh;
   display: flex;
   flex-direction: column;
+}
+
+.icon-browser-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.icon-results {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.icon-grid-container {
+  flex: 1;
+  overflow: hidden;
 }
 
 .icon-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
   gap: 12px;
-  max-height: 400px;
   overflow-y: auto;
+  padding-right: 8px; /* Space for scrollbar */
 }
 
 .icon-item {
@@ -414,6 +379,7 @@ export default {
   cursor: pointer;
   transition: all 0.2s ease;
   background: white;
+  height: fit-content;
 }
 
 .icon-item:hover {
@@ -446,6 +412,7 @@ export default {
   display: flex;
   justify-content: center;
   padding: 8px;
+  flex-shrink: 0; /* Prevent pagination from shrinking */
 }
 
 .icon-preview {
