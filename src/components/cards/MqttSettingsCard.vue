@@ -19,18 +19,18 @@
     <q-card-section v-if="mqttEnabled" class="q-pt-none">
       <q-separator class="q-mb-md" />
       <div class="text-h6 q-mb-md">MQTT Server Configuration</div>
-      <div class="row q-gutter-md" style="max-width: 600px;">
-        <div style="width: 180px;">
+      <div class="row q-gutter-md" style="max-width: 600px">
+        <div style="width: 180px">
           <q-input
             v-model="mqttServer"
             label="MQTT Server"
             @blur="updateMqttServer"
           />
         </div>
-        <div style="width: 100px;">
+        <div style="width: 100px">
           <q-input v-model="mqttPort" label="Port" @blur="updateMqttPort" />
         </div>
-        <div style="width: 120px;">
+        <div style="width: 120px">
           <q-input
             v-model="mqttTopicBase"
             label="Topic"
@@ -38,15 +38,15 @@
           />
         </div>
       </div>
-      <div class="row q-gutter-md q-mt-sm" style="max-width: 500px;">
-        <div style="width: 180px;">
+      <div class="row q-gutter-md q-mt-sm" style="max-width: 500px">
+        <div style="width: 180px">
           <q-input
             v-model="mqttUsername"
             label="MQTT Username"
             @blur="updateMqttUsername"
           />
         </div>
-        <div style="width: 180px;">
+        <div style="width: 180px">
           <q-input
             v-model="mqttPassword"
             filled
@@ -83,8 +83,8 @@
       />
 
       <div v-if="haEnabled" class="q-mt-sm">
-        <div class="row q-gutter-md" style="max-width: 500px;">
-          <div style="width: 180px;">
+        <div class="row q-gutter-md" style="max-width: 500px">
+          <div style="width: 180px">
             <q-input
               v-model="haDiscoveryPrefix"
               label="Discovery Prefix"
@@ -92,7 +92,7 @@
               @blur="updateHaDiscoveryPrefix"
             />
           </div>
-          <div style="width: 180px;">
+          <div style="width: 180px">
             <q-input
               v-model="haNodeId"
               label="Node ID"
