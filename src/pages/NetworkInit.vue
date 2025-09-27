@@ -291,10 +291,19 @@
                 <q-item-label>{{ wifiData.ssid }}</q-item-label>
               </q-item-section>
             </q-item>
-            <q-item clickable tag="a" :href="'http://' + wifiData.ip">
+            <q-item
+              clickable
+              tag="a"
+              :href="'http://' + wifiData.ip"
+              target="_blank"
+              rel="noopener"
+            >
               <q-item-section>
                 <q-item-label caption>IP Address</q-item-label>
-                <q-item-label>{{ wifiData.ip }}</q-item-label>
+                <q-item-label
+                  class="text-primary text-underline cursor-pointer"
+                  >{{ wifiData.ip }}</q-item-label
+                >
               </q-item-section>
               <q-item-section avatar>
                 <svgIcon name="open_in_new" />

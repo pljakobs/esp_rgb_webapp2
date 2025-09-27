@@ -47,6 +47,12 @@
             </span>
           </div>
 
+          <q-toggle
+            v-model="useClearPin"
+            label="Use clear pin"
+            class="q-mb-sm"
+          />
+
           <div class="q-my-sm">
             <span class="text-caption">
               The clear pin is used to reset all channels. Optional but
@@ -54,6 +60,7 @@
             </span>
           </div>
           <mySelect
+            v-if="useClearPin"
             v-model="clearPin"
             :options="filteredClearPins"
             label="Clear Pin"
@@ -144,13 +151,22 @@ export default {
         : "",
     );
 
-    // Add this - initialize clearPin based on existing config
+    // Add this - initialize clearPin and useClearPin based on existing config
     const clearPin = ref(
       props.mode === "edit" &&
         props.existingConfig &&
-        props.existingConfig.clearPin
+        props.existingConfig.clearPin !== undefined &&
+        props.existingConfig.clearPin !== null
         ? props.existingConfig.clearPin
         : null,
+    );
+    const useClearPin = ref(
+      props.mode === "edit" &&
+        props.existingConfig &&
+        props.existingConfig.clearPin !== undefined &&
+        props.existingConfig.clearPin !== null
+        ? true
+        : false,
     );
 
     // Initialize channels based on mode
@@ -259,9 +275,10 @@ export default {
         name: configName.value,
         soc: props.soc.toLowerCase(),
         channels: configChannels.value,
-        clearPin: clearPin.value, // Include the clear pin
       };
-
+      if (useClearPin.value && clearPin.value !== null) {
+        config.clearPin = clearPin.value;
+      }
       onDialogOK(config);
     };
 
@@ -271,7 +288,8 @@ export default {
       onDialogCancel,
       configName,
       configChannels,
-      clearPin, // Add this
+      clearPin,
+      useClearPin,
       filteredClearPins, // Add this
       filteredPinsFor,
       isFormValid,
