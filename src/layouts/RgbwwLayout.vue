@@ -255,7 +255,12 @@
               class="col-xs-12 col-sm-6 col-md-7 col-lg-5 no-gutter"
               justify-center
             >
-              <RouterView></RouterView>
+              <template v-if="!configData.data.general.current_pin_config_name">
+                <ControllerConfigCard />
+              </template>
+              <template v-else>
+                <RouterView />
+              </template>
             </div>
           </div>
         </div>
@@ -293,6 +298,7 @@ import { useColorDataStore } from "src/stores/colorDataStore";
 import { useAppDataStore } from "src/stores/appDataStore";
 import { infoDataStore } from "src/stores/infoDataStore";
 import { useControllersStore } from "src/stores/controllersStore";
+import ControllerConfigCard from "src/components/cards/ControllerConfigCard.vue";
 
 import { storeStatus } from "src/stores/storeConstants";
 import useWebSocket, { wsStatus } from "src/services/websocket.js";
@@ -409,11 +415,18 @@ export default defineComponent({
           !infoData.data.connection.connected &&
           infoData.data.connection.ssid === ""
         ) {
-          // the controller has no configured ssid wsand is not connected to a wifi network
-          // we are therefore talking to a controller in AP mode, trigger the controler config
+          // the controller has no configured ssid and is not connected to a wifi network
+          // we are therefore talking to a controller in AP mode, trigger the controller config
           // section
           console.log("new controller, redirecting to /networkinit");
           router.push("/networkinit");
+        } else if (
+          infoData.data.connection.connected &&
+          (!configData.data.general.current_pin_config_name || configData.data.general.current_pin_config_name === "")
+        ) {
+          // Network is configured, but no pin config is active
+          console.log("network configured, but no pin config active, redirecting to /SystemSettings");
+          router.push("/SystemSettings");
         } else {
           console.log("controller is configured, not redirecting");
         }
@@ -621,6 +634,7 @@ export default defineComponent({
         getCustomControllerIconReactive,
         currentControllerIcon,
         currentControllerHostname,
+        ControllerConfigCard,
       };
     } catch (error) {
       console.error("Error in setup function:", error);

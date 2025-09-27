@@ -571,7 +571,7 @@ export default {
     };
 
     // --- New Pin Config Logic ---
-    // Fetch remote pin configs from pin_config_url
+    // Fetch remote pin configs and available pins from pin_config_url
     const fetchRemotePinConfigs = async () => {
       remotePinConfigs.value = [];
       const url = configData.data.general.pin_config_url;
@@ -581,6 +581,10 @@ export default {
         const json = await response.json();
         if (Array.isArray(json.pinconfigs)) {
           remotePinConfigs.value = json.pinconfigs;
+        }
+        // Also update available_pins if present
+        if (Array.isArray(json.available_pins)) {
+          configData.updateData("hardware.available_pins", json.available_pins);
         }
       } catch (e) {
         console.error("Failed to fetch remote pin configs:", e);
