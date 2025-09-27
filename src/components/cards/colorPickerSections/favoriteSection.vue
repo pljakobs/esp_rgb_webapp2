@@ -2,9 +2,24 @@
   <q-scroll-area style="height: 100%; width: 100%">
     <q-card-section class="q-pa-md">
       <!-- Favorite Presets Section -->
-      <div v-if="favoritePresets.length > 0">
+      <div v-if="favoritePresets.length > 0 || true">
         <div class="section-title">Favorite Colors</div>
         <div class="flex-container">
+          <!-- Virtual Preset: Off -->
+          <div class="color-swatch" @click="setColor(virtualOff)">
+            <div class="swatch" :style="{ backgroundColor: 'rgb(0,0,0)' }">
+              <svgIcon name="lightbulb-off" size="24px" class="q-mr-xs" />
+              <div class="swatch-name">Off</div>
+            </div>
+          </div>
+          <!-- Virtual Preset: On -->
+          <div class="color-swatch" @click="setColor(virtualOn)">
+            <div class="swatch" :style="{ backgroundColor: onColorString }">
+              <svgIcon name="lightbulb-on" size="24px" class="q-mr-xs" />
+              <div class="swatch-name">On</div>
+            </div>
+          </div>
+          <!-- Real favorites -->
           <div
             v-for="preset in favoritePresets"
             :key="'preset-' + preset.name"
@@ -92,6 +107,7 @@
 </template>
 
 <script>
+
 import { ref, computed } from "vue";
 import { colors } from "quasar";
 import { useAppDataStore } from "src/stores/appDataStore";
@@ -117,12 +133,31 @@ export default {
   },
   emits: ["update:modelValue", "activate-scene"],
   setup(props, { emit }) {
-    const presetData = useAppDataStore();
+  const presetData = useAppDataStore();
     const cols = ref(3);
+
 
     const favoritePresets = computed(() =>
       presetData.data.presets.filter((preset) => preset.favorite),
     );
+
+    // Virtual Presets
+    const virtualOff = {
+      name: 'Off',
+      color: { r: 0, g: 0, b: 0, w: 0, cw: 0 },
+    };
+    const virtualOn = computed(() => {
+      // Use last-color if available, else white
+      const last = presetData.data['last-color'];
+      return {
+        name: 'On',
+        color: last || { r: 255, g: 255, b: 255, w: 0, cw: 0 },
+      };
+    });
+    const onColorString = computed(() => {
+      const c = virtualOn.value.color;
+      return `rgb(${c.r},${c.g},${c.b})`;
+    });
 
     // Get favorite scenes and organize them by group
     const favoriteSceneGroups = computed(() => {
@@ -206,9 +241,23 @@ export default {
       return groupName === groupNames[groupNames.length - 1];
     };
 
+
     const setColor = (preset) => {
-      // Emit the selected color
-      emit("update:modelValue", { ...preset.color });
+      // For virtual presets, emit a color object in HSV if available, else raw
+      if (preset.name === 'Off') {
+        emit("update:modelValue", { hsv: { h: 0, s: 0, v: 0, ct: 0 } });
+      } else if (preset.name === 'On') {
+        // Try to emit HSV if present, else fallback to raw
+        const c = virtualOn.value.color;
+        if (c.h !== undefined && c.s !== undefined && c.v !== undefined) {
+          emit("update:modelValue", { hsv: { h: c.h, s: c.s, v: c.v, ct: c.ct || 0 } });
+        } else {
+          emit("update:modelValue", { raw: { r: c.r, g: c.g, b: c.b, w: c.w || 0, cw: c.cw || 0 } });
+        }
+      } else {
+        // For real presets, emit as before
+        emit("update:modelValue", { ...preset.color });
+      }
     };
 
     const activateScene = (scene) => {
@@ -237,7 +286,10 @@ export default {
     };
 
     return {
-      favoritePresets,
+  favoritePresets,
+  virtualOff,
+  virtualOn,
+  onColorString,
       favoriteSceneGroups,
       cols,
       setColor,
