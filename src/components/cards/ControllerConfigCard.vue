@@ -332,6 +332,7 @@ export default {
     const showPinDetails = ref(false);
     const pinConfigNames = ref([]);
     const availablePins = ref([]);
+    const remotePinConfigs = ref([]);
 
     // Helper function to show notifications with SVG icons
     const showNotification = (type, iconName, message, timeout = 3000) => {
@@ -569,27 +570,54 @@ export default {
       }
     };
 
-    // Pin configuration functions (modified to not auto-apply)
-    const socSpecificConfigs = computed(() => {
-      return configData.data.hardware.pinconfigs.filter(
-        (config) =>
-          config.soc.toLowerCase() === infoData.data.soc.toLowerCase(),
+    // --- New Pin Config Logic ---
+    // Fetch remote pin configs from pin_config_url
+    const fetchRemotePinConfigs = async () => {
+      remotePinConfigs.value = [];
+      const url = configData.data.general.pin_config_url;
+      if (!url) return;
+      try {
+        const response = await fetch(url);
+        const json = await response.json();
+        if (Array.isArray(json.pinconfigs)) {
+          remotePinConfigs.value = json.pinconfigs;
+        }
+      } catch (e) {
+        console.error("Failed to fetch remote pin configs:", e);
+      }
+    };
+
+    // Merge local and remote, filter for SoC, avoid duplicates
+    const compatiblePinConfigs = computed(() => {
+      const soc = infoData.data.soc?.toLowerCase() || "";
+      const local = configData.data.hardware.pinconfigs || [];
+      const remote = remotePinConfigs.value || [];
+      // Merge, remote first if not in local
+      const merged = [
+        ...local,
+        ...remote.filter((rc) => !local.some((lc) => lc.name === rc.name)),
+      ];
+      // Debug output
+      console.log("[PinConfig Debug] SoC:", soc);
+      console.log("[PinConfig Debug] Merged pin configs:", merged);
+      const filtered = merged.filter((cfg) => cfg.soc?.toLowerCase() === soc);
+      console.log(
+        "[PinConfig Debug] Filtered compatible pin configs:",
+        filtered,
       );
+      return filtered;
     });
 
     const getPinConfigNames = () => {
-      pinConfigNames.value = socSpecificConfigs.value.map(
-        (config) => config.name,
-      );
+      pinConfigNames.value = compatiblePinConfigs.value.map((cfg) => cfg.name);
     };
 
     const getCurrentPinConfig = () => {
-      const isSocCompatible = socSpecificConfigs.value.some(
+      const isSocCompatible = compatiblePinConfigs.value.some(
         (config) => config.name === localCurrentPinConfigName.value,
       );
-
-      if (!isSocCompatible && socSpecificConfigs.value.length > 0) {
-        localCurrentPinConfigName.value = socSpecificConfigs.value[0].name;
+      if (!isSocCompatible && compatiblePinConfigs.value.length > 0) {
+        localCurrentPinConfigName.value = compatiblePinConfigs.value[0].name;
         showNotification(
           "warning",
           "warning",
@@ -597,19 +625,37 @@ export default {
           3000,
         );
       }
-
-      const currentConfig = socSpecificConfigs.value.find(
+      const currentConfig = compatiblePinConfigs.value.find(
         (config) => config.name === localCurrentPinConfigName.value,
       );
-
       if (currentConfig) {
         pinConfigData.value = currentConfig.channels;
-      } else if (socSpecificConfigs.value.length > 0) {
-        localCurrentPinConfigName.value = socSpecificConfigs.value[0].name;
-        pinConfigData.value = socSpecificConfigs.value[0].channels;
+      } else if (compatiblePinConfigs.value.length > 0) {
+        localCurrentPinConfigName.value = compatiblePinConfigs.value[0].name;
+        pinConfigData.value = compatiblePinConfigs.value[0].channels;
       } else {
         pinConfigData.value = [];
       }
+    };
+
+    // When user selects a config, add to local if from remote
+    const onPinConfigSelected = (name) => {
+      const selected = compatiblePinConfigs.value.find(
+        (cfg) => cfg.name === name,
+      );
+      if (
+        selected &&
+        !configData.data.hardware.pinconfigs.some((cfg) => cfg.name === name)
+      ) {
+        // Add to local store
+        configData.updateData("hardware.pinconfigs", [
+          ...configData.data.hardware.pinconfigs,
+          selected,
+        ]);
+      }
+      configData.updateData("general.current_pin_config_name", name);
+      localCurrentPinConfigName.value = name;
+      getCurrentPinConfig();
     };
 
     const loadAvailablePins = () => {
@@ -617,7 +663,6 @@ export default {
         (pinConfig) =>
           pinConfig.soc.toLowerCase() === infoData.data.soc.toLowerCase(),
       );
-
       if (socPins) {
         availablePins.value = socPins.pins.map((pin) => ({
           label: `Pin ${pin}`,
@@ -628,51 +673,22 @@ export default {
       }
     };
 
+    // Load both local and remote pin configs on mount
     const loadPinConfigData = async () => {
-      console.log("loading pinConfigData");
-      try {
-        const owner = "pljakobs";
-        const repo = "esp_rgb_webapp2";
-        const path = "public/config/pinconfig.json";
-        const branch = "devel";
-
-        const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${path}?ref=${branch}`;
-
-        const response = await fetch(apiUrl);
-        const data = await response.json();
-        const remotePinConfigData = JSON.parse(atob(data.content));
-
-        const remoteVersion = remotePinConfigData.version;
-
-        if (remoteVersion > configData.data.hardware.version) {
-          const localPinConfigs = configData.data.hardware.pinconfigs;
-          const remotePinConfigs = remotePinConfigData.pinconfigs;
-
-          const mergedPinConfigs = [
-            ...localPinConfigs,
-            ...remotePinConfigs.filter(
-              (remoteConfig) =>
-                !localPinConfigs.some(
-                  (localConfig) => localConfig.name === remoteConfig.name,
-                ),
-            ),
-          ];
-
-          configData.updateData("hardware.pinconfigs", mergedPinConfigs, false);
-          configData.updateData("hardware.version", remoteVersion, false);
-        }
-      } catch (error) {
-        console.error("Error loading pin config:", error);
-        showNotification(
-          "negative",
-          "error",
-          `Error loading pin config: ${error.message}`,
-        );
-      }
-
+      await fetchRemotePinConfigs();
       getPinConfigNames();
       getCurrentPinConfig();
       loadAvailablePins();
+      // If no compatible pin configs, prompt to add one
+      if (compatiblePinConfigs.value.length === 0) {
+        showNotification(
+          "warning",
+          "warning",
+          `No pin configuration found for ${infoData.data.soc}. Please add one for this architecture.`,
+          4000,
+        );
+        showAddConfigDialog();
+      }
     };
 
     const showAddConfigDialog = () => {
@@ -689,14 +705,19 @@ export default {
           newConfig,
         ]);
 
-        getPinConfigNames();
+        // Set the new config as the current one
+        configData.updateData(
+          "general.current_pin_config_name",
+          newConfig.name,
+        );
         localCurrentPinConfigName.value = newConfig.name;
+        getPinConfigNames();
         getCurrentPinConfig();
 
         showNotification(
           "positive",
           "check_circle",
-          `Pin configuration "${newConfig.name}" created`,
+          `Pin configuration "${newConfig.name}" created and selected`,
         );
       });
     };
@@ -834,10 +855,11 @@ export default {
       formattedPinConfigData,
       showAddConfigDialog,
       editCurrentConfig,
-      socSpecificConfigs,
+      compatiblePinConfigs,
       getCurrentPinConfig,
       getPinConfigNames,
       loadPinConfigData,
+      onPinConfigSelected,
     };
   },
 };
