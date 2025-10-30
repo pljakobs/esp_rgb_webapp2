@@ -3,7 +3,6 @@
     <InformationCard :collapsed="false" />
     <FirmwareUpdateCard />
     <HostnameCard />
-
     <ControllerConfigCard />
     <SaveRestoreConfig />
     <!--<DebugFunctionCard v-if="infoData.data.build_type === 'debug'" />-->
