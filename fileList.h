@@ -65,6 +65,7 @@
 	XX(star_outlined_svg, "icons/star_outlined.svg.gz") \
 	XX(swap_horiz_svg, "icons/swap_horiz.svg.gz") \
 	XX(systemsecurityupdate_outlined_svg, "icons/systemsecurityupdate_outlined.svg.gz") \
+	XX(telemetry_svg, "icons/telemetry.svg.gz") \
 	XX(television_ambient_light_svg, "icons/television-ambient-light.svg.gz") \
 	XX(timer_svg, "icons/timer.svg.gz") \
 	XX(tune_outlined_svg, "icons/tune_outlined.svg.gz") \
