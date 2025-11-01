@@ -17,6 +17,14 @@
         </template>
       </q-btn>
     </q-card-section>
+    <div class="onoff-btn-row">
+      <q-btn color="primary" @click="sendOn" class="on-btn">
+        <svgIcon name="ligthbulb-on" />On
+      </q-btn>
+      <q-btn color="secondary" @click="sendOff" class="off-btn">
+        <svgIcon name="ligthbulb-off" />Off
+      </q-btn>
+    </div>
   </q-scroll-area>
 </template>
 
@@ -24,6 +32,7 @@
 import { ref, watch, computed } from "vue";
 import { colors } from "quasar";
 import { useColorDataStore } from "src/stores/colorDataStore";
+import { useControllersStore } from "src/stores/controllersStore";
 
 const { hexToRgb, rgbToHsv, rgbToHex, hsvToRgb } = colors;
 
@@ -48,6 +57,43 @@ export default {
   },
   emits: ["update:modelValue", "add-preset"],
   setup(props, { emit }) {
+    const controllersStore = useControllersStore();
+    // Compute controller URL from currentController
+    const controllerUrl = computed(() => {
+      const ctrl = controllersStore.currentController;
+      if (ctrl && ctrl.ip_address) {
+        return `http://${ctrl.ip_address}`;
+      }
+      return null;
+    });
+
+    // Send On command
+    const sendOn = async () => {
+      if (!controllerUrl.value) return;
+      try {
+        await fetch(`${controllerUrl.value}/on`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ t: 500 }),
+        });
+      } catch (e) {
+        console.error("Failed to send On:", e);
+      }
+    };
+
+    // Send Off command
+    const sendOff = async () => {
+      if (!controllerUrl.value) return;
+      try {
+        await fetch(`${controllerUrl.value}/off`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ t: 500 }),
+        });
+      } catch (e) {
+        console.error("Failed to send Off:", e);
+      }
+    };
     const internalColor = ref("#000000");
     const colorStore = useColorDataStore();
 
@@ -120,6 +166,8 @@ export default {
     return {
       internalColor,
       onAddPreset,
+      sendOn,
+      sendOff,
     };
   },
 };
@@ -137,5 +185,34 @@ export default {
 .hsv-section {
   display: flex;
   flex-direction: column;
+}
+
+/* On/Off button row and button styles */
+.onoff-btn-row {
+  display: flex;
+  justify-content: space-between;
+  margin: 16px 12px 0 12px;
+}
+.on-btn {
+  flex: 1;
+  margin-right: 8px;
+}
+.off-btn {
+  flex: 1;
+}
+.onoff-btn {
+  margin: 0 4px;
+  padding: 4px 12px;
+  border-radius: 6px;
+  border: none;
+  background: #eee;
+  color: #333;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 1em;
+  transition: background 0.2s;
+}
+.onoff-btn:active {
+  background: #ccc;
 }
 </style>

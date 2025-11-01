@@ -422,10 +422,13 @@ export default defineComponent({
           router.push("/networkinit");
         } else if (
           infoData.data.connection.connected &&
-          (!configData.data.general.current_pin_config_name || configData.data.general.current_pin_config_name === "")
+          (!configData.data.general.current_pin_config_name ||
+            configData.data.general.current_pin_config_name === "")
         ) {
           // Network is configured, but no pin config is active
-          console.log("network configured, but no pin config active, redirecting to /SystemSettings");
+          console.log(
+            "network configured, but no pin config active, redirecting to /SystemSettings",
+          );
           router.push("/SystemSettings");
         } else {
           console.log("controller is configured, not redirecting");

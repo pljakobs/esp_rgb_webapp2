@@ -5,21 +5,7 @@
       <div v-if="favoritePresets.length > 0 || true">
         <div class="section-title">Favorite Colors</div>
         <div class="flex-container">
-          <!-- Virtual Preset: Off -->
-          <div class="color-swatch" @click="setColor(virtualOff)">
-            <div class="swatch" :style="{ backgroundColor: 'rgb(0,0,0)' }">
-              <svgIcon name="lightbulb-off" size="24px" class="q-mr-xs" />
-              <div class="swatch-name">Off</div>
-            </div>
-          </div>
-          <!-- Virtual Preset: On -->
-          <div class="color-swatch" @click="setColor(virtualOn)">
-            <div class="swatch" :style="{ backgroundColor: onColorString }">
-              <svgIcon name="lightbulb-on" size="24px" class="q-mr-xs" />
-              <div class="swatch-name">On</div>
-            </div>
-          </div>
-          <!-- Real favorites -->
+          <!-- Preset Swatches (real presets only) -->
           <div
             v-for="preset in favoritePresets"
             :key="'preset-' + preset.name"
@@ -30,9 +16,7 @@
               v-if="preset.color.hsv"
               class="swatch"
               :style="{
-                backgroundColor: `rgb(${hsvToRgb(preset.color.hsv).r}, ${
-                  hsvToRgb(preset.color.hsv).g
-                }, ${hsvToRgb(preset.color.hsv).b})`,
+                backgroundColor: `rgb(${hsvToRgb(preset.color.hsv).r}, ${hsvToRgb(preset.color.hsv).g}, ${hsvToRgb(preset.color.hsv).b})`,
               }"
             >
               <div class="swatch-name">{{ preset.name }}</div>
@@ -106,8 +90,7 @@
   </q-scroll-area>
 </template>
 
-<script>
-
+<script setup>
 import { ref, computed } from "vue";
 import { colors } from "quasar";
 import { useAppDataStore } from "src/stores/appDataStore";
@@ -115,192 +98,85 @@ import RawBadge from "src/components/RawBadge.vue";
 import { applyScene, getControllerInfo } from "src/services/tools.js";
 
 const { hsvToRgb } = colors;
+const presetData = useAppDataStore();
+const favoritePresets = computed(() =>
+  presetData.data.presets.filter((p) => p.favorite),
+);
 
-export default {
-  name: "favoriteSection",
-  components: {
-    RawBadge,
-  },
-  props: {
-    isDialog: {
-      type: Boolean,
-      default: false,
-    },
-    cardHeight: {
-      type: String,
-      default: "300px",
-    },
-  },
-  emits: ["update:modelValue", "activate-scene"],
-  setup(props, { emit }) {
-  const presetData = useAppDataStore();
-    const cols = ref(3);
+const favoriteSceneGroups = computed(() => {
+  const favoriteScenes = presetData.data.scenes.filter(
+    (scene) => scene.favorite,
+  );
+  const groups = {};
+  const sceneGroups = presetData.data.groups || [];
+  const groupNameMap = {};
+  sceneGroups.forEach((group) => {
+    groupNameMap[group.id] = group.name;
+  });
+  favoriteScenes.forEach((scene) => {
+    const groupId = scene.group_id || "other";
+    const displayName = groupNameMap[groupId] || groupId;
+    if (!groups[displayName]) {
+      groups[displayName] = [];
+    }
+    groups[displayName].push(scene);
+  });
+  return groups;
+});
 
-
-    const favoritePresets = computed(() =>
-      presetData.data.presets.filter((preset) => preset.favorite),
-    );
-
-    // Virtual Presets
-    const virtualOff = {
-      name: 'Off',
-      color: { r: 0, g: 0, b: 0, w: 0, cw: 0 },
-    };
-    const virtualOn = computed(() => {
-      // Use last-color if available, else white
-      const last = presetData.data['last-color'];
-      return {
-        name: 'On',
-        color: last || { r: 255, g: 255, b: 255, w: 0, cw: 0 },
-      };
-    });
-    const onColorString = computed(() => {
-      const c = virtualOn.value.color;
-      return `rgb(${c.r},${c.g},${c.b})`;
-    });
-
-    // Get favorite scenes and organize them by group
-    const favoriteSceneGroups = computed(() => {
-      const favoriteScenes = presetData.data.scenes.filter(
-        (scene) => scene.favorite,
-      );
-      const groups = {};
-
-      // Get all available scene groups from the correct source
-      const sceneGroups = presetData.data.groups || [];
-
-      // Create a map of group_id to group name
-      const groupNameMap = {};
-      sceneGroups.forEach((group) => {
-        groupNameMap[group.id] = group.name;
-      });
-
-      favoriteScenes.forEach((scene) => {
-        // Use group_id for grouping
-        const groupId = scene.group_id || "other";
-
-        // Get the display name from the map, or use the ID if no name is found
-        const displayName = groupNameMap[groupId] || groupId;
-
-        if (!groups[displayName]) {
-          groups[displayName] = [];
-        }
-        groups[displayName].push(scene);
-      });
-
-      return groups;
-    });
-
-    const getSceneLights = (scene) => {
-      const lights = [];
-
-      // Add console logging for debugging
-      console.log("Processing scene:", scene.name);
-
-      // Check if scene has steps (animations)
-      if (scene.steps && scene.steps.length > 0) {
-        // Get colors from the first step
-        const firstStep = scene.steps[0];
-        console.log("First step has colors:", !!firstStep.colors);
-
-        if (firstStep.colors) {
-          // Convert each color to a display format
-          Object.entries(firstStep.colors).forEach(([key, value]) => {
-            console.log(`Processing color: ${key}`, value);
-
-            if (value.hsv) {
-              const rgb = hsvToRgb(value.hsv);
-              lights.push({
-                name: key,
-                color: `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`,
-              });
-            } else if (value.raw) {
-              // For raw values, use a neutral color
-              lights.push({
-                name: key,
-                color: "#afafaf",
-              });
-            } else {
-              // Fallback if the color format is unknown
-              lights.push({
-                name: key,
-                color: "#ff00ff", // Bright magenta to easily spot issues
-              });
-            }
+function getSceneLights(scene) {
+  const lights = [];
+  if (scene.steps && scene.steps.length > 0) {
+    const firstStep = scene.steps[0];
+    if (firstStep.colors) {
+      Object.entries(firstStep.colors).forEach(([key, value]) => {
+        if (value.hsv) {
+          const rgb = hsvToRgb(value.hsv);
+          lights.push({
+            name: key,
+            color: `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`,
           });
-        }
-      }
-
-      console.log(`Found ${lights.length} lights for scene ${scene.name}`);
-      // Limit to 8 colors
-      return lights.slice(0, 8);
-    };
-    // Helper to check if a group is the last one (to avoid extra dividers)
-    const isLastGroup = (groupName) => {
-      const groupNames = Object.keys(favoriteSceneGroups.value);
-      return groupName === groupNames[groupNames.length - 1];
-    };
-
-
-    const setColor = (preset) => {
-      // For virtual presets, emit a color object in HSV if available, else raw
-      if (preset.name === 'Off') {
-        emit("update:modelValue", { hsv: { h: 0, s: 0, v: 0, ct: 0 } });
-      } else if (preset.name === 'On') {
-        // Try to emit HSV if present, else fallback to raw
-        const c = virtualOn.value.color;
-        if (c.h !== undefined && c.s !== undefined && c.v !== undefined) {
-          emit("update:modelValue", { hsv: { h: c.h, s: c.s, v: c.v, ct: c.ct || 0 } });
+        } else if (value.raw) {
+          lights.push({ name: key, color: "#afafaf" });
         } else {
-          emit("update:modelValue", { raw: { r: c.r, g: c.g, b: c.b, w: c.w || 0, cw: c.cw || 0 } });
+          lights.push({ name: key, color: "#ff00ff" });
         }
-      } else {
-        // For real presets, emit as before
-        emit("update:modelValue", { ...preset.color });
-      }
-    };
+      });
+    }
+  }
+  return lights.slice(0, 8);
+}
 
-    const activateScene = (scene) => {
-      applyScene(scene);
+function isLastGroup(groupName) {
+  const groupNames = Object.keys(favoriteSceneGroups.value);
+  return groupName === groupNames[groupNames.length - 1];
+}
 
-      emit("activate-scene", scene);
-    };
+function setColor(preset) {
+  // Only handle real presets now
+  // emit("update:modelValue", { ...preset.color });
+  // Use defineEmits for <script setup>
+  emit("update:modelValue", { ...preset.color });
+}
 
-    const getSceneIcon = (scene) => {
-      // If the scene has settings, use the icon from the first controller
-      if (scene.settings && scene.settings.length > 0) {
-        const firstSetting = scene.settings[0];
-        const controllerId = firstSetting.controller_id;
+function activateScene(scene) {
+  applyScene(scene);
+  emit("activate-scene", scene);
+}
 
-        if (controllerId) {
-          // Get controller info using the existing function from tools.js
-          const controllerInfo = getControllerInfo(controllerId);
+function getSceneIcon(scene) {
+  if (scene.settings && scene.settings.length > 0) {
+    const firstSetting = scene.settings[0];
+    const controllerId = firstSetting.controller_id;
+    if (controllerId) {
+      const controllerInfo = getControllerInfo(controllerId);
+      return controllerInfo.icon || "scene";
+    }
+  }
+  return "scene";
+}
 
-          // Return the controller's icon or fall back to "scene"
-          return controllerInfo.icon || "scene";
-        }
-      }
-
-      // Fallback to the default scene icon
-      return "scene";
-    };
-
-    return {
-  favoritePresets,
-  virtualOff,
-  virtualOn,
-  onColorString,
-      favoriteSceneGroups,
-      cols,
-      setColor,
-      activateScene,
-      isLastGroup,
-      hsvToRgb,
-      getSceneLights,
-      getSceneIcon,
-    };
-  },
-};
+const emit = defineEmits(["update:modelValue", "activate-scene"]);
 </script>
 
 <style scoped>

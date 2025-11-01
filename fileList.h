@@ -35,6 +35,8 @@
 	XX(info_svg, "icons/info.svg.gz") \
 	XX(info_outlined_svg, "icons/info_outlined.svg.gz") \
 	XX(light_group_svg, "icons/light_group.svg.gz") \
+	XX(lightbulb_off_svg, "icons/lightbulb-off.svg.gz") \
+	XX(lightbulb_on_svg, "icons/lightbulb-on.svg.gz") \
 	XX(lightbulb_outlined_svg, "icons/lightbulb_outlined.svg.gz") \
 	XX(linked_services_svg, "icons/linked_services.svg.gz") \
 	XX(memory_outlined_svg, "icons/memory_outlined.svg.gz") \

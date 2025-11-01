@@ -1121,31 +1121,8 @@ export const useAppDataStore = defineStore("appData", {
 
     // Get the current controller ID (this would be determined by the context)
     getCurrentControllerId() {
-      // TODO: This should be determined by the application context
-      // For now, we'll try to get it from the URL or configuration
-      // This might need to be passed as a parameter or stored in the app state
-
-      // Try to get from current URL or configuration
-      const urlParams = new URLSearchParams(window.location.search);
-      const controllerIdFromUrl = urlParams.get("controller_id");
-
-      if (controllerIdFromUrl) {
-        return controllerIdFromUrl;
-      }
-
-      // Fallback: try to determine from hostname or configuration
-      // This is a placeholder - you'll need to implement the actual logic
-      // based on how your application determines the current controller
-      console.warn(
-        "⚠️ Could not determine current controller ID, using fallback method",
-      );
-
-      // As a last resort, use the first available visible controller
       const controllers = useControllersStore();
-      const firstController = controllers.data.find(
-        (c) => c.id && c.ip_address && c.visible === true,
-      );
-      return firstController?.id || "unknown";
+      return controllers.currentController?.id || "unknown";
     },
 
     // Check if sync lock is available across all controllers
