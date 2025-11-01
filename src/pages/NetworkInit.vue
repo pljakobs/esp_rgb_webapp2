@@ -53,24 +53,40 @@
             </div>
             <div class="step-label">Color Model</div>
           </div>
-          <!-- Step 4: WiFi Connection -->
+          <!-- Step 4: Telemetry -->
           <div
             class="step-indicator"
             :class="{ active: step === 4, completed: step > 4 }"
             @click="step > 4 ? (step = 4) : null"
           >
             <div class="step-icon">
-              <svgIcon name="wifi_outlined" />
+              <svgIcon name="telemetry" />
               <svgIcon
                 v-if="step > 4"
                 name="check_outlined"
                 class="step-check-overlay"
               />
             </div>
+            <div class="step-label">Telemetry</div>
+          </div>
+          <!-- Step 5: WiFi Connection -->
+          <div
+            class="step-indicator"
+            :class="{ active: step === 5, completed: step > 5 }"
+            @click="step > 5 ? (step = 5) : null"
+          >
+            <div class="step-icon">
+              <svgIcon name="wifi_outlined" />
+              <svgIcon
+                v-if="step > 5"
+                name="check_outlined"
+                class="step-check-overlay"
+              />
+            </div>
             <div class="step-label">WiFi</div>
           </div>
-          <!-- Step 5: Completion -->
-          <div class="step-indicator" :class="{ active: step === 5 }">
+          <!-- Step 6: Completion -->
+          <div class="step-indicator" :class="{ active: step === 6 }">
             <div class="step-icon">
               <svgIcon name="check_outlined" />
             </div>
@@ -190,8 +206,54 @@
         </div>
       </div>
 
-      <!-- Step 4: WiFi Configuration -->
+      <!-- Step 4: Telemetry -->
       <div v-if="step === 4" class="q-pa-md">
+        <div class="text-h6 q-mb-md">Telemetry</div>
+        <div class="text-subtitle2 q-mb-lg">
+          Do you want to allow anonymous statistics to be sent to the developer? This helps improving the firmware.
+        </div>
+        <q-btn-toggle
+            v-model="telemetryEnabled"
+            :options="[
+              {label: 'Yes', value: true},
+              {label: 'No', value: false}
+            ]"
+          />
+        <div class="text-caption q-mt-md">
+          If you don't make a selection, telemetry will be
+          <strong>{{ isDebug ? 'enabled' : 'disabled' }}</strong> by default for this
+          <strong>{{ isDebug ? 'debug' : 'release' }}</strong> build.
+          You can change this setting at any time under Network Settings > Telemetry.
+        </div>
+        <div class="q-mt-md">
+          <q-btn
+            :label="detailsButtonLabel"
+            @click="toggleDetails"
+            flat
+            color="primary"
+          />
+          <div v-if="showDetails">
+            <div>
+              With this build, the following data is sent every 30s:
+              <q-scroll-area style="height: 200px;">
+                <q-table
+                  :rows="telemetryDataRows"
+                  :columns="telemetryDataColumns"
+                  row-key="col1"
+                  flat
+                  bordered
+                  wrap-cells
+                  :hide-bottom="true"
+                  :pagination="{ rowsPerPage: telemetryDataRows.length, page: 1, sortBy: null, descending: false }"
+                />
+              </q-scroll-area>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 5: WiFi Configuration -->
+      <div v-if="step === 5" class="q-pa-md">
         <div class="text-h6 q-mb-md">Connect to WiFi Network</div>
         <div class="text-subtitle2 q-mb-lg">
           Select your WiFi network from the list or enter details manually
@@ -259,8 +321,8 @@
         </div>
       </div>
 
-      <!-- Step 5: Completion/Status -->
-      <div v-if="step === 5" class="q-pa-md">
+      <!-- Step 6: Completion/Status -->
+      <div v-if="step === 6" class="q-pa-md">
         <div class="text-h6 q-mb-md">Setup Complete</div>
         <div v-if="connecting" class="q-my-lg text-center">
           <q-spinner color="primary" size="3em" />
@@ -347,7 +409,7 @@
       <q-separator />
       <div class="row justify-between q-pa-md">
         <q-btn
-          v-if="step > 1 && step < 5"
+          v-if="step > 1 && step < 6"
           outline
           color="primary"
           label="Back"
@@ -355,14 +417,14 @@
         />
         <div v-else></div>
         <q-btn
-          v-if="step < 4"
+          v-if="step < 5"
           color="primary"
           label="Next"
           @click="goToNextStep"
           :disable="!canProceed"
         />
         <q-btn
-          v-else-if="step === 4"
+          v-else-if="step === 5"
           color="primary"
           label="Connect"
           @click="finalizeSetup"
@@ -385,6 +447,7 @@ import { storeStatus } from "src/stores/storeConstants";
 import systemCommand from "src/services/systemCommands.js";
 import svgIcon from "src/components/svgIcon.vue";
 import ColorSlider from "src/components/ColorSlider.vue";
+import { telemetryDataColumns, telemetryDataRows } from "src/stores/telemetryData.js";
 
 export default {
   name: "NetworkSetupWizard",
@@ -401,6 +464,24 @@ export default {
 
     // Hostname
     const hostname = ref(configData.data.general.device_name || "");
+
+    // Telemetry
+    const telemetryEnabled = computed({
+      get: () => configData.data?.telemetry?.enabled,
+      set: (value) => {
+        if (configData.data?.telemetry) {
+          configData.data.telemetry.enabled = value;
+        }
+      },
+    });
+
+    // Telemetry details
+    const showDetails = ref(false);
+    const detailsButtonLabel = computed(() => showDetails.value ? 'Hide Details' : 'Show Details');
+    const toggleDetails = () => {
+      showDetails.value = !showDetails.value;
+    };
+    const isDebug = computed(() => infoData.data?.firmware?.includes("DEBUG") ?? false);
 
     // Pin config
     const currentPinConfigName = ref(
@@ -518,6 +599,8 @@ export default {
         return true;
       } else if (step.value === 3) {
         return colorModel.value && colorOptions.value.length > 0;
+      } else if (step.value === 4) {
+        return true; // Telemetry step can always proceed
       }
       return true;
     });
@@ -623,13 +706,13 @@ export default {
         if (response.ok) {
           wifiData.value.message = "Connecting to network...";
           log.value.push("Connecting to network");
-          step.value = 5;
+          step.value = 6;
         } else {
           wifiData.value.message = "Failed to initiate connection";
           log.value.push("Failed to initiate connection");
           connecting.value = false;
           // Stay on WiFi step
-          step.value = 4;
+          step.value = 5;
           return;
         }
 
@@ -660,17 +743,18 @@ export default {
           // Send color model here
           const modelIndex = colorOptions.value.indexOf(colorModel.value);
           configData.updateData("color.outputmode", modelIndex);
+          // The telemetry setting is already updated by the component
         } else {
           // WiFi never connected, go back to WiFi step
           wifiData.value.message =
             "Unable to connect to the network. Please try again.";
-          step.value = 4;
+          step.value = 5;
           connecting.value = false;
           return;
         }
       } catch (error) {
         wifiData.value.message = `Connection error: ${error.message}`;
-        step.value = 4;
+        step.value = 5;
       } finally {
         setTimeout(() => {
           connecting.value = false;
@@ -727,7 +811,7 @@ export default {
         wifiData.value.gateway = params.station.gateway;
         wifiData.value.mac = params.station.mac;
         wifiData.value.message = params.message;
-        if (wifiData.value.connected && step.value === 5) startCountdown();
+        if (wifiData.value.connected && step.value === 6) startCountdown();
       });
     };
 
@@ -837,6 +921,13 @@ export default {
       trimHostname,
       trimNetworkName,
       trimPassword,
+      telemetryEnabled,
+      showDetails,
+      detailsButtonLabel,
+      toggleDetails,
+      telemetryDataColumns,
+      telemetryDataRows,
+      isDebug,
     };
   },
 };
