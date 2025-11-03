@@ -2,9 +2,27 @@
   <q-scroll-area style="height: 100%; width: 100%">
     <q-card-section class="q-pa-md">
       <!-- Favorite Presets Section -->
-      <div v-if="favoritePresets.length > 0">
+      <div v-if="favoritePresets.length > 0 || true">
         <div class="section-title">Favorite Colors</div>
         <div class="flex-container">
+          <!-- Virtual Preset: Off -->
+          <div class="color-swatch" @click="setOff()">
+            <div class="swatch" :style="{ backgroundColor: 'rgb(0,0,0)' }">
+              <svgIcon name="lightbulb-off" size="24px" class="q-mr-xs" />
+              <div class="swatch-name">Off</div>
+            </div>
+          </div>
+          <!-- Virtual Preset: On -->
+          <div class="color-swatch" @click="setOn()">
+            <div
+              class="swatch"
+              :style="{ backgroundColor: 'rgb(127,127,127)' }"
+            >
+              <svgIcon name="lightbulb-on" size="24px" class="q-mr-xs" />
+              <div class="swatch-name">On</div>
+            </div>
+          </div>
+          <!-- Real favorites -->
           <div
             v-for="preset in favoritePresets"
             :key="'preset-' + preset.name"
@@ -81,7 +99,7 @@
         v-if="favoritePresets.length === 0 && favoriteSceneGroups.length === 0"
         class="no-favorites"
       >
-        <svgIcon name="star_border" size="48px" class="q-mb-sm" />
+        <svgIcon name="star_outlined" size="48px" class="q-mb-sm" />
         <div>No favorites set</div>
         <div class="text-caption">
           Mark colors or scenes as favorites to see them here
@@ -97,6 +115,8 @@ import { colors } from "quasar";
 import { useAppDataStore } from "src/stores/appDataStore";
 import RawBadge from "src/components/RawBadge.vue";
 import { applyScene, getControllerInfo } from "src/services/tools.js";
+import { setMapStoreSuffix } from "pinia";
+import { useControllersStore } from "src/stores/controllersStore";
 
 const { hsvToRgb } = colors;
 
@@ -118,6 +138,8 @@ export default {
   emits: ["update:modelValue", "activate-scene"],
   setup(props, { emit }) {
     const presetData = useAppDataStore();
+    const controllers = useControllersStore();
+
     const cols = ref(3);
 
     const favoritePresets = computed(() =>
@@ -207,7 +229,6 @@ export default {
     };
 
     const setColor = (preset) => {
-      // Emit the selected color
       emit("update:modelValue", { ...preset.color });
     };
 
@@ -236,11 +257,75 @@ export default {
       return "scene";
     };
 
+    async function setOn() {
+      try {
+        console.log("Setting light ON");
+        console.log(
+          "using controller:",
+          controllers.currentController.ip_address,
+        );
+        const response = await fetch(
+          `http://${controllers.currentController.ip_address}/on`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: "{}",
+          },
+        );
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const result = await response.json();
+        console.log("Command result:", result);
+        return result;
+      } catch (error) {
+        console.error("Error executing system command:", error);
+        throw error;
+      }
+    }
+
+    async function setOff() {
+      try {
+        console.log("Setting light OFF");
+        console.log(
+          "using controller:",
+          controllers.currentController.ip_address,
+        );
+        const response = await fetch(
+          `http://${controllers.currentController.ip_address}/off`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: "{}",
+          },
+        );
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const result = await response.json();
+        console.log("Command result:", result);
+        return result;
+      } catch (error) {
+        console.error("Error executing system command:", error);
+        throw error;
+      }
+    }
+
     return {
       favoritePresets,
       favoriteSceneGroups,
       cols,
       setColor,
+      setOff,
+      setOn,
       activateScene,
       isLastGroup,
       hsvToRgb,

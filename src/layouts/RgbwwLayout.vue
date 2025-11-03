@@ -83,7 +83,20 @@
               <img src="icons/menu_outlined_24.svg" class="icon" />
             </q-avatar>
           </q-btn>
-          <q-toolbar-title> Lightinator 5 </q-toolbar-title>
+          <q-toolbar-title>
+            <div class="row items-center q-gutter-sm">
+              <!-- Controller icon -->
+              <svgIcon
+                :name="currentControllerIcon"
+                size="24px"
+                fallbackIcon="lightbulb-outlined"
+              />
+              <!-- Controller hostname -->
+              <span>{{ currentControllerHostname }}</span>
+              <!-- Lightinator 5 text -->
+              <span>- Lightinator 5</span>
+            </div>
+          </q-toolbar-title>
         </q-toolbar>
       </q-header>
       <q-drawer
@@ -109,7 +122,21 @@
           <template v-slot:option="scope">
             <q-item clickable @click="handleControllerSelection(scope.opt)">
               <q-item-section avatar>
-                <svgIcon :name="getIconForController(scope.opt)" />
+                <div class="row items-center">
+                  <!-- Custom controller icon -->
+                  <svgIcon
+                    :name="getCustomControllerIconReactive(scope.opt)"
+                    size="20px"
+                    fallbackIcon="lightbulb-outlined"
+                  />
+                  <!-- Role-based icon (home/api) if applicable -->
+                  <svgIcon
+                    v-if="getIconForController(scope.opt)"
+                    :name="getIconForController(scope.opt)"
+                    size="16px"
+                    class="q-ml-xs"
+                  />
+                </div>
               </q-item-section>
               <q-item-section>
                 <q-item-label>{{ scope.opt.hostname }}</q-item-label>
@@ -228,7 +255,12 @@
               class="col-xs-12 col-sm-6 col-md-7 col-lg-5 no-gutter"
               justify-center
             >
-              <RouterView></RouterView>
+              <template v-if="!configData.data.general.current_pin_config_name">
+                <ControllerConfigCard />
+              </template>
+              <template v-else>
+                <RouterView />
+              </template>
             </div>
           </div>
         </div>
@@ -266,6 +298,7 @@ import { useColorDataStore } from "src/stores/colorDataStore";
 import { useAppDataStore } from "src/stores/appDataStore";
 import { infoDataStore } from "src/stores/infoDataStore";
 import { useControllersStore } from "src/stores/controllersStore";
+import ControllerConfigCard from "src/components/cards/ControllerConfigCard.vue";
 
 import { storeStatus } from "src/stores/storeConstants";
 import useWebSocket, { wsStatus } from "src/services/websocket.js";
@@ -382,11 +415,18 @@ export default defineComponent({
           !infoData.data.connection.connected &&
           infoData.data.connection.ssid === ""
         ) {
-          // the controller has no configured ssid wsand is not connected to a wifi network
-          // we are therefore talking to a controller in AP mode, trigger the controler config
+          // the controller has no configured ssid and is not connected to a wifi network
+          // we are therefore talking to a controller in AP mode, trigger the controller config
           // section
           console.log("new controller, redirecting to /networkinit");
           router.push("/networkinit");
+        } else if (
+          infoData.data.connection.connected &&
+          (!configData.data.general.current_pin_config_name || configData.data.general.current_pin_config_name === "")
+        ) {
+          // Network is configured, but no pin config is active
+          console.log("network configured, but no pin config active, redirecting to /SystemSettings");
+          router.push("/SystemSettings");
         } else {
           console.log("controller is configured, not redirecting");
         }
@@ -460,6 +500,120 @@ export default defineComponent({
         //return "controller_default_icon"; // Replace with your default icon
       };
 
+      const getCustomControllerIcon = (controller) => {
+        // Get custom controller icon from appDataStore by matching controller ID
+        console.log(
+          "getCustomControllerIcon called for",
+          controller?.hostname,
+          "ID:",
+          controller?.id,
+        );
+
+        // Check if appData store is ready before proceeding
+        if (appData.status !== storeStatus.READY) {
+          console.log("AppData store not ready yet, using default icon");
+          return "lightbulb-outlined";
+        }
+
+        if (
+          controller &&
+          controller.id &&
+          appData.data &&
+          appData.data.controllers
+        ) {
+          const controllerMetadata = appData.data.controllers.find(
+            (c) => c.id === controller.id,
+          );
+
+          if (controllerMetadata && controllerMetadata.icon) {
+            console.log(
+              "Found controller icon in appDataStore:",
+              controllerMetadata.icon,
+            );
+            return controllerMetadata.icon;
+          }
+        }
+
+        // Fallback to default light icon
+        console.log("No icon found in appDataStore, using default");
+        return "lightbulb-outlined";
+      };
+
+      // Computed property for current controller's icon
+      const currentControllerIcon = computed(() => {
+        // Make this computed property reactive to appData changes
+        if (
+          controllers.currentController &&
+          appData.status === storeStatus.READY &&
+          appData.data
+        ) {
+          return getCustomControllerIcon(controllers.currentController);
+        }
+        return "lightbulb-outlined"; // Default icon
+      });
+
+      // Computed property for current controller's hostname
+      const currentControllerHostname = computed(() => {
+        if (controllers.currentController) {
+          // First try to get name from appDataStore metadata
+          if (appData.data && appData.data.controllers) {
+            const controllerMetadata = appData.data.controllers.find(
+              (c) => c.id === controllers.currentController.id,
+            );
+            if (controllerMetadata && controllerMetadata.name) {
+              return controllerMetadata.name;
+            }
+          }
+
+          // Fallback to hostname from controllers data or configData
+          return (
+            controllers.currentController.hostname ||
+            configData.data?.general?.device_name ||
+            "Unknown"
+          );
+        }
+        return "Unknown";
+      });
+
+      // Computed property for controller icons - reactive to appData changes
+      const controllerIcons = computed(() => {
+        // Create a reactive map of controller ID to icon
+        const iconMap = {};
+
+        if (
+          controllers.data &&
+          appData.status === storeStatus.READY &&
+          appData.data?.controllers
+        ) {
+          controllers.data.forEach((controller) => {
+            if (controller && controller.id) {
+              const controllerMetadata = appData.data.controllers.find(
+                (c) => c.id === controller.id,
+              );
+              iconMap[controller.id] =
+                controllerMetadata?.icon || "lightbulb-outlined";
+            }
+          });
+        } else {
+          // Default icons when appData is not ready
+          controllers.data?.forEach((controller) => {
+            if (controller && controller.id) {
+              iconMap[controller.id] = "lightbulb-outlined";
+            }
+          });
+        }
+
+        return iconMap;
+      });
+
+      // Updated function to use the computed property
+      const getCustomControllerIconReactive = (controller) => {
+        if (controller && controller.id) {
+          return controllerIcons.value[controller.id] || "lightbulb-outlined";
+        }
+        return "lightbulb-outlined";
+      };
+
       return {
         leftDrawerOpen,
         configData,
@@ -476,6 +630,11 @@ export default defineComponent({
         isDarkMode,
         toggleDarkMode,
         getIconForController,
+        getCustomControllerIcon,
+        getCustomControllerIconReactive,
+        currentControllerIcon,
+        currentControllerHostname,
+        ControllerConfigCard,
       };
     } catch (error) {
       console.error("Error in setup function:", error);

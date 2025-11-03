@@ -8,5 +8,8 @@ then
 	gzip -9 *.map
 fi
 cd ../icons
-gzip *.svg
+gzip -9 *.svg
+cd lights
+gzip -9 *.svg
 popd
+

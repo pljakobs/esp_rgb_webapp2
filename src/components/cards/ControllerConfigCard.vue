@@ -79,20 +79,33 @@
 
           <div class="q-pa-md">
             <div class="row q-gutter-md">
-              <div class="col-12 col-md-5">
+              <div class="col-12 col-md-4">
                 <mySelect
                   v-model="pwmSpeedMode"
                   :options="speedModeOptions"
                   label="Speed Mode"
                   emit-value
                   map-options
-                >
-                </mySelect>
+                />
                 <q-tooltip class="custom-tooltip">
                   Only the ESP32 supports high speed mode
                 </q-tooltip>
               </div>
-              <div class="col-12 col-md-3">
+              <div class="col-12 col-md-4">
+                <mySelect
+                  v-model="pwmTimerNumber"
+                  :options="timerNumberOptions"
+                  label="Timer Number"
+                  emit-value
+                  map-options
+                />
+                <q-tooltip class="custom-tooltip">
+                  Select which hardware timer to use for PWM generation. Each
+                  timer can be configured independently. This may be used in the
+                  future if the firmware supports multiple virtual lights.
+                </q-tooltip>
+              </div>
+              <div class="col-12 col-md-4">
                 <q-input
                   v-model.number="pwmFrequency"
                   type="number"
@@ -107,7 +120,7 @@
                   </q-tooltip>
                 </q-input>
               </div>
-              <div class="col-12 col-md-3">
+              <div class="col-12 col-md-4">
                 <q-input
                   v-model.number="pwmResolution"
                   type="number"
@@ -123,23 +136,6 @@
                     distinct levels. More is not really necessary.
                   </q-tooltip>
                 </q-input>
-              </div>
-            </div>
-            <div class="row q-mt-md">
-              <div class="col-12 col-md-6">
-                <mySelect
-                  v-model="pwmTimerNumber"
-                  :options="timerNumberOptions"
-                  label="Timer Number"
-                  emit-value
-                  map-options
-                >
-                </mySelect>
-                <q-tooltip class="custom-tooltip">
-                  Select which hardware timer to use for PWM generation. Each
-                  timer can be configured independently. This may be used in the
-                  future if the firmware supports multiple virtual lights.
-                </q-tooltip>
               </div>
             </div>
           </div>
@@ -177,11 +173,10 @@
                   label="Spread Spectrum Mode"
                   emit-value
                   map-options
-                >
-                </mySelect>
+                />
                 <q-tooltip class="custom-tooltip">
                   Spread spectrum reduces EMI (electromagnetic interference) by
-                  slightly varying the PWM frequency over time. leave on "Auto"
+                  slightly varying the PWM frequency over time. leave this "ON"
                   to enable this feature. Switching this to "off" will have a
                   negative effect on EMI emissions, especially with longer LED
                   strips. This could lead to radio interference and especially
@@ -199,12 +194,12 @@
                   :max="100"
                   :disable="pwmSpreadSpectrumMode === 'off'"
                 >
+                  <q-tooltip class="custom-tooltip">
+                    This controls the width of the spread spectrum modulation.
+                    The frequency will be smeared out by this many percent above
+                    and below the PWM center frequency.
+                  </q-tooltip>
                 </q-input>
-                <q-tooltip class="custom-tooltip">
-                  This controls the width of the spread spectrum modulation. The
-                  frequency will be smeared out by this many percent above and
-                  below the PWM center frequency.
-                </q-tooltip>
               </div>
               <div class="col-12 col-md-4">
                 <q-input
@@ -214,20 +209,20 @@
                   :min="1"
                   :disable="pwmSpreadSpectrumMode === 'off'"
                 >
+                  <q-tooltip class="custom-tooltip">
+                    This controls how often the PWM frequency hops around. The
+                    value is in base frequency cycles, so let's say your base
+                    frequency is set at 4kHz (4000Hz) and you set subsampling to
+                    4, the frequency will change every 4 cycles or every 1ms.
+                    Higher values lead to less frequent changes. Lower values
+                    will create more interrupts and therefore are more CPU
+                    intensive. This value influences the quality of the spread
+                    spectrum effect: the longer the PWM frequency stays the
+                    same, the more energy will be emitted at that frequency,
+                    potentially defeating the purpose of spread spectrum.
+                    Something between 1 and 8 is a good start.
+                  </q-tooltip>
                 </q-input>
-                <q-tooltip class="custom-tooltip">
-                  This controls how often the PWM frequency hops around. The
-                  value is in base frequency cycles, so let's say your base
-                  frequency is set at 4kHz (4000Hz) and you set subsampling to
-                  4, the frequency will change every 4 cycles or every 1ms.
-                  Higher values lead to less frequent changes. Lower values will
-                  create more interrupts and therefore are more CPU intensive.
-                  This value influences the quality of the spread spectrum
-                  effect: the longer the PWM frequency stays the same, the more
-                  energy will be emitted at that frequency, potentially
-                  defeating the purpose of spread spectrum. Something between 1
-                  and 8 is a good start.
-                </q-tooltip>
               </div>
             </div>
           </div>
@@ -258,15 +253,14 @@
 
           <div class="q-pa-md">
             <div class="row">
-              <div class="col-12 col-md-6">
+              <div class="col-12 col-md-4">
                 <mySelect
                   v-model="pwmPhaseShiftMode"
                   :options="phaseShiftModeOptions"
                   label="Phase Shift Mode"
                   emit-value
                   map-options
-                >
-                </mySelect>
+                />
                 <q-tooltip class="custom-tooltip">
                   Phase shifting delays the phase between the three, four or
                   five LED channels and thus helps distribute switching noise
@@ -274,7 +268,7 @@
                   have long LED strips and all channels switch on at the same
                   time, you potentially switch 10s of A on the 12V line in that
                   instance, creating a lot of noise and, depending on wire
-                  length, a decent voltage dip. Setting Phase Shift to "Auto"
+                  length, a decent voltage dip. Setting Phase Shift to "ON"
                   distributes the switching time for the configured channels
                   equally along the PWM cycle type (1/freq) without impacting
                   the color quality.
@@ -338,6 +332,7 @@ export default {
     const showPinDetails = ref(false);
     const pinConfigNames = ref([]);
     const availablePins = ref([]);
+    const remotePinConfigs = ref([]);
 
     // Helper function to show notifications with SVG icons
     const showNotification = (type, iconName, message, timeout = 3000) => {
@@ -362,13 +357,13 @@ export default {
       pwmResolution: configData.data.hardware?.pwm?.timer?.resolution || 10,
       pwmTimerNumber: configData.data.hardware?.pwm?.timer?.number || 0,
       pwmSpreadSpectrumMode:
-        configData.data.hardware?.pwm?.spreadSpectrum?.mode || "auto",
+        configData.data.hardware?.pwm?.spreadSpectrum?.mode || "ON",
       pwmSpreadSpectrumWidth:
         configData.data.hardware?.pwm?.spreadSpectrum?.width || 15,
       pwmSpreadSpectrumSubsampling:
         configData.data.hardware?.pwm?.spreadSpectrum?.subsampling || 4,
       pwmPhaseShiftMode:
-        configData.data.hardware?.pwm?.phaseShift?.mode || "auto",
+        configData.data.hardware?.pwm?.phaseShift?.mode || "ON",
     };
 
     // Local reactive values (not immediately applied to store)
@@ -384,10 +379,14 @@ export default {
     );
     const pwmPhaseShiftMode = ref(originalValues.pwmPhaseShiftMode);
 
+    // Flag to track when active pin config content has been modified
+    const activePinConfigModified = ref(false);
+
     // Check if there are any changes
     const hasAnyChanges = computed(() => {
       const pinConfigChanged =
-        localCurrentPinConfigName.value !== originalValues.pinConfigName;
+        localCurrentPinConfigName.value !== originalValues.pinConfigName ||
+        activePinConfigModified.value;
 
       // Only check PWM changes if PWM is supported
       const isPwmSupported =
@@ -410,10 +409,16 @@ export default {
     });
 
     // PWM Options
-    const speedModeOptions = [
-      { label: "Low Speed", value: "low_speed" },
-      { label: "High Speed", value: "high_speed" },
-    ];
+    const speedModeOptions = computed(() => {
+      const options = [{ label: "Low Speed", value: "low_speed" }];
+
+      // Only add High Speed option for ESP32 (exactly)
+      if (infoData.data.soc && infoData.data.soc.toLowerCase() === "esp32") {
+        options.push({ label: "High Speed", value: "high_speed" });
+      }
+
+      return options;
+    });
 
     const timerNumberOptions = [
       { label: "Timer 0", value: 0 },
@@ -423,13 +428,13 @@ export default {
     ];
 
     const spreadSpectrumModeOptions = [
-      { label: "Off", value: "off" },
-      { label: "Auto", value: "auto" },
+      { label: "Off", value: "OFF" },
+      { label: "On", value: "ON" },
     ];
 
     const phaseShiftModeOptions = [
-      { label: "Off", value: "off" },
-      { label: "Auto", value: "auto" },
+      { label: "Off", value: "OFF" },
+      { label: "On", value: "ON" },
     ];
 
     // Reset all changes
@@ -444,6 +449,7 @@ export default {
       pwmSpreadSpectrumSubsampling.value =
         originalValues.pwmSpreadSpectrumSubsampling;
       pwmPhaseShiftMode.value = originalValues.pwmPhaseShiftMode;
+      activePinConfigModified.value = false;
     };
 
     // Apply all changes and restart
@@ -544,6 +550,9 @@ export default {
           3000,
         );
 
+        // Reset the flag since changes have been applied
+        activePinConfigModified.value = false;
+
         // Actually restart the controller
         try {
           await systemCommand.restartController();
@@ -561,27 +570,58 @@ export default {
       }
     };
 
-    // Pin configuration functions (modified to not auto-apply)
-    const socSpecificConfigs = computed(() => {
-      return configData.data.hardware.pinconfigs.filter(
-        (config) =>
-          config.soc.toLowerCase() === infoData.data.soc.toLowerCase(),
+    // --- New Pin Config Logic ---
+    // Fetch remote pin configs and available pins from pin_config_url
+    const fetchRemotePinConfigs = async () => {
+      remotePinConfigs.value = [];
+      const url = configData.data.general.pin_config_url;
+      if (!url) return;
+      try {
+        const response = await fetch(url);
+        const json = await response.json();
+        if (Array.isArray(json.pinconfigs)) {
+          remotePinConfigs.value = json.pinconfigs;
+        }
+        // Also update available_pins if present
+        if (Array.isArray(json.available_pins)) {
+          configData.updateData("hardware.available_pins", json.available_pins);
+        }
+      } catch (e) {
+        console.error("Failed to fetch remote pin configs:", e);
+      }
+    };
+
+    // Merge local and remote, filter for SoC, avoid duplicates
+    const compatiblePinConfigs = computed(() => {
+      const soc = infoData.data.soc?.toLowerCase() || "";
+      const local = configData.data.hardware.pinconfigs || [];
+      const remote = remotePinConfigs.value || [];
+      // Merge, remote first if not in local
+      const merged = [
+        ...local,
+        ...remote.filter((rc) => !local.some((lc) => lc.name === rc.name)),
+      ];
+      // Debug output
+      console.log("[PinConfig Debug] SoC:", soc);
+      console.log("[PinConfig Debug] Merged pin configs:", merged);
+      const filtered = merged.filter((cfg) => cfg.soc?.toLowerCase() === soc);
+      console.log(
+        "[PinConfig Debug] Filtered compatible pin configs:",
+        filtered,
       );
+      return filtered;
     });
 
     const getPinConfigNames = () => {
-      pinConfigNames.value = socSpecificConfigs.value.map(
-        (config) => config.name,
-      );
+      pinConfigNames.value = compatiblePinConfigs.value.map((cfg) => cfg.name);
     };
 
     const getCurrentPinConfig = () => {
-      const isSocCompatible = socSpecificConfigs.value.some(
+      const isSocCompatible = compatiblePinConfigs.value.some(
         (config) => config.name === localCurrentPinConfigName.value,
       );
-
-      if (!isSocCompatible && socSpecificConfigs.value.length > 0) {
-        localCurrentPinConfigName.value = socSpecificConfigs.value[0].name;
+      if (!isSocCompatible && compatiblePinConfigs.value.length > 0) {
+        localCurrentPinConfigName.value = compatiblePinConfigs.value[0].name;
         showNotification(
           "warning",
           "warning",
@@ -589,19 +629,37 @@ export default {
           3000,
         );
       }
-
-      const currentConfig = socSpecificConfigs.value.find(
+      const currentConfig = compatiblePinConfigs.value.find(
         (config) => config.name === localCurrentPinConfigName.value,
       );
-
       if (currentConfig) {
         pinConfigData.value = currentConfig.channels;
-      } else if (socSpecificConfigs.value.length > 0) {
-        localCurrentPinConfigName.value = socSpecificConfigs.value[0].name;
-        pinConfigData.value = socSpecificConfigs.value[0].channels;
+      } else if (compatiblePinConfigs.value.length > 0) {
+        localCurrentPinConfigName.value = compatiblePinConfigs.value[0].name;
+        pinConfigData.value = compatiblePinConfigs.value[0].channels;
       } else {
         pinConfigData.value = [];
       }
+    };
+
+    // When user selects a config, add to local if from remote
+    const onPinConfigSelected = (name) => {
+      const selected = compatiblePinConfigs.value.find(
+        (cfg) => cfg.name === name,
+      );
+      if (
+        selected &&
+        !configData.data.hardware.pinconfigs.some((cfg) => cfg.name === name)
+      ) {
+        // Add to local store
+        configData.updateData("hardware.pinconfigs", [
+          ...configData.data.hardware.pinconfigs,
+          selected,
+        ]);
+      }
+      configData.updateData("general.current_pin_config_name", name);
+      localCurrentPinConfigName.value = name;
+      getCurrentPinConfig();
     };
 
     const loadAvailablePins = () => {
@@ -609,7 +667,6 @@ export default {
         (pinConfig) =>
           pinConfig.soc.toLowerCase() === infoData.data.soc.toLowerCase(),
       );
-
       if (socPins) {
         availablePins.value = socPins.pins.map((pin) => ({
           label: `Pin ${pin}`,
@@ -620,51 +677,22 @@ export default {
       }
     };
 
+    // Load both local and remote pin configs on mount
     const loadPinConfigData = async () => {
-      console.log("loading pinConfigData");
-      try {
-        const owner = "pljakobs";
-        const repo = "esp_rgb_webapp2";
-        const path = "public/config/pinconfig.json";
-        const branch = "devel";
-
-        const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${path}?ref=${branch}`;
-
-        const response = await fetch(apiUrl);
-        const data = await response.json();
-        const remotePinConfigData = JSON.parse(atob(data.content));
-
-        const remoteVersion = remotePinConfigData.version;
-
-        if (remoteVersion > configData.data.hardware.version) {
-          const localPinConfigs = configData.data.hardware.pinconfigs;
-          const remotePinConfigs = remotePinConfigData.pinconfigs;
-
-          const mergedPinConfigs = [
-            ...localPinConfigs,
-            ...remotePinConfigs.filter(
-              (remoteConfig) =>
-                !localPinConfigs.some(
-                  (localConfig) => localConfig.name === remoteConfig.name,
-                ),
-            ),
-          ];
-
-          configData.updateData("hardware.pinconfigs", mergedPinConfigs, false);
-          configData.updateData("hardware.version", remoteVersion, false);
-        }
-      } catch (error) {
-        console.error("Error loading pin config:", error);
-        showNotification(
-          "negative",
-          "error",
-          `Error loading pin config: ${error.message}`,
-        );
-      }
-
+      await fetchRemotePinConfigs();
       getPinConfigNames();
       getCurrentPinConfig();
       loadAvailablePins();
+      // If no compatible pin configs, prompt to add one
+      if (compatiblePinConfigs.value.length === 0) {
+        showNotification(
+          "warning",
+          "warning",
+          `No pin configuration found for ${infoData.data.soc}. Please add one for this architecture.`,
+          4000,
+        );
+        showAddConfigDialog();
+      }
     };
 
     const showAddConfigDialog = () => {
@@ -681,14 +709,19 @@ export default {
           newConfig,
         ]);
 
-        getPinConfigNames();
+        // Set the new config as the current one
+        configData.updateData(
+          "general.current_pin_config_name",
+          newConfig.name,
+        );
         localCurrentPinConfigName.value = newConfig.name;
+        getPinConfigNames();
         getCurrentPinConfig();
 
         showNotification(
           "positive",
           "check_circle",
-          `Pin configuration "${newConfig.name}" created`,
+          `Pin configuration "${newConfig.name}" created and selected`,
         );
       });
     };
@@ -725,7 +758,26 @@ export default {
 
         if (index !== -1) {
           configs[index] = updatedConfig;
+
+          // Update the stored pin configurations
           configData.updateData("hardware.pinconfigs", configs);
+
+          // Since this is the currently active pin config, also update the active configuration
+          configData.updateData("general.channels", updatedConfig.channels);
+          configData.updateData(
+            "general.current_pin_config_name",
+            updatedConfig.name,
+          );
+
+          if (
+            updatedConfig.clearPin !== undefined &&
+            updatedConfig.clearPin !== null
+          ) {
+            configData.updateData("general.clear_pin", updatedConfig.clearPin);
+          }
+
+          // Mark that the active pin config has been modified (requires restart)
+          activePinConfigModified.value = true;
 
           if (updatedConfig.name !== localCurrentPinConfigName.value) {
             localCurrentPinConfigName.value = updatedConfig.name;
@@ -737,7 +789,7 @@ export default {
           showNotification(
             "positive",
             "check_circle",
-            `Pin configuration "${updatedConfig.name}" updated`,
+            `Pin configuration "${updatedConfig.name}" updated and applied`,
           );
         }
       });
@@ -767,6 +819,14 @@ export default {
           getPinConfigNames();
           getCurrentPinConfig();
           loadAvailablePins();
+
+          // Reset speed mode to low_speed if current SoC doesn't support high speed
+          if (
+            infoData.data.soc.toLowerCase() !== "esp32" &&
+            pwmSpeedMode.value === "high_speed"
+          ) {
+            pwmSpeedMode.value = "low_speed";
+          }
         }
       },
     );
@@ -799,10 +859,11 @@ export default {
       formattedPinConfigData,
       showAddConfigDialog,
       editCurrentConfig,
-      socSpecificConfigs,
+      compatiblePinConfigs,
       getCurrentPinConfig,
       getPinConfigNames,
       loadPinConfigData,
+      onPinConfigSelected,
     };
   },
 };
@@ -817,8 +878,13 @@ export default {
 .hidden {
   display: none !important;
 }
-
+</style>
+<style>
 .custom-tooltip {
-  max-width: 150px;
+  max-width: 250px;
+  font-size: 14px;
+  font-weight: 500; /* Makes text slightly bolder */
+  line-height: 1.4; /* Improves readability */
+  padding: 8px 12px; /* Adds more internal spacing */
 }
 </style>

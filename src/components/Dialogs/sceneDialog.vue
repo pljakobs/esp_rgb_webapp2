@@ -2,7 +2,6 @@
   <q-dialog
     ref="dialogRef"
     @hide="handleDialogHide"
-    full-width
     :maximized="$q.platform.is.mobile"
   >
     <q-card class="q-dialog-plugin scene-dialog-card">
@@ -20,38 +19,43 @@
       <!-- Main content -->
       <q-scroll-area ref="scrollAreaRef" class="scene-dialog-scroll">
         <!-- Scene name -->
-        <q-card-section>
+        <q-card-section class="q-pa-md q-pb-sm">
           <q-input
             v-model="scene.name"
             label="Scene Name"
             filled
+            dense
             autofocus
             :max-length="20"
           />
         </q-card-section>
 
         <!-- Group selection -->
-        <q-card-section v-if="groupOptions.length !== 0">
+        <q-card-section
+          v-if="groupOptions.length !== 0"
+          class="q-pa-md q-py-sm"
+        >
           <mySelect
             v-model="scene.group_id"
             :options="groupOptions"
             label="Select Group"
             filled
+            dense
             @update:model-value="onGroupChange"
             emit-value
             map-options
           />
         </q-card-section>
-        <q-card-section v-else class="text-center text-negative">
+        <q-card-section v-else class="text-center text-negative q-pa-md">
           A scene needs at least one group to be defined
         </q-card-section>
 
-        <q-card-section>
-          <div class="default-transition-container q-mb-sm">
+        <q-card-section class="q-pa-md q-py-sm">
+          <div class="default-transition-container">
             <!-- Header row with toggle - similar to controller item -->
             <div class="row items-center justify-between q-mb-xs">
               <div class="row items-center">
-                <div class="text-subtitle2">Scene Default Transition</div>
+                <div class="text-subtitle2">Default Transition</div>
                 <q-tooltip>
                   This transition will be used as the default for new settings
                 </q-tooltip>
@@ -61,6 +65,7 @@
                 flat
                 dense
                 round
+                size="sm"
                 :color="scene.defaultTransition ? 'primary' : 'grey'"
                 @click="toggleDefaultTransition"
               >
@@ -73,12 +78,6 @@
                   }}
                 </q-tooltip>
               </q-btn>
-            </div>
-
-            <!-- Description text -->
-            <div class="text-caption q-mb-sm">
-              Set the default transition that will apply to new color settings
-              in this scene
             </div>
 
             <!-- Slide transition for the panel -->
@@ -96,7 +95,7 @@
         </q-card-section>
 
         <!-- Controllers section -->
-        <q-card-section>
+        <q-card-section class="q-pa-md q-pt-sm">
           <div class="text-subtitle2 q-mb-sm">Controllers in this group</div>
           <controller-item
             v-for="controller in controllersInGroup"
@@ -115,21 +114,52 @@
             @update-positions="updateSettingPositions"
           />
         </q-card-section>
-
-        <!-- Progress bar for saving -->
-        <q-card-section v-if="progress.total > 0">
-          <q-linear-progress
-            :value="progress.completed / progress.total"
-            color="primary"
-          />
-          <div class="text-caption q-mt-xs">
-            {{ progress.completed }} / {{ progress.total }} controllers updated
-          </div>
-        </q-card-section>
       </q-scroll-area>
 
+      <!-- Modal Progress Overlay -->
+      <q-dialog
+        v-model="showProgressModal"
+        persistent
+        no-esc-dismiss
+        no-route-dismiss
+        position="standard"
+      >
+        <q-card class="progress-modal-card">
+          <q-card-section class="text-center q-pa-lg">
+            <div class="text-h6 q-mb-md">Saving Scene</div>
+            <q-circular-progress
+              v-if="progress.total === 0"
+              indeterminate
+              size="80px"
+              :thickness="0.15"
+              color="primary"
+              class="q-mb-md"
+            />
+            <q-circular-progress
+              v-else
+              :value="(progress.completed / progress.total) * 100"
+              size="80px"
+              :thickness="0.15"
+              color="primary"
+              track-color="grey-3"
+              class="q-mb-md"
+            />
+            <div v-if="progress.total === 0" class="text-subtitle2 q-mb-xs">
+              Preparing to save...
+            </div>
+            <div v-else class="text-subtitle2 q-mb-xs">
+              {{ progress.completed }} / {{ progress.total }} controllers
+              updated
+            </div>
+            <div class="text-caption text-grey-6">
+              Please wait while the scene is being saved...
+            </div>
+          </q-card-section>
+        </q-card>
+      </q-dialog>
+
       <!-- Action buttons -->
-      <q-card-actions align="right" class="q-pa-md">
+      <q-card-actions align="right" class="q-pa-md q-pt-sm">
         <q-btn flat label="Cancel" color="primary" @click="onCancelClick" />
         <q-space />
         <q-btn
@@ -210,6 +240,9 @@ export default {
       completed: 0,
       total: 0,
     });
+
+    // Modal progress dialog visibility
+    const showProgressModal = ref(false);
 
     // Check if we're editing an existing scene
     const isEditMode = computed(() => Boolean(scene.value && scene.value.id));
@@ -467,7 +500,18 @@ export default {
     };
 
     const updateProgress = (completed, total) => {
+      console.log("🎯 UpdateProgress called:", {
+        completed,
+        total,
+        modalVisible: showProgressModal.value,
+      });
       progress.value = { completed, total };
+
+      // Hide modal when save is complete
+      if (completed >= total && total > 0) {
+        console.log("🎯 Hiding progress modal - save complete");
+        showProgressModal.value = false;
+      }
     };
 
     // When dialog is closed
@@ -545,6 +589,12 @@ export default {
           console.error("No scene to save");
           return;
         }
+
+        // Show progress modal immediately when save starts
+        console.log(
+          "🎯 Save button clicked - showing progress modal immediately",
+        );
+        showProgressModal.value = true;
 
         const sceneToSave = JSON.parse(JSON.stringify(scene.value));
 
@@ -655,6 +705,10 @@ export default {
 
         // Add callback functions
         sceneToSave.saveComplete = () => {
+          console.log(
+            "🎯 Save complete callback - ensuring progress modal is hidden",
+          );
+          showProgressModal.value = false;
           if (dialogRef.value) {
             dialogRef.value.hide();
           }
@@ -778,6 +832,7 @@ export default {
       sceneExists,
       isSaveDisabled,
       progress,
+      showProgressModal,
       queueOptions,
       getControllerSceneSettings,
       onGroupChange,
@@ -804,7 +859,7 @@ export default {
 <style scoped>
 .scene-dialog-card {
   width: 100%;
-  max-width: 600px;
+  max-width: 450px;
 }
 
 @media (max-width: 599px) {
@@ -815,12 +870,13 @@ export default {
 }
 
 .scene-dialog-scroll {
-  height: 60vh;
+  height: 45vh;
+  max-height: 500px;
 }
 
 @media (max-width: 599px) {
   .scene-dialog-scroll {
-    height: calc(80vh - 100px);
+    height: calc(75vh - 100px);
   }
 }
 
@@ -834,6 +890,35 @@ export default {
 .default-transition-container {
   border: 1px solid rgba(0, 0, 0, 0.12);
   border-radius: 4px;
-  padding: 12px;
+  padding: 8px 12px;
+  margin-bottom: 0;
+}
+
+/* Compact sections */
+.q-card-section.q-pa-md {
+  padding: 12px 12px;
+}
+
+.q-card-section.q-py-sm {
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+
+.q-card-section.q-pt-sm {
+  padding-top: 8px;
+}
+
+.q-card-section.q-pt-none {
+  padding-top: 0;
+}
+
+.q-card-section.q-pb-sm {
+  padding-bottom: 8px;
+}
+
+/* Progress Modal */
+.progress-modal-card {
+  min-width: 300px;
+  max-width: 400px;
 }
 </style>

@@ -4,9 +4,9 @@ on:
   push:
     branches:
       - devel
-    pull_request:
-      branches:
-        - devel
+  pull_request:
+    branches:
+      - devel
 
 jobs:
   build:
@@ -21,7 +21,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v2
         with:
-          node-version: "18"
+          node-version: "20"
 
       - name: Install dependencies
         run: npm install

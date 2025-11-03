@@ -64,6 +64,50 @@ export const configDataStore = defineStore("configDataStore", {
         this.updateApi(minimalUpdate);
       }
     },
+    updateMultipleData(updates, update = true) {
+      console.log(
+        "updateMultipleData called with:",
+        Object.keys(updates).length,
+        "updates",
+      );
+
+      // Apply all updates to local state
+      Object.entries(updates).forEach(([field, value]) => {
+        const fieldParts = field.split(".");
+        let currentObject = this.data;
+        for (let i = 0; i < fieldParts.length - 1; i++) {
+          currentObject = currentObject[fieldParts[i]];
+        }
+        currentObject[fieldParts[fieldParts.length - 1]] = value;
+      });
+
+      if (update) {
+        // Send all updates as a single API call
+        const minimalUpdate = {};
+
+        Object.entries(updates).forEach(([field, value]) => {
+          const fieldParts = field.split(".");
+          let tempObject = minimalUpdate;
+          let currentObject = this.data;
+
+          for (let i = 0; i < fieldParts.length - 1; i++) {
+            const key = fieldParts[i];
+            if (!tempObject[key]) {
+              tempObject[key] = Array.isArray(currentObject[key]) ? [] : {};
+            }
+            tempObject = tempObject[key];
+            currentObject = currentObject[key];
+          }
+          tempObject[fieldParts[fieldParts.length - 1]] = value;
+        });
+
+        console.log(
+          "minimalUpdate for multiple data:",
+          safeStringify(minimalUpdate),
+        );
+        this.updateApi(minimalUpdate);
+      }
+    },
     updateApi(minimalUpdate) {
       console.log("updateApi called with: ", safeStringify(minimalUpdate));
       const controllers = useControllersStore();

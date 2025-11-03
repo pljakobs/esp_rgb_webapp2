@@ -12,8 +12,12 @@
             @click="step > 1 ? (step = 1) : null"
           >
             <div class="step-icon">
-              <svgIcon v-if="step > 1" name="check_outlined" />
-              <svgIcon v-else name="badge_outlined" />
+              <svgIcon name="badge_outlined" />
+              <svgIcon
+                v-if="step > 1"
+                name="check_outlined"
+                class="step-check-overlay"
+              />
             </div>
             <div class="step-label">Hostname</div>
           </div>
@@ -24,8 +28,12 @@
             @click="step > 2 ? (step = 2) : null"
           >
             <div class="step-icon">
-              <svgIcon v-if="step > 2" name="check_outlined" />
-              <svgIcon v-else name="memory_outlined" />
+              <svgIcon name="memory_outlined" />
+              <svgIcon
+                v-if="step > 2"
+                name="check_outlined"
+                class="step-check-overlay"
+              />
             </div>
             <div class="step-label">Pin Config</div>
           </div>
@@ -36,25 +44,49 @@
             @click="step > 3 ? (step = 3) : null"
           >
             <div class="step-icon">
-              <svgIcon v-if="step > 3" name="check_outlined" />
-              <svgIcon v-else name="palette_outlined" />
+              <svgIcon name="palette_outlined" />
+              <svgIcon
+                v-if="step > 3"
+                name="check_outlined"
+                class="step-check-overlay"
+              />
             </div>
             <div class="step-label">Color Model</div>
           </div>
-          <!-- Step 4: WiFi Connection -->
+          <!-- Step 4: Telemetry -->
           <div
             class="step-indicator"
             :class="{ active: step === 4, completed: step > 4 }"
             @click="step > 4 ? (step = 4) : null"
           >
             <div class="step-icon">
-              <svgIcon v-if="step > 4" name="check_outlined" />
-              <svgIcon v-else name="wifi_outlined" />
+              <svgIcon name="telemetry" />
+              <svgIcon
+                v-if="step > 4"
+                name="check_outlined"
+                class="step-check-overlay"
+              />
+            </div>
+            <div class="step-label">Telemetry</div>
+          </div>
+          <!-- Step 5: WiFi Connection -->
+          <div
+            class="step-indicator"
+            :class="{ active: step === 5, completed: step > 5 }"
+            @click="step > 5 ? (step = 5) : null"
+          >
+            <div class="step-icon">
+              <svgIcon name="wifi_outlined" />
+              <svgIcon
+                v-if="step > 5"
+                name="check_outlined"
+                class="step-check-overlay"
+              />
             </div>
             <div class="step-label">WiFi</div>
           </div>
-          <!-- Step 5: Completion -->
-          <div class="step-indicator" :class="{ active: step === 5 }">
+          <!-- Step 6: Completion -->
+          <div class="step-indicator" :class="{ active: step === 6 }">
             <div class="step-icon">
               <svgIcon name="check_outlined" />
             </div>
@@ -78,6 +110,7 @@
           filled
           class="q-mb-md"
           :rules="[(val) => !!val || 'Hostname is required']"
+          @blur="trimHostname"
         />
         <div class="text-caption q-mb-lg">
           The hostname will be used to access the device on your local network
@@ -91,39 +124,57 @@
           Select a pin configuration for your
           {{ infoData.data.soc.toUpperCase() }} device
         </div>
-        <mySelect
-          v-model="currentPinConfigName"
-          filled
-          :options="pinConfigNames"
-          label="Pin Configuration"
-          class="q-mb-md"
-          emit-value
-          map-options
-          @update:model-value="handlePinConfigChange"
-        />
-        <div
-          v-if="socSpecificConfigs.length === 0"
-          class="text-negative q-mt-md"
-        >
-          No pin configurations available for
-          {{ infoData.data.soc.toUpperCase() }} device. Please contact support.
+        <div v-if="socSpecificConfigs.length === 0" class="q-mt-md">
+          <q-banner class="text-warning bg-warning-light q-mb-md" rounded>
+            <template #avatar>
+              <svgIcon name="info_outlined" />
+            </template>
+            <div class="text-subtitle2">
+              No Default Pin Configuration Available
+            </div>
+            <div class="text-body2 q-mt-sm">
+              No pre-configured pin layouts are available for your
+              {{ infoData.data.soc.toUpperCase() }} device. You can continue
+              with the setup and configure the pins manually in the main
+              interface later.
+            </div>
+          </q-banner>
+          <div class="text-caption text-grey-7">
+            Pin configuration can be set up after completing the initial setup
+            process.
+          </div>
         </div>
-        <div v-else class="q-mt-md">
-          <div class="text-subtitle2">Selected Configuration Details:</div>
-          <q-list dense class="q-mt-sm">
-            <q-item
-              v-for="(channel, index) in currentPinConfig.channels"
-              :key="index"
-            >
-              <q-item-section>
-                <div class="row items-center">
-                  <div class="color-circle q-mr-md" :class="channel.name"></div>
-                  <div class="text-capitalize">{{ channel.name }}:</div>
-                  <div class="q-ml-md">Pin {{ channel.pin }}</div>
-                </div>
-              </q-item-section>
-            </q-item>
-          </q-list>
+        <div v-else>
+          <mySelect
+            v-model="currentPinConfigName"
+            filled
+            :options="pinConfigNames"
+            label="Pin Configuration"
+            class="q-mb-md"
+            emit-value
+            map-options
+            @update:model-value="handlePinConfigChange"
+          />
+          <div class="q-mt-md">
+            <div class="text-subtitle2">Selected Configuration Details:</div>
+            <q-list dense class="q-mt-sm">
+              <q-item
+                v-for="(channel, index) in currentPinConfig.channels"
+                :key="index"
+              >
+                <q-item-section>
+                  <div class="row items-center">
+                    <div
+                      class="color-circle q-mr-md"
+                      :class="channel.name"
+                    ></div>
+                    <div class="text-capitalize">{{ channel.name }}:</div>
+                    <div class="q-ml-md">Pin {{ channel.pin }}</div>
+                  </div>
+                </q-item-section>
+              </q-item>
+            </q-list>
+          </div>
         </div>
       </div>
 
@@ -155,8 +206,54 @@
         </div>
       </div>
 
-      <!-- Step 4: WiFi Configuration -->
+      <!-- Step 4: Telemetry -->
       <div v-if="step === 4" class="q-pa-md">
+        <div class="text-h6 q-mb-md">Telemetry</div>
+        <div class="text-subtitle2 q-mb-lg">
+          Do you want to allow anonymous statistics to be sent to the developer? This helps improving the firmware.
+        </div>
+        <q-btn-toggle
+            v-model="telemetryEnabled"
+            :options="[
+              {label: 'Yes', value: true},
+              {label: 'No', value: false}
+            ]"
+          />
+        <div class="text-caption q-mt-md">
+          If you don't make a selection, telemetry will be
+          <strong>{{ isDebug ? 'enabled' : 'disabled' }}</strong> by default for this
+          <strong>{{ isDebug ? 'debug' : 'release' }}</strong> build.
+          You can change this setting at any time under Network Settings > Telemetry.
+        </div>
+        <div class="q-mt-md">
+          <q-btn
+            :label="detailsButtonLabel"
+            @click="toggleDetails"
+            flat
+            color="primary"
+          />
+          <div v-if="showDetails">
+            <div>
+              With this build, the following data is sent every 30s:
+              <q-scroll-area style="height: 200px;">
+                <q-table
+                  :rows="telemetryDataRows"
+                  :columns="telemetryDataColumns"
+                  row-key="col1"
+                  flat
+                  bordered
+                  wrap-cells
+                  :hide-bottom="true"
+                  :pagination="{ rowsPerPage: telemetryDataRows.length, page: 1, sortBy: null, descending: false }"
+                />
+              </q-scroll-area>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 5: WiFi Configuration -->
+      <div v-if="step === 5" class="q-pa-md">
         <div class="text-h6 q-mb-md">Connect to WiFi Network</div>
         <div class="text-subtitle2 q-mb-lg">
           Select your WiFi network from the list or enter details manually
@@ -189,6 +286,7 @@
           label="Network Name (SSID)"
           :disable="false"
           class="q-mb-md"
+          @blur="trimNetworkName"
         />
         <q-input
           v-model="password"
@@ -197,6 +295,7 @@
           label="Password"
           class="q-mb-md"
           :class="{ shake: wifiData.message === 'Wrong password' }"
+          @blur="trimPassword"
         >
           <template #append>
             <svgIcon
@@ -222,8 +321,8 @@
         </div>
       </div>
 
-      <!-- Step 5: Completion/Status -->
-      <div v-if="step === 5" class="q-pa-md">
+      <!-- Step 6: Completion/Status -->
+      <div v-if="step === 6" class="q-pa-md">
         <div class="text-h6 q-mb-md">Setup Complete</div>
         <div v-if="connecting" class="q-my-lg text-center">
           <q-spinner color="primary" size="3em" />
@@ -254,10 +353,19 @@
                 <q-item-label>{{ wifiData.ssid }}</q-item-label>
               </q-item-section>
             </q-item>
-            <q-item clickable tag="a" :href="'http://' + wifiData.ip">
+            <q-item
+              clickable
+              tag="a"
+              :href="'http://' + wifiData.ip"
+              target="_blank"
+              rel="noopener"
+            >
               <q-item-section>
                 <q-item-label caption>IP Address</q-item-label>
-                <q-item-label>{{ wifiData.ip }}</q-item-label>
+                <q-item-label
+                  class="text-primary text-underline cursor-pointer"
+                  >{{ wifiData.ip }}</q-item-label
+                >
               </q-item-section>
               <q-item-section avatar>
                 <svgIcon name="open_in_new" />
@@ -301,7 +409,7 @@
       <q-separator />
       <div class="row justify-between q-pa-md">
         <q-btn
-          v-if="step > 1 && step < 5"
+          v-if="step > 1 && step < 6"
           outline
           color="primary"
           label="Back"
@@ -309,14 +417,14 @@
         />
         <div v-else></div>
         <q-btn
-          v-if="step < 4"
+          v-if="step < 5"
           color="primary"
           label="Next"
           @click="goToNextStep"
           :disable="!canProceed"
         />
         <q-btn
-          v-else-if="step === 4"
+          v-else-if="step === 5"
           color="primary"
           label="Connect"
           @click="finalizeSetup"
@@ -339,6 +447,7 @@ import { storeStatus } from "src/stores/storeConstants";
 import systemCommand from "src/services/systemCommands.js";
 import svgIcon from "src/components/svgIcon.vue";
 import ColorSlider from "src/components/ColorSlider.vue";
+import { telemetryDataColumns, telemetryDataRows } from "src/stores/telemetryData.js";
 
 export default {
   name: "NetworkSetupWizard",
@@ -355,6 +464,24 @@ export default {
 
     // Hostname
     const hostname = ref(configData.data.general.device_name || "");
+
+    // Telemetry
+    const telemetryEnabled = computed({
+      get: () => configData.data?.telemetry?.enabled,
+      set: (value) => {
+        if (configData.data?.telemetry) {
+          configData.data.telemetry.enabled = value;
+        }
+      },
+    });
+
+    // Telemetry details
+    const showDetails = ref(false);
+    const detailsButtonLabel = computed(() => showDetails.value ? 'Hide Details' : 'Show Details');
+    const toggleDetails = () => {
+      showDetails.value = !showDetails.value;
+    };
+    const isDebug = computed(() => infoData.data?.firmware?.includes("DEBUG") ?? false);
 
     // Pin config
     const currentPinConfigName = ref(
@@ -446,16 +573,34 @@ export default {
     });
     const log = ref([]);
 
+    // Input trimming helpers
+    const trimHostname = () => {
+      if (hostname.value) {
+        hostname.value = hostname.value.trim();
+      }
+    };
+    const trimNetworkName = () => {
+      if (selectedNetwork.value.ssid) {
+        selectedNetwork.value.ssid = selectedNetwork.value.ssid.trim();
+      }
+    };
+    const trimPassword = () => {
+      if (password.value) {
+        password.value = password.value.trim();
+      }
+    };
+
     // Validation
     const canProceed = computed(() => {
       if (step.value === 1) {
         return hostname.value && hostname.value.trim() !== "";
       } else if (step.value === 2) {
-        return (
-          currentPinConfigName.value && socSpecificConfigs.value.length > 0
-        );
+        // Allow proceeding even if no pin configs are available
+        return true;
       } else if (step.value === 3) {
         return colorModel.value && colorOptions.value.length > 0;
+      } else if (step.value === 4) {
+        return true; // Telemetry step can always proceed
       }
       return true;
     });
@@ -561,13 +706,13 @@ export default {
         if (response.ok) {
           wifiData.value.message = "Connecting to network...";
           log.value.push("Connecting to network");
-          step.value = 5;
+          step.value = 6;
         } else {
           wifiData.value.message = "Failed to initiate connection";
           log.value.push("Failed to initiate connection");
           connecting.value = false;
           // Stay on WiFi step
-          step.value = 4;
+          step.value = 5;
           return;
         }
 
@@ -584,28 +729,32 @@ export default {
         // 3. Send config data (hostname & pin config) after WiFi is up
         if (connected) {
           configData.updateData("general.device_name", hostname.value);
-          configData.updateData(
-            "general.current_pin_config_name",
-            currentPinConfigName.value,
-          );
-          configData.updateData(
-            "general.channels",
-            currentPinConfig.value.channels,
-          );
+          // Only update pin config if one is selected
+          if (currentPinConfigName.value && currentPinConfig.value.channels) {
+            configData.updateData(
+              "general.current_pin_config_name",
+              currentPinConfigName.value,
+            );
+            configData.updateData(
+              "general.channels",
+              currentPinConfig.value.channels,
+            );
+          }
           // Send color model here
           const modelIndex = colorOptions.value.indexOf(colorModel.value);
           configData.updateData("color.outputmode", modelIndex);
+          // The telemetry setting is already updated by the component
         } else {
           // WiFi never connected, go back to WiFi step
           wifiData.value.message =
             "Unable to connect to the network. Please try again.";
-          step.value = 4;
+          step.value = 5;
           connecting.value = false;
           return;
         }
       } catch (error) {
         wifiData.value.message = `Connection error: ${error.message}`;
-        step.value = 4;
+        step.value = 5;
       } finally {
         setTimeout(() => {
           connecting.value = false;
@@ -662,7 +811,7 @@ export default {
         wifiData.value.gateway = params.station.gateway;
         wifiData.value.mac = params.station.mac;
         wifiData.value.message = params.message;
-        if (wifiData.value.connected && step.value === 5) startCountdown();
+        if (wifiData.value.connected && step.value === 6) startCountdown();
       });
     };
 
@@ -710,6 +859,35 @@ export default {
       },
     );
 
+    // Watchers for automatic whitespace trimming
+    watch(
+      () => hostname.value,
+      () => {
+        if (hostname.value && hostname.value !== hostname.value.trim()) {
+          hostname.value = hostname.value.trim();
+        }
+      },
+    );
+    watch(
+      () => selectedNetwork.value.ssid,
+      () => {
+        if (
+          selectedNetwork.value.ssid &&
+          selectedNetwork.value.ssid !== selectedNetwork.value.ssid.trim()
+        ) {
+          selectedNetwork.value.ssid = selectedNetwork.value.ssid.trim();
+        }
+      },
+    );
+    watch(
+      () => password.value,
+      () => {
+        if (password.value && password.value !== password.value.trim()) {
+          password.value = password.value.trim();
+        }
+      },
+    );
+
     return {
       step,
       connecting,
@@ -740,11 +918,49 @@ export default {
       getColorSliderValue,
       updateColorSlider,
       emitColorModel,
+      trimHostname,
+      trimNetworkName,
+      trimPassword,
+      telemetryEnabled,
+      showDetails,
+      detailsButtonLabel,
+      toggleDetails,
+      telemetryDataColumns,
+      telemetryDataRows,
+      isDebug,
     };
   },
 };
 </script>
 
 <style scoped>
-/* ...existing styles unchanged... */
+.step-indicator {
+  position: relative;
+  display: inline-block;
+}
+
+.step-check-overlay {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  width: 16px;
+  height: 16px;
+  color: #4caf50;
+  background-color: white;
+  border-radius: 50%;
+  border: 1px solid #4caf50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.step-icon {
+  position: relative;
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+}
 </style>

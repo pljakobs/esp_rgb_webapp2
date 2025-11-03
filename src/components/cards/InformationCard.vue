@@ -35,6 +35,7 @@ export default {
         { label: "Sming Version", value: infoData.data.sming },
         { label: "Uptime", value: infoData.data.uptime },
         { label: "Heap Free", value: infoData.data.heap_free },
+        { label: "CPU Usage (%)", value: infoData.data.cpu_usage_percent },
         { label: "SoC", value: infoData.data.soc },
       ];
     });

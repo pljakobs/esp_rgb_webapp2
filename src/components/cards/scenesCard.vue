@@ -4,7 +4,7 @@
       <q-scroll-area class="inset-scroll-area">
         <div v-if="groupNodes && groupNodes.length > 0">
           <q-tree
-            :nodes="groupNodes"
+            :nodes="enhancedGroupNodes"
             node-key="id"
             :expanded="expandedNodes"
             @update:expanded="onExpandedChange"
@@ -62,7 +62,7 @@
                     />
                     <svgIcon
                       v-else-if="prop.node.nodeType === 'controller'"
-                      :name="prop.node.data.icon || 'led-strip-variant'"
+                      :name="prop.node.icon || 'lightbulb_outlined'"
                     />
                   </div>
                   <div
@@ -236,6 +236,7 @@ import { Dialog, colors, Notify } from "quasar";
 import { useAppDataStore } from "src/stores/appDataStore";
 import { useControllersStore } from "src/stores/controllersStore";
 import { useScenesStore } from "src/stores/scenesStore";
+import { storeStatus } from "src/stores/storeConstants";
 import MyCard from "src/components/myCard.vue";
 import sceneDialog from "src/components/Dialogs/sceneDialog.vue";
 import groupDialog from "src/components/Dialogs/groupDialog.vue";
@@ -274,6 +275,24 @@ export default {
       }, 1000);
     });
 
+    // Computed property to enhance group nodes with resolved controller icons
+    const enhancedGroupNodes = computed(() => {
+      if (!scenesStore.groupNodes || appData.status !== storeStatus.READY) {
+        return scenesStore.groupNodes || [];
+      }
+
+      return scenesStore.groupNodes.map((groupNode) => ({
+        ...groupNode,
+        children: groupNode.children?.map((sceneNode) => ({
+          ...sceneNode,
+          children: sceneNode.children?.map((controllerNode) => ({
+            ...controllerNode,
+            icon: getCustomControllerIcon(controllerNode.data),
+          })),
+        })),
+      }));
+    });
+
     const isExpanded = (nodeId) => {
       return scenesStore.expandedNodes.includes(nodeId);
     };
@@ -300,7 +319,7 @@ export default {
 
     // Handle expanded nodes change from q-tree
     const onExpandedChange = (expanded) => {
-      console.log("🌳 Tree reports expanded nodes changed to:", expanded);
+      console.log(" Tree reports expanded nodes changed to:", expanded);
       scenesStore.expandedNodes = expanded;
     };
 
@@ -373,9 +392,51 @@ export default {
           }
         };
 
-        // Completion handler will close the dialog
-        const completeCallback = () => {
-          console.log("Save operation complete, closing dialog");
+        // Completion handler will close the dialog and show notifications
+        const completeCallback = (result) => {
+          console.log("🎬 Save operation complete, closing dialog");
+          console.log(
+            "🎬 Save result received:",
+            JSON.stringify(result, null, 2),
+          );
+          console.log("🎬 Result type:", typeof result);
+          console.log("🎬 Result success value:", result?.success);
+          console.log("🎬 Result errors:", result?.errors);
+
+          // Show appropriate notification based on result
+          if (result && result.success === true) {
+            if (result.errors && result.errors.length > 0) {
+              // Partial success - some controllers failed
+              console.log("🟡 Showing partial success notification");
+              Notify.create({
+                type: "warning",
+                message: `Scene "${sceneToSave.name}" saved locally and to ${result.successCount} controllers, but ${result.errors.length} controller(s) unreachable`,
+                timeout: 5000,
+                actions: [{ icon: "close", color: "white" }],
+              });
+            } else {
+              // Full success
+              console.log("🟢 Showing full success notification");
+              Notify.create({
+                type: "positive",
+                message: `Scene "${sceneToSave.name}" saved successfully to all controllers`,
+                timeout: 3000,
+              });
+            }
+          } else {
+            // Failed to save or no result
+            const errorMessage = result?.error || "Unknown error occurred";
+            console.log("🔴 Showing error notification:", errorMessage);
+            console.error("Scene save failed:", errorMessage, result);
+
+            Notify.create({
+              type: "negative",
+              message: `Failed to save scene "${sceneToSave.name}": ${errorMessage}`,
+              timeout: 5000,
+              actions: [{ icon: "close", color: "white" }],
+            });
+          }
+
           if (saveComplete) {
             saveComplete();
           }
@@ -472,9 +533,46 @@ export default {
       });
     };
 
+    // Function to get custom controller icon from appDataStore
+    const getCustomControllerIcon = (controllerData) => {
+      console.log(
+        "getCustomControllerIcon called for scene controller:",
+        controllerData?.controller_id,
+      );
+
+      // Check if appData store is ready before proceeding
+      if (appData.status !== storeStatus.READY) {
+        console.log("AppData store not ready yet, using default icon");
+        return "lightbulb_outlined";
+      }
+
+      if (
+        controllerData &&
+        controllerData.controller_id &&
+        appData.data &&
+        appData.data.controllers
+      ) {
+        const controllerMetadata = appData.data.controllers.find(
+          (c) => c.id === controllerData.controller_id,
+        );
+        if (controllerMetadata && controllerMetadata.icon) {
+          console.log(
+            "Found controller icon in appDataStore:",
+            controllerMetadata.icon,
+          );
+          return controllerMetadata.icon;
+        }
+      }
+
+      // Fallback to default light icon
+      console.log("No icon found in appDataStore, using default");
+      return "lightbulb_outlined";
+    };
+
     return {
       // Store refs
       groupNodes: computed(() => scenesStore.groupNodes),
+      enhancedGroupNodes,
       expandedNodes: computed(() => scenesStore.expandedNodes),
       debugStatus: computed(() => scenesStore.debugStatus),
 
@@ -496,11 +594,40 @@ export default {
       hsvToRgb,
       getPresetName,
       applyScene,
+      getCustomControllerIcon,
 
       // Toggle favorite directly through appData store
-      toggleFavoriteScene: (scene) => {
+      toggleFavoriteScene: async (scene) => {
+        const oldFavorite = scene.favorite;
         scene.favorite = !scene.favorite;
-        appData.saveScene(scene);
+
+        try {
+          const result = await appData.saveScene(scene);
+
+          if (result.errors && result.errors.length > 0) {
+            console.warn(
+              `⚠️ Scene favorite toggled locally, but some controllers unreachable:`,
+              result.errors,
+            );
+            Notify.create({
+              type: "warning",
+              message: `Favorite toggled locally, but ${result.errors.length} controller(s) unreachable`,
+              timeout: 3000,
+            });
+          } else {
+            console.log(`✅ Scene favorite toggled successfully`);
+          }
+        } catch (error) {
+          console.error("Error toggling scene favorite:", error);
+          // Revert the change on error
+          scene.favorite = oldFavorite;
+          Notify.create({
+            type: "negative",
+            message: `Failed to toggle favorite: ${error.message}`,
+            timeout: 5000,
+            actions: [{ icon: "close", color: "white" }],
+          });
+        }
       },
     };
   },

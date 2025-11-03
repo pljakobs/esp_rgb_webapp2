@@ -2,6 +2,7 @@
   <div>
     <InformationCard :collapsed="false" />
     <FirmwareUpdateCard />
+    <HostnameCard />
     <ControllerConfigCard />
     <SaveRestoreConfig />
     <!--<DebugFunctionCard v-if="infoData.data.build_type === 'debug'" />-->
@@ -18,6 +19,7 @@ import LogViewerCard from "src/components/cards/LogViewerCard.vue";
 import ControllerConfigCard from "src/components/cards/ControllerConfigCard.vue";
 import SaveRestoreConfig from "src/components/SaveRestoreConfig.vue";
 import DebugFunctionCard from "src/components/cards/DebugFunctionCard.vue";
+import HostnameCard from "src/components/cards/HostnameCard.vue";
 
 export default {
   components: {
@@ -27,6 +29,7 @@ export default {
     DebugFunctionCard,
     SaveRestoreConfig,
     LogViewerCard,
+    HostnameCard,
   },
   setup() {
     const infoData = infoDataStore();

@@ -1,24 +1,26 @@
 <template>
   <div>
     <ConnectionCard />
-    <HostnameCard />
     <IpSettingsCard />
     <MqttSettingsCard />
+    <TelemetryCard />
+
   </div>
 </template>
 
 <script>
-import HostnameCard from "src/components/cards/HostnameCard.vue";
 import ConnectionCard from "src/components/cards/ConnectionCard.vue";
 import IpSettingsCard from "src/components/cards/IpSettingsCard.vue";
 import MqttSettingsCard from "src/components/cards/MqttSettingsCard.vue";
+import TelemetryCard from "src/components/cards/TelemetryCard.vue";
+
 
 export default {
   components: {
-    HostnameCard,
     ConnectionCard,
     IpSettingsCard,
     MqttSettingsCard,
+    TelemetryCard,
   },
 };
 </script>
