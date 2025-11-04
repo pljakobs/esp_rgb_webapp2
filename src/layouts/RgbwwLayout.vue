@@ -80,7 +80,7 @@
             @click="toggleLeftDrawer"
           >
             <q-avatar>
-              <img src="icons/menu_outlined_24.svg" class="icon" />
+              <svgIcon name="menu_outlined_24" size="24px" />
             </q-avatar>
           </q-btn>
           <q-toolbar-title>
@@ -89,7 +89,7 @@
               <svgIcon
                 :name="currentControllerIcon"
                 size="24px"
-                fallbackIcon="lightbulb-outlined"
+                fallbackIcon="lightbulb_outlined"
               />
               <!-- Controller hostname -->
               <span>{{ currentControllerHostname }}</span>
@@ -127,7 +127,7 @@
                   <svgIcon
                     :name="getCustomControllerIconReactive(scope.opt)"
                     size="20px"
-                    fallbackIcon="lightbulb-outlined"
+                    fallbackIcon="lightbulb_outlined"
                   />
                   <!-- Role-based icon (home/api) if applicable -->
                   <svgIcon
@@ -267,12 +267,8 @@
       </q-page-container>
       <q-footer class="bg-primary text-white">
         <q-toolbar>
-          <q-btn
-            round
-            class="ws-status-btn"
-            :color="buttonColor"
-            :icon="buttonIcon"
-          >
+          <q-btn round class="ws-status-btn" :color="buttonColor">
+            <svgIcon :name="buttonIconName" size="20px" />
             <q-tooltip
               >shows the status of the Websocket connection to the selected
               controller</q-tooltip
@@ -373,16 +369,16 @@ export default defineComponent({
         }
       });
 
-      const buttonIcon = computed(() => {
+      const buttonIconName = computed(() => {
         switch (ws.status.value) {
           case wsStatus.CONNECTED:
-            return "img:icons/check_outlined.svg";
+            return "check_outlined";
           case wsStatus.DISCONNECTED:
-            return "img:icons/close_outlined.svg";
+            return "close_outlined";
           case wsStatus.CONNECTING:
-            return "img:icons/help_outlined.svg";
+            return "help_outlined";
           default:
-            return "img:icons/info_outlined.svg";
+            return "info_outlined";
         }
       });
 
@@ -512,7 +508,7 @@ export default defineComponent({
         // Check if appData store is ready before proceeding
         if (appData.status !== storeStatus.READY) {
           console.log("AppData store not ready yet, using default icon");
-          return "lightbulb-outlined";
+          return "lightbulb_outlined";
         }
 
         if (
@@ -536,7 +532,7 @@ export default defineComponent({
 
         // Fallback to default light icon
         console.log("No icon found in appDataStore, using default");
-        return "lightbulb-outlined";
+  return "lightbulb_outlined";
       };
 
       // Computed property for current controller's icon
@@ -549,7 +545,7 @@ export default defineComponent({
         ) {
           return getCustomControllerIcon(controllers.currentController);
         }
-        return "lightbulb-outlined"; // Default icon
+  return "lightbulb_outlined"; // Default icon
       });
 
       // Computed property for current controller's hostname
@@ -591,14 +587,14 @@ export default defineComponent({
                 (c) => c.id === controller.id,
               );
               iconMap[controller.id] =
-                controllerMetadata?.icon || "lightbulb-outlined";
+                controllerMetadata?.icon || "lightbulb_outlined";
             }
           });
         } else {
           // Default icons when appData is not ready
           controllers.data?.forEach((controller) => {
             if (controller && controller.id) {
-              iconMap[controller.id] = "lightbulb-outlined";
+              iconMap[controller.id] = "lightbulb_outlined";
             }
           });
         }
@@ -609,9 +605,9 @@ export default defineComponent({
       // Updated function to use the computed property
       const getCustomControllerIconReactive = (controller) => {
         if (controller && controller.id) {
-          return controllerIcons.value[controller.id] || "lightbulb-outlined";
+          return controllerIcons.value[controller.id] || "lightbulb_outlined";
         }
-        return "lightbulb-outlined";
+  return "lightbulb_outlined";
       };
 
       return {
@@ -625,8 +621,8 @@ export default defineComponent({
         isSelectOpen,
         handleControllerSelection,
         toggleLeftDrawer,
-        buttonColor,
-        buttonIcon,
+  buttonColor,
+  buttonIconName,
         isDarkMode,
         toggleDarkMode,
         getIconForController,
@@ -676,7 +672,7 @@ export default defineComponent({
   padding-right: 0 !important;
 }
 .with-bottom-padding {
-  padding-bottom: 60px; /* Adjust this value to ensure enough space for the buttonIcon */
+  padding-bottom: 60px; /* Adjust this value to ensure enough space for the buttonIconName */
 }
 .full-width {
   width: 100%;

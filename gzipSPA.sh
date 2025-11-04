@@ -9,7 +9,11 @@ then
 fi
 cd ../icons
 gzip -9 *.svg
-cd lights
-gzip -9 *.svg
+if [ -d lights ]
+then
+	cd lights
+	gzip -9 *.svg
+	cd ..
+fi
 popd
 

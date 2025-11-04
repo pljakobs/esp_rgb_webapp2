@@ -23,8 +23,9 @@
                   class="q-mr-xs cursor-pointer"
                   @click.stop="toggleNode(prop.node)"
                 >
-                  <q-icon
+                  <svgIcon
                     name="arrow_drop_down"
+                    size="20px"
                     :class="{ 'rotate-right': !isExpanded(prop.node.id) }"
                   />
                 </div>
@@ -37,22 +38,25 @@
                 <!-- Node icon and label -->
                 <div class="col row items-center no-wrap">
                   <div class="q-mr-sm">
-                    <q-icon
+                    <svgIcon
                       v-if="prop.node.nodeType === 'group'"
                       name="light_group"
-                      color="primary"
+                      size="20px"
+                      class="text-primary"
                     />
-                    <q-icon
+                    <svgIcon
                       v-else-if="prop.node.nodeType === 'controller'"
                       :name="
                         prop.node.data.visible === false
-                          ? 'visibility_off'
-                          : 'router'
+                          ? 'visibility_off_outlined'
+                          : 'hub_outlined'
                       "
-                      :color="
-                        prop.node.data.visible === false ? 'grey' : 'primary'
+                      size="18px"
+                      :class="
+                        prop.node.data.visible === false
+                          ? 'text-grey-6'
+                          : 'text-primary'
                       "
-                      size="sm"
                     />
                   </div>
                   <div class="text-weight-medium">
@@ -95,11 +99,11 @@
                       round
                       dense
                       size="sm"
-                      icon="edit"
                       color="primary"
                       @click.stop="editGroup(prop.node.data)"
                       :disable="isLoading"
                     >
+                      <svgIcon name="edit" size="16px" />
                       <q-tooltip>Edit group</q-tooltip>
                     </q-btn>
                     <q-btn
@@ -107,11 +111,11 @@
                       round
                       dense
                       size="sm"
-                      icon="delete"
                       color="negative"
                       @click.stop="deleteGroup(prop.node.data)"
                       :disable="isLoading"
                     >
+                      <svgIcon name="delete" size="16px" />
                       <q-tooltip>Delete group</q-tooltip>
                     </q-btn>
                   </div>
@@ -124,7 +128,7 @@
           <div class="no-groups-container">
             <q-card flat class="text-center q-pa-lg">
               <q-card-section>
-                <q-icon name="light_group" size="3rem" color="grey-5" />
+                <svgIcon name="light_group" size="3rem" class="text-grey-5" />
                 <div class="text-h6 q-mt-md text-grey-6">
                   No groups available
                 </div>
@@ -145,8 +149,10 @@
         :loading="isLoading"
         no-caps
       >
-        <q-icon name="add" class="q-mr-sm" />
-        Add Group
+        <div class="row items-center no-wrap q-gutter-sm">
+          <svgIcon name="add" size="20px" />
+          <span>Add Group</span>
+        </div>
       </q-btn>
     </q-card-section>
   </MyCard>

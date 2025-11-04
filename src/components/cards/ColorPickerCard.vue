@@ -114,7 +114,7 @@ export default {
   props: {
     icon: {
       type: String,
-      default: "img:icons/palette_outlined.svg",
+      default: "palette_outlined",
     },
     title: {
       type: String,

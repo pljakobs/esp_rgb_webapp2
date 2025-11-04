@@ -18,17 +18,10 @@ echo "deploying prod"
 npx quasar build
 
 cd $dir || exit
-#pwd
-# ./minifyFontnames.sh
-#pwd
-./gzipSPA.sh
-
 echo $version >dist/spa/VERSION
 echo "VUE_APP_BUILD_NUMBER=$version" >.env
 echo "deploying "
 cat dist/spa/VERSION
-
-node generate_icon_list.js >./fileList.h
 
 echo "parameter: $1"
 if [ "$1" == "local" ]

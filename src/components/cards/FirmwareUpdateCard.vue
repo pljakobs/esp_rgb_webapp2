@@ -32,7 +32,7 @@
 </template>
 
 <script>
-import { ref, nextTick } from "vue";
+import { ref, nextTick, createApp, h } from "vue";
 import { Dialog, Notify } from "quasar";
 import { configDataStore } from "src/stores/configDataStore";
 import { infoDataStore } from "src/stores/infoDataStore";
@@ -40,6 +40,7 @@ import { useControllersStore } from "src/stores/controllersStore";
 import MyCard from "src/components/myCard.vue";
 import FirmwareSelectDialog from "src/components/Dialogs/firmwareSelectDialog.vue";
 import FirmwareUpdateProgressDialog from "src/components/Dialogs/firmwareUpdateProgressDialog.vue";
+import svgIcon from "src/components/svgIcon.vue";
 
 export default {
   components: {
@@ -54,6 +55,50 @@ export default {
     const firmware = ref();
     const availableFirmware = ref([]);
     const updating = ref(false);
+
+    const cleanupMountedIcons = () => {
+      document.querySelectorAll(".status-icon").forEach((container) => {
+        if (container.__iconApp) {
+          container.__iconApp.unmount();
+          delete container.__iconApp;
+        }
+      });
+    };
+
+    const mountIndicatorIcon = (indicatorEl, iconName, classes = []) => {
+      if (!indicatorEl) {
+        return;
+      }
+
+      const iconContainer = indicatorEl.querySelector(".status-icon");
+      if (!iconContainer) {
+        return;
+      }
+
+      if (iconContainer.__iconApp) {
+        iconContainer.__iconApp.unmount();
+        delete iconContainer.__iconApp;
+      }
+
+      iconContainer.innerHTML = "";
+
+      if (!iconName) {
+        return;
+      }
+
+      const app = createApp({
+        render() {
+          return h(svgIcon, {
+            name: iconName,
+            size: "1.2em",
+            class: classes,
+          });
+        },
+      });
+
+      app.mount(iconContainer);
+      iconContainer.__iconApp = app;
+    };
 
     // Helper function to fetch with a 500ms timeout
     const fetchWithTimeout = async (url, options = {}, timeout = 500) => {
@@ -513,12 +558,8 @@ export default {
                           </div>
                           <div class="col-4 text-right">
                             <div class="q-mr-xs status-indicator waiting">
-                              <span class="q-spinner-container">
-                                <svg class="q-spinner" width="1em" height="1em" viewBox="25 25 50 50">
-                                  <circle class="path" cx="50" cy="50" r="20" fill="none" stroke="currentColor" stroke-width="3" stroke-miterlimit="10"/>
-                                </svg>
-                              </span>
-                              <span>Waiting</span>
+                              <div class="status-icon"></div>
+                              <span class="status-label">Waiting</span>
                             </div>
                           </div>
                         </div>
@@ -539,12 +580,8 @@ export default {
                         </div>
                         <div class="col-4 text-right">
                           <div class="q-mr-xs status-indicator waiting">
-                            <span class="q-spinner-container">
-                              <svg class="q-spinner" width="1em" height="1em" viewBox="25 25 50 50">
-                                <circle class="path" cx="50" cy="50" r="20" fill="none" stroke="currentColor" stroke-width="3" stroke-miterlimit="10"/>
-                              </svg>
-                            </span>
-                            <span>Waiting</span>
+                            <div class="status-icon"></div>
+                            <span class="status-label">Waiting</span>
                           </div>
                         </div>
                       </div>
@@ -581,6 +618,18 @@ export default {
                   },
                 },
               ],
+            });
+
+            monitorDialog.onDismiss(() => {
+              cleanupMountedIcons();
+            });
+
+            nextTick(() => {
+              document
+                .querySelectorAll(".status-indicator")
+                .forEach((indicator) => {
+                  mountIndicatorIcon(indicator, "timer", ["text-grey-6"]);
+                });
             });
 
             // Helper function to update UI
@@ -665,43 +714,55 @@ export default {
                 if (indicator) {
                   indicator.className = `q-mr-xs status-indicator ${status}`;
 
-                  // Update indicator content based on status
-                  let iconHtml = "";
-                  switch (status) {
-                    case "checking":
-                      iconHtml = `<span class="q-spinner-container">
-    <svg class="q-spinner text-primary" width="1em" height="1em" viewBox="25 25 50 50">
-      <circle class="path" cx="50" cy="50" r="20" fill="none" stroke="currentColor" stroke-width="3" stroke-miterlimit="10"/>
-    </svg>
-  </span> <span>Checking</span>`;
-                      break;
-                    case "updating":
-                      iconHtml = `<span class="q-spinner-container">
-    <svg class="q-spinner text-orange" width="1em" height="1em" viewBox="25 25 50 50">
-      <circle class="path" cx="50" cy="50" r="20" fill="none" stroke="currentColor" stroke-width="3" stroke-miterlimit="10"/>
-    </svg>
-  </span> <span>Updating</span>`;
-                      break;
-                    case "success":
-                      iconHtml =
-                        '<div class="inline-icon text-positive"><img src="icons/check_circle.svg" width="1em" height="1em"/></div> <span>Success</span>';
-                      break;
-                    case "failed":
-                      iconHtml =
-                        '<div class="inline-icon text-negative"><img src="icons/error.svg" width="1em" height="1em"/></div> <span>Failed</span>';
-                      break;
-                    case "skipped":
-                      iconHtml =
-                        '<div class="inline-icon text-amber"><img src="icons/info.svg" width="1em" height="1em"/></div> <span>Skipped</span>';
-                      break;
-                    default:
-                      iconHtml = `<span class="q-spinner-container">
-    <svg class="q-spinner text-grey" width="1em" height="1em" viewBox="25 25 50 50">
-      <circle class="path" cx="50" cy="50" r="20" fill="none" stroke="currentColor" stroke-width="3" stroke-miterlimit="10"/>
-    </svg>
-  </span> <span>Waiting</span>`;
+                  const statusConfigMap = {
+                    checking: {
+                      icon: "refresh",
+                      label: "Checking",
+                      classes: ["text-primary", "spin"],
+                    },
+                    updating: {
+                      icon: "refresh",
+                      label: "Updating",
+                      classes: ["text-orange", "spin"],
+                    },
+                    success: {
+                      icon: "check_circle",
+                      label: "Success",
+                      classes: ["text-positive"],
+                    },
+                    failed: {
+                      icon: "error",
+                      label: "Failed",
+                      classes: ["text-negative"],
+                    },
+                    skipped: {
+                      icon: "info",
+                      label: "Skipped",
+                      classes: ["text-amber"],
+                    },
+                  };
+
+                  const defaultConfig = {
+                    icon: "timer",
+                    label: "Waiting",
+                    classes: ["text-grey-6"],
+                  };
+
+                  const { icon, label, classes } =
+                    statusConfigMap[status] || defaultConfig;
+
+                  let labelEl = indicator.querySelector(".status-label");
+                  if (!labelEl) {
+                    indicator.innerHTML =
+                      '<div class="status-icon"></div><span class="status-label"></span>';
+                    labelEl = indicator.querySelector(".status-label");
                   }
-                  indicator.innerHTML = iconHtml;
+
+                  if (labelEl) {
+                    labelEl.textContent = label;
+                  }
+
+                  mountIndicatorIcon(indicator, icon, classes);
                 }
 
                 // Update details section if provided
@@ -1270,6 +1331,27 @@ export default {
   align-items: center;
   gap: 4px;
   padding: 2px 6px;
+
+.status-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.status-label {
+  display: inline-flex;
+  align-items: center;
+}
+
+.spin svg {
+  animation: icon-spin 1s linear infinite;
+}
+
+@keyframes icon-spin {
+  100% {
+    transform: rotate(360deg);
+  }
+}
   border-radius: 12px;
   font-size: 0.8em;
 }
