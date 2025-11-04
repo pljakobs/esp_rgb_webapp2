@@ -1,5 +1,6 @@
 import fs from "fs";
 import path from "path";
+import zlib from "zlib";
 import { fileURLToPath } from "url";
 
 // ES module __dirname workaround
@@ -32,10 +33,118 @@ function generateFileList(files, baseDir) {
     .join("\n");
 }
 
+function collectIconFiles(sourceDir) {
+  if (!fs.existsSync(sourceDir)) {
+    return [];
+  }
+
+  return findFiles(sourceDir)
+    .filter(
+      (file) =>
+        file.toLowerCase().endsWith(".svg") ||
+        file.toLowerCase().endsWith(".svg.gz"),
+    )
+    .sort();
+}
+
+function buildSpriteContent(sourceDir) {
+  const iconFiles = collectIconFiles(sourceDir);
+  if (iconFiles.length === 0) {
+    return null;
+  }
+
+  const symbols = iconFiles.map((file) => {
+    const id = path
+      .basename(file)
+      .replace(/\.svg(\.gz)?$/i, "")
+      .replace(/[^a-z0-9_-]/gi, "_");
+
+    let svgContent = fs.readFileSync(file);
+    if (file.toLowerCase().endsWith(".gz")) {
+      svgContent = zlib.gunzipSync(svgContent);
+    }
+    svgContent = svgContent.toString("utf8");
+
+    const svgTagMatch = svgContent.match(/<svg[^>]*>/i);
+    let viewBox = "0 0 24 24";
+    if (svgTagMatch) {
+      const viewBoxMatch = svgTagMatch[0].match(/viewBox="([^"]+)"/i);
+      if (viewBoxMatch) {
+        viewBox = viewBoxMatch[1];
+      }
+    }
+
+    const innerContent = svgContent
+      .replace(/^[\s\S]*?<svg[^>]*>/i, "")
+      .replace(/<\/svg>\s*$/i, "");
+
+    return `<symbol id="${id}" viewBox="${viewBox}">${innerContent}</symbol>`;
+  });
+
+  if (symbols.length === 0) {
+    return null;
+  }
+
+  return `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">\n${symbols.join(
+    "\n",
+  )}\n</svg>\n`;
+}
+
+function writeSpriteTargets(spriteContent, targets) {
+  if (!spriteContent) {
+    return;
+  }
+
+  targets.forEach(({ outputPath, compress }) => {
+    const data = compress
+      ? zlib.gzipSync(Buffer.from(spriteContent, "utf8"))
+      : Buffer.from(spriteContent, "utf8");
+    fs.mkdirSync(path.dirname(outputPath), { recursive: true });
+    fs.writeFileSync(outputPath, data);
+  });
+}
+
+function filterFiles(files, baseDir, spriteRelativePath) {
+  return files
+    .map((file) => ({
+      file,
+      relative: path.relative(baseDir, file).replace(/\\/g, "/"),
+    }))
+    .filter(({ relative }) => {
+      if (relative.startsWith("icons/")) {
+        return (
+          relative === spriteRelativePath || relative === "icons/favicon.ico"
+        );
+      }
+      return true;
+    })
+    .map(({ file }) => file);
+}
+
 // Main function
 function main() {
   const baseDir = path.resolve(__dirname, "dist/spa");
-  const files = findFiles(baseDir);
+  const iconsSourceDir = path.resolve(__dirname, "icons-src");
+  const spriteRelativePath = "icons/iconsSprite.svg.gz";
+  const spriteAbsolutePath = path.join(baseDir, spriteRelativePath);
+
+  const spriteContent = buildSpriteContent(iconsSourceDir);
+  writeSpriteTargets(spriteContent, [
+    {
+      outputPath: path.resolve(__dirname, "public/icons/iconsSprite.svg"),
+      compress: false,
+    },
+    {
+      outputPath: spriteAbsolutePath,
+      compress: true,
+    },
+  ]);
+
+  const files = filterFiles(
+    findFiles(baseDir).sort(),
+    baseDir,
+    spriteRelativePath,
+  );
   const fileList = generateFileList(files, baseDir);
   console.log("#define FILE_LIST(XX) \\");
   console.log(fileList);
