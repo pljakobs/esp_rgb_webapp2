@@ -42,10 +42,7 @@ export const useColorDataStore = defineStore("colorDataStore", {
           console.log("params mode: ", params.mode);
           console.log("existing color data: ", this);
           if (params.mode === "hsv") {
-            console.log(
-              "updating hsv color data",
-              JSON.stringify(params.hsv),
-            );
+            console.log("updating hsv color data", JSON.stringify(params.hsv));
             const value = {
               h: Math.round(params.hsv.h * 100) / 100,
               s: Math.round(params.hsv.s * 100) / 100,

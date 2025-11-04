@@ -33,9 +33,7 @@ function createKey(relativePath) {
   }
 
   if (ext.length > 0) {
-    const extSanitized = ext
-      .slice(1)
-      .replace(/[^A-Za-z0-9]/g, "_");
+    const extSanitized = ext.slice(1).replace(/[^A-Za-z0-9]/g, "_");
     if (extSanitized.length > 0) {
       return `${base}_${extSanitized}`;
     }
@@ -177,7 +175,11 @@ function main() {
 
   ensureVersionFile(baseDir);
 
-  const files = filterFiles(findFiles(baseDir).sort(), baseDir, spriteRelativePath);
+  const files = filterFiles(
+    findFiles(baseDir).sort(),
+    baseDir,
+    spriteRelativePath,
+  );
   const fileListBody = generateFileList(files, baseDir);
   const header = "#define FILE_LIST(XX) \\";
   const output = fileListBody ? `${header}\n${fileListBody}\n` : `${header}\n`;

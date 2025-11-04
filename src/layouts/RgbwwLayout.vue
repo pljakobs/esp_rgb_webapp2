@@ -418,10 +418,13 @@ export default defineComponent({
           router.push("/networkinit");
         } else if (
           infoData.data.connection.connected &&
-          (!configData.data.general.current_pin_config_name || configData.data.general.current_pin_config_name === "")
+          (!configData.data.general.current_pin_config_name ||
+            configData.data.general.current_pin_config_name === "")
         ) {
           // Network is configured, but no pin config is active
-          console.log("network configured, but no pin config active, redirecting to /SystemSettings");
+          console.log(
+            "network configured, but no pin config active, redirecting to /SystemSettings",
+          );
           router.push("/SystemSettings");
         } else {
           console.log("controller is configured, not redirecting");
@@ -532,7 +535,7 @@ export default defineComponent({
 
         // Fallback to default light icon
         console.log("No icon found in appDataStore, using default");
-  return "lightbulb_outlined";
+        return "lightbulb_outlined";
       };
 
       // Computed property for current controller's icon
@@ -545,7 +548,7 @@ export default defineComponent({
         ) {
           return getCustomControllerIcon(controllers.currentController);
         }
-  return "lightbulb_outlined"; // Default icon
+        return "lightbulb_outlined"; // Default icon
       });
 
       // Computed property for current controller's hostname
@@ -607,7 +610,7 @@ export default defineComponent({
         if (controller && controller.id) {
           return controllerIcons.value[controller.id] || "lightbulb_outlined";
         }
-  return "lightbulb_outlined";
+        return "lightbulb_outlined";
       };
 
       return {
@@ -621,8 +624,8 @@ export default defineComponent({
         isSelectOpen,
         handleControllerSelection,
         toggleLeftDrawer,
-  buttonColor,
-  buttonIconName,
+        buttonColor,
+        buttonIconName,
         isDarkMode,
         toggleDarkMode,
         getIconForController,

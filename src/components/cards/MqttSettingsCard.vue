@@ -58,9 +58,7 @@
             <template #append>
               <svgIcon
                 :name="
-                  isPwd
-                    ? 'visibility_off_outlined'
-                    : 'visibility-outlined-24'
+                  isPwd ? 'visibility_off_outlined' : 'visibility-outlined-24'
                 "
                 class="cursor-pointer"
                 size="20px"

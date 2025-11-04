@@ -1332,26 +1332,26 @@ export default {
   gap: 4px;
   padding: 2px 6px;
 
-.status-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.status-label {
-  display: inline-flex;
-  align-items: center;
-}
-
-.spin svg {
-  animation: icon-spin 1s linear infinite;
-}
-
-@keyframes icon-spin {
-  100% {
-    transform: rotate(360deg);
+  .status-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
   }
-}
+
+  .status-label {
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .spin svg {
+    animation: icon-spin 1s linear infinite;
+  }
+
+  @keyframes icon-spin {
+    100% {
+      transform: rotate(360deg);
+    }
+  }
   border-radius: 12px;
   font-size: 0.8em;
 }

@@ -131,8 +131,7 @@ export default async function initializeStores(options = {}) {
         return;
       }
 
-      const shouldFetch =
-        force || storeCacheKeys[step.key] !== controllerKey;
+      const shouldFetch = force || storeCacheKeys[step.key] !== controllerKey;
 
       if (shouldFetch) {
         try {

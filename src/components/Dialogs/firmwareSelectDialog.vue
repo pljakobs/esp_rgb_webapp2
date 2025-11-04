@@ -6,7 +6,11 @@
     >
       <q-card-section>
         <div class="text-h6">
-          <svgIcon name="systemsecurityupdate_outlined" size="24px" class="q-mr-sm" />
+          <svgIcon
+            name="systemsecurityupdate_outlined"
+            size="24px"
+            class="q-mr-sm"
+          />
           Firmware update
         </div>
       </q-card-section>
