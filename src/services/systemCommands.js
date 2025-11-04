@@ -51,7 +51,7 @@ const systemCommand = {
   restartController: () => {
     console.log("this would restart the controller");
     sysCmd("restart");
-    setTimeout(initializeStores, 5000);
+    setTimeout(() => initializeStores({ force: true }), 5000);
   },
 
   stopAP: () => {
@@ -64,7 +64,7 @@ const systemCommand = {
 
   forgetWifiAndRestart: () => {
     sysCmd("forget_wifi_and_restart");
-    setTimeout(initializeStores, 5000);
+    setTimeout(() => initializeStores({ force: true }), 5000);
   },
 
   umountfs: () => {
@@ -77,7 +77,7 @@ const systemCommand = {
 
   switchRom: () => {
     sysCmd("switch_rom");
-    setTimeout(initializeStores, 5000);
+    setTimeout(() => initializeStores({ force: true }), 5000);
   },
   debug: (enable) => {
     sysCmd("debug", { enable });

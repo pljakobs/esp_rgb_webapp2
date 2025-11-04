@@ -5,6 +5,40 @@ import { useControllersStore } from "src/stores/controllersStore";
 import { storeStatus } from "src/stores/storeConstants";
 import { makeID } from "src/services/tools";
 
+const SYNC_LOCK_TIMEOUT_MS = 6000;
+const SYNC_VERIFY_RETRIES = 3;
+const SYNC_VERIFY_DELAY_MS = 150;
+const MIN_REQUIRED_SYNC_LOCKS = 1;
+
+const sleep = (ms) =>
+  new Promise((resolve) => setTimeout(resolve, Math.max(ms, 0)));
+
+async function fetchWithTimeout(url, options = {}, timeoutMs = SYNC_LOCK_TIMEOUT_MS) {
+  const controller = new AbortController();
+  const { signal, ...rest } = options;
+  let abortHandler;
+
+  if (signal) {
+    if (signal.aborted) {
+      controller.abort();
+    } else {
+      abortHandler = () => controller.abort();
+      signal.addEventListener("abort", abortHandler);
+    }
+  }
+
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    return await fetch(url, { ...rest, signal: controller.signal });
+  } finally {
+    clearTimeout(timeoutId);
+    if (signal && abortHandler) {
+      signal.removeEventListener("abort", abortHandler);
+    }
+  }
+}
+
 export const useAppDataStore = defineStore("appData", {
   state: () => ({
     data: {
@@ -17,11 +51,13 @@ export const useAppDataStore = defineStore("appData", {
     },
     status: storeStatus.IDLE,
     abortSaveOperation: false,
+    syncWatchInitialized: false,
   }),
 
   actions: {
     async fetchData() {
       try {
+        this.status = storeStatus.LOADING;
         const { jsonData, error } = await fetchApi("data");
         if (error) {
           console.error("error fetching app-data:", error);
@@ -49,64 +85,40 @@ export const useAppDataStore = defineStore("appData", {
     watchForSync() {
       const controllers = useControllersStore();
 
-      // Only proceed if not already synced or syncing
-      if (
-        this.status === storeStatus.SYNCED ||
-        this.status === storeStatus.SYNCING
-      ) {
-        console.log("Synchronization already completed or in progress");
-        return;
-      }
+      const maybeStartSync = () => {
+        if (
+          controllers.status === storeStatus.READY &&
+          this.status === storeStatus.READY &&
+          this.status !== storeStatus.SYNCED &&
+          this.status !== storeStatus.SYNCING
+        ) {
+          console.log("Both stores are ready, starting synchronization...");
+          this.synchronizeAllData((completed, total) => {
+            console.log(`Sync progress: ${completed}/${total}`);
+          });
+        }
+      };
 
-      // Immediate check if both stores are ready
-      if (
-        controllers.status === storeStatus.READY &&
-        this.status === storeStatus.READY
-      ) {
-        console.log(
-          "Both stores are already ready, starting synchronization...",
+      if (!this.syncWatchInitialized) {
+        const stopControllersWatch = watch(
+          () => controllers.status,
+          () => {
+            maybeStartSync();
+          },
         );
-        this.synchronizeAllData((completed, total) => {
-          console.log(`Sync progress: ${completed}/${total}`);
-        });
-        return; // Exit early - no need to set up watchers
+
+        const stopSelfWatch = watch(
+          () => this.status,
+          () => {
+            maybeStartSync();
+          },
+        );
+
+        this._syncWatchStops = [stopControllersWatch, stopSelfWatch];
+        this.syncWatchInitialized = true;
       }
 
-      // Set up a watcher for the controllers store status
-      watch(
-        () => controllers.status,
-        (newStatus) => {
-          if (
-            newStatus === storeStatus.READY &&
-            this.status === storeStatus.READY &&
-            this.status !== storeStatus.SYNCED &&
-            this.status !== storeStatus.SYNCING
-          ) {
-            console.log("Both stores are ready, starting synchronization...");
-            this.synchronizeAllData((completed, total) => {
-              console.log(`Sync progress: ${completed}/${total}`);
-            });
-          }
-        },
-      );
-
-      // Also watch our own status in case controllers become ready first
-      watch(
-        () => this.status,
-        (newStatus) => {
-          if (
-            newStatus === storeStatus.READY &&
-            controllers.status === storeStatus.READY &&
-            this.status !== storeStatus.SYNCED &&
-            this.status !== storeStatus.SYNCING
-          ) {
-            console.log("Both stores are ready, starting synchronization...");
-            this.synchronizeAllData((completed, total) => {
-              console.log(`Sync progress: ${completed}/${total}`);
-            });
-          }
-        },
-      );
+      maybeStartSync();
     },
 
     /*************************************************************
@@ -1163,39 +1175,64 @@ export const useAppDataStore = defineStore("appData", {
         `🔐 Checking sync locks across ${reachableControllers.length} visible controllers for ${controllerId}`,
       );
 
+      let blockedByActiveLock = false;
+
       for (const controller of reachableControllers) {
+        const controllerName = controller.hostname || controller.ip_address;
         try {
-          const response = await fetch(`http://${controller.ip_address}/data`, {
-            method: "GET",
-            timeout: 5000,
-          });
+          const response = await fetchWithTimeout(
+            `http://${controller.ip_address}/data`,
+            {
+              method: "GET",
+              headers: {
+                Accept: "application/json",
+                "Cache-Control": "no-cache",
+              },
+            },
+          );
 
-          if (response.ok) {
-            const data = await response.json();
-            const syncLock = data["sync-lock"];
+          if (!response.ok) {
+            console.warn(
+              `⚠️ Failed to inspect sync lock on ${controllerName}: HTTP ${response.status}`,
+            );
+            continue;
+          }
 
-            if (syncLock && syncLock.id && syncLock.id !== controllerId) {
-              // Check if the lock is recent (less than 5 minutes old)
-              const lockAge = Date.now() - syncLock.ts;
-              if (lockAge < 5 * 60 * 1000) {
-                // 5 minutes
-                console.log(
-                  `🔒 Sync lock held by ${syncLock.id} on ${controller.hostname || controller["ip-address"]} (age: ${Math.round(lockAge / 1000)}s)`,
-                );
-                return false;
-              } else {
-                console.log(
-                  `⏰ Stale sync lock from ${syncLock.id} detected on ${controller.hostname || controller["ip-address"]} (age: ${Math.round(lockAge / 1000)}s), considering available`,
-                );
-              }
+          const data = await response.json();
+          const syncLock = data["sync-lock"];
+
+          if (syncLock && syncLock.id && syncLock.id !== controllerId) {
+            const timestamp = Number(syncLock.ts);
+            if (!Number.isFinite(timestamp)) {
+              console.log(
+                `⏰ Sync lock on ${controllerName} has invalid timestamp, treating as stale`,
+              );
+              continue;
             }
+
+            const lockAge = Date.now() - timestamp;
+            if (lockAge < 5 * 60 * 1000) {
+              console.log(
+                `🔒 Sync lock held by ${syncLock.id} on ${controllerName} (age: ${Math.round(lockAge / 1000)}s)`,
+              );
+              blockedByActiveLock = true;
+              break;
+            }
+
+            console.log(
+              `⏰ Stale sync lock from ${syncLock.id} detected on ${controllerName} (age: ${Math.round(lockAge / 1000)}s), considering available`,
+            );
           }
         } catch (error) {
           console.warn(
-            `⚠️ Could not check sync lock on ${controller.hostname || controller["ip-address"]}: ${error.message}`,
+            `⚠️ Could not check sync lock on ${controllerName}: ${error.message}`,
           );
           // Continue checking other controllers - unreachable controllers don't block sync
         }
+      }
+
+      if (blockedByActiveLock) {
+        return false;
       }
 
       console.log(`✅ Sync lock available for ${controllerId}`);
@@ -1217,115 +1254,133 @@ export const useAppDataStore = defineStore("appData", {
         `🔐 Acquiring sync lock for ${controllerId} across ${reachableControllers.length} visible controllers`,
       );
 
+      const sortedControllers = [...reachableControllers].sort((a, b) => {
+        if (a.id === controllerId) {
+          return -1;
+        }
+        if (b.id === controllerId) {
+          return 1;
+        }
+        return 0;
+      });
+
+      const requiredLocks = Math.min(
+        MIN_REQUIRED_SYNC_LOCKS,
+        sortedControllers.length,
+      );
+
       const acquiredLocks = [];
+      const skippedControllers = [];
 
       try {
-        for (const controller of reachableControllers) {
+        for (const controller of sortedControllers) {
+          const controllerName = controller.hostname || controller.ip_address;
           try {
-            // First, check if this controller already has a lock
-            const checkResponse = await fetch(
+            const checkResponse = await fetchWithTimeout(
               `http://${controller.ip_address}/data`,
               {
                 method: "GET",
-                timeout: 5000,
+                headers: {
+                  Accept: "application/json",
+                  "Cache-Control": "no-cache",
+                },
               },
             );
 
-            if (checkResponse.ok) {
-              const data = await checkResponse.json();
-              const existingLock = data["sync-lock"];
+            if (!checkResponse.ok) {
+              console.warn(
+                `⚠️ Unable to inspect existing lock on ${controllerName}: HTTP ${checkResponse.status}`,
+              );
+              skippedControllers.push(controllerName);
+              continue;
+            }
 
-              if (
-                existingLock &&
-                existingLock.id &&
-                existingLock.id !== controllerId
-              ) {
-                // Check if the existing lock is still valid (not stale)
-                const lockAge = Date.now() - existingLock.ts;
+            const data = await checkResponse.json();
+            const existingLock = data["sync-lock"];
+
+            if (existingLock && existingLock.id && existingLock.id !== controllerId) {
+              const timestamp = Number(existingLock.ts);
+              if (Number.isFinite(timestamp)) {
+                const lockAge = Date.now() - timestamp;
                 if (lockAge < 5 * 60 * 1000) {
-                  // 5 minutes
                   console.error(
-                    `❌ Controller ${controller.hostname || controller["ip-address"]} already has active lock from ${existingLock.id} (age: ${Math.round(lockAge / 1000)}s)`,
+                    `❌ Controller ${controllerName} already has active lock from ${existingLock.id} (age: ${Math.round(lockAge / 1000)}s)`,
                   );
-                  // Roll back all acquired locks
                   await this.releaseSyncLock(controllerId, acquiredLocks);
                   return false;
                 }
                 console.log(
-                  `⏰ Overriding stale lock from ${existingLock.id} on ${controller.hostname || controller.ip_address} (age: ${Math.round(lockAge / 1000)}s)`,
+                  `⏰ Overriding stale lock from ${existingLock.id} on ${controllerName} (age: ${Math.round(lockAge / 1000)}s)`,
+                );
+              } else {
+                console.log(
+                  `⏰ Existing lock on ${controllerName} has invalid timestamp, overriding`,
                 );
               }
             }
 
-            // Proceed to acquire the lock
-            const lockData = {
-              id: controllerId,
-              ts: Date.now(),
+            const lockPayload = {
+              "sync-lock": {
+                id: controllerId,
+                ts: Date.now(),
+              },
             };
 
-            const response = await fetch(
+            const response = await fetchWithTimeout(
               `http://${controller.ip_address}/data`,
               {
                 method: "POST",
                 headers: {
                   "Content-Type": "application/json",
                 },
-                body: JSON.stringify({
-                  "sync-lock": lockData,
-                }),
-                timeout: 5000,
+                body: JSON.stringify(lockPayload),
               },
             );
 
-            if (response.ok) {
-              // Verify that our lock was actually set by reading the current state
-              const verifyResponse = await fetch(
-                `http://${controller.ip_address}/data`,
-                {
-                  method: "GET",
-                  timeout: 5000,
-                },
-              );
-
-              if (verifyResponse.ok) {
-                const currentData = await verifyResponse.json();
-                const actualLock = currentData["sync-lock"];
-
-                if (actualLock && actualLock.id === controllerId) {
-                  console.log(
-                    `🔒 Successfully acquired sync lock on ${controller.hostname || controller.ip_address}`,
-                  );
-                  acquiredLocks.push(controller);
-                } else {
-                  // The firmware didn't set our lock (another controller's lock is still there)
-                  const existingControllerId = actualLock?.id || "no lock";
-                  console.error(
-                    `❌ Lock acquisition failed on ${controller.hostname || controller.ip_address}: found ${existingControllerId}`,
-                  );
-                  throw new Error(
-                    `Lock not acquired, found: ${existingControllerId}`,
-                  );
-                }
-              } else {
-                throw new Error(
-                  `Verification GET failed: HTTP ${verifyResponse.status}`,
-                );
-              }
-            } else {
+            if (!response.ok) {
               throw new Error(`HTTP ${response.status}`);
             }
+
+            const verified = await this.verifySyncLock(controller, controllerId);
+            if (!verified) {
+              throw new Error("Lock verification failed");
+            }
+
+            console.log(
+              `🔒 Successfully acquired sync lock on ${controllerName}`,
+            );
+            acquiredLocks.push(controller);
           } catch (error) {
             console.error(
-              `❌ Failed to acquire sync lock on ${controller.hostname || controller["ip-address"]}: ${error.message}`,
+              `❌ Failed to acquire sync lock on ${controller.hostname || controller.ip_address}: ${error.message}`,
             );
-            // Roll back all acquired locks
-            await this.releaseSyncLock(controllerId, acquiredLocks);
-            return false;
+            skippedControllers.push(controllerName);
+            try {
+              await this.releaseSyncLock(controllerId, [controller]);
+            } catch (releaseError) {
+              console.warn(
+                `⚠️ Attempted to clear partial lock on ${controllerName} but failed: ${releaseError.message}`,
+              );
+            }
           }
         }
 
+        if (acquiredLocks.length < requiredLocks) {
+          console.error(
+            `❌ Only acquired sync lock on ${acquiredLocks.length} controllers (minimum required ${requiredLocks})`,
+          );
+          await this.releaseSyncLock(controllerId, acquiredLocks);
+          return false;
+        }
+
+        if (skippedControllers.length > 0) {
+          console.warn(
+            `⚠️ Skipped ${skippedControllers.length} controllers during lock acquisition: ${skippedControllers.join(", ")}`,
+          );
+        }
+
         console.log(
-          `✅ Successfully acquired sync lock on all ${acquiredLocks.length} controllers`,
+          `✅ Successfully acquired sync lock on ${acquiredLocks.length} controllers`,
         );
         return true;
       } catch (error) {
@@ -1335,6 +1390,50 @@ export const useAppDataStore = defineStore("appData", {
         await this.releaseSyncLock(controllerId, acquiredLocks);
         return false;
       }
+    },
+
+    async verifySyncLock(controller, controllerId) {
+      const controllerName = controller.hostname || controller.ip_address;
+      let lastError = null;
+
+      for (let attempt = 0; attempt < SYNC_VERIFY_RETRIES; attempt++) {
+        try {
+          const verifyResponse = await fetchWithTimeout(
+            `http://${controller.ip_address}/data?cache_bust=${Date.now()}`,
+            {
+              method: "GET",
+              headers: {
+                Accept: "application/json",
+                "Cache-Control": "no-cache",
+              },
+            },
+          );
+
+          if (!verifyResponse.ok) {
+            lastError = new Error(`HTTP ${verifyResponse.status}`);
+          } else {
+            const currentData = await verifyResponse.json();
+            const actualLock = currentData["sync-lock"];
+
+            if (actualLock && actualLock.id === controllerId) {
+              return true;
+            }
+
+            lastError = new Error(
+              `expected ${controllerId}, found ${actualLock?.id ?? "no lock"}`,
+            );
+          }
+        } catch (error) {
+          lastError = error;
+        }
+
+        await sleep(SYNC_VERIFY_DELAY_MS * (attempt + 1));
+      }
+
+      console.error(
+        `❌ Unable to verify sync lock on ${controllerName}: ${lastError?.message}`,
+      );
+      return false;
     },
 
     // Release sync lock on specified controllers (or all if not specified)
@@ -1350,35 +1449,48 @@ export const useAppDataStore = defineStore("appData", {
             c.visible === true,
         );
 
+      const seenIps = new Set();
+      const uniqueControllers = controllersToRelease.filter((controller) => {
+        const key = controller.ip_address;
+        if (!key || seenIps.has(key)) {
+          return false;
+        }
+        seenIps.add(key);
+        return true;
+      });
+
       console.log(
-        `🔓 Releasing sync lock for ${controllerId} on ${controllersToRelease.length} visible controllers`,
+        `🔓 Releasing sync lock for ${controllerId} on ${uniqueControllers.length} visible controllers`,
       );
 
-      for (const controller of controllersToRelease) {
+      for (const controller of uniqueControllers) {
+        const controllerName = controller.hostname || controller.ip_address;
         try {
-          const response = await fetch(`http://${controller.ip_address}/data`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
+          const response = await fetchWithTimeout(
+            `http://${controller.ip_address}/data`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                "sync-lock": { id: "", ts: 0 },
+              }),
             },
-            body: JSON.stringify({
-              "sync-lock": { id: "", ts: 0 },
-            }),
-            timeout: 5000,
-          });
+          );
 
           if (response.ok) {
             console.log(
-              `🔓 Released sync lock on ${controller.hostname || controller.ip_address}`,
+              `🔓 Released sync lock on ${controllerName}`,
             );
           } else {
             console.warn(
-              `⚠️ Failed to release sync lock on ${controller.hostname || controller.ip_address}: HTTP ${response.status}`,
+              `⚠️ Failed to release sync lock on ${controllerName}: HTTP ${response.status}`,
             );
           }
         } catch (error) {
           console.warn(
-            `⚠️ Could not release sync lock on ${controller.hostname || controller.ip_address}: ${error.message}`,
+            `⚠️ Could not release sync lock on ${controllerName}: ${error.message}`,
           );
         }
       }

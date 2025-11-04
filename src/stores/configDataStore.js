@@ -17,17 +17,22 @@ export const configDataStore = defineStore("configDataStore", {
   }),
   actions: {
     async fetchData() {
-      fetchApi("config").then(({ jsonData, error }) => {
+      this.status = storeStatus.LOADING;
+      try {
+        const { jsonData, error } = await fetchApi("config");
         if (error) {
-          console.error("error fetching config data:", error);
-          this.status = storeStatus.ERROR;
-        } else {
-          console.log("config data fetched: ", JSON.stringify(jsonData));
-          this.data = jsonData;
-          this.status = storeStatus.READY;
-          console.log("new configData(this): ", this);
+          throw error;
         }
-      });
+        console.log("config data fetched: ", JSON.stringify(jsonData));
+        this.data = jsonData;
+        this.status = storeStatus.READY;
+        console.log("new configData(this): ", this);
+        return jsonData;
+      } catch (err) {
+        this.status = storeStatus.ERROR;
+        console.error("error fetching config data:", err);
+        throw err;
+      }
     },
     updateData(field, value, update = true) {
       console.log(

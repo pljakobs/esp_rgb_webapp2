@@ -3,19 +3,27 @@
     <q-card-section>
       <div class="button-group">
         <q-btn
-          icon="img:icons/cloud_download.svg"
-          label="Save"
           color="primary"
           class="q-mt-lg button"
           @click="saveConfig"
-        />
+          no-caps
+        >
+          <div class="row items-center no-wrap q-gutter-sm">
+            <svgIcon name="cloud_download" size="20px" />
+            <span>Save</span>
+          </div>
+        </q-btn>
         <q-btn
-          icon="img:icons/cloud_upload.svg"
-          label="Restore"
           color="primary"
           class="q-mt-lg button"
           @click="openFileSelector"
-        />
+          no-caps
+        >
+          <div class="row items-center no-wrap q-gutter-sm">
+            <svgIcon name="cloud_upload" size="20px" />
+            <span>Restore</span>
+          </div>
+        </q-btn>
       </div>
       <input
         type="file"

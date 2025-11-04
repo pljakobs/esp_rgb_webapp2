@@ -10,16 +10,21 @@ export const infoDataStore = defineStore("infoDataStore", {
   }),
   actions: {
     async fetchData() {
-      fetchApi("info").then(({ jsonData, error }) => {
+      this.status = storeStatus.LOADING;
+      try {
+        const { jsonData, error } = await fetchApi("info");
         if (error) {
-          console.error("error fetching info data:", error);
-          this.status = storeStatus.ERROR;
-        } else {
-          console.log("info data fetched: ", JSON.stringify(jsonData));
-          this.data = jsonData;
-          this.status = storeStatus.READY;
+          throw error;
         }
-      });
+        console.log("info data fetched: ", JSON.stringify(jsonData));
+        this.data = jsonData;
+        this.status = storeStatus.READY;
+        return jsonData;
+      } catch (err) {
+        this.status = storeStatus.ERROR;
+        console.error("error fetching info data:", err);
+        throw err;
+      }
     },
   },
 });

@@ -56,13 +56,12 @@
             @blur="updateMqttPassword"
           >
             <template #append>
-              <q-icon
+              <svgIcon
                 :name="
-                  isPwd
-                    ? 'img:icons/visibility_off_outlined.svg'
-                    : 'img:icons/visibility-outlined-24.svg'
+                  isPwd ? 'visibility_off_outlined' : 'visibility-outlined-24'
                 "
                 class="cursor-pointer"
+                size="20px"
                 @click="isPwd = !isPwd"
               />
             </template>

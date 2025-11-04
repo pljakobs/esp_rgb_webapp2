@@ -1,5 +1,6 @@
 import fs from "fs";
 import path from "path";
+import zlib from "zlib";
 import { fileURLToPath } from "url";
 
 // ES module __dirname workaround
@@ -20,25 +21,173 @@ function findFiles(dir, fileList = []) {
   return fileList;
 }
 
+function createKey(relativePath) {
+  const ext = path.extname(relativePath).toLowerCase();
+  const base = path
+    .basename(relativePath, ext)
+    .replace(/[-.]/g, "_")
+    .replace(/[^A-Za-z0-9_]/g, "_");
+
+  if (ext === ".gz") {
+    return `${base}_gz`;
+  }
+
+  if (ext.length > 0) {
+    const extSanitized = ext.slice(1).replace(/[^A-Za-z0-9]/g, "_");
+    if (extSanitized.length > 0) {
+      return `${base}_${extSanitized}`;
+    }
+  }
+
+  return base;
+}
+
 // Function to generate the file list
 function generateFileList(files, baseDir) {
   return files
     .map((file, index) => {
       const relativePath = path.relative(baseDir, file).replace(/\\/g, "/");
-      const key = path.basename(file, path.extname(file)).replace(/[-.]/g, "_");
+      const key = createKey(relativePath);
       const line = `\tXX(${key}, "${relativePath}")`;
       return index === files.length - 1 ? line : `${line} \\`;
     })
     .join("\n");
 }
 
+function collectIconFiles(sourceDir) {
+  if (!fs.existsSync(sourceDir)) {
+    return [];
+  }
+
+  return findFiles(sourceDir)
+    .filter(
+      (file) =>
+        file.toLowerCase().endsWith(".svg") ||
+        file.toLowerCase().endsWith(".svg.gz"),
+    )
+    .sort();
+}
+
+function buildSpriteContent(sourceDir) {
+  const iconFiles = collectIconFiles(sourceDir);
+  if (iconFiles.length === 0) {
+    return null;
+  }
+
+  const symbols = iconFiles.map((file) => {
+    const id = path
+      .basename(file)
+      .replace(/\.svg(\.gz)?$/i, "")
+      .replace(/[^a-z0-9_-]/gi, "_");
+
+    let svgContent = fs.readFileSync(file);
+    if (file.toLowerCase().endsWith(".gz")) {
+      svgContent = zlib.gunzipSync(svgContent);
+    }
+    svgContent = svgContent.toString("utf8");
+
+    const svgTagMatch = svgContent.match(/<svg[^>]*>/i);
+    let viewBox = "0 0 24 24";
+    if (svgTagMatch) {
+      const viewBoxMatch = svgTagMatch[0].match(/viewBox="([^"]+)"/i);
+      if (viewBoxMatch) {
+        viewBox = viewBoxMatch[1];
+      }
+    }
+
+    const innerContent = svgContent
+      .replace(/^[\s\S]*?<svg[^>]*>/i, "")
+      .replace(/<\/svg>\s*$/i, "");
+
+    return `<symbol id="${id}" viewBox="${viewBox}">${innerContent}</symbol>`;
+  });
+
+  if (symbols.length === 0) {
+    return null;
+  }
+
+  return `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">\n${symbols.join(
+    "\n",
+  )}\n</svg>\n`;
+}
+
+function writeSpriteTargets(spriteContent, targets) {
+  if (!spriteContent) {
+    return;
+  }
+
+  targets.forEach(({ outputPath, compress }) => {
+    const data = compress
+      ? zlib.gzipSync(Buffer.from(spriteContent, "utf8"))
+      : Buffer.from(spriteContent, "utf8");
+    fs.mkdirSync(path.dirname(outputPath), { recursive: true });
+    fs.writeFileSync(outputPath, data);
+  });
+}
+
+function ensureVersionFile(baseDir) {
+  const versionPath = path.join(baseDir, "VERSION");
+  if (!fs.existsSync(versionPath)) {
+    fs.mkdirSync(path.dirname(versionPath), { recursive: true });
+    fs.writeFileSync(versionPath, "");
+  }
+}
+
+function filterFiles(files, baseDir, spriteRelativePath) {
+  return files
+    .map((file) => ({
+      file,
+      relative: path.relative(baseDir, file).replace(/\\/g, "/"),
+    }))
+    .filter(({ relative }) => {
+      if (relative.startsWith("icons/")) {
+        return (
+          relative === spriteRelativePath || relative === "icons/favicon.ico"
+        );
+      }
+      return true;
+    })
+    .map(({ file }) => file);
+}
+
 // Main function
 function main() {
   const baseDir = path.resolve(__dirname, "dist/spa");
-  const files = findFiles(baseDir);
-  const fileList = generateFileList(files, baseDir);
-  console.log("#define FILE_LIST(XX) \\");
-  console.log(fileList);
+  const iconsSourceDir = path.resolve(__dirname, "icons-src");
+  const spriteRelativePath = "icons/iconsSprite.svg.gz";
+  const spriteAbsolutePath = path.join(baseDir, spriteRelativePath);
+
+  const spriteContent = buildSpriteContent(iconsSourceDir);
+  writeSpriteTargets(spriteContent, [
+    {
+      outputPath: path.resolve(__dirname, "public/icons/iconsSprite.svg"),
+      compress: false,
+    },
+    {
+      outputPath: spriteAbsolutePath,
+      compress: true,
+    },
+  ]);
+
+  if (!fs.existsSync(baseDir)) {
+    fs.mkdirSync(baseDir, { recursive: true });
+  }
+
+  ensureVersionFile(baseDir);
+
+  const files = filterFiles(
+    findFiles(baseDir).sort(),
+    baseDir,
+    spriteRelativePath,
+  );
+  const fileListBody = generateFileList(files, baseDir);
+  const header = "#define FILE_LIST(XX) \\";
+  const output = fileListBody ? `${header}\n${fileListBody}\n` : `${header}\n`;
+
+  const headerPath = path.resolve(__dirname, "fileList.h");
+  fs.writeFileSync(headerPath, `${output}`);
+
+  console.log(output.trimEnd());
 }
 
 // Run the main function

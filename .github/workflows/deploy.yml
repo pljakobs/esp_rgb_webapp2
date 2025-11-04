@@ -53,8 +53,8 @@ jobs:
         run: npx quasar build
 
       # Rest of your workflow remains the same
-      - name: Run minifyFontnames.sh
-        run: ./minifyFontnames.sh
+      #- name: Run minifyFontnames.sh
+      #  run: ./minifyFontnames.sh
 
       - name: Run gzipSPA.sh
         run: ./gzipSPA.sh

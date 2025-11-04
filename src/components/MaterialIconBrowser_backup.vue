@@ -13,7 +13,9 @@
       <q-card-section class="row items-center q-pb-none">
         <div class="text-h6">Google Material Icons Browser</div>
         <q-space />
-        <q-btn icon="close" flat round dense v-close-popup />
+        <q-btn flat round dense v-close-popup>
+          <svgIcon name="close" size="18px" />
+        </q-btn>
       </q-card-section>
 
       <q-card-section

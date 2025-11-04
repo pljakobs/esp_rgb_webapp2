@@ -24,6 +24,59 @@
  * - Web icon caching (24hr expiry)
  * - CORS handling for web icons
  */
+const SPRITE_URL = "icons/iconsSprite.svg";
+const SPRITE_ELEMENT_ID = "svg-icon-sprite";
+let spriteLoadPromise = null;
+
+function normalizeIconName(name) {
+  return name.replace(/\.svg(\.gz)?$/i, "").replace(/[^a-z0-9_-]/gi, "_");
+}
+
+function ensureSpriteLoaded() {
+  if (typeof window === "undefined") {
+    return Promise.resolve();
+  }
+
+  if (document.getElementById(SPRITE_ELEMENT_ID)) {
+    return Promise.resolve();
+  }
+
+  if (!spriteLoadPromise) {
+    spriteLoadPromise = fetch(SPRITE_URL, { cache: "force-cache" })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`Failed to load sprite: ${response.status}`);
+        }
+        return response.text();
+      })
+      .then((spriteContent) => {
+        if (document.getElementById(SPRITE_ELEMENT_ID)) {
+          return;
+        }
+        const container = document.createElement("div");
+        container.innerHTML = spriteContent.trim();
+        const svgElement = container.querySelector("svg");
+        if (!svgElement) {
+          throw new Error("Sprite file does not contain an <svg> element");
+        }
+        svgElement.setAttribute("id", SPRITE_ELEMENT_ID);
+        svgElement.setAttribute("aria-hidden", "true");
+        svgElement.style.position = "absolute";
+        svgElement.style.width = "0";
+        svgElement.style.height = "0";
+        svgElement.style.overflow = "hidden";
+        svgElement.style.visibility = "hidden";
+        document.body.prepend(svgElement);
+      })
+      .catch((error) => {
+        spriteLoadPromise = null;
+        throw error;
+      });
+  }
+
+  return spriteLoadPromise;
+}
+
 export default {
   name: "svgIcon",
   props: {
@@ -133,7 +186,7 @@ export default {
           console.log(`Attempting web icon: ${this.name}`);
           await this.fetchWebIcon();
         } else {
-          console.log(`Attempting local icon: icons/${this.name}.svg`);
+          console.log(`Attempting sprite icon: ${this.name}`);
           await this.fetchLocalIcon();
         }
       } catch (error) {
@@ -273,14 +326,16 @@ export default {
 
     async fetchLocalIcon(iconName = null) {
       const icon = iconName || this.name;
-      const response = await fetch(`icons/${icon}.svg`);
+      const symbolId = normalizeIconName(icon);
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      await ensureSpriteLoaded();
+
+      if (!document.getElementById(symbolId)) {
+        throw new Error(`Icon not found in sprite: ${symbolId}`);
       }
 
-      this.svgContent = await response.text();
-      console.log(`Local icon loaded: ${icon}`);
+      this.svgContent = `<svg aria-hidden="true"><use href="#${symbolId}" xlink:href="#${symbolId}"></use></svg>`;
+      console.log(`Sprite icon loaded: ${icon} (${symbolId})`);
     },
 
     // Helper method to generate Material Design icon URL

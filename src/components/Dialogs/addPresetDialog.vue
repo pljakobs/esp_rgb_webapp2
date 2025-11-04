@@ -48,7 +48,7 @@
       </q-card-section>
       <q-card-section v-if="isAborting && !isRollingBack && progress.message">
         <div class="text-center q-pa-md">
-          <q-icon name="info" color="primary" size="2rem" />
+          <svgIcon name="info" size="2rem" class="text-primary" />
           <p>{{ progress.message }}</p>
         </div>
       </q-card-section>
