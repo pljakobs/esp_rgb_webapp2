@@ -17,11 +17,13 @@ export const useAppDataStore = defineStore("appData", {
     },
     status: storeStatus.IDLE,
     abortSaveOperation: false,
+    syncWatchInitialized: false,
   }),
 
   actions: {
     async fetchData() {
       try {
+        this.status = storeStatus.LOADING;
         const { jsonData, error } = await fetchApi("data");
         if (error) {
           console.error("error fetching app-data:", error);
@@ -49,64 +51,40 @@ export const useAppDataStore = defineStore("appData", {
     watchForSync() {
       const controllers = useControllersStore();
 
-      // Only proceed if not already synced or syncing
-      if (
-        this.status === storeStatus.SYNCED ||
-        this.status === storeStatus.SYNCING
-      ) {
-        console.log("Synchronization already completed or in progress");
-        return;
-      }
+      const maybeStartSync = () => {
+        if (
+          controllers.status === storeStatus.READY &&
+          this.status === storeStatus.READY &&
+          this.status !== storeStatus.SYNCED &&
+          this.status !== storeStatus.SYNCING
+        ) {
+          console.log("Both stores are ready, starting synchronization...");
+          this.synchronizeAllData((completed, total) => {
+            console.log(`Sync progress: ${completed}/${total}`);
+          });
+        }
+      };
 
-      // Immediate check if both stores are ready
-      if (
-        controllers.status === storeStatus.READY &&
-        this.status === storeStatus.READY
-      ) {
-        console.log(
-          "Both stores are already ready, starting synchronization...",
+      if (!this.syncWatchInitialized) {
+        const stopControllersWatch = watch(
+          () => controllers.status,
+          () => {
+            maybeStartSync();
+          },
         );
-        this.synchronizeAllData((completed, total) => {
-          console.log(`Sync progress: ${completed}/${total}`);
-        });
-        return; // Exit early - no need to set up watchers
+
+        const stopSelfWatch = watch(
+          () => this.status,
+          () => {
+            maybeStartSync();
+          },
+        );
+
+        this._syncWatchStops = [stopControllersWatch, stopSelfWatch];
+        this.syncWatchInitialized = true;
       }
 
-      // Set up a watcher for the controllers store status
-      watch(
-        () => controllers.status,
-        (newStatus) => {
-          if (
-            newStatus === storeStatus.READY &&
-            this.status === storeStatus.READY &&
-            this.status !== storeStatus.SYNCED &&
-            this.status !== storeStatus.SYNCING
-          ) {
-            console.log("Both stores are ready, starting synchronization...");
-            this.synchronizeAllData((completed, total) => {
-              console.log(`Sync progress: ${completed}/${total}`);
-            });
-          }
-        },
-      );
-
-      // Also watch our own status in case controllers become ready first
-      watch(
-        () => this.status,
-        (newStatus) => {
-          if (
-            newStatus === storeStatus.READY &&
-            controllers.status === storeStatus.READY &&
-            this.status !== storeStatus.SYNCED &&
-            this.status !== storeStatus.SYNCING
-          ) {
-            console.log("Both stores are ready, starting synchronization...");
-            this.synchronizeAllData((completed, total) => {
-              console.log(`Sync progress: ${completed}/${total}`);
-            });
-          }
-        },
-      );
+      maybeStartSync();
     },
 
     /*************************************************************

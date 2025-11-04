@@ -13,59 +13,65 @@ export const useColorDataStore = defineStore("colorDataStore", {
     status: storeStatus.LOADING,
     http_response_status: null,
     change_by: "load",
+    websocketSubscribed: false,
   }),
   actions: {
     async fetchData() {
-      const ws = useWebSocket();
       console.log("colorDataStore before fetch:", this);
-
-      fetchApi("color").then(({ jsonData, error }) => {
-        console.log(
-          "colorDataStore fetchApi callback, error: ",
-          error,
-          "data: ",
-          JSON.stringify(jsonData),
-        );
-        console.log("colorDataStore entering callback", this);
-
+      this.status = storeStatus.LOADING;
+      try {
+        const { jsonData, error } = await fetchApi("color");
         if (error) {
-          console.error("error fetching color data:", error);
-          this.status = storeStatus.ERROR;
-        } else {
-          console.log("color data fetched: ", jsonData);
-          this.data = jsonData;
-          console.log("colorDataStore after fetch:", this);
-          this.status = storeStatus.READY;
+          throw error;
         }
-        console.log("colorDataStore after fetch if clause:", this);
-      });
-      //
-      // Subscribe to color events
-      //
+        console.log("color data fetched: ", jsonData);
+        this.data = jsonData;
+        this.status = storeStatus.READY;
+        console.log("colorDataStore after fetch:", this);
+      } catch (err) {
+        this.status = storeStatus.ERROR;
+        console.error("error fetching color data:", err);
+        throw err;
+      }
 
-      ws.onJson("color_event", (params) => {
-        this.change_by = "websocket";
-        console.log("params mode: ", params.mode);
-        console.log("existing color data: ", this);
-        if (params.mode === "hsv") {
-          console.log("updating hsv color data", JSON.stringify(params.hsv));
-          let value = {
-            h: Math.round(params.hsv.h * 100) / 100,
-            s: Math.round(params.hsv.s * 100) / 100,
-            v: Math.round(params.hsv.v * 100) / 100,
-          };
-          console.log("rounded hsv color:     ", JSON.stringify(value));
-          console.log("old hsv color          ", JSON.stringify(this.data.hsv));
-          this.data.hsv = value;
-          console.log("new hsv color          ", JSON.stringify(this.data.hsv));
-        } else if (params.mode === "raw") {
-          console.log("updating raw color data", params.raw);
-          this.data.raw = params.raw;
-        }
+      if (!this.websocketSubscribed) {
+        const ws = useWebSocket();
 
-        console.log("color store updated by websocket message to ", this);
-        this.change_by = null;
-      });
+        ws.onJson("color_event", (params) => {
+          this.change_by = "websocket";
+          console.log("params mode: ", params.mode);
+          console.log("existing color data: ", this);
+          if (params.mode === "hsv") {
+            console.log(
+              "updating hsv color data",
+              JSON.stringify(params.hsv),
+            );
+            const value = {
+              h: Math.round(params.hsv.h * 100) / 100,
+              s: Math.round(params.hsv.s * 100) / 100,
+              v: Math.round(params.hsv.v * 100) / 100,
+            };
+            console.log("rounded hsv color:     ", JSON.stringify(value));
+            console.log(
+              "old hsv color          ",
+              JSON.stringify(this.data.hsv),
+            );
+            this.data.hsv = value;
+            console.log(
+              "new hsv color          ",
+              JSON.stringify(this.data.hsv),
+            );
+          } else if (params.mode === "raw") {
+            console.log("updating raw color data", params.raw);
+            this.data.raw = params.raw;
+          }
+
+          console.log("color store updated by websocket message to ", this);
+          this.change_by = null;
+        });
+
+        this.websocketSubscribed = true;
+      }
     },
     updateData(field, value) {
       console.log("updatData called, change by: ", this.change_by, field);
