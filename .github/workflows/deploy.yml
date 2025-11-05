@@ -52,7 +52,6 @@ jobs:
       - name: Build Quasar App
         run: npx quasar build
 
-      # Rest of your workflow remains the same
       #- name: Run minifyFontnames.sh
       #  run: ./minifyFontnames.sh
 

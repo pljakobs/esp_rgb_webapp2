@@ -6,6 +6,12 @@ import { fileURLToPath } from "url";
 // ES module __dirname workaround
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
+const brotliOptions = {
+  params: {
+    [zlib.constants.BROTLI_PARAM_QUALITY]: 11,
+  },
+};
+
 // Function to recursively find all files in a directory
 function findFiles(dir, fileList = []) {
   const files = fs.readdirSync(dir);
@@ -27,10 +33,6 @@ function createKey(relativePath) {
     .basename(relativePath, ext)
     .replace(/[-.]/g, "_")
     .replace(/[^A-Za-z0-9_]/g, "_");
-
-  if (ext === ".gz") {
-    return `${base}_gz`;
-  }
 
   if (ext.length > 0) {
     const extSanitized = ext.slice(1).replace(/[^A-Za-z0-9]/g, "_");
@@ -63,7 +65,8 @@ function collectIconFiles(sourceDir) {
     .filter(
       (file) =>
         file.toLowerCase().endsWith(".svg") ||
-        file.toLowerCase().endsWith(".svg.gz"),
+        file.toLowerCase().endsWith(".svg.gz") ||
+        file.toLowerCase().endsWith(".svg.br"),
     )
     .sort();
 }
@@ -105,10 +108,14 @@ function sanitizeFillAttributes(svgContent) {
     return ` fill=${quote}currentColor${quote}`;
   });
 
-  const styleFillRegex = /((?:^|\s)style\s*=\s*['"][^'"]*?)fill\s*:\s*(#[0-9a-f]{3,8}|rgba?\([^)]*\)|hsla?\([^)]*\)|black|white)([^'"]*?['"])/gi;
-  svgContent = svgContent.replace(styleFillRegex, (match, prefix, _color, suffix) => {
-    return `${prefix}fill:currentColor${suffix}`;
-  });
+  const styleFillRegex =
+    /((?:^|\s)style\s*=\s*['"][^'"]*?)fill\s*:\s*(#[0-9a-f]{3,8}|rgba?\([^)]*\)|hsla?\([^)]*\)|black|white)([^'"]*?['"])/gi;
+  svgContent = svgContent.replace(
+    styleFillRegex,
+    (match, prefix, _color, suffix) => {
+      return `${prefix}fill:currentColor${suffix}`;
+    },
+  );
 
   return svgContent;
 }
@@ -122,12 +129,14 @@ function buildSpriteContent(sourceDir) {
   const symbols = iconFiles.map((file) => {
     const id = path
       .basename(file)
-      .replace(/\.svg(\.gz)?$/i, "")
+      .replace(/\.svg(\.(gz|br))?$/i, "")
       .replace(/[^a-z0-9_-]/gi, "_");
 
     let svgContent = fs.readFileSync(file);
     if (file.toLowerCase().endsWith(".gz")) {
       svgContent = zlib.gunzipSync(svgContent);
+    } else if (file.toLowerCase().endsWith(".br")) {
+      svgContent = zlib.brotliDecompressSync(svgContent);
     }
     svgContent = svgContent.toString("utf8");
     svgContent = sanitizeFillAttributes(svgContent);
@@ -164,7 +173,7 @@ function writeSpriteTargets(spriteContent, targets) {
 
   targets.forEach(({ outputPath, compress }) => {
     const data = compress
-      ? zlib.gzipSync(Buffer.from(spriteContent, "utf8"))
+      ? zlib.brotliCompressSync(Buffer.from(spriteContent, "utf8"), brotliOptions)
       : Buffer.from(spriteContent, "utf8");
     fs.mkdirSync(path.dirname(outputPath), { recursive: true });
     fs.writeFileSync(outputPath, data);
@@ -200,7 +209,7 @@ function filterFiles(files, baseDir, spriteRelativePath) {
 function main() {
   const baseDir = path.resolve(__dirname, "dist/spa");
   const iconsSourceDir = path.resolve(__dirname, "icons-src");
-  const spriteRelativePath = "icons/iconsSprite.svg.gz";
+  const spriteRelativePath = "icons/iconsSprite.svg.br";
   const spriteAbsolutePath = path.join(baseDir, spriteRelativePath);
 
   const spriteContent = buildSpriteContent(iconsSourceDir);

@@ -28,8 +28,6 @@
 import { ref, onMounted } from "vue";
 import { Dark } from "quasar";
 import { infoDataStore } from "src/stores/infoDataStore";
-import groupsCard from "src/components/cards/groupsCard.vue";
-import { makeID } from "src/services/tools.js";
 import IconTestCard from "src/components/cards/IconTestCard.vue";
 
 export default {
@@ -37,7 +35,6 @@ export default {
     IconTestCard,
   },
   setup() {
-    const infoData = infoDataStore();
     const isDarkMode = ref(Dark.isActive);
 
     const hash = ref();
@@ -59,11 +56,6 @@ export default {
       Dark.set(savedDarkMode === "true");
       isDarkMode.value = savedDarkMode === "true";
     }
-
-    const makeHash = () => {
-      hash.value = makeID();
-      console.log("hash:", hash.value);
-    };
 
     // Fetch data when the component is mounted
     onMounted(() => {

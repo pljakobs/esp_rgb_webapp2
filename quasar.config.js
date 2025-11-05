@@ -3,6 +3,7 @@ import fs from "node:fs";
 import path from "path";
 import { visualizer } from "rollup-plugin-visualizer";
 import { execSync } from "node:child_process";
+import zlib from "node:zlib";
 
 const runIconGeneration = () => {
   execSync("node generate_icon_list.js", { stdio: "inherit" });
@@ -10,16 +11,57 @@ const runIconGeneration = () => {
 
 let iconSpriteGeneratedInServe = false;
 
-const runGzipSpa = () => {
+const compressibleExts = new Set([".html", ".js", ".css", ".map", ".svg"]);
+
+const brotliOptions = {
+  params: {
+    [zlib.constants.BROTLI_PARAM_QUALITY]: 11,
+  },
+};
+
+const runBrotliSpa = () => {
   const distDir = path.resolve(process.cwd(), "dist/spa");
   if (!fs.existsSync(distDir)) {
     return;
   }
 
-  execSync("bash ./gzipSPA.sh", {
-    stdio: "inherit",
-    cwd: process.cwd(),
-  });
+  const pruneLegacyArtifacts = (dir) => {
+    fs.readdirSync(dir, { withFileTypes: true }).forEach((entry) => {
+      const fullPath = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        pruneLegacyArtifacts(fullPath);
+        return;
+      }
+
+      if (fullPath.toLowerCase().endsWith(".gz")) {
+        fs.rmSync(fullPath);
+      }
+    });
+  };
+
+  const compressDir = (dir) => {
+    fs.readdirSync(dir, { withFileTypes: true }).forEach((entry) => {
+      const fullPath = path.join(dir, entry.name);
+
+      if (entry.isDirectory()) {
+        compressDir(fullPath);
+        return;
+      }
+
+      const ext = path.extname(fullPath).toLowerCase();
+      if (!compressibleExts.has(ext) || fullPath.toLowerCase().endsWith(".br")) {
+        return;
+      }
+
+      const source = fs.readFileSync(fullPath);
+      const compressed = zlib.brotliCompressSync(source, brotliOptions);
+      fs.writeFileSync(`${fullPath}.br`, compressed);
+      fs.rmSync(fullPath);
+    });
+  };
+
+  pruneLegacyArtifacts(distDir);
+  compressDir(distDir);
 };
 
 export default configure((/* ctx */) => {
@@ -39,7 +81,7 @@ export default configure((/* ctx */) => {
     name: "generate-icon-sprite-build",
     apply: "build",
     closeBundle() {
-      runGzipSpa();
+      runBrotliSpa();
       runIconGeneration();
     },
   };

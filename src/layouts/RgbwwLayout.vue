@@ -309,11 +309,11 @@ export default defineComponent({
       const leftDrawerOpen = ref(false);
 
       console.log("RgbwwLayout.vue setup define stores");
-  const controllers = useControllersStore();
-  const configData = configDataStore();
-  const infoData = infoDataStore();
-  const colorData = useColorDataStore();
-  const appData = useAppDataStore();
+      const controllers = useControllersStore();
+      const configData = configDataStore();
+      const infoData = infoDataStore();
+      const colorData = useColorDataStore();
+      const appData = useAppDataStore();
       const intervalId = ref(null);
 
       console.log("RgbwwLayout.vue setup useWebSocket");

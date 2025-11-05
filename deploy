@@ -2,9 +2,29 @@
 DEVBOX=192.168.29.10
 echo $1
 dir=$(pwd)
-if [[ -f ./index.html.gz ]]
+if compgen -G "./*.gz" > /dev/null
 then
-	gunzip *.gz
+	gunzip ./*.gz
+fi
+
+if compgen -G "./*.br" > /dev/null
+then
+	for file in ./*.br
+	do
+		node - <<'NODE' "${file}"
+const fs = require('fs');
+const zlib = require('zlib');
+
+const source = process.argv[1];
+const target = source.replace(/\.br$/i, '');
+
+const input = fs.readFileSync(source);
+const output = zlib.brotliDecompressSync(input);
+
+fs.writeFileSync(target, output);
+fs.rmSync(source);
+NODE
+	done
 fi
 
 version=$(git describe --abbrev=4 --dirty --always --tags)"-["$(git rev-parse --abbrev-ref HEAD)"]"
