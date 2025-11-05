@@ -24,7 +24,7 @@
  * - Web icon caching (24hr expiry)
  * - CORS handling for web icons
  */
-const SPRITE_URL = "icons/iconsSprite.svg";
+const SPRITE_URL = "icons/icons-sprite.svg";
 const SPRITE_ELEMENT_ID = "svg-icon-sprite";
 let spriteLoadPromise = null;
 
@@ -330,11 +330,13 @@ export default {
 
       await ensureSpriteLoaded();
 
-      if (!document.getElementById(symbolId)) {
+      const symbol = document.getElementById(symbolId);
+      if (!symbol) {
         throw new Error(`Icon not found in sprite: ${symbolId}`);
       }
 
-      this.svgContent = `<svg aria-hidden="true"><use href="#${symbolId}" xlink:href="#${symbolId}"></use></svg>`;
+      const viewBox = symbol.getAttribute("viewBox") || "0 0 24 24";
+      this.svgContent = `<svg aria-hidden="true" focusable="false" viewBox="${viewBox}"><use href="#${symbolId}" xlink:href="#${symbolId}"></use></svg>`;
       console.log(`Sprite icon loaded: ${icon} (${symbolId})`);
     },
 
@@ -530,13 +532,19 @@ export default {
 
 <style>
 .svg-icon {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 1.5em;
   height: 1.5em;
   color: var(--icon-color); /* Changed from fill to color */
   transition: opacity 0.2s ease;
+}
+
+.svg-icon svg {
+  width: 100%;
+  height: 100%;
+  display: block;
 }
 
 /* Special styles for q-stepper compatibility */
