@@ -1,11 +1,5 @@
 <template>
-  <div
-    v-if="
-      infoData.status === storeStatus.LOADING ||
-      configData.status === storeStatus.LOADING ||
-      colorData.status === storeStatus.LOADING
-    "
-  >
+  <div v-if="showInitialLoader">
     <div class="center-container bg-light-grey">
       <div class="flex flex-center">
         <div class="q-pa-md">
@@ -312,17 +306,30 @@ export default defineComponent({
       const leftDrawerOpen = ref(false);
 
       console.log("RgbwwLayout.vue setup define stores");
-      const controllers = useControllersStore();
-      const configData = configDataStore();
-      const infoData = infoDataStore();
-      const colorData = useColorDataStore();
-      const appData = useAppDataStore();
+  const controllers = useControllersStore();
+  const configData = configDataStore();
+  const infoData = infoDataStore();
+  const colorData = useColorDataStore();
+  const appData = useAppDataStore();
       const intervalId = ref(null);
 
       console.log("RgbwwLayout.vue setup useWebSocket");
       const ws = useWebSocket();
 
       const isSelectOpen = ref(false);
+
+      const showInitialLoader = computed(() => {
+        const infoLoading =
+          infoData.status === storeStatus.LOADING && !infoData.data;
+        const configLoading =
+          configData.status === storeStatus.LOADING &&
+          !configData.data?.general;
+        const colorLoading =
+          colorData.status === storeStatus.LOADING &&
+          !colorData.websocketSubscribed;
+
+        return infoLoading || configLoading || colorLoading;
+      });
 
       const router = useRouter();
 
@@ -634,6 +641,7 @@ export default defineComponent({
         currentControllerIcon,
         currentControllerHostname,
         ControllerConfigCard,
+        showInitialLoader,
       };
     } catch (error) {
       console.error("Error in setup function:", error);

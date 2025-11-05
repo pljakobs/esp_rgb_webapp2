@@ -16,14 +16,11 @@
           @update:model-value="toggleDarkMode"
         />
       </q-card-section>
-      <q-card-section>
-        {{ hash }}<br />
-
-        <q-btn @click="makeHash">Generate new hash</q-btn>
-      </q-card-section>
     </q-card>
 
-    <groupsCard />
+    <div class="q-mt-lg">
+      <IconTestCard />
+    </div>
   </q-page>
 </template>
 
@@ -33,10 +30,11 @@ import { Dark } from "quasar";
 import { infoDataStore } from "src/stores/infoDataStore";
 import groupsCard from "src/components/cards/groupsCard.vue";
 import { makeID } from "src/services/tools.js";
+import IconTestCard from "src/components/cards/IconTestCard.vue";
 
 export default {
   components: {
-    groupsCard,
+    IconTestCard,
   },
   setup() {
     const infoData = infoDataStore();

@@ -28,21 +28,39 @@ const SPRITE_URL = "icons/iconsSprite.svg";
 const SPRITE_ELEMENT_ID = "svg-icon-sprite";
 let spriteLoadPromise = null;
 
+function getSpriteUrl(forceReload = false) {
+  if (!forceReload) {
+    return SPRITE_URL;
+  }
+
+  const separator = SPRITE_URL.includes("?") ? "&" : "?";
+  return `${SPRITE_URL}${separator}cb=${Date.now()}`;
+}
+
 function normalizeIconName(name) {
   return name.replace(/\.svg(\.gz)?$/i, "").replace(/[^a-z0-9_-]/gi, "_");
 }
 
-function ensureSpriteLoaded() {
+function ensureSpriteLoaded({ forceReload = false } = {}) {
   if (typeof window === "undefined") {
     return Promise.resolve();
   }
 
-  if (document.getElementById(SPRITE_ELEMENT_ID)) {
+  if (!forceReload && document.getElementById(SPRITE_ELEMENT_ID)) {
     return Promise.resolve();
   }
 
+  if (forceReload) {
+    const existingSprite = document.getElementById(SPRITE_ELEMENT_ID);
+    if (existingSprite) {
+      existingSprite.remove();
+    }
+    spriteLoadPromise = null;
+  }
+
   if (!spriteLoadPromise) {
-    spriteLoadPromise = fetch(SPRITE_URL, { cache: "force-cache" })
+    const cacheMode = forceReload ? "reload" : "no-store";
+    spriteLoadPromise = fetch(getSpriteUrl(forceReload), { cache: cacheMode })
       .then((response) => {
         if (!response.ok) {
           throw new Error(`Failed to load sprite: ${response.status}`);
@@ -69,6 +87,7 @@ function ensureSpriteLoaded() {
         document.body.prepend(svgElement);
       })
       .catch((error) => {
+        // Allow future attempts to retry from scratch after any fetch failure.
         spriteLoadPromise = null;
         throw error;
       });
@@ -182,13 +201,7 @@ export default {
       this.hasError = false;
 
       try {
-        if (this.isWebUrl) {
-          console.log(`Attempting web icon: ${this.name}`);
-          await this.fetchWebIcon();
-        } else {
-          console.log(`Attempting sprite icon: ${this.name}`);
-          await this.fetchLocalIcon();
-        }
+        await (this.isWebUrl ? this.fetchWebIcon() : this.fetchLocalIcon());
       } catch (error) {
         console.error(
           `Primary icon failed (${this.isWebUrl ? "web" : "local"}):`,
@@ -198,17 +211,12 @@ export default {
 
         // Try fallback local icon if primary failed
         if (this.fallbackIcon && this.fallbackIcon !== this.name) {
-          console.log(`Trying fallback icon: ${this.fallbackIcon}`);
           try {
             await this.fetchLocalIcon(this.fallbackIcon);
-            console.log(
-              `Fallback icon loaded successfully: ${this.fallbackIcon}`,
-            );
           } catch (fallbackError) {
             console.error("Fallback icon also failed:", fallbackError);
           }
         } else {
-          console.log("No fallback icon available or same as primary");
         }
       } finally {
         this.isLoading = false;
@@ -223,7 +231,6 @@ export default {
       // TEMPORARY: Skip cache for corrupted URLs
       const skipCache = this.name.includes("[object Object]");
       if (skipCache) {
-        console.log("Skipping cache for corrupted URL:", this.name);
       }
 
       // Check cache first (24 hour expiry) - but skip for corrupted URLs
@@ -236,22 +243,14 @@ export default {
             const cacheAge = Date.now() - cacheData.timestamp;
             const maxAge = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
 
-            console.log(
-              `Cache age: ${Math.round(cacheAge / 1000 / 60)} minutes, max age: ${Math.round(maxAge / 1000 / 60)} minutes`,
-            );
 
             if (cacheAge < maxAge) {
               this.svgContent = cacheData.content;
               return;
             } else {
-              console.log(`Cache expired for ${this.name}, removing old cache`);
               localStorage.removeItem(cacheKey);
             }
           } catch (parseError) {
-            console.log(
-              `Cache data corrupt for ${this.name}, removing:`,
-              parseError,
-            );
             localStorage.removeItem(cacheKey);
           }
         } else {
@@ -263,7 +262,6 @@ export default {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 5000);
 
-      console.log(`Starting web fetch for: ${this.name}`);
 
       try {
         const response = await fetch(this.name, {
@@ -275,17 +273,12 @@ export default {
         });
 
         clearTimeout(timeoutId);
-        console.log(
-          `Fetch response status: ${response.status} for ${this.name}`,
-        );
 
         if (!response.ok) {
           // For Material Design icons, try variant fallback on 404
           if (response.status === 404 && this.isMaterialIcon) {
-            console.log(`Icon not found (404), attempting variant fallback...`);
             const fallbackUrl = this.tryVariantFallback(this.name);
             if (fallbackUrl && fallbackUrl !== this.name) {
-              console.log(`Trying fallback variant: ${fallbackUrl}`);
               return await this.fetchWebIconWithUrl(fallbackUrl);
             }
           }
@@ -293,9 +286,6 @@ export default {
         }
 
         const content = await response.text();
-        console.log(
-          `Successfully fetched web icon: ${this.name}, length: ${content.length}`,
-        );
 
         // Validate it's actually SVG content
         if (!content.includes("<svg")) {
@@ -313,13 +303,8 @@ export default {
           }),
         );
 
-        console.log(`Web icon loaded and cached: ${this.name}`);
       } catch (error) {
         clearTimeout(timeoutId);
-        console.log(`Web fetch failed for ${this.name}:`, error);
-        console.log(
-          `Error type: ${error.name}, Error message: ${error.message}`,
-        );
         throw error;
       }
     },
@@ -332,12 +317,21 @@ export default {
 
       const symbol = document.getElementById(symbolId);
       if (!symbol) {
-        throw new Error(`Icon not found in sprite: ${symbolId}`);
+        await ensureSpriteLoaded({ forceReload: true });
+        const reloadedSymbol = document.getElementById(symbolId);
+        if (!reloadedSymbol) {
+          throw new Error(`Icon not found in sprite: ${symbolId}`);
+        }
+        this.setSvgContentFromSymbol(reloadedSymbol);
+        return;
       }
+      this.setSvgContentFromSymbol(symbol);
+    },
 
+    setSvgContentFromSymbol(symbol) {
       const viewBox = symbol.getAttribute("viewBox") || "0 0 24 24";
-      this.svgContent = `<svg aria-hidden="true" focusable="false" viewBox="${viewBox}"><use href="#${symbolId}" xlink:href="#${symbolId}"></use></svg>`;
-      console.log(`Sprite icon loaded: ${icon} (${symbolId})`);
+      const innerMarkup = symbol.innerHTML || "";
+      this.svgContent = `<svg aria-hidden="true" focusable="false" viewBox="${viewBox}" xmlns="http://www.w3.org/2000/svg">${innerMarkup}</svg>`;
     },
 
     // Helper method to generate Material Design icon URL
@@ -434,7 +428,6 @@ export default {
           const maxAge = 24 * 60 * 60 * 1000; // 24 hours
 
           if (cacheAge < maxAge) {
-            console.log(`Using cached fallback icon: ${url}`);
             this.svgContent = cacheData.content;
             return;
           }
@@ -457,9 +450,6 @@ export default {
         });
 
         clearTimeout(timeoutId);
-        console.log(
-          `Fallback fetch response status: ${response.status} for ${url}`,
-        );
 
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
@@ -481,10 +471,8 @@ export default {
           }),
         );
 
-        console.log(`Fallback icon loaded and cached: ${url}`);
       } catch (error) {
         clearTimeout(timeoutId);
-        console.log(`Fallback fetch also failed for ${url}:`, error);
         throw error;
       }
     },

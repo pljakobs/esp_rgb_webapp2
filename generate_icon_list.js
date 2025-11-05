@@ -68,6 +68,51 @@ function collectIconFiles(sourceDir) {
     .sort();
 }
 
+function sanitizeFillAttributes(svgContent) {
+  const fillAttrRegex = /\s+fill=(['"])([^'"]*)\1/gi;
+  svgContent = svgContent.replace(fillAttrRegex, (match, quote, rawValue) => {
+    const value = rawValue.trim();
+    const normalized = value.toLowerCase();
+
+    if (
+      normalized === "none" ||
+      normalized === "currentcolor" ||
+      normalized.startsWith("url(") ||
+      normalized.startsWith("var(")
+    ) {
+      return match;
+    }
+
+    if (normalized === "") {
+      return "";
+    }
+
+    if (normalized === "#") {
+      return "";
+    }
+
+    const isColorLiteral =
+      normalized.startsWith("#") ||
+      normalized.startsWith("rgb") ||
+      normalized.startsWith("hsl") ||
+      normalized === "black" ||
+      normalized === "white";
+
+    if (isColorLiteral) {
+      return ` fill=${quote}currentColor${quote}`;
+    }
+
+    return ` fill=${quote}currentColor${quote}`;
+  });
+
+  const styleFillRegex = /((?:^|\s)style\s*=\s*['"][^'"]*?)fill\s*:\s*(#[0-9a-f]{3,8}|rgba?\([^)]*\)|hsla?\([^)]*\)|black|white)([^'"]*?['"])/gi;
+  svgContent = svgContent.replace(styleFillRegex, (match, prefix, _color, suffix) => {
+    return `${prefix}fill:currentColor${suffix}`;
+  });
+
+  return svgContent;
+}
+
 function buildSpriteContent(sourceDir) {
   const iconFiles = collectIconFiles(sourceDir);
   if (iconFiles.length === 0) {
@@ -85,6 +130,7 @@ function buildSpriteContent(sourceDir) {
       svgContent = zlib.gunzipSync(svgContent);
     }
     svgContent = svgContent.toString("utf8");
+    svgContent = sanitizeFillAttributes(svgContent);
 
     const svgTagMatch = svgContent.match(/<svg[^>]*>/i);
     let viewBox = "0 0 24 24";
