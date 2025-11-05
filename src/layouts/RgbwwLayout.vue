@@ -297,6 +297,9 @@ import { Dark } from "quasar";
 
 export default defineComponent({
   name: "MainLayout",
+  components: {
+    ControllerConfigCard,
+  },
 
   setup() {
     console.log("RgbwwLayout.vue setup start");
@@ -640,7 +643,6 @@ export default defineComponent({
         getCustomControllerIconReactive,
         currentControllerIcon,
         currentControllerHostname,
-        ControllerConfigCard,
         showInitialLoader,
       };
     } catch (error) {
