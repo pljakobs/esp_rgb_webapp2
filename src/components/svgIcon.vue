@@ -24,7 +24,7 @@
  * - Web icon caching (24hr expiry)
  * - CORS handling for web icons
  */
-const SPRITE_URL = "icons/icons-sprite.svg";
+const SPRITE_URL = "icons/iconsSprite.svg";
 const SPRITE_ELEMENT_ID = "svg-icon-sprite";
 let spriteLoadPromise = null;
 
