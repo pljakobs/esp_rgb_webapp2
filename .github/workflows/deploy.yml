@@ -132,15 +132,10 @@ jobs:
 
           echo "Triggering firmware build for branch: $FIRMWARE_BRANCH (webapp: $WEBAPP_BRANCH)"
 
-          # Use GitHub CLI to trigger repository_dispatch
-          gh api \
-            --method POST \
+          # Use curl with properly formatted JSON
+          curl -X POST \
             -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${{ secrets.GH_PAT }}" \
             -H "X-GitHub-Api-Version: 2022-11-28" \
-            /repos/pljakobs/esp_rgbww_firmware/dispatches \
-            -f event_type='frontend-build-completed' \
-            -f client_payload[branch]="$FIRMWARE_BRANCH" \
-            -f client_payload[webapp_branch]="$WEBAPP_BRANCH" \
-            -f client_payload[run_id]="${{ github.run_id }}"
-        env:
-          GH_TOKEN: ${{ secrets.GH_PAT }}
+            https://api.github.com/repos/pljakobs/esp_rgbww_firmware/dispatches \
+            -d "{\"event_type\":\"frontend-build-completed\",\"client_payload\":{\"branch\":\"$FIRMWARE_BRANCH\",\"webapp_branch\":\"$WEBAPP_BRANCH\",\"run_id\":\"${{ github.run_id }}\"}}"
