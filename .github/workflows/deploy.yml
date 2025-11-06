@@ -129,12 +129,13 @@ jobs:
               FIRMWARE_BRANCH="$WEBAPP_BRANCH"
               ;;
           esac
-          
+
           # Build JSON payload using jq for safe escaping
+          # Note: run_id is passed as argjson to make it a number, not a string
           PAYLOAD=$(jq -n \
             --arg branch "$FIRMWARE_BRANCH" \
             --arg webapp_branch "$WEBAPP_BRANCH" \
-            --arg run_id "${{ github.run_id }}" \
+            --argjson run_id "${{ github.run_id }}" \
             '{
               event_type: "frontend-build-completed",
               client_payload: {
@@ -143,10 +144,10 @@ jobs:
                 run_id: $run_id
               }
             }')
-          
+
           echo "Triggering firmware build for branch: $FIRMWARE_BRANCH (webapp: $WEBAPP_BRANCH)"
           echo "Payload: $PAYLOAD"
-          
+
           curl -X POST \
             -H "Accept: application/vnd.github+json" \
             -H "Authorization: Bearer ${{ secrets.GH_PAT }}" \
