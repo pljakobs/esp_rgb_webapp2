@@ -144,5 +144,3 @@ jobs:
             -f client_payload[run_id]="${{ github.run_id }}"
         env:
           GH_TOKEN: ${{ secrets.GH_PAT }}
-        env:
-          GH_TOKEN: ${{ secrets.GH_PAT }}
