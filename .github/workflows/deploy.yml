@@ -130,12 +130,11 @@ jobs:
               ;;
           esac
 
-          # Build JSON payload using jq for safe escaping
-          # Note: run_id is passed as argjson to make it a number, not a string
+          # Build JSON payload - all fields as strings in client_payload
           PAYLOAD=$(jq -n \
             --arg branch "$FIRMWARE_BRANCH" \
             --arg webapp_branch "$WEBAPP_BRANCH" \
-            --argjson run_id "${{ github.run_id }}" \
+            --arg run_id "${{ github.run_id }}" \
             '{
               event_type: "frontend-build-completed",
               client_payload: {
