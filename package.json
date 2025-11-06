@@ -30,6 +30,7 @@
     "@quasar/app-vite": "^2.3.0",
     "@vue/devtools": "^8.0.1",
     "autoprefixer": "^10.4.17",
+    "cssnano": "^7.1.2",
     "eslint": "^9.19.0",
     "eslint-config-prettier": "^10.0.1",
     "eslint-plugin-quasar": "^1.1.0",

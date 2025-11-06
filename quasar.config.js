@@ -74,6 +74,27 @@ export default configure((/* ctx */) => {
           json: true,
         }),
       ],
+      viteVuePluginOptions: {},
+
+      extendViteConf(viteConf) {
+        viteConf.build = {
+          ...viteConf.build,
+          // Enable more aggressive minification
+          minify: "terser",
+          terserOptions: {
+            compress: {
+              drop_console: false, // Remove console.log statements
+              drop_debugger: true,
+              pure_funcs: ["console.info", "console.debug"],
+            },
+          },
+          // CSS minification
+          cssCodeSplit: true,
+          cssMinify: true,
+          // Reduce chunk size
+          chunkSizeWarningLimit: 500,
+        };
+      },
     },
     devServer: {
       open: true,
@@ -82,8 +103,87 @@ export default configure((/* ctx */) => {
       config: {
         brand: { font: "sans-serif" },
       },
-      plugins: ["Notify", "Dialog"],
+      plugins: ["Notify", "Dialog", "Loading", "LocalStorage"],
       lang: "en-US",
+      components: [
+        // Layout & Structure
+        "QLayout",
+        "QHeader",
+        "QDrawer",
+        "QPageContainer",
+        "QPage",
+        "QToolbar",
+        "QToolbarTitle",
+        "QFooter",
+        "QPageSticky",
+
+        // Navigation
+        "QBtn",
+        "QBtnToggle",
+        "QBtnDropdown",
+        "QTabs",
+        "QTab",
+        "QRouteTab",
+        "QTabPanels",
+        "QTabPanel",
+
+        // Form Components
+        "QInput",
+        "QSelect",
+        "QCheckbox",
+        "QToggle",
+        "QSlider",
+        "QRange",
+        "QColor",
+        "QOptionGroup",
+        "QRadio",
+
+        // Cards & Lists
+        "QCard",
+        "QCardSection",
+        "QCardActions",
+        "QList",
+        "QItem",
+        "QItemSection",
+        "QItemLabel",
+        "QExpansionItem",
+        "QSeparator",
+
+        // Display
+        "QBadge",
+        "QChip",
+        "QIcon",
+        "QAvatar",
+        "QTooltip",
+        "QBanner",
+        "QMenu",
+        "QLinearProgress",
+        "QCircularProgress",
+        "QInnerLoading",
+        "QSpinner",
+        "QSkeleton",
+
+        // Data Display
+        "QTable",
+        "QTh",
+        "QTr",
+        "QTd",
+        "QMarkupTable",
+
+        // Dialogs & Popups
+        "QDialog",
+        "QPopupProxy",
+
+        // Scrolling
+        "QScrollArea",
+
+        // Utilities
+        "QSpace",
+        "QScrollObserver",
+        "QResizeObserver",
+      ],
+
+      directives: ["ClosePopup", "Ripple", "TouchSwipe"],
     },
     animations: [],
   };
