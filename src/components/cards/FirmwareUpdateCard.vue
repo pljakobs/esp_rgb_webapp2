@@ -40,6 +40,7 @@ import { useControllersStore } from "src/stores/controllersStore";
 import MyCard from "src/components/myCard.vue";
 import FirmwareSelectDialog from "src/components/Dialogs/firmwareSelectDialog.vue";
 import FirmwareUpdateProgressDialog from "src/components/Dialogs/firmwareUpdateProgressDialog.vue";
+import ControllerSelectionDialog from "src/components/Dialogs/ControllerSelectionDialog.vue";
 import svgIcon from "src/components/svgIcon.vue";
 
 export default {
@@ -450,15 +451,45 @@ export default {
       if (updating.value) return;
       updating.value = true;
 
-      // Add confirmation dialog
+      // Get the list of available controllers (excluding current)
+      const availableControllers = controllersStore.data.filter(
+        (controller) =>
+          controller.id !== controllersStore.currentController.id &&
+          controller.visible === true,
+      );
+
+      console.log("Available controllers for update:", availableControllers);
+
+      if (availableControllers.length === 0) {
+        Dialog.create({
+          title: "No Controllers Available",
+          message: `No other controllers available for update.<br><br>
+            Total controllers: ${controllersStore.data.length}<br>
+            Visible (online): ${controllersStore.data.filter((c) => c.visible === true).length}<br>
+            Current controller: ${controllersStore.currentController.hostname}`,
+          html: true,
+          persistent: true,
+        });
+        updating.value = false;
+        return;
+      }
+
+      // Create a dialog with controller selection
       Dialog.create({
-        title: "Update All Controllers",
-        message:
-          "This will update all controllers in your network. Are you sure you want to continue?",
-        cancel: true,
-        persistent: true,
+        component: ControllerSelectionDialog,
+        componentProps: {
+          controllers: availableControllers,
+        },
       })
-        .onOk(async () => {
+        .onOk(async (selectedControllers) => {
+          // selectedControllers contains the array of selected controller objects
+          if (!selectedControllers || selectedControllers.length === 0) {
+            updating.value = false;
+            return;
+          }
+          
+          console.log("Updating selected controllers:", selectedControllers);
+          
           try {
             // Show initial loading dialog while fetching firmware info
             const initialLoadingDialog = Dialog.create({
@@ -490,22 +521,10 @@ export default {
 
             console.log("Firmware data:", firmwareData);
 
-            // Get all controllers except the current one
-            const allControllers = controllersStore.data.filter(
-              (controller) =>
-                controller.id !== controllersStore.currentController.id,
-            );
+            // Use the selected controllers
+            const allControllers = selectedControllers;
 
-            if (allControllers.length === 0) {
-              initialLoadingDialog.hide();
-              Dialog.create({
-                title: "No Controllers",
-                message: "No additional controllers found to update.",
-                persistent: true,
-              });
-              updating.value = false;
-              return;
-            }
+            console.log("Starting update for controllers:", allControllers);
 
             // Results tracking
             const results = {
