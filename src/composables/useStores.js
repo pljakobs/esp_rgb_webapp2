@@ -2,13 +2,13 @@
  * Composable for accessing all application stores
  * Reduces import boilerplate across components
  */
-import { useAppDataStore } from 'src/stores/appDataStore'
-import { useControllersStore } from 'src/stores/controllersStore'
-import { infoDataStore } from 'src/stores/infoDataStore'
-import { useConfigDataStore } from 'src/stores/configDataStore'
-import { useColorDataStore } from 'src/stores/colorDataStore'
-import { useScenesStore } from 'src/stores/scenesStore'
-import { useTelemetryStore } from 'src/stores/telemetryData'
+import { useAppDataStore } from "src/stores/appDataStore";
+import { useControllersStore } from "src/stores/controllersStore";
+import { infoDataStore } from "src/stores/infoDataStore";
+import { useConfigDataStore } from "src/stores/configDataStore";
+import { useColorDataStore } from "src/stores/colorDataStore";
+import { useScenesStore } from "src/stores/scenesStore";
+import { useTelemetryStore } from "src/stores/telemetryData";
 
 /**
  * Returns all commonly used stores
@@ -22,8 +22,8 @@ export function useStores() {
     config: useConfigDataStore(),
     colorData: useColorDataStore(),
     scenes: useScenesStore(),
-    telemetry: useTelemetryStore()
-  }
+    telemetry: useTelemetryStore(),
+  };
 }
 
 /**
@@ -34,6 +34,6 @@ export function useStores() {
 export function useCoreStores() {
   return {
     appData: useAppDataStore(),
-    controllers: useControllersStore()
-  }
+    controllers: useControllersStore(),
+  };
 }

@@ -2,7 +2,7 @@
  * Composable for common dialog operations
  * Simplifies dialog creation and management
  */
-import { Dialog } from 'quasar'
+import { Dialog } from "quasar";
 
 /**
  * Returns dialog helper functions
@@ -19,25 +19,31 @@ export function useDialogs() {
    * @param {boolean} [options.persistent=false] - Whether dialog persists on background click
    * @returns {Promise<boolean>} Resolves to true if OK clicked, false if cancelled
    */
-  function confirm({ title, message, okLabel = 'OK', cancelLabel = 'Cancel', persistent = false }) {
+  function confirm({
+    title,
+    message,
+    okLabel = "OK",
+    cancelLabel = "Cancel",
+    persistent = false,
+  }) {
     return new Promise((resolve) => {
       Dialog.create({
         title,
         message,
         ok: {
           label: okLabel,
-          flat: true
+          flat: true,
         },
         cancel: {
           label: cancelLabel,
-          flat: true
+          flat: true,
         },
-        persistent
+        persistent,
       })
         .onOk(() => resolve(true))
         .onCancel(() => resolve(false))
-        .onDismiss(() => resolve(false))
-    })
+        .onDismiss(() => resolve(false));
+    });
   }
 
   /**
@@ -51,29 +57,36 @@ export function useDialogs() {
    * @param {string} [options.cancelLabel='Cancel'] - Cancel button label
    * @returns {Promise<string|null>} Resolves to input value or null if cancelled
    */
-  function prompt({ title, message, model = '', placeholder = '', okLabel = 'OK', cancelLabel = 'Cancel' }) {
+  function prompt({
+    title,
+    message,
+    model = "",
+    placeholder = "",
+    okLabel = "OK",
+    cancelLabel = "Cancel",
+  }) {
     return new Promise((resolve) => {
       Dialog.create({
         title,
         message,
         prompt: {
           model,
-          type: 'text',
-          placeholder
+          type: "text",
+          placeholder,
         },
         ok: {
           label: okLabel,
-          flat: true
+          flat: true,
         },
         cancel: {
           label: cancelLabel,
-          flat: true
-        }
+          flat: true,
+        },
       })
         .onOk((value) => resolve(value))
         .onCancel(() => resolve(null))
-        .onDismiss(() => resolve(null))
-    })
+        .onDismiss(() => resolve(null));
+    });
   }
 
   /**
@@ -84,17 +97,21 @@ export function useDialogs() {
    * @param {boolean} [options.persistent=false] - Whether dialog persists on background click
    * @returns {Promise<*>} Resolves to value from onOk, null if cancelled
    */
-  function componentDialog({ component, componentProps = {}, persistent = false }) {
+  function componentDialog({
+    component,
+    componentProps = {},
+    persistent = false,
+  }) {
     return new Promise((resolve) => {
       Dialog.create({
         component,
         componentProps,
-        persistent
+        persistent,
       })
         .onOk((data) => resolve(data))
         .onCancel(() => resolve(null))
-        .onDismiss(() => resolve(null))
-    })
+        .onDismiss(() => resolve(null));
+    });
   }
 
   /**
@@ -104,20 +121,20 @@ export function useDialogs() {
    * @param {string} [options.itemType='item'] - Type of item (e.g., 'preset', 'scene')
    * @returns {Promise<boolean>} Resolves to true if delete confirmed
    */
-  function confirmDelete({ itemName, itemType = 'item' }) {
+  function confirmDelete({ itemName, itemType = "item" }) {
     return confirm({
       title: `Delete ${itemType}`,
       message: `Are you sure you want to delete "${itemName}"?`,
-      okLabel: 'Delete',
-      cancelLabel: 'Cancel',
-      persistent: true
-    })
+      okLabel: "Delete",
+      cancelLabel: "Cancel",
+      persistent: true,
+    });
   }
 
   return {
     confirm,
     prompt,
     componentDialog,
-    confirmDelete
-  }
+    confirmDelete,
+  };
 }

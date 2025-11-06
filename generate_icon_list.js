@@ -105,10 +105,14 @@ function sanitizeFillAttributes(svgContent) {
     return ` fill=${quote}currentColor${quote}`;
   });
 
-  const styleFillRegex = /((?:^|\s)style\s*=\s*['"][^'"]*?)fill\s*:\s*(#[0-9a-f]{3,8}|rgba?\([^)]*\)|hsla?\([^)]*\)|black|white)([^'"]*?['"])/gi;
-  svgContent = svgContent.replace(styleFillRegex, (match, prefix, _color, suffix) => {
-    return `${prefix}fill:currentColor${suffix}`;
-  });
+  const styleFillRegex =
+    /((?:^|\s)style\s*=\s*['"][^'"]*?)fill\s*:\s*(#[0-9a-f]{3,8}|rgba?\([^)]*\)|hsla?\([^)]*\)|black|white)([^'"]*?['"])/gi;
+  svgContent = svgContent.replace(
+    styleFillRegex,
+    (match, prefix, _color, suffix) => {
+      return `${prefix}fill:currentColor${suffix}`;
+    },
+  );
 
   return svgContent;
 }

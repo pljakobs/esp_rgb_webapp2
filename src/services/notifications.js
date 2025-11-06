@@ -11,9 +11,9 @@ const ws = useWebSocket();
 export function notifySuccess(message, timeout = 3000) {
   Notify.create({
     message,
-    color: 'positive',
-    icon: 'check_circle',
-    timeout
+    color: "positive",
+    icon: "check_circle",
+    timeout,
   });
 }
 
@@ -25,9 +25,9 @@ export function notifySuccess(message, timeout = 3000) {
 export function notifyError(message, timeout = 5000) {
   Notify.create({
     message,
-    color: 'negative',
-    icon: 'error',
-    timeout
+    color: "negative",
+    icon: "error",
+    timeout,
   });
 }
 
@@ -39,9 +39,9 @@ export function notifyError(message, timeout = 5000) {
 export function notifyWarning(message, timeout = 4000) {
   Notify.create({
     message,
-    color: 'warning',
-    icon: 'warning',
-    timeout
+    color: "warning",
+    icon: "warning",
+    timeout,
   });
 }
 
@@ -53,9 +53,9 @@ export function notifyWarning(message, timeout = 4000) {
 export function notifyInfo(message, timeout = 3000) {
   Notify.create({
     message,
-    color: 'info',
-    icon: 'info',
-    timeout
+    color: "info",
+    icon: "info",
+    timeout,
   });
 }
 

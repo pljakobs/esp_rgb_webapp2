@@ -2,9 +2,9 @@
  * Color conversion utilities
  * Wraps Quasar's color functions with application-specific helpers
  */
-import { colors } from 'quasar'
+import { colors } from "quasar";
 
-const { hsvToRgb, rgbToHsv, hexToRgb, rgbToHex } = colors
+const { hsvToRgb, rgbToHsv, hexToRgb, rgbToHex } = colors;
 
 /**
  * Converts HSV to RGB inline style string
@@ -15,8 +15,8 @@ const { hsvToRgb, rgbToHsv, hexToRgb, rgbToHex } = colors
  * @returns {string} RGB color string like "rgb(255, 0, 0)"
  */
 export function hsvToRgbStyle(hsv) {
-  const rgb = hsvToRgb(hsv)
-  return `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`
+  const rgb = hsvToRgb(hsv);
+  return `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`;
 }
 
 /**
@@ -26,21 +26,21 @@ export function hsvToRgbStyle(hsv) {
  */
 export function safeHsvToRgb(hsv) {
   // Return black if input is null or undefined
-  if (!hsv || typeof hsv !== 'object') {
-    return { r: 0, g: 0, b: 0 }
+  if (!hsv || typeof hsv !== "object") {
+    return { r: 0, g: 0, b: 0 };
   }
-  
+
   try {
     // Ensure all required properties exist
     const safeHsv = {
       h: hsv.h ?? 0,
       s: hsv.s ?? 100,
-      v: hsv.v ?? 100
-    }
-    return hsvToRgb(safeHsv)
+      v: hsv.v ?? 100,
+    };
+    return hsvToRgb(safeHsv);
   } catch (error) {
-    console.error('Error converting HSV to RGB:', error)
-    return { r: 0, g: 0, b: 0 }
+    console.error("Error converting HSV to RGB:", error);
+    return { r: 0, g: 0, b: 0 };
   }
 }
 
@@ -51,30 +51,25 @@ export function safeHsvToRgb(hsv) {
  * @returns {string} RGB color string or empty string if invalid
  */
 export function colorToRgbStyle(color, getPresetColor = null) {
-  if (!color) return ''
-  
+  if (!color) return "";
+
   if (color.hsv) {
-    return hsvToRgbStyle(color.hsv)
+    return hsvToRgbStyle(color.hsv);
   }
-  
+
   if (color.raw) {
-    return `rgb(${color.raw.r}, ${color.raw.g}, ${color.raw.b})`
+    return `rgb(${color.raw.r}, ${color.raw.g}, ${color.raw.b})`;
   }
-  
+
   if (color.Preset && getPresetColor) {
-    const presetColor = getPresetColor(color.Preset.id)
+    const presetColor = getPresetColor(color.Preset.id);
     if (presetColor) {
-      return colorToRgbStyle(presetColor)
+      return colorToRgbStyle(presetColor);
     }
   }
-  
-  return ''
+
+  return "";
 }
 
 // Re-export Quasar color functions for direct use
-export {
-  hsvToRgb,
-  rgbToHsv,
-  hexToRgb,
-  rgbToHex
-}
+export { hsvToRgb, rgbToHsv, hexToRgb, rgbToHex };
