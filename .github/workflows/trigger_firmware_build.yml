@@ -47,7 +47,7 @@ jobs:
           FIRMWARE_BRANCH="${{ steps.get_branch.outputs.firmware_branch }}"
           WEBAPP_BRANCH="${{ steps.get_branch.outputs.webapp_branch }}"
           RUN_ID="${{ github.event.workflow_run.id }}"
-          
+
           # Create JSON payload using jq to ensure proper escaping
           PAYLOAD=$(jq -n \
             --arg branch "$FIRMWARE_BRANCH" \
@@ -61,10 +61,10 @@ jobs:
                 run_id: $run_id
               }
             }')
-          
+
           echo "Sending payload:"
           echo "$PAYLOAD"
-          
+
           curl -X POST \
             -H "Accept: application/vnd.github+json" \
             -H "Authorization: Bearer ${{ secrets.GH_PAT }}" \
