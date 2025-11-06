@@ -130,19 +130,8 @@ jobs:
               ;;
           esac
 
-          # Build JSON payload - all fields as strings in client_payload
-          PAYLOAD=$(jq -n \
-            --arg branch "$FIRMWARE_BRANCH" \
-            --arg webapp_branch "$WEBAPP_BRANCH" \
-            --arg run_id "${{ github.run_id }}" \
-            '{
-              event_type: "frontend-build-completed",
-              client_payload: {
-                branch: $branch,
-                webapp_branch: $webapp_branch,
-                run_id: $run_id
-              }
-            }')
+          # Simple JSON payload for testing
+          PAYLOAD='{"event_type":"frontend-build-completed","client_payload":{"branch":"develop"}}'
 
           echo "Triggering firmware build for branch: $FIRMWARE_BRANCH (webapp: $WEBAPP_BRANCH)"
           echo "Payload: $PAYLOAD"
