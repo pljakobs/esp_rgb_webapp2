@@ -47,13 +47,31 @@ jobs:
           FIRMWARE_BRANCH="${{ steps.get_branch.outputs.firmware_branch }}"
           WEBAPP_BRANCH="${{ steps.get_branch.outputs.webapp_branch }}"
           RUN_ID="${{ github.event.workflow_run.id }}"
-
+          
+          # Create JSON payload using jq to ensure proper escaping
+          PAYLOAD=$(jq -n \
+            --arg branch "$FIRMWARE_BRANCH" \
+            --arg webapp_branch "$WEBAPP_BRANCH" \
+            --arg run_id "$RUN_ID" \
+            '{
+              event_type: "frontend-build-completed",
+              client_payload: {
+                branch: $branch,
+                webapp_branch: $webapp_branch,
+                run_id: $run_id
+              }
+            }')
+          
+          echo "Sending payload:"
+          echo "$PAYLOAD"
+          
           curl -X POST \
             -H "Accept: application/vnd.github+json" \
             -H "Authorization: Bearer ${{ secrets.GH_PAT }}" \
             -H "X-GitHub-Api-Version: 2022-11-28" \
+            -H "Content-Type: application/json" \
             https://api.github.com/repos/pljakobs/esp_rgbww_firmware/dispatches \
-            -d "{\"event_type\":\"frontend-build-completed\",\"client_payload\":{\"branch\":\"${FIRMWARE_BRANCH}\",\"webapp_branch\":\"${WEBAPP_BRANCH}\",\"run_id\":\"${RUN_ID}\"}}"
+            -d "$PAYLOAD"
 
       - name: Log trigger result
         run: |
