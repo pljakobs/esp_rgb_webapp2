@@ -9,7 +9,7 @@
         <div class="text-subtitle2 q-mb-sm">
           Select which controllers to update:
         </div>
-        
+
         <!-- Select All checkbox -->
         <q-checkbox
           v-model="selectAll"
@@ -17,27 +17,32 @@
           @update:model-value="toggleSelectAll"
           class="q-mb-md text-weight-bold"
         />
-        
+
         <q-separator class="q-mb-md" />
-        
+
         <!-- Controller list with checkboxes -->
-        <div style="max-height: 400px; overflow-y: auto;">
-          <div v-for="option in controllerOptions" :key="option.value.id" class="q-mb-sm">
+        <div style="max-height: 400px; overflow-y: auto">
+          <div
+            v-for="option in controllerOptions"
+            :key="option.value.id"
+            class="q-mb-sm"
+          >
             <q-checkbox
               v-model="selectedControllers"
               :val="option.value"
               color="primary"
               class="full-width"
             >
-              <div class="ellipsis" style="max-width: calc(100% - 40px);">
+              <div class="ellipsis" style="max-width: calc(100% - 40px)">
                 {{ option.label }}
               </div>
             </q-checkbox>
           </div>
         </div>
-        
+
         <div class="q-mt-md text-caption text-grey-7">
-          {{ selectedControllers.length }} of {{ controllerOptions.length }} controllers selected
+          {{ selectedControllers.length }} of
+          {{ controllerOptions.length }} controllers selected
         </div>
       </q-card-section>
 
@@ -56,35 +61,34 @@
 </template>
 
 <script>
-import { ref, watch } from 'vue';
-import { useDialogPluginComponent } from 'quasar';
+import { ref, watch } from "vue";
+import { useDialogPluginComponent } from "quasar";
 
 export default {
-  name: 'ControllerSelectionDialog',
-  
+  name: "ControllerSelectionDialog",
+
   props: {
     controllers: {
       type: Array,
       required: true,
     },
   },
-  
-  emits: [
-    ...useDialogPluginComponent.emits,
-  ],
-  
+
+  emits: [...useDialogPluginComponent.emits],
+
   setup(props) {
-    const { dialogRef, onDialogHide, onDialogOK, onDialogCancel } = useDialogPluginComponent();
-    
-    const controllerOptions = props.controllers.map(c => ({
+    const { dialogRef, onDialogHide, onDialogOK, onDialogCancel } =
+      useDialogPluginComponent();
+
+    const controllerOptions = props.controllers.map((c) => ({
       label: `${c.hostname} (${c.ip_address})`,
       value: c,
     }));
-    
+
     // Initially select all controllers
     const selectedControllers = ref([...props.controllers]);
     const selectAll = ref(true);
-    
+
     const toggleSelectAll = (value) => {
       if (value) {
         selectedControllers.value = [...props.controllers];
@@ -92,20 +96,24 @@ export default {
         selectedControllers.value = [];
       }
     };
-    
+
     // Watch for manual changes to update "Select All" state
-    watch(selectedControllers, (newVal) => {
-      selectAll.value = newVal.length === props.controllers.length;
-    }, { deep: true });
-    
+    watch(
+      selectedControllers,
+      (newVal) => {
+        selectAll.value = newVal.length === props.controllers.length;
+      },
+      { deep: true },
+    );
+
     const onOKClick = () => {
       onDialogOK(selectedControllers.value);
     };
-    
+
     const onCancelClick = () => {
       onDialogCancel();
     };
-    
+
     return {
       dialogRef,
       onDialogHide,

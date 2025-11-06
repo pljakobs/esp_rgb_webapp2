@@ -5,18 +5,21 @@
 This project uses three parallel build tracks for coordinated webapp and firmware releases:
 
 ### 1. **Development Track** (`devel` → `develop`)
+
 - **Webapp Branch**: `devel`
 - **Firmware Branch**: `develop`
 - **Purpose**: Active development, frequent changes
 - **Artifacts**: Published to `https://pljakobs.github.io/esp_rgb_webapp2/devel/`
 
 ### 2. **Testing Track** (`testing` → `testing`)
+
 - **Webapp Branch**: `testing`
 - **Firmware Branch**: `testing`
 - **Purpose**: Release candidates, beta testing
 - **Artifacts**: Published to `https://pljakobs.github.io/esp_rgb_webapp2/testing/`
 
 ### 3. **Stable Track** (`stable` → `stable`)
+
 - **Webapp Branch**: `stable`
 - **Firmware Branch**: `stable`
 - **Purpose**: Production releases
@@ -25,6 +28,7 @@ This project uses three parallel build tracks for coordinated webapp and firmwar
 ## Workflow Sequence
 
 ### Webapp Build (esp_rgb_webapp2)
+
 1. Push to `devel`, `testing`, or `stable` branch
 2. `frontendBuild` workflow runs:
    - Builds Quasar app
@@ -34,6 +38,7 @@ This project uses three parallel build tracks for coordinated webapp and firmwar
 3. On success, triggers firmware build
 
 ### Firmware Build (esp_rgbww_firmware)
+
 1. Receives `repository_dispatch` event with branch info
 2. Maps webapp branch to firmware branch:
    - `devel` → `develop`
@@ -46,10 +51,10 @@ This project uses three parallel build tracks for coordinated webapp and firmwar
 ## Branch Mapping
 
 | Webapp Branch | Firmware Branch | Artifact URL                                        |
-|---------------|-----------------|-----------------------------------------------------|
-| devel         | develop         | https://pljakobs.github.io/esp_rgb_webapp2/devel/  |
-| testing       | testing         | https://pljakobs.github.io/esp_rgb_webapp2/testing/|
-| stable        | stable          | https://pljakobs.github.io/esp_rgb_webapp2/stable/ |
+| ------------- | --------------- | --------------------------------------------------- |
+| devel         | develop         | https://pljakobs.github.io/esp_rgb_webapp2/devel/   |
+| testing       | testing         | https://pljakobs.github.io/esp_rgb_webapp2/testing/ |
+| stable        | stable          | https://pljakobs.github.io/esp_rgb_webapp2/stable/  |
 
 ## Upgrading Between Tracks
 
@@ -72,14 +77,16 @@ This will trigger the appropriate build workflows automatically.
 ## Manual Triggers
 
 ### Webapp Only
+
 ```bash
 # From GitHub Actions UI, select frontendBuild workflow
 # Choose branch: devel, testing, or stable
 ```
 
 ### Firmware Only
+
 ```bash
-# From GitHub Actions UI, select firmwareBuild workflow  
+# From GitHub Actions UI, select firmwareBuild workflow
 # Choose branch: develop, testing, or stable
 ```
 
@@ -106,6 +113,7 @@ gh-pages/
 All builds use the format: `V5.0-{build_number}-{branch}`
 
 Example:
+
 - `V5.0-123-devel`
 - `V5.0-45-testing`
 - `V5.0-67-stable`

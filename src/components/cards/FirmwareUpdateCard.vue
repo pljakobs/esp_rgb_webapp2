@@ -487,9 +487,9 @@ export default {
             updating.value = false;
             return;
           }
-          
+
           console.log("Updating selected controllers:", selectedControllers);
-          
+
           try {
             // Show initial loading dialog while fetching firmware info
             const initialLoadingDialog = Dialog.create({
