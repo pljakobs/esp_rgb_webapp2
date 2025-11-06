@@ -7,39 +7,58 @@ on:
       - completed
     branches:
       - devel
+      - testing
+      - stable
 
 jobs:
   dispatch:
     runs-on: ubuntu-latest
+    # Only trigger if the workflow was successful
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
 
     steps:
-      - name: Get branch name
+      - name: Get branch name and map to firmware branch
         id: get_branch
         run: |
-          # Map webapp branch names to firmware branch names if needed
-          BRANCH="${{ github.event.workflow_run.head_branch }}"
-          case "$BRANCH" in
+          # Get the branch that triggered the frontend build
+          WEBAPP_BRANCH="${{ github.event.workflow_run.head_branch }}"
+          echo "webapp_branch=$WEBAPP_BRANCH" >> $GITHUB_OUTPUT
+          
+          # Map webapp branch names to firmware branch names
+          case "$WEBAPP_BRANCH" in
             "devel")
               FIRMWARE_BRANCH="develop"
               ;;
+            "testing")
+              FIRMWARE_BRANCH="testing"
+              ;;
+            "stable")
+              FIRMWARE_BRANCH="stable"
+              ;;
             *)
-              FIRMWARE_BRANCH="$BRANCH"
+              FIRMWARE_BRANCH="develop"
               ;;
           esac
           echo "firmware_branch=$FIRMWARE_BRANCH" >> $GITHUB_OUTPUT
+          echo "Webapp branch: $WEBAPP_BRANCH -> Firmware branch: $FIRMWARE_BRANCH"
 
-      - name: Trigger repository_dispatch
+      - name: Trigger firmware build via repository_dispatch
         run: |
           curl -X POST \
             -H "Accept: application/vnd.github+json" \
-            -H "Authorization: Bearer  ${{ secrets.GH_PAT }}" \
+            -H "Authorization: Bearer ${{ secrets.GH_PAT }}" \
             -H "X-GitHub-Api-Version: 2022-11-28" \
             https://api.github.com/repos/pljakobs/esp_rgbww_firmware/dispatches \
-            --data-binary @- <<'EOF'
-          {
-            "event_type": "frontend-build-completed",
-            "client_payload": {
-              "branch": "develop"
-            }
-          }
-          EOF
+            -d '{
+              "event_type": "frontend-build-completed",
+              "client_payload": {
+                "branch": "${{ steps.get_branch.outputs.firmware_branch }}",
+                "webapp_branch": "${{ steps.get_branch.outputs.webapp_branch }}",
+                "run_id": "${{ github.event.workflow_run.id }}"
+              }
+            }'
+          
+      - name: Log trigger result
+        run: |
+          echo "Triggered firmware build for branch: ${{ steps.get_branch.outputs.firmware_branch }}"
+          echo "Webapp branch: ${{ steps.get_branch.outputs.webapp_branch }}"

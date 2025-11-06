@@ -4,9 +4,13 @@ on:
   push:
     branches:
       - devel
+      - testing
+      - stable
   pull_request:
     branches:
       - devel
+      - testing
+      - stable
 
 jobs:
   build:
@@ -82,27 +86,32 @@ jobs:
 
       - name: Create download page
         run: |
-          mkdir -p dist/download
+          BRANCH=${{ steps.get_branch.outputs.branch }}
+          mkdir -p gh-pages-content
           VERSION="${{ steps.create_version.outputs.version }}"
           BUILD_DATE=$(date)
-          echo "<html><body><h1>Download Artifacts</h1><ul>" > dist/download/index.html
-          echo "<p>Build Date: ${BUILD_DATE}</p>" >> dist/download/index.html
-          echo "<p>Version: ${VERSION}</p>" >> dist/download/index.html
-          echo "<li><a href='spa-files.zip'>Download SPA Files</a></li>" >> dist/download/index.html
-          echo "<li><a href='fileList.h'>Download fileList.h</a></li>" >> dist/download/index.html
-          echo "</ul>" >> dist/download/index.html
-          echo "</body></html>" >> dist/download/index.html
+          echo "<html><body><h1>Download Artifacts - ${BRANCH}</h1><ul>" > gh-pages-content/index.html
+          echo "<p>Branch: ${BRANCH}</p>" >> gh-pages-content/index.html
+          echo "<p>Build Date: ${BUILD_DATE}</p>" >> gh-pages-content/index.html
+          echo "<p>Version: ${VERSION}</p>" >> gh-pages-content/index.html
+          echo "<li><a href='spa-files.zip'>Download SPA Files</a></li>" >> gh-pages-content/index.html
+          echo "<li><a href='fileList.h'>Download fileList.h</a></li>" >> gh-pages-content/index.html
+          echo "</ul>" >> gh-pages-content/index.html
+          echo "</body></html>" >> gh-pages-content/index.html
 
       - name: Copy SPA files to download directory
-        run: zip -r dist/download/spa-files.zip dist/spa/*
+        run: |
+          zip -r gh-pages-content/spa-files.zip dist/spa/*
 
       - name: Copy fileList.h to download directory
-        run: cp ./fileList.h dist/download/
+        run: |
+          cp ./fileList.h gh-pages-content/
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
           personal_token: ${{ secrets.GH_PAT }}
-          publish_dir: ./dist/download
+          publish_dir: ./gh-pages-content
           publish_branch: gh-pages
-          force_orphan: true
+          keep_files: true
+          destination_dir: ${{ steps.get_branch.outputs.branch }}
