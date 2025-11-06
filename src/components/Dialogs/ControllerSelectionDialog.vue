@@ -1,6 +1,6 @@
 <template>
   <q-dialog ref="dialogRef" @hide="onDialogHide" persistent>
-    <q-card style="min-width: 500px">
+    <q-card style="min-width: 300px; max-width: 500px; width: 90vw">
       <q-card-section>
         <div class="text-h6">Select Controllers to Update</div>
       </q-card-section>
@@ -22,12 +22,18 @@
         
         <!-- Controller list with checkboxes -->
         <div style="max-height: 400px; overflow-y: auto;">
-          <q-option-group
-            v-model="selectedControllers"
-            :options="controllerOptions"
-            type="checkbox"
-            color="primary"
-          />
+          <div v-for="option in controllerOptions" :key="option.value.id" class="q-mb-sm">
+            <q-checkbox
+              v-model="selectedControllers"
+              :val="option.value"
+              color="primary"
+              class="full-width"
+            >
+              <div class="ellipsis" style="max-width: calc(100% - 40px);">
+                {{ option.label }}
+              </div>
+            </q-checkbox>
+          </div>
         </div>
         
         <div class="q-mt-md text-caption text-grey-7">
