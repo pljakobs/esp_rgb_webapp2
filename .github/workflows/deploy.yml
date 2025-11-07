@@ -132,7 +132,7 @@ jobs:
         run: |
           WEBAPP_BRANCH="${{ steps.get_branch.outputs.branch }}"
           echo "Verifying artifacts at https://pljakobs.github.io/esp_rgb_webapp2/${WEBAPP_BRANCH}/"
-          
+
           # Try to download spa-files.zip
           if curl -f -L -o /tmp/test-spa.zip "https://pljakobs.github.io/esp_rgb_webapp2/${WEBAPP_BRANCH}/spa-files.zip"; then
             echo "✓ spa-files.zip is accessible"
@@ -140,7 +140,7 @@ jobs:
             echo "✗ ERROR: spa-files.zip not yet available"
             exit 1
           fi
-          
+
           # Try to download fileList.h
           if curl -f -L -o /tmp/test-filelist.h "https://pljakobs.github.io/esp_rgb_webapp2/${WEBAPP_BRANCH}/fileList.h"; then
             echo "✓ fileList.h is accessible"
@@ -148,7 +148,7 @@ jobs:
             echo "✗ ERROR: fileList.h not yet available"
             exit 1
           fi
-          
+
           echo "All artifacts verified and accessible!"
 
       - name: Trigger firmware build
@@ -166,7 +166,7 @@ jobs:
           esac
 
           echo "Triggering firmware build for branch: $FIRMWARE_BRANCH (webapp: $WEBAPP_BRANCH)"
-          
+
           # Build JSON payload
           PAYLOAD=$(cat <<EOF
           {
@@ -179,10 +179,10 @@ jobs:
           }
           EOF
           )
-          
+
           echo "Payload:"
           echo "$PAYLOAD"
-          
+
           # Use curl with verbose output
           HTTP_CODE=$(curl -X POST \
             -H "Accept: application/vnd.github+json" \
@@ -193,14 +193,14 @@ jobs:
             -o /tmp/response.txt \
             https://api.github.com/repos/pljakobs/esp_rgbww_firmware/dispatches \
             -d "$PAYLOAD")
-          
+
           echo "HTTP Status: $HTTP_CODE"
           echo "Response:"
           cat /tmp/response.txt
-          
+
           if [ "$HTTP_CODE" -ne "204" ]; then
             echo "ERROR: Failed to trigger firmware build (HTTP $HTTP_CODE)"
             exit 1
           fi
-          
+
           echo "Successfully triggered firmware build"
