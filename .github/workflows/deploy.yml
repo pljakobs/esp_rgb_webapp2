@@ -12,6 +12,11 @@ on:
       - testing
       - stable
 
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -131,11 +136,41 @@ jobs:
           esac
 
           echo "Triggering firmware build for branch: $FIRMWARE_BRANCH (webapp: $WEBAPP_BRANCH)"
-
-          # Use curl with properly formatted JSON
-          curl -X POST \
+          
+          # Build JSON payload
+          PAYLOAD=$(cat <<EOF
+          {
+            "event_type": "frontend-build-completed",
+            "client_payload": {
+              "branch": "$FIRMWARE_BRANCH",
+              "webapp_branch": "$WEBAPP_BRANCH",
+              "run_id": "${{ github.run_id }}"
+            }
+          }
+          EOF
+          )
+          
+          echo "Payload:"
+          echo "$PAYLOAD"
+          
+          # Use curl with verbose output
+          HTTP_CODE=$(curl -X POST \
             -H "Accept: application/vnd.github+json" \
             -H "Authorization: Bearer ${{ secrets.GH_PAT }}" \
             -H "X-GitHub-Api-Version: 2022-11-28" \
+            -H "Content-Type: application/json" \
+            -w "%{http_code}" \
+            -o /tmp/response.txt \
             https://api.github.com/repos/pljakobs/esp_rgbww_firmware/dispatches \
-            -d "{\"event_type\":\"frontend-build-completed\",\"client_payload\":{\"branch\":\"$FIRMWARE_BRANCH\",\"webapp_branch\":\"$WEBAPP_BRANCH\",\"run_id\":\"${{ github.run_id }}\"}}"
+            -d "$PAYLOAD")
+          
+          echo "HTTP Status: $HTTP_CODE"
+          echo "Response:"
+          cat /tmp/response.txt
+          
+          if [ "$HTTP_CODE" -ne "204" ]; then
+            echo "ERROR: Failed to trigger firmware build (HTTP $HTTP_CODE)"
+            exit 1
+          fi
+          
+          echo "Successfully triggered firmware build"
