@@ -95,3 +95,4 @@ What I'm imagining is a way to tell the controller
 and from then on, you could use those defined lights as if they were separate controllers (albeit they will need to be handled differently on the API as they will live on the same IP address).
 All that I have described so far as Phase 3 is, of course, something that has to be implemented on the firmware first, but once that has been done, it will need the corresponding UI extensions as well, hence why I'm describing it here.
 
+# Trigger new build
