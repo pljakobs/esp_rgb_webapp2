@@ -19,7 +19,7 @@ permissions:
 
 jobs:
   build:
-    runs-on: [self-hosted, linux, webapp]
+    runs-on: self-hosted
 
     steps:
       - name: Checkout repository
