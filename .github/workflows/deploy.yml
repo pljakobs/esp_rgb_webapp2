@@ -19,7 +19,7 @@ permissions:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, webapp]
 
     steps:
       - name: Checkout repository
@@ -120,6 +120,36 @@ jobs:
           publish_branch: gh-pages
           keep_files: true
           destination_dir: ${{ steps.get_branch.outputs.branch }}
+
+      - name: Wait for GitHub Pages deployment
+        if: github.event_name == 'push'
+        run: |
+          echo "Waiting 30 seconds for GitHub Pages to deploy the artifacts..."
+          sleep 30
+
+      - name: Verify artifacts are accessible
+        if: github.event_name == 'push'
+        run: |
+          WEBAPP_BRANCH="${{ steps.get_branch.outputs.branch }}"
+          echo "Verifying artifacts at https://pljakobs.github.io/esp_rgb_webapp2/${WEBAPP_BRANCH}/"
+          
+          # Try to download spa-files.zip
+          if curl -f -L -o /tmp/test-spa.zip "https://pljakobs.github.io/esp_rgb_webapp2/${WEBAPP_BRANCH}/spa-files.zip"; then
+            echo "✓ spa-files.zip is accessible"
+          else
+            echo "✗ ERROR: spa-files.zip not yet available"
+            exit 1
+          fi
+          
+          # Try to download fileList.h
+          if curl -f -L -o /tmp/test-filelist.h "https://pljakobs.github.io/esp_rgb_webapp2/${WEBAPP_BRANCH}/fileList.h"; then
+            echo "✓ fileList.h is accessible"
+          else
+            echo "✗ ERROR: fileList.h not yet available"
+            exit 1
+          fi
+          
+          echo "All artifacts verified and accessible!"
 
       - name: Trigger firmware build
         if: github.event_name == 'push'
