@@ -1,6 +1,6 @@
 import { defineStore } from "pinia";
-import { storeStatus } from "./storeConstants";
-import { fetchApi } from "src/stores/storeHelpers";
+import { storeStatus } from "src/stores/storeConstants";
+import { apiService } from "src/services/api.js";
 
 export const infoDataStore = defineStore("infoDataStore", {
   state: () => ({
@@ -12,7 +12,7 @@ export const infoDataStore = defineStore("infoDataStore", {
     async fetchData() {
       this.status = storeStatus.LOADING;
       try {
-        const { jsonData, error } = await fetchApi("info");
+        const { jsonData, error } = await apiService.getInfo();
         if (error) {
           throw error;
         }

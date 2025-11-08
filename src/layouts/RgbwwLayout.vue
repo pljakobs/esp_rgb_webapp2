@@ -411,6 +411,13 @@ export default defineComponent({
       const checkControllerConfigured = () => {
         console.log("infoData.status changed to", infoData.status);
         console.log("check if this is an unconfigured controller");
+        
+        // Check if data is properly loaded
+        if (!infoData.data || !infoData.data.connection) {
+          console.log("infoData.data.connection not available yet");
+          return;
+        }
+        
         console.log(
           "connected:",
           infoData.data.connection.connected ? "true" : "false",
@@ -428,6 +435,8 @@ export default defineComponent({
           router.push("/networkinit");
         } else if (
           infoData.data.connection.connected &&
+          configData.data &&
+          configData.data.general &&
           (!configData.data.general.current_pin_config_name ||
             configData.data.general.current_pin_config_name === "")
         ) {
@@ -436,6 +445,12 @@ export default defineComponent({
             "network configured, but no pin config active, redirecting to /SystemSettings",
           );
           router.push("/SystemSettings");
+        } else if (
+          infoData.data.connection.connected &&
+          (!configData.data || !configData.data.general)
+        ) {
+          // Network is configured but configData is not loaded yet
+          console.log("network configured, but configData not loaded yet");
         } else {
           console.log("controller is configured, not redirecting");
         }

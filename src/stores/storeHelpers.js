@@ -20,6 +20,7 @@ export async function fetchApi(
   endpoint,
   retryCount = 0,
   timeoutMs = requestTimeout,
+  options = {},
 ) {
   const controllers = useControllersStore();
   const maxRetries = 10;
@@ -27,14 +28,34 @@ export async function fetchApi(
   let jsonData = null;
   let status = null;
 
+  const {
+    method = 'GET',
+    body = null,
+    headers = {},
+  } = options;
+
   try {
     console.log(endpoint, " start fetching data");
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
+    const requestOptions = {
+      signal: controller.signal,
+      method,
+      headers: {
+        ...headers
+      }
+    };
+
+    // Add Content-Type header and body for non-GET requests
+    if (body && method !== 'GET') {
+      requestOptions.headers['Content-Type'] = 'application/json';
+      requestOptions.body = JSON.stringify(body);
+    }
+
     const response = await fetch(
       `http://${controllers.currentController["ip_address"]}/${endpoint}`,
-      { signal: controller.signal }, // Add signal to fetch
+      requestOptions,
     );
 
     clearTimeout(timeoutId); // Clear timeout on successful response
@@ -50,7 +71,7 @@ export async function fetchApi(
       );
       return new Promise((resolve) =>
         setTimeout(
-          () => resolve(fetchApi(endpoint, retryCount + 1)),
+          () => resolve(fetchApi(endpoint, retryCount + 1, timeoutMs, options)),
           retryDelay * 2 ** retryCount,
         ),
       );
@@ -79,7 +100,7 @@ export async function fetchApi(
     if (retryCount < maxRetries) {
       return new Promise((resolve) =>
         setTimeout(
-          () => resolve(fetchApi(endpoint, retryCount + 1, timeoutMs)),
+          () => resolve(fetchApi(endpoint, retryCount + 1, timeoutMs, options)),
           retryDelay * 2 ** retryCount,
         ),
       );
