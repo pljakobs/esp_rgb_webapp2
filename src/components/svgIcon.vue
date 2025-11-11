@@ -33,6 +33,7 @@ function getSpriteUrl(forceReload = false) {
     return SPRITE_URL;
   }
 
+  // Only add cache busting when specifically requested
   const separator = SPRITE_URL.includes("?") ? "&" : "?";
   return `${SPRITE_URL}${separator}cb=${Date.now()}`;
 }
@@ -59,7 +60,10 @@ function ensureSpriteLoaded({ forceReload = false } = {}) {
   }
 
   if (!spriteLoadPromise) {
-    const cacheMode = forceReload ? "reload" : "no-store";
+    // Use proper caching for the sprite file
+    const cacheMode = forceReload ? "reload" : "default";
+    console.log(`🎨 Loading icon sprite (cache: ${cacheMode})`);
+    
     spriteLoadPromise = fetch(getSpriteUrl(forceReload), { cache: cacheMode })
       .then((response) => {
         if (!response.ok) {
@@ -68,7 +72,9 @@ function ensureSpriteLoaded({ forceReload = false } = {}) {
         return response.text();
       })
       .then((spriteContent) => {
+        // Double-check to avoid race conditions
         if (document.getElementById(SPRITE_ELEMENT_ID)) {
+          console.log("🎨 Sprite already loaded by another component");
           return;
         }
         const container = document.createElement("div");
@@ -85,8 +91,10 @@ function ensureSpriteLoaded({ forceReload = false } = {}) {
         svgElement.style.overflow = "hidden";
         svgElement.style.visibility = "hidden";
         document.body.prepend(svgElement);
+        console.log("🎨 Icon sprite loaded successfully");
       })
       .catch((error) => {
+        console.error("❌ Failed to load icon sprite:", error);
         // Allow future attempts to retry from scratch after any fetch failure.
         spriteLoadPromise = null;
         throw error;
@@ -317,22 +325,34 @@ export default {
 
       const symbol = document.getElementById(symbolId);
       if (!symbol) {
+        // Try fallback first before force reloading
+        const fallbackMappings = {
+          'lights_led_strip_variant': 'lightbulb',
+          'led_strip_variant': 'lightbulb',
+          'lights_led-strip-variant': 'lightbulb',
+          'led-strip-variant': 'lightbulb'
+        };
+        
+        const fallbackIcon = fallbackMappings[symbolId];
+        if (fallbackIcon) {
+          console.warn(`🔄 Icon '${symbolId}' not found, using fallback: ${fallbackIcon}`);
+          const fallbackSymbol = document.getElementById(fallbackIcon);
+          if (fallbackSymbol) {
+            this.setSvgContentFromSymbol(fallbackSymbol);
+            return;
+          }
+        }
+        
+        // Only force reload if no fallback worked
+        console.warn(`🔄 Icon '${symbolId}' not found, attempting sprite reload`);
         await ensureSpriteLoaded({ forceReload: true });
         const reloadedSymbol = document.getElementById(symbolId);
         if (!reloadedSymbol) {
-          // If the icon doesn't exist, try some common fallbacks for problematic icons
-          const fallbackMappings = {
-            'lights_led_strip_variant': 'lightbulb',
-            'led_strip_variant': 'lightbulb',
-            'lights_led-strip-variant': 'lightbulb',
-            'led-strip-variant': 'lightbulb'
-          };
-          
-          const fallbackIcon = fallbackMappings[symbolId];
+          // Try fallback again after reload
           if (fallbackIcon) {
-            console.warn(`Icon '${symbolId}' not found, using fallback: ${fallbackIcon}`);
             const fallbackSymbol = document.getElementById(fallbackIcon);
             if (fallbackSymbol) {
+              console.warn(`🔄 Using fallback after reload: ${fallbackIcon}`);
               this.setSvgContentFromSymbol(fallbackSymbol);
               return;
             }

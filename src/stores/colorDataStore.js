@@ -11,6 +11,7 @@ export const useColorDataStore = defineStore("colorDataStore", {
       hsv: { h: 0, s: 0, v: 0, ct: 0 },
     },
     status: storeStatus.LOADING,
+    error: null,
     http_response_status: null,
     change_by: "load",
     websocketSubscribed: false,
@@ -19,6 +20,7 @@ export const useColorDataStore = defineStore("colorDataStore", {
     async fetchData() {
       console.log("colorDataStore before fetch:", this);
       this.status = storeStatus.LOADING;
+      this.error = null; // Clear previous errors
       try {
         const { jsonData, error } = await apiService.getColorData();
         if (error) {
@@ -29,6 +31,7 @@ export const useColorDataStore = defineStore("colorDataStore", {
         this.status = storeStatus.READY;
         console.log("colorDataStore after fetch:", this);
       } catch (err) {
+        this.error = err.message || "Failed to fetch color data";
         this.status = storeStatus.ERROR;
         console.error("error fetching color data:", err);
         throw err;

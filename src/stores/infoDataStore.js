@@ -6,11 +6,13 @@ export const infoDataStore = defineStore("infoDataStore", {
   state: () => ({
     data: null,
     status: storeStatus.LOADING,
+    error: null,
     http_response_status: null,
   }),
   actions: {
     async fetchData() {
       this.status = storeStatus.LOADING;
+      this.error = null; // Clear previous errors
       try {
         const { jsonData, error } = await apiService.getInfo();
         if (error) {
@@ -21,6 +23,7 @@ export const infoDataStore = defineStore("infoDataStore", {
         this.status = storeStatus.READY;
         return jsonData;
       } catch (err) {
+        this.error = err.message || "Failed to fetch info data";
         this.status = storeStatus.ERROR;
         console.error("error fetching info data:", err);
         throw err;

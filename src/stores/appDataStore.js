@@ -60,6 +60,7 @@ export const useAppDataStore = defineStore("appData", {
     },
     storeStatus: storeStatus.store.IDLE,
     syncStatus: storeStatus.sync.NOT_STARTED,
+    error: null, // Add error property for compatibility with layout
     abortSaveOperation: false,
     syncWatchInitialized: false,
   }),
@@ -91,14 +92,21 @@ export const useAppDataStore = defineStore("appData", {
     async fetchData() {
       try {
         this.storeStatus = storeStatus.store.LOADING;
+        this.error = null; // Clear previous errors
         const { jsonData } = await apiService.getData();
         
         if (!jsonData) {
+          this.error = "No data received";
           this.storeStatus = storeStatus.store.ERROR;
           return;
         }
         this.data = jsonData;
         this.storeStatus = storeStatus.store.READY;
+        // Only set sync status to completed if it's not already running
+        // (don't interfere with background sync operations)
+        if (this.syncStatus === storeStatus.sync.NOT_STARTED) {
+          this.syncStatus = storeStatus.sync.COMPLETED;
+        }
         
         console.log("lastColor data: ", this.data["last-color"]);
         console.log("presets data: ", this.data.presets);
@@ -107,6 +115,7 @@ export const useAppDataStore = defineStore("appData", {
         console.log("controllers data: ", this.data.controllers);
       } catch (error) {
         console.error("Failed to fetch app data:", error);
+        this.error = error.message || "Failed to fetch app data";
         this.storeStatus = storeStatus.store.ERROR;
       }
     },

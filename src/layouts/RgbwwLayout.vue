@@ -27,8 +27,8 @@
             v-else-if="infoData.status === storeStatus.LOADING"
             color="light-blue"
           />
-          <span v-else class="text-danger">❌ {{ infoData.errro }}</span
-          ><br />
+          <span v-else class="text-danger">❌ {{ infoData.error }}</span>
+          <br />
           Colors:
           <span
             v-if="colorData.status === storeStatus.READY"
@@ -42,21 +42,31 @@
           <span v-else class="text-danger">❌ {{ colorData.error }}</span
           ><br />
           Presets and Scenes:
-          <span v-if="appData.status === storeStatus.READY" class="text-success"
-            >✔️</span
-          >
+          <!-- Show success when store is ready, regardless of sync status -->
+          <span 
+            v-if="appData.storeStatus === 'ready' || appData.status === 'ready'"
+            class="text-success"
+          >✔️
+            <!-- Show small sync indicator if syncing in background -->
+            <small v-if="appData.syncStatus === 'running'" class="text-info">
+              <q-spinner-radio size="12px" color="light-blue" /> 
+            </small>
+          </span>
+          <!-- Show loading spinner only during initial store load -->
           <q-spinner
-            v-else-if="appData.status === storeStatus.LOADING"
+            v-else-if="appData.storeStatus === 'loading' || appData.status === 'loading'"
             color="light-blue"
           />
-
-          <span
-            v-else-if="appData.status === storeStatus.SYNCING"
-            color="light-blue"
-          >
-            <q-spinner-radio /> synching
-          </span>
-          <span v-else class="text-danger">❌ {{ appData.error }}</span>
+          <!-- Show error state -->
+          <span 
+            v-else-if="appData.storeStatus === 'error' || appData.status === 'error'" 
+            class="text-danger"
+          >❌ {{ appData.error }}</span>
+          <!-- Debug: show unexpected states -->
+          <span 
+            v-else 
+            class="text-warning"
+          >⚠️ Store: {{ appData.storeStatus }}, Sync: {{ appData.syncStatus }}, Legacy: {{ appData.status }}</span>
         </div>
       </div>
     </div>
