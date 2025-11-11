@@ -75,7 +75,7 @@ function getControllerInfo(controllerId) {
       hostname: `Unknown (${controllerId})`,
       ip_address: "",
       online: false,
-      icon: "led-strip-variant",
+      icon: "lightbulb",
     };
   }
 
@@ -100,7 +100,7 @@ function getControllerInfo(controllerId) {
     hostname: controller?.hostname || `Unknown (${controllerId})`,
     ip_address: controller?.ip_address || "",
     online: controller?.online || false,
-    icon: controller?.icon || "led-strip-variant",
+    icon: controller?.icon || "lightbulb",
   };
 }
 
