@@ -42,31 +42,44 @@
           <span v-else class="text-danger">❌ {{ colorData.error }}</span
           ><br />
           Presets and Scenes:
-          <!-- Show success when store is ready, regardless of sync status -->
+          <!-- Only check store status for loading page display -->
           <span 
-            v-if="appData.storeStatus === 'ready' || appData.status === 'ready'"
+            v-if="appData.storeStatus === 'ready'"
             class="text-success"
-          >✔️
-            <!-- Show small sync indicator if syncing in background -->
-            <small v-if="appData.syncStatus === 'running'" class="text-info">
-              <q-spinner-radio size="12px" color="light-blue" /> 
-            </small>
-          </span>
+          >✔️</span>
           <!-- Show loading spinner only during initial store load -->
           <q-spinner
-            v-else-if="appData.storeStatus === 'loading' || appData.status === 'loading'"
+            v-else-if="appData.storeStatus === 'loading'"
             color="light-blue"
           />
           <!-- Show error state -->
           <span 
-            v-else-if="appData.storeStatus === 'error' || appData.status === 'error'" 
+            v-else-if="appData.storeStatus === 'error'" 
+            class="text-danger"
+          >❌ {{ appData.error }}</span>
+          <!-- Show idle state -->
+          <span 
+            v-else-if="appData.storeStatus === 'idle'"
+            class="text-warning"
+          >⏳ Initializing...</span>
+          <!-- Fallback to legacy status if storeStatus is not available -->
+          <span 
+            v-else-if="appData.status === 'ready'"
+            class="text-success"
+          >✔️</span>
+          <q-spinner
+            v-else-if="appData.status === 'loading'"
+            color="light-blue"
+          />
+          <span 
+            v-else-if="appData.status === 'error'" 
             class="text-danger"
           >❌ {{ appData.error }}</span>
           <!-- Debug: show unexpected states -->
           <span 
             v-else 
             class="text-warning"
-          >⚠️ Store: {{ appData.storeStatus }}, Sync: {{ appData.syncStatus }}, Legacy: {{ appData.status }}</span>
+          >❓ Unknown: Store:"{{ appData.storeStatus }}" Legacy:"{{ appData.status }}"</span>
         </div>
       </div>
     </div>
