@@ -1,8 +1,8 @@
 import { defineStore } from "pinia";
 import { storeStatus } from "./storeConstants";
-import { fetchApi } from "./storeHelpers";
 import { useControllersStore } from "./controllersStore";
 import useWebSocket from "src/services/websocket.js";
+import { apiService } from "src/services/api.js";
 
 export const useColorDataStore = defineStore("colorDataStore", {
   state: () => ({
@@ -20,7 +20,7 @@ export const useColorDataStore = defineStore("colorDataStore", {
       console.log("colorDataStore before fetch:", this);
       this.status = storeStatus.LOADING;
       try {
-        const { jsonData, error } = await fetchApi("color");
+        const { jsonData, error } = await apiService.getColorData();
         if (error) {
           throw error;
         }
@@ -70,7 +70,7 @@ export const useColorDataStore = defineStore("colorDataStore", {
         this.websocketSubscribed = true;
       }
     },
-    updateData(field, value) {
+    async updateData(field, value) {
       console.log("updatData called, change by: ", this.change_by, field);
       if (this.change_by != "websocket" && this.change_by != "load") {
         const controllers = useControllersStore();
@@ -115,28 +115,15 @@ export const useColorDataStore = defineStore("colorDataStore", {
             controllers.currentController["ip_address"],
           );
           console.log("store updateData for hsv, before api call: ", this);
-          fetch(`http://${controllers.currentController["ip_address"]}/color`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(payload),
-          })
-            .then((response) => {
-              if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-              }
-              return response.json();
-            })
-            .then(() => {
-              console.log("color update request sent");
-            })
-            .catch((error) => {
-              console.error(
-                "There was a problem with the fetch operation:",
-                error,
-              );
-            });
+          try {
+            const { jsonData, error } = await apiService.postColorData(payload);
+            if (error) {
+              throw error;
+            }
+            console.log("color update request sent successfully:", jsonData);
+          } catch (error) {
+            console.error("There was a problem with the color update:", error);
+          }
           console.log(
             "store updateData for hsv, before creating payload: ",
             this.data,

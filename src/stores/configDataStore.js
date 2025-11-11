@@ -1,7 +1,8 @@
 import { defineStore } from "pinia";
 import { storeStatus } from "src/stores/storeConstants";
 import { useControllersStore } from "src/stores/controllersStore";
-import { fetchApi, safeStringify } from "src/stores/storeHelpers";
+import { safeStringify } from "src/stores/storeHelpers";
+import { apiService } from "src/services/api.js";
 
 export const configDataStore = defineStore("configDataStore", {
   state: () => ({
@@ -19,7 +20,7 @@ export const configDataStore = defineStore("configDataStore", {
     async fetchData() {
       this.status = storeStatus.LOADING;
       try {
-        const { jsonData, error } = await fetchApi("config");
+        const { jsonData, error } = await apiService.getConfig();
         if (error) {
           throw error;
         }
@@ -34,7 +35,7 @@ export const configDataStore = defineStore("configDataStore", {
         throw err;
       }
     },
-    updateData(field, value, update = true) {
+    async updateData(field, value, update = true) {
       console.log(
         "updateConfigData called for field: ",
         field,
@@ -66,10 +67,10 @@ export const configDataStore = defineStore("configDataStore", {
 
       console.log("minimalUpdate: ", safeStringify(minimalUpdate));
       if (update) {
-        this.updateApi(minimalUpdate);
+        await this.updateApi(minimalUpdate);
       }
     },
-    updateMultipleData(updates, update = true) {
+    async updateMultipleData(updates, update = true) {
       console.log(
         "updateMultipleData called with:",
         Object.keys(updates).length,
@@ -110,29 +111,22 @@ export const configDataStore = defineStore("configDataStore", {
           "minimalUpdate for multiple data:",
           safeStringify(minimalUpdate),
         );
-        this.updateApi(minimalUpdate);
+        await this.updateApi(minimalUpdate);
       }
     },
-    updateApi(minimalUpdate) {
+    async updateApi(minimalUpdate) {
       console.log("updateApi called with: ", safeStringify(minimalUpdate));
-      const controllers = useControllersStore();
-      fetch(`http://${controllers.currentController["ip_address"]}/config`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(minimalUpdate),
-      })
-        .then((response) => {
-          if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-          }
-          return response.json();
-        })
-        .then(() => {})
-        .catch((error) => {
-          console.error("There was a problem with the fetch operation:", error);
-        });
+      try {
+        const { jsonData, error } = await apiService.postConfig(minimalUpdate);
+        if (error) {
+          throw error;
+        }
+        console.log("config updated successfully:", jsonData);
+        return jsonData;
+      } catch (error) {
+        console.error("There was a problem with the config update:", error);
+        throw error;
+      }
     },
   },
 });

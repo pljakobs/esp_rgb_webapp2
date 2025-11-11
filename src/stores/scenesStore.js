@@ -14,6 +14,7 @@ import {
   deleteGroup as deleteGroupUtil,
   deleteScene as deleteSceneUtil,
 } from "src/services/saveDelete";
+import { apiService } from "src/services/api.js";
 
 export const useScenesStore = defineStore("scenes", {
   state: () => ({
@@ -187,10 +188,9 @@ export const useScenesStore = defineStore("scenes", {
         if (!controller.ip_address) continue;
 
         try {
-          const response = await fetch(`http://${controller.ip_address}/color`);
-          if (!response.ok) continue;
+          const { jsonData: colorData, error } = await apiService.getColorFromController(controller.ip_address);
+          if (error) continue;
 
-          const colorData = await response.json();
           console.log(`Got color data from ${controller.hostname}:`, colorData);
 
           if (colorData.hsv) {

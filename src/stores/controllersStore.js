@@ -1,30 +1,31 @@
 import { defineStore } from "pinia";
 import { localhost, storeStatus } from "./storeConstants";
-import { fetchApi } from "./storeHelpers";
 import useWebSocket from "src/services/websocket.js";
 import { infoDataStore } from "src/stores/infoDataStore"; // Import infoDataStore
+import { apiService } from "src/services/api.js";
 
 export const useControllersStore = defineStore("controllersStore", {
   state: () => ({
-    status: storeStatus.LOADING,
-    currentController: localhost,
-    homeController: localhost,
-    http_response_status: null,
     data: [],
-    websocketSubscribed: false,
+    storeStatus: storeStatus.store.LOADING,
+    currentController: { ...localhost }, // Initialize with localhost object
+    homeController: { ...localhost }, // Initialize with localhost object
+    http_response_status: null,
   }),
+
+  getters: {
+    // Legacy compatibility getter
+    status: (state) => state.storeStatus,
+  },
 
   actions: {
     async fetchData(retryCount = 0) {
       try {
         infoDataStore();
         console.log("controllers start fetching data");
-        this.status = storeStatus.LOADING;
+        this.storeStatus = storeStatus.store.LOADING;
 
-        const { jsonData, error } = await fetchApi(
-          "hosts?all=true",
-          retryCount,
-        );
+        const { jsonData, error } = await apiService.getHosts(true);
         if (error) {
           throw error;
         }
@@ -59,7 +60,7 @@ export const useControllersStore = defineStore("controllersStore", {
         if (this.homeController.hostname === "localhost") {
           let matchingController = this.data.find(
             (controller) =>
-              controller.ip_address === this.currentController.ip_address,
+              controller.ip_address === this.homeController.ip_address,
           );
           if (matchingController) {
             this.homeController = matchingController;
@@ -70,7 +71,7 @@ export const useControllersStore = defineStore("controllersStore", {
           }
         }
         console.log("store: ", JSON.stringify(this.data));
-        this.status = storeStatus.READY;
+        this.storeStatus = storeStatus.store.READY;
         console.log("controllers data fetched: ", JSON.stringify(this.data));
 
         if (!this.websocketSubscribed) {
@@ -133,7 +134,7 @@ export const useControllersStore = defineStore("controllersStore", {
           );
         }
       } catch (error) {
-        this.status = storeStatus.ERROR;
+        this.storeStatus = storeStatus.store.ERROR;
         this.error = error;
         console.error("Error fetching controllers data:", error);
         throw error;
@@ -167,16 +168,13 @@ export const useControllersStore = defineStore("controllersStore", {
         console.log(
           `DEBUG: Fetching existing data from http://${controller.ip_address}/data`,
         );
-        const existingDataResponse = await fetch(
-          `http://${controller.ip_address}/data`,
-          {
-            headers: { Accept: "application/json" },
-          },
+        const { jsonData: existingData, error: existingError } = await apiService.getDataFromController(
+          controller.ip_address,
+          { headers: { Accept: "application/json" } }
         );
 
         let payload;
-        if (existingDataResponse.ok) {
-          const existingData = await existingDataResponse.json();
+        if (!existingError && existingData) {
           console.log("DEBUG: Existing data structure:", {
             hasControllers: !!existingData.controllers,
             controllersLength: existingData.controllers?.length || 0,
@@ -212,15 +210,16 @@ export const useControllersStore = defineStore("controllersStore", {
         }
 
         console.log(`DEBUG: POSTing to http://${controller.ip_address}/data`);
-        const response = await fetch(`http://${controller.ip_address}/data`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(payload),
-        });
+        const { jsonData, error } = await apiService.updateDataOnController(
+          controller.ip_address, 
+          payload
+        );
 
-        console.log(`DEBUG: POST response status: ${response.status}`);
+        if (error) {
+          throw new Error(`API error: ${error.message}`);
+        }
+
+        console.log(`DEBUG: POST response successful:`, jsonData);
 
         if (!response.ok) {
           const responseText = await response.text();

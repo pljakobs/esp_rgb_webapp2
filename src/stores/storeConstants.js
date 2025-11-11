@@ -7,6 +7,22 @@ export const localhost = {
 };
 
 export const storeStatus = {
+  // New two-status system
+  store: {
+    IDLE: "idle",
+    LOADING: "loading",
+    READY: "ready", 
+    ERROR: "error",
+  },
+  sync: {
+    NOT_STARTED: "not_started",
+    RUNNING: "running",
+    COMPLETED: "completed",
+    FAILED: "failed",
+  },
+  
+  // Legacy single-status system (deprecated)
+  IDLE: "idle",
   LOADING: "loading",
   READY: "ready",
   ERROR: "error",

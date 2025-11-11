@@ -320,6 +320,24 @@ export default {
         await ensureSpriteLoaded({ forceReload: true });
         const reloadedSymbol = document.getElementById(symbolId);
         if (!reloadedSymbol) {
+          // If the icon doesn't exist, try some common fallbacks for problematic icons
+          const fallbackMappings = {
+            'lights_led_strip_variant': 'lightbulb',
+            'led_strip_variant': 'lightbulb',
+            'lights_led-strip-variant': 'lightbulb',
+            'led-strip-variant': 'lightbulb'
+          };
+          
+          const fallbackIcon = fallbackMappings[symbolId];
+          if (fallbackIcon) {
+            console.warn(`Icon '${symbolId}' not found, using fallback: ${fallbackIcon}`);
+            const fallbackSymbol = document.getElementById(fallbackIcon);
+            if (fallbackSymbol) {
+              this.setSvgContentFromSymbol(fallbackSymbol);
+              return;
+            }
+          }
+          
           throw new Error(`Icon not found in sprite: ${symbolId}`);
         }
         this.setSvgContentFromSymbol(reloadedSymbol);
