@@ -63,7 +63,7 @@ function ensureSpriteLoaded({ forceReload = false } = {}) {
     // Use proper caching for the sprite file
     const cacheMode = forceReload ? "reload" : "default";
     console.log(`🎨 Loading icon sprite (cache: ${cacheMode})`);
-    
+
     spriteLoadPromise = fetch(getSpriteUrl(forceReload), { cache: cacheMode })
       .then((response) => {
         if (!response.ok) {
@@ -251,7 +251,6 @@ export default {
             const cacheAge = Date.now() - cacheData.timestamp;
             const maxAge = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
 
-
             if (cacheAge < maxAge) {
               this.svgContent = cacheData.content;
               return;
@@ -269,7 +268,6 @@ export default {
       // Fetch from web with timeout
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 5000);
-
 
       try {
         const response = await fetch(this.name, {
@@ -310,7 +308,6 @@ export default {
             timestamp: Date.now(),
           }),
         );
-
       } catch (error) {
         clearTimeout(timeoutId);
         throw error;
@@ -327,24 +324,30 @@ export default {
       if (!symbol) {
         // Try fallback first before force reloading
         const fallbackMappings = {
-          'lights_led_strip_variant': 'lightbulb',
-          'led_strip_variant': 'lightbulb',
-          'lights_led-strip-variant': 'lightbulb',
-          'led-strip-variant': 'lightbulb'
+          lights_led_strip_variant: "lightbulb",
+          led_strip_variant: "lightbulb", 
+          "lights_led-strip-variant": "lightbulb",
+          "led-strip-variant": "lightbulb",
+          lights_led_strip_variant: "lightbulb", // duplicate to ensure coverage
+          "lights/led-strip-variant": "lightbulb", // handle slash notation
         };
-        
+
         const fallbackIcon = fallbackMappings[symbolId];
         if (fallbackIcon) {
-          console.warn(`🔄 Icon '${symbolId}' not found, using fallback: ${fallbackIcon}`);
+          console.warn(
+            `🔄 Icon '${symbolId}' not found, using fallback: ${fallbackIcon}`,
+          );
           const fallbackSymbol = document.getElementById(fallbackIcon);
           if (fallbackSymbol) {
             this.setSvgContentFromSymbol(fallbackSymbol);
             return;
           }
         }
-        
+
         // Only force reload if no fallback worked
-        console.warn(`🔄 Icon '${symbolId}' not found, attempting sprite reload`);
+        console.warn(
+          `🔄 Icon '${symbolId}' not found, attempting sprite reload`,
+        );
         await ensureSpriteLoaded({ forceReload: true });
         const reloadedSymbol = document.getElementById(symbolId);
         if (!reloadedSymbol) {
@@ -357,7 +360,7 @@ export default {
               return;
             }
           }
-          
+
           throw new Error(`Icon not found in sprite: ${symbolId}`);
         }
         this.setSvgContentFromSymbol(reloadedSymbol);
@@ -508,7 +511,6 @@ export default {
             timestamp: Date.now(),
           }),
         );
-
       } catch (error) {
         clearTimeout(timeoutId);
         throw error;
