@@ -14,37 +14,42 @@ const MIN_REQUIRED_SYNC_LOCKS = 1;
 const sleep = (ms) =>
   new Promise((resolve) => setTimeout(resolve, Math.max(ms, 0)));
 
-async function fetchWithTimeout(url, options = {}, timeoutMs = SYNC_LOCK_TIMEOUT_MS) {
+async function fetchWithTimeout(
+  url,
+  options = {},
+  timeoutMs = SYNC_LOCK_TIMEOUT_MS,
+) {
   // Use the centralized API's requestToController method
   const urlParts = url.match(/http:\/\/([^\/]+)\/(.+)/);
   if (!urlParts) {
     throw new Error(`Invalid URL format: ${url}`);
   }
-  
+
   const ipAddress = urlParts[1];
   const endpoint = urlParts[2];
-  
+
   const { jsonData, error, status } = await apiService.requestToController(
     endpoint,
     { ip_address: ipAddress },
-    options
+    options,
   );
-  
+
   if (error) {
     if (error.isTimeout) {
-      const abortError = new Error('Request timeout');
-      abortError.name = 'AbortError';
+      const abortError = new Error("Request timeout");
+      abortError.name = "AbortError";
       throw abortError;
     }
     throw error;
   }
-  
+
   // Return a response-like object to maintain compatibility
   return {
     ok: status >= 200 && status < 300,
     status,
     json: async () => jsonData,
-    text: async () => typeof jsonData === 'string' ? jsonData : JSON.stringify(jsonData)
+    text: async () =>
+      typeof jsonData === "string" ? jsonData : JSON.stringify(jsonData),
   };
 }
 
@@ -60,6 +65,9 @@ export const useAppDataStore = defineStore("appData", {
     },
     storeStatus: storeStatus.store.IDLE,
     syncStatus: storeStatus.sync.NOT_STARTED,
+    lastSyncTime: null, // Track when last sync completed
+    syncInProgress: false, // Prevent immediate re-sync triggers
+    error: null, // Add error property for compatibility with layout
     abortSaveOperation: false,
     syncWatchInitialized: false,
   }),
@@ -84,22 +92,27 @@ export const useAppDataStore = defineStore("appData", {
         return storeStatus.READY;
       }
       return storeStatus.IDLE;
-    }
+    },
   },
 
   actions: {
     async fetchData() {
       try {
         this.storeStatus = storeStatus.store.LOADING;
+        this.error = null; // Clear previous errors
         const { jsonData } = await apiService.getData();
-        
+
         if (!jsonData) {
+          this.error = "No data received";
           this.storeStatus = storeStatus.store.ERROR;
           return;
         }
         this.data = jsonData;
         this.storeStatus = storeStatus.store.READY;
-        
+        // Don't automatically mark sync as completed on initial load
+        // Let the sync process determine when synchronization is actually complete
+        console.log("AppData store loaded, sync status remains:", this.syncStatus);
+
         console.log("lastColor data: ", this.data["last-color"]);
         console.log("presets data: ", this.data.presets);
         console.log("scenes data: ", this.data.scenes);
@@ -107,27 +120,56 @@ export const useAppDataStore = defineStore("appData", {
         console.log("controllers data: ", this.data.controllers);
       } catch (error) {
         console.error("Failed to fetch app data:", error);
+        this.error = error.message || "Failed to fetch app data";
         this.storeStatus = storeStatus.store.ERROR;
       }
     },
 
     watchForSync() {
+      // Prevent duplicate initialization
+      if (this.syncWatchInitialized) {
+        console.log("⚠️ Sync watchers already initialized, skipping duplicate setup");
+        return;
+      }
+      
+      console.log("🔄 watchForSync() called - initializing sync watchers");
       const controllers = useControllersStore();
 
       const maybeStartSync = () => {
-        // Simple condition: store is ready and sync not completed or running
+        console.log(`🔍 Sync check - Controllers: ${controllers.storeStatus}, App: ${this.storeStatus}, Sync: ${this.syncStatus}, InProgress: ${this.syncInProgress}`);
+        
+        // Prevent sync loops - don't sync if we just completed one
+        if (this.syncInProgress) {
+          console.log("⏸️ Sync in progress flag set - skipping to prevent loop");
+          return;
+        }
+        
+        // Sync should run whenever both stores are ready (unless already running)
+        // This ensures we always get the latest data when UI opens
         if (
           controllers.storeStatus === storeStatus.store.READY &&
           this.storeStatus === storeStatus.store.READY &&
-          this.syncStatus !== storeStatus.sync.COMPLETED &&
           this.syncStatus !== storeStatus.sync.RUNNING
         ) {
-          console.log("Controllers ready, starting one-time synchronization...");
+          console.log("✅ Starting synchronization to get latest data from all controllers...");
+          this.syncInProgress = true; // Set flag to prevent immediate re-trigger
+          
           this.synchronizeAllData((completed, total) => {
-            console.log(`Sync progress: ${completed}/${total}`);
+            console.log(`📊 Sync progress: ${completed}/${total}`);
+          }).finally(() => {
+            // Clear the flag after sync completes (success or failure)
+            setTimeout(() => {
+              this.syncInProgress = false;
+              console.log("🔓 Sync lock released - future syncs allowed");
+            }, 2000); // 2 second cooldown
           });
         } else {
-          console.log(`Sync check: controllers=${controllers.storeStatus}, app=${this.storeStatus}, sync=${this.syncStatus} - no sync needed`);
+          console.log(
+            `❌ Sync conditions not met:`,
+            `\n  - Controllers ready: ${controllers.storeStatus === storeStatus.store.READY}`,
+            `\n  - App store ready: ${this.storeStatus === storeStatus.store.READY}`,
+            `\n  - Sync not running: ${this.syncStatus !== storeStatus.sync.RUNNING}`
+          );
         }
       };
 
@@ -136,8 +178,12 @@ export const useAppDataStore = defineStore("appData", {
         const stopControllersWatch = watch(
           () => controllers.storeStatus,
           (newStatus, oldStatus) => {
-            if (newStatus === storeStatus.store.READY && oldStatus !== storeStatus.store.READY) {
-              console.log("Controllers store became ready, checking sync...");
+            console.log(`🎛️ Controllers store status changed: ${oldStatus} → ${newStatus}`);
+            if (
+              newStatus === storeStatus.store.READY &&
+              oldStatus !== storeStatus.store.READY
+            ) {
+              console.log("🎛️ Controllers store became ready, checking sync...");
               maybeStartSync();
             }
           },
@@ -147,8 +193,12 @@ export const useAppDataStore = defineStore("appData", {
         const stopSelfWatch = watch(
           () => this.storeStatus,
           (newStatus, oldStatus) => {
-            if (newStatus === storeStatus.store.READY && oldStatus !== storeStatus.store.READY) {
-              console.log("AppData store became ready, checking sync...");
+            console.log(`📦 AppData store status changed: ${oldStatus} → ${newStatus}`);
+            if (
+              newStatus === storeStatus.store.READY &&
+              oldStatus !== storeStatus.store.READY
+            ) {
+              console.log("📦 AppData store became ready, checking sync...");
               maybeStartSync();
             }
           },
@@ -156,16 +206,21 @@ export const useAppDataStore = defineStore("appData", {
 
         this._syncWatchStops = [stopControllersWatch, stopSelfWatch];
         this.syncWatchInitialized = true;
+        console.log("✅ Sync watchers initialized");
       }
 
       // Only trigger initial sync if both are ready and we haven't synced
+      console.log("🔍 Initial sync check after watcher setup...");
       if (
         controllers.storeStatus === storeStatus.store.READY &&
         this.storeStatus === storeStatus.store.READY &&
         this.syncStatus !== storeStatus.sync.COMPLETED &&
         this.syncStatus !== storeStatus.sync.RUNNING
       ) {
+        console.log("✅ Initial conditions met - triggering sync immediately");
         maybeStartSync();
+      } else {
+        console.log("❌ Initial sync conditions not met - will wait for status changes");
       }
     },
 
@@ -179,9 +234,36 @@ export const useAppDataStore = defineStore("appData", {
       const controllers = useControllersStore();
       this.abortSaveOperation = false;
 
+      // Validate preset before saving
+      if (
+        !preset.name ||
+        typeof preset.name !== "string" ||
+        preset.name.trim() === ""
+      ) {
+        console.error(
+          "❌ Cannot save preset: name is required and cannot be empty",
+        );
+        return;
+      }
+
+      // Validate color data exists
+      if (!preset.color || typeof preset.color !== "object") {
+        console.error("❌ Cannot save preset: valid color data is required");
+        return;
+      }
+
       // Generate an ID if one doesn't exist
       if (!preset.id) {
         preset.id = makeID();
+      }
+
+      // Ensure ID is not 0 or "0"
+      if (preset.id === 0 || preset.id === "0") {
+        preset.id = makeID();
+        console.warn(
+          "⚠️ Preset had invalid ID (0), generated new ID:",
+          preset.id,
+        );
       }
 
       // Add or update timestamp
@@ -431,6 +513,34 @@ export const useAppDataStore = defineStore("appData", {
 
     async saveGroup(group, progressCallback) {
       const controllers = useControllersStore();
+
+      // Validate group before saving
+      if (
+        !group.name ||
+        typeof group.name !== "string" ||
+        group.name.trim() === ""
+      ) {
+        console.error(
+          "❌ Cannot save group: name is required and cannot be empty",
+        );
+        return;
+      }
+
+      // Validate controllers array exists
+      if (!Array.isArray(group.controllers)) {
+        console.error("❌ Cannot save group: controllers array is required");
+        return;
+      }
+
+      // Ensure ID is valid
+      if (!group.id || group.id === 0 || group.id === "0") {
+        group.id = makeID();
+        console.warn(
+          "⚠️ Group had invalid/missing ID, generated new ID:",
+          group.id,
+        );
+      }
+
       const existingGroupIndex = this.data.groups.findIndex(
         (g) => g.id === group.id,
       );
@@ -690,6 +800,36 @@ export const useAppDataStore = defineStore("appData", {
     async saveScene(scene, progressCallback) {
       console.log("Starting scene save operation");
       console.log("Scene to save:", scene.name, "ID:", scene.id);
+
+      // Validate scene before saving
+      if (
+        !scene.name ||
+        typeof scene.name !== "string" ||
+        scene.name.trim() === ""
+      ) {
+        console.error(
+          "❌ Cannot save scene: name is required and cannot be empty",
+        );
+        return {
+          success: false,
+          error: "Scene name is required and cannot be empty",
+        };
+      }
+
+      // Validate controllers array exists
+      if (!Array.isArray(scene.controllers)) {
+        console.error("❌ Cannot save scene: controllers array is required");
+        return { success: false, error: "Scene controllers array is required" };
+      }
+
+      // Ensure ID is valid
+      if (!scene.id || scene.id === 0 || scene.id === "0") {
+        scene.id = makeID();
+        console.warn(
+          "⚠️ Scene had invalid/missing ID, generated new ID:",
+          scene.id,
+        );
+      }
 
       const controllers = useControllersStore();
       console.log("Controllers available:", controllers.data.length);
@@ -1010,8 +1150,22 @@ export const useAppDataStore = defineStore("appData", {
       this.abortSaveOperation = false;
 
       // Ensure we have a valid controller ID
-      if (!controllerId) {
-        console.error("No controller ID provided for metadata save");
+      if (!controllerId || controllerId === 0 || controllerId === "0") {
+        console.error(
+          "❌ Invalid controller ID provided for metadata save:",
+          controllerId,
+        );
+        return false;
+      }
+
+      // Validate metadata has required fields
+      if (
+        (!metadata.hostname || metadata.hostname.trim() === "") &&
+        (!metadata.name || metadata.name.trim() === "")
+      ) {
+        console.error(
+          "❌ Controller metadata must have either hostname or name",
+        );
         return false;
       }
 
@@ -1182,7 +1336,7 @@ export const useAppDataStore = defineStore("appData", {
     // Get the current controller ID (this would be determined by the context)
     getCurrentControllerId() {
       const controllers = useControllersStore();
-      
+
       // Use the current controller from the store
       if (controllers.currentController?.id) {
         return controllers.currentController.id;
@@ -1199,7 +1353,7 @@ export const useAppDataStore = defineStore("appData", {
       const firstController = controllers.data.find(
         (c) => c.id && c.ip_address && c.visible === true,
       );
-      
+
       if (firstController?.id) {
         console.log(`Using fallback controller ID: ${firstController.id}`);
         return firstController.id;
@@ -1347,7 +1501,11 @@ export const useAppDataStore = defineStore("appData", {
             const data = await checkResponse.json();
             const existingLock = data["sync-lock"];
 
-            if (existingLock && existingLock.id && existingLock.id !== controllerId) {
+            if (
+              existingLock &&
+              existingLock.id &&
+              existingLock.id !== controllerId
+            ) {
               const timestamp = Number(existingLock.ts);
               if (Number.isFinite(timestamp)) {
                 const lockAge = Date.now() - timestamp;
@@ -1390,7 +1548,10 @@ export const useAppDataStore = defineStore("appData", {
               throw new Error(`HTTP ${response.status}`);
             }
 
-            const verified = await this.verifySyncLock(controller, controllerId);
+            const verified = await this.verifySyncLock(
+              controller,
+              controllerId,
+            );
             if (!verified) {
               throw new Error("Lock verification failed");
             }
@@ -1529,9 +1690,7 @@ export const useAppDataStore = defineStore("appData", {
           );
 
           if (response.ok) {
-            console.log(
-              `🔓 Released sync lock on ${controllerName}`,
-            );
+            console.log(`🔓 Released sync lock on ${controllerName}`);
           } else {
             console.warn(
               `⚠️ Failed to release sync lock on ${controllerName}: HTTP ${response.status}`,
@@ -1546,18 +1705,13 @@ export const useAppDataStore = defineStore("appData", {
     },
 
     async synchronizeAllData(progressCallback) {
-      // Check if we're already syncing or have completed sync
+      // Only prevent sync if already running (not if completed)
       if (this.syncStatus === storeStatus.sync.RUNNING) {
         console.log("🔄 Synchronization already in progress, skipping");
         return false;
       }
 
-      if (this.syncStatus === storeStatus.sync.COMPLETED) {
-        console.log("✅ Synchronization already completed, skipping");
-        return true;
-      }
-
-      console.log("🔄 Starting simplified synchronization...");
+      console.log("🔄 Starting synchronization to collect latest data from all controllers...");
       this.syncStatus = storeStatus.sync.RUNNING;
 
       try {
@@ -1567,8 +1721,10 @@ export const useAppDataStore = defineStore("appData", {
         if (success) {
           console.log("✅ Sync completed successfully");
           this.syncStatus = storeStatus.sync.COMPLETED;
-          // Refresh local data after sync
-          await this.fetchData();
+          this.lastSyncTime = Date.now();
+          // Don't refresh local data after sync to avoid triggering watch loop
+          // The sync process already collected the latest data
+          console.log("📦 Sync complete - skipping fetchData() to prevent watch loop");
           return true;
         } else {
           console.error("❌ Sync failed");
@@ -1580,6 +1736,17 @@ export const useAppDataStore = defineStore("appData", {
         this.syncStatus = storeStatus.sync.FAILED;
         return false;
       }
+    },
+
+    // Manual sync trigger - useful for debugging or user-initiated sync
+    async forceSynchronization(progressCallback) {
+      console.log("🔄 Force synchronization requested");
+      
+      // Reset sync status to allow re-sync
+      this.syncStatus = storeStatus.sync.NOT_STARTED;
+      
+      // Trigger sync
+      return await this.synchronizeAllData(progressCallback);
     },
   },
 });

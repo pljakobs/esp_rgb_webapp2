@@ -27,8 +27,8 @@
             v-else-if="infoData.status === storeStatus.LOADING"
             color="light-blue"
           />
-          <span v-else class="text-danger">❌ {{ infoData.errro }}</span
-          ><br />
+          <span v-else class="text-danger">❌ {{ infoData.error }}</span>
+          <br />
           Colors:
           <span
             v-if="colorData.status === storeStatus.READY"
@@ -42,21 +42,40 @@
           <span v-else class="text-danger">❌ {{ colorData.error }}</span
           ><br />
           Presets and Scenes:
-          <span v-if="appData.status === storeStatus.READY" class="text-success"
+          <!-- Only check store status for loading page display -->
+          <span v-if="appData.storeStatus === 'ready'" class="text-success"
+            >✔️</span
+          >
+          <!-- Show loading spinner only during initial store load -->
+          <q-spinner
+            v-else-if="appData.storeStatus === 'loading'"
+            color="light-blue"
+          />
+          <!-- Show error state -->
+          <span v-else-if="appData.storeStatus === 'error'" class="text-danger"
+            >❌ {{ appData.error }}</span
+          >
+          <!-- Show idle state -->
+          <span v-else-if="appData.storeStatus === 'idle'" class="text-warning"
+            >⏳ Initializing...</span
+          >
+          <!-- Fallback to legacy status if storeStatus is not available -->
+          <span v-else-if="appData.status === 'ready'" class="text-success"
             >✔️</span
           >
           <q-spinner
-            v-else-if="appData.status === storeStatus.LOADING"
+            v-else-if="appData.status === 'loading'"
             color="light-blue"
           />
-
-          <span
-            v-else-if="appData.status === storeStatus.SYNCING"
-            color="light-blue"
+          <span v-else-if="appData.status === 'error'" class="text-danger"
+            >❌ {{ appData.error }}</span
           >
-            <q-spinner-radio /> synching
-          </span>
-          <span v-else class="text-danger">❌ {{ appData.error }}</span>
+          <!-- Debug: show unexpected states -->
+          <span v-else class="text-warning"
+            >❓ Unknown: Store:"{{ appData.storeStatus }}" Legacy:"{{
+              appData.status
+            }}"</span
+          >
         </div>
       </div>
     </div>
@@ -110,8 +129,8 @@
           option-value="ip_address"
           label="Select a controller"
           @input="handleControllerSelection"
-          @popup-show="() => $nextTick(() => (isSelectOpen.value = true))"
-          @popup-hide="() => $nextTick(() => (isSelectOpen.value = false))"
+          @popup-show="handleSelectPopupShow"
+          @popup-hide="handleSelectPopupHide"
         >
           <template v-slot:option="scope">
             <q-item clickable @click="handleControllerSelection(scope.opt)">
@@ -309,11 +328,11 @@ export default defineComponent({
       const leftDrawerOpen = ref(false);
 
       console.log("RgbwwLayout.vue setup define stores");
-  const controllers = useControllersStore();
-  const configData = configDataStore();
-  const infoData = infoDataStore();
-  const colorData = useColorDataStore();
-  const appData = useAppDataStore();
+      const controllers = useControllersStore();
+      const configData = configDataStore();
+      const infoData = infoDataStore();
+      const colorData = useColorDataStore();
+      const appData = useAppDataStore();
       const intervalId = ref(null);
 
       console.log("RgbwwLayout.vue setup useWebSocket");
@@ -411,13 +430,13 @@ export default defineComponent({
       const checkControllerConfigured = () => {
         console.log("infoData.status changed to", infoData.status);
         console.log("check if this is an unconfigured controller");
-        
+
         // Check if data is properly loaded
         if (!infoData.data || !infoData.data.connection) {
           console.log("infoData.data.connection not available yet");
           return;
         }
-        
+
         console.log(
           "connected:",
           infoData.data.connection.connected ? "true" : "false",
@@ -638,6 +657,15 @@ export default defineComponent({
         return "lightbulb_outlined";
       };
 
+      // Handler functions for select popup events
+      const handleSelectPopupShow = () => {
+        isSelectOpen.value = true;
+      };
+
+      const handleSelectPopupHide = () => {
+        isSelectOpen.value = false;
+      };
+
       return {
         leftDrawerOpen,
         configData,
@@ -648,6 +676,8 @@ export default defineComponent({
         storeStatus,
         isSelectOpen,
         handleControllerSelection,
+        handleSelectPopupShow,
+        handleSelectPopupHide,
         toggleLeftDrawer,
         buttonColor,
         buttonIconName,

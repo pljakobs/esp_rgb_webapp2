@@ -5,6 +5,7 @@ export const wsStatus = {
   CONNECTED: "connected",
   DISCONNECTED: "disconnected",
   FAILED: "failed",
+  CLOSED: "closed",
 };
 
 const state = reactive({
@@ -36,13 +37,34 @@ export default function useWebSocket() {
       return false;
     }
 
+    // Clean up any existing socket
+    if (state.socket) {
+      state.socket.close();
+      state.socket = null;
+    }
+
+    // Clear any existing timeouts
+    clearTimeout(lostConnectionTimeout);
+    clearTimeout(reconnectTimeout);
+
     console.log("=> opening websocket for ", state.url);
     state.status = wsStatus.CONNECTING;
-    state.socket = new WebSocket(state.url);
+
+    try {
+      state.socket = new WebSocket(state.url);
+    } catch (error) {
+      console.error("=> websocket creation failed:", error);
+      state.status = wsStatus.FAILED;
+      scheduleReconnect();
+      return false;
+    }
 
     state.socket.onopen = () => {
       console.log("=> websocket opened");
       state.status = wsStatus.CONNECTED;
+      reconnectAttempts = 0; // Reset reconnect attempts on successful connection
+      clearTimeout(reconnectTimeout); // Clear any pending reconnect
+      resetLostConnectionTimeout(); // Start keep-alive monitoring
     };
 
     function handleKeepAlive(message) {
@@ -59,15 +81,21 @@ export default function useWebSocket() {
     }
 
     function resetLostConnectionTimeout() {
+      clearTimeout(lostConnectionTimeout); // Clear any existing timeout
       lostConnectionTimeout = setTimeout(() => {
         console.log("=> websocket keep_alive timeout");
         state.status = wsStatus.FAILED;
-        state.socket.close();
-        reconnect();
+        if (state.socket) {
+          state.socket.close();
+        }
+        scheduleReconnect();
       }, 125000); // This is the timeout for the keep_alive message
     }
 
-    function reconnect() {
+    function scheduleReconnect() {
+      // Clear any existing reconnect timeout
+      clearTimeout(reconnectTimeout);
+
       // Try to reconnect after 5 seconds for the first 5 attempts
       // Then try to reconnect after 10 seconds for the next 20 attempts
       // Then try to reconnect after 20 seconds for all subsequent attempts
@@ -80,13 +108,19 @@ export default function useWebSocket() {
         delay = 20000;
       }
 
-      if (state.url != null && state.status === wsStatus.CLOSED) {
-        setTimeout(() => {
-          connect(state.url);
-        }, delay);
-      }
+      console.log(
+        `=> scheduling reconnect attempt #${reconnectAttempts + 1} in ${delay}ms`,
+      );
 
-      reconnectAttempts++;
+      reconnectTimeout = setTimeout(() => {
+        if (
+          state.url != null &&
+          (state.status === wsStatus.FAILED || state.status === wsStatus.CLOSED)
+        ) {
+          reconnectAttempts++;
+          connect(state.url);
+        }
+      }, delay);
     }
 
     state.socket.onmessage = (event) => {
@@ -110,40 +144,56 @@ export default function useWebSocket() {
       }
     };
 
-    state.socket.onerror = () => {
-      reconnect();
+    state.socket.onerror = (error) => {
+      console.log("=> websocket error:", error);
+      // Don't immediately reconnect on error - let onclose handle it
+      state.status = wsStatus.FAILED;
     };
 
-    state.socket.onclose = () => {
-      console.log("=> websocket closing");
-      if (state.status !== wsStatus.DISCONNECTED) {
-        console.log(
-          "=> websocket was not disconnected -> probably lost connection",
-        );
-        state.status = wsStatus.FAILED;
+    state.socket.onclose = (event) => {
+      console.log(
+        "=> websocket closing, code:",
+        event.code,
+        "reason:",
+        event.reason,
+      );
+      clearTimeout(lostConnectionTimeout); // Stop keep-alive monitoring
+
+      // Determine if this was a manual close or connection failure
+      if (state.status === wsStatus.DISCONNECTED) {
+        console.log("=> websocket manually disconnected");
+        return; // Don't reconnect if manually disconnected
       }
 
-      // Try to reconnect after 5 seconds
-      if (state.url != null && state.status === wsStatus.FAILED) {
-        console.log("=> websocket reconnecting");
-        setTimeout(connect, 5000);
+      console.log("=> websocket connection lost, will attempt to reconnect");
+      state.status = wsStatus.CLOSED;
+
+      // Schedule reconnection if we have a URL
+      if (state.url != null) {
+        scheduleReconnect();
       }
     };
   }
 
   function destroy() {
     console.log("=> websocket closing by destroy()");
-    if (state.socket.readyState === WebSocket.OPEN) {
-      //if socket was open, close
-      state.socket.close();
-    }
-    //state.socket.close();
-    state.status = wsStatus.DISCONNECTED;
 
+    // Clear all timeouts
     clearTimeout(lostConnectionTimeout);
     clearTimeout(reconnectTimeout);
+
+    // Mark as manually disconnected to prevent reconnection
+    state.status = wsStatus.DISCONNECTED;
+
+    // Close the socket if it exists and is open
+    if (state.socket && state.socket.readyState === WebSocket.OPEN) {
+      state.socket.close(1000, "Manual disconnect"); // Normal closure
+    }
+
+    // Clean up state
     state.url = null;
     state.socket = null;
+    reconnectAttempts = 0;
   }
 
   const send = (method, params) => {
