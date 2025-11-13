@@ -33,9 +33,7 @@
               v-if="preset.color.hsv"
               class="swatch"
               :style="{
-                backgroundColor: `rgb(${hsvToRgb(preset.color.hsv).r}, ${
-                  hsvToRgb(preset.color.hsv).g
-                }, ${hsvToRgb(preset.color.hsv).b})`,
+                backgroundColor: hsvToRgbStyle(preset.color.hsv),
               }"
             >
               <div class="swatch-name">{{ preset.name }}</div>
@@ -117,8 +115,7 @@ import RawBadge from "src/components/RawBadge.vue";
 import { applyScene, getControllerInfo } from "src/services/tools.js";
 import { setMapStoreSuffix } from "pinia";
 import { useControllersStore } from "src/stores/controllersStore";
-
-const { hsvToRgb } = colors;
+import { hsvToRgb, hsvToRgbStyle } from "src/services/colorUtils";
 
 export default {
   name: "favoriteSection",
@@ -329,6 +326,7 @@ export default {
       activateScene,
       isLastGroup,
       hsvToRgb,
+      hsvToRgbStyle,
       getSceneLights,
       getSceneIcon,
     };

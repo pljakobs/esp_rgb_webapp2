@@ -243,7 +243,6 @@ export default {
             const cacheAge = Date.now() - cacheData.timestamp;
             const maxAge = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
 
-
             if (cacheAge < maxAge) {
               this.svgContent = cacheData.content;
               return;
@@ -261,7 +260,6 @@ export default {
       // Fetch from web with timeout
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 5000);
-
 
       try {
         const response = await fetch(this.name, {
@@ -302,7 +300,6 @@ export default {
             timestamp: Date.now(),
           }),
         );
-
       } catch (error) {
         clearTimeout(timeoutId);
         throw error;
@@ -488,7 +485,6 @@ export default {
             timestamp: Date.now(),
           }),
         );
-
       } catch (error) {
         clearTimeout(timeoutId);
         throw error;

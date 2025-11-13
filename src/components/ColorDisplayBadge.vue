@@ -28,12 +28,10 @@
 
 <script>
 import { computed } from "vue";
-import { colors } from "quasar";
+import { safeHsvToRgb } from "src/services/colorUtils";
 import RawBadge from "src/components/RawBadge.vue";
 import { getPresetName } from "src/services/tools.js";
 import { useAppDataStore } from "src/stores/appDataStore";
-
-const { hsvToRgb } = colors;
 
 export default {
   name: "ColorDisplayBadge",
@@ -51,18 +49,7 @@ export default {
 
     const rgbColor = computed(() => {
       if (props.color?.hsv) {
-        // Provide default values for any missing HSV properties
-        const hsv = {
-          h: props.color.hsv.h ?? 0,
-          s: props.color.hsv.s ?? 100,
-          v: props.color.hsv.v ?? 100,
-        };
-        try {
-          return hsvToRgb(hsv);
-        } catch (error) {
-          console.error("Error converting HSV to RGB:", error);
-          return { r: 0, g: 0, b: 0 };
-        }
+        return safeHsvToRgb(props.color.hsv);
       }
       return { r: 0, g: 0, b: 0 };
     });
