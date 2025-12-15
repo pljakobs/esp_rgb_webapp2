@@ -8,10 +8,10 @@ import useWebSocket from "src/services/websocket.js";
 
 const INIT_DELAYS = {
   controllers: 0,
-  websocket: 750,
-  storeStart: 1500,
-  betweenStores: 250,
-  sync: 2000,
+  websocket: 300,
+  storeStart: 500,
+  betweenStores: 100,
+  sync: 0,
 };
 
 let controllersLoaded = false;

@@ -118,7 +118,7 @@ export default {
       default: false,
     },
   },
-  emits: ["ok", "hide", "cancel", ...useDialogPluginComponent.emits],
+  emits: ["ok", "hide", "cancel", "progress", ...useDialogPluginComponent.emits],
   setup(props, { emit }) {
     const { dialogRef, onDialogHide, onDialogOK, onDialogCancel } =
       useDialogPluginComponent();

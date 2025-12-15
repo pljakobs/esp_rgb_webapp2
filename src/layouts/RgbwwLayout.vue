@@ -435,7 +435,10 @@ export default defineComponent({
           router.push("/networkinit");
         } else if (
           infoData.data.connection.connected &&
+<<<<<<< HEAD
           configData.data &&
+=======
+>>>>>>> acdc221 (hopefully the last update to the appDataStore sync mechanism.)
           configData.data.general &&
           (!configData.data.general.current_pin_config_name ||
             configData.data.general.current_pin_config_name === "")
