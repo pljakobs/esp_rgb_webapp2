@@ -15,6 +15,9 @@
     "build": "quasar build "
   },
   "dependencies": {
+    "@capacitor/network": "^8.0.0",
+    "@capacitor/preferences": "^8.0.0",
+    "@devioarts/capacitor-mdns": "^0.0.2",
     "@intlify/unplugin-vue-i18n": "^11.0.0",
     "@quasar/cli": "^2.5.0",
     "@quasar/extras": "^1.16.16",

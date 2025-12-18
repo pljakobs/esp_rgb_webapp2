@@ -1,0 +1,146 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [devel, testing, stable]
+    paths:
+      - 'src/**'
+      - 'package.json'
+      - 'quasar.config.js'
+      - '.github/workflows/android-build.yml'
+  pull_request:
+    branches: [devel, testing, stable]
+  workflow_dispatch:
+    inputs:
+      build_type:
+        description: 'Build type'
+        required: true
+        default: 'debug'
+        type: choice
+        options:
+          - debug
+          - release
+
+jobs:
+  build-android:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'gradle'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Capacitor CLI
+        run: npm install -g @capacitor/cli
+
+      - name: Check if Capacitor is configured
+        id: check_capacitor
+        run: |
+          if [ -f "capacitor.config.json" ] || [ -f "capacitor.config.ts" ]; then
+            echo "configured=true" >> $GITHUB_OUTPUT
+          else
+            echo "configured=false" >> $GITHUB_OUTPUT
+            echo "⚠️ Capacitor not configured yet. Run 'npx quasar mode add capacitor' first."
+          fi
+
+      - name: Build Quasar for Capacitor
+        if: steps.check_capacitor.outputs.configured == 'true'
+        run: npx quasar build -m capacitor -T android
+
+      - name: Sync Capacitor
+        if: steps.check_capacitor.outputs.configured == 'true'
+        run: npx cap sync android
+
+      - name: Build Android Debug APK
+        if: steps.check_capacitor.outputs.configured == 'true' && (github.event.inputs.build_type == 'debug' || github.event.inputs.build_type == '')
+        working-directory: android
+        run: |
+          echo "Building debug APK (automatically signed with debug key for testing/sideloading)"
+          ./gradlew assembleDebug --stacktrace
+
+      - name: Build Android Release APK
+        if: steps.check_capacitor.outputs.configured == 'true' && github.event.inputs.build_type == 'release'
+        working-directory: android
+        env:
+          SIGNING_KEY_ALIAS: ${{ secrets.ANDROID_SIGNING_KEY_ALIAS }}
+          SIGNING_KEY_PASSWORD: ${{ secrets.ANDROID_SIGNING_KEY_PASSWORD }}
+          SIGNING_STORE_PASSWORD: ${{ secrets.ANDROID_SIGNING_STORE_PASSWORD }}
+        run: |
+          echo "Building release APK (requires signing secrets for Play Store distribution)"
+          ./gradlew assembleRelease --stacktrace
+
+      - name: Upload Debug APK
+        if: steps.check_capacitor.outputs.configured == 'true' && (github.event.inputs.build_type == 'debug' || github.event.inputs.build_type == '')
+        uses: actions/upload-artifact@v4
+        with:
+          name: lightinator-debug-${{ github.sha }}
+          path: android/app/build/outputs/apk/debug/*.apk
+          retention-days: 30
+
+      - name: Upload Release APK
+        if: steps.check_capacitor.outputs.configured == 'true' && github.event.inputs.build_type == 'release'
+        uses: actions/upload-artifact@v4
+        with:
+          name: lightinator-release-${{ github.sha }}
+          path: android/app/build/outputs/apk/release/*.apk
+          retention-days: 90
+
+      - name: Get APK info
+        if: steps.check_capacitor.outputs.configured == 'true'
+        run: |
+          echo "### 📱 Android APK Build Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Build Type:** ${{ github.event.inputs.build_type || 'debug' }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ github.event.inputs.build_type }}" = "release" ]; then
+            APK_PATH="android/app/build/outputs/apk/release/app-release.apk"
+          else
+            APK_PATH="android/app/build/outputs/apk/debug/app-debug.apk"
+          fi
+          if [ -f "$APK_PATH" ]; then
+            APK_SIZE=$(ls -lh "$APK_PATH" | awk '{print $5}')
+            echo "**APK Size:** $APK_SIZE" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "✅ APK built successfully!" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Comment on PR
+        if: github.event_name == 'pull_request' && steps.check_capacitor.outputs.configured == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `### 📱 Android APK Build Complete
+              
+              **Build Type:** ${{ github.event.inputs.build_type || 'debug' }}
+              **Commit:** ${{ github.sha }}
+              
+              The APK is available as a workflow artifact.
+              Download it from the [Actions tab](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}).`
+            })

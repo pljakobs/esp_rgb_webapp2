@@ -1,3 +1,5 @@
+// Note: This is deprecated in favor of controllerDiscovery.js
+// Kept for backward compatibility during transition
 export const localhost = {
   hostname: "localhost",
   ip_address:

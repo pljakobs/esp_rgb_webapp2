@@ -4,11 +4,13 @@
 
 <script>
 import { onMounted, watch, defineComponent } from "vue";
+import { useRouter } from "vue-router";
 import { useControllersStore } from "src/stores/controllersStore";
 import initializeStores from "src/services/initializeStores";
 import initializeNotifications from "src/services/notifications";
 import initializeAppCommands from "src/services/appCommands";
 import initializeLogService from "src/services/logServices";
+import { initializeControllerDiscovery, isNativeApp } from "src/services/controllerDiscovery";
 import { useQuasar } from "quasar";
 
 export default defineComponent({
@@ -17,6 +19,7 @@ export default defineComponent({
     console.log("starting app setup function");
     try {
       const controllers = useControllersStore();
+      const router = useRouter();
       const $q = useQuasar(); // Get Quasar's global instance
 
       console.log("controllers:", controllers);
@@ -35,7 +38,29 @@ export default defineComponent({
         },
       );
 
-      onMounted(() => {
+      onMounted(async () => {
+        // For native apps, check if we have a controller configured
+        if (isNativeApp()) {
+          console.log("Running as native app, checking for configured controller");
+          const controller = await initializeControllerDiscovery();
+
+          if (!controller) {
+            // No controller configured, redirect to discovery page
+            console.log("No controller configured, redirecting to discovery");
+            router.push('/discovery');
+            return;
+          }
+
+          // Set the discovered controller
+          console.log("Using controller:", controller);
+          controllers.setCurrentController({
+            id: controller.ip_address,
+            hostname: controller.hostname,
+            ip_address: controller.ip_address,
+            name: controller.name || controller.hostname,
+          });
+        }
+
         initializeStores();
         initializeNotifications();
         initializeAppCommands();
