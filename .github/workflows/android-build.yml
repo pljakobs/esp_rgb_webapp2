@@ -2,7 +2,7 @@ name: Build Android APK
 
 on:
   push:
-    branches: [devel, testing, stable]
+    branches: [feature/androidAPK]
     paths:
       - 'src/**'
       - 'package.json'
