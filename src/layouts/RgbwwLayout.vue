@@ -532,7 +532,7 @@ export default defineComponent({
           controller?.id,
         );
 
-        // Check if appData store is ready before proceeding
+        // Check that appData store is ready before proceeding
         if (appData.status !== storeStatus.READY) {
           console.log("AppData store not ready yet, using default icon");
           return "lightbulb_outlined";
