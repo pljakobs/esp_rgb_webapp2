@@ -30,6 +30,8 @@
     "vuedraggable": "^4.1.0"
   },
   "devDependencies": {
+    "@capacitor/android": "^8.0.0",
+    "@capacitor/cli": "^7.4.4",
     "@intlify/unplugin-vue-i18n": "^11.0.0",
     "@quasar/app-vite": "^2.3.0",
     "@vue/devtools": "^8.0.1",
