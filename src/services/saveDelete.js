@@ -66,7 +66,7 @@ export async function saveItem(
       // Create appropriate payload
       if (existingItem) {
         // Update existing item
-        payload = { [`${pluralType}[id=${item.id}]`]: itemToSync };
+        payload = { [`${pluralType}[id="${item.id}"]`]: itemToSync };
       } else {
         // Add new item
         payload = { [`${pluralType}[]`]: [itemToSync] };

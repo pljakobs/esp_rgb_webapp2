@@ -2,6 +2,7 @@ import { watch } from "vue";
 import { defineStore } from "pinia";
 import { useControllersStore } from "src/stores/controllersStore";
 import { storeStatus } from "src/stores/storeConstants";
+import { broadcastToControllers, getModifyPost, createAbortTimeout } from "src/services/tools";
 import { makeID } from "src/services/tools";
 import { apiService } from "src/services/api.js";
 import { syncService } from "src/services/syncService.js";
@@ -14,13 +15,6 @@ const MIN_REQUIRED_SYNC_LOCKS = 1;
 const sleep = (ms) =>
   new Promise((resolve) => setTimeout(resolve, Math.max(ms, 0)));
 
-<<<<<<< HEAD
-async function fetchWithTimeout(url, options = {}, timeoutMs = SYNC_LOCK_TIMEOUT_MS) {
-  // Use the centralized API's requestToController method
-  const urlParts = url.match(/http:\/\/([^\/]+)\/(.+)/);
-  if (!urlParts) {
-    throw new Error(`Invalid URL format: ${url}`);
-=======
 async function fetchWithTimeout(
   url,
   options = {},
@@ -37,34 +31,24 @@ async function fetchWithTimeout(
       abortHandler = () => controller.abort();
       signal.addEventListener("abort", abortHandler);
     }
->>>>>>> acdc221 (hopefully the last update to the appDataStore sync mechanism.)
   }
-  
-  const ipAddress = urlParts[1];
-  const endpoint = urlParts[2];
-  
-  const { jsonData, error, status } = await apiService.requestToController(
-    endpoint,
-    { ip_address: ipAddress },
-    options
-  );
-  
-  if (error) {
-    if (error.isTimeout) {
-      const abortError = new Error('Request timeout');
-      abortError.name = 'AbortError';
-      throw abortError;
+
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const response = await fetch(url, {
+      ...rest,
+      signal: controller.signal,
+    });
+    clearTimeout(timeout);
+    return response;
+  } catch (error) {
+    clearTimeout(timeout);
+    if (abortHandler && signal) {
+      signal.removeEventListener("abort", abortHandler);
     }
     throw error;
   }
-  
-  // Return a response-like object to maintain compatibility
-  return {
-    ok: status >= 200 && status < 300,
-    status,
-    json: async () => jsonData,
-    text: async () => typeof jsonData === 'string' ? jsonData : JSON.stringify(jsonData)
-  };
 }
 
 export const useAppDataStore = defineStore("appData", {
@@ -271,7 +255,7 @@ export const useAppDataStore = defineStore("appData", {
 
           if (existingPreset) {
             // Update existing preset
-            payload = { [`presets[id=${preset.id}]`]: presetToSync };
+            payload = { [`presets[id="${preset.id}"]`]: presetToSync };
             console.log("updatePreset payload: ", JSON.stringify(payload));
           } else {
             // Add new preset
@@ -349,7 +333,7 @@ export const useAppDataStore = defineStore("appData", {
 
     async deletePreset(preset, progressCallback) {
       const controllers = useControllersStore();
-      let payload = { [`presets[id=${preset.id}]`]: [] };
+      let payload = { [`presets[id="${preset.id}"]`]: [] };
 
       try {
         let completed = 0;
@@ -420,7 +404,7 @@ export const useAppDataStore = defineStore("appData", {
         const updatedPreset = { ...this.data.presets[presetIndex] };
         updatedPreset.favorite = !updatedPreset.favorite;
 
-        const payload = { [`presets[id=${preset.id}]`]: updatedPreset };
+        const payload = { [`presets[id="${preset.id}"]`]: updatedPreset };
         const response = await fetch(
           `http://${controllers.currentController["ip_address"]}/data`,
           {
@@ -458,117 +442,51 @@ export const useAppDataStore = defineStore("appData", {
       group.ts = Date.now();
 
       try {
-        let completed = 0;
-        const totalControllers = controllers.data.length;
-
         console.log(
-          `🔄 Saving group '${group.name}' to ${totalControllers} controllers`,
+          `🔄 Saving group '${group.name}' to ${controllers.data.length} controllers`,
         );
 
-        for (const controller of controllers.data) {
-          console.log(
-            `📡 Processing controller ${controller.name} (${controller.ip_address})`,
-          );
+        // Broadcast save operation to all controllers
+        const { successCount, failureCount } = await broadcastToControllers(
+          controllers.data,
+          async (controller) => {
+            const controllerName = controller.hostname || controller.name || controller.ip_address;
+            console.log(`📡 Processing controller ${controllerName}`);
 
-          try {
-            // Use the same robust timeout pattern as scenes
-            const timeoutMs = 8000; // 8 second timeout
-            const abortController = new AbortController();
-            const timeoutId = setTimeout(() => {
-              console.log(
-                `⏰ Timeout reached for controller ${controller.hostname || controller.name || controller.ip_address}`,
-              );
-              abortController.abort();
-            }, timeoutMs);
-
-            try {
-              // First, get existing data
-              const existingDataResponse = await fetch(
-                `http://${controller.ip_address}/data`,
-                {
-                  signal: abortController.signal,
-                  headers: {
-                    "Cache-Control": "no-cache",
-                    Accept: "application/json",
-                  },
-                },
-              );
-
-              if (!existingDataResponse.ok) {
-                throw new Error(
-                  `GET failed with status ${existingDataResponse.status}`,
-                );
-              }
-
-              const existingData = await existingDataResponse.json();
-              const existingGroup = existingData.groups?.find(
-                (g) => g.id === group.id,
-              );
-
-              let payload;
-              if (existingGroup) {
-                // Update existing group
-                payload = { [`groups[id=${group.id}]`]: group };
-                console.log(`🔄 Updating existing group on ${controllerName}`);
-              } else {
-                // Add new group
-                payload = { "groups[]": [group] };
-                console.log(`➕ Adding new group to ${controllerName}`);
-              }
-
-              // Only update if needed
-              if (!existingGroup || existingGroup.ts < group.ts) {
-                const postResponse = await fetch(
-                  `http://${controller.ip_address}/data`,
-                  {
-                    method: "POST",
-                    headers: {
-                      "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify(payload),
-                    signal: abortController.signal,
-                  },
+            const result = await getModifyPost(
+              controller.ip_address,
+              (existingData) => {
+                const existingGroup = existingData.groups?.find(
+                  (g) => g.id === group.id,
                 );
 
-                if (!postResponse.ok) {
-                  throw new Error(
-                    `POST failed with status ${postResponse.status}`,
-                  );
+                // Skip if already up to date
+                if (existingGroup && existingGroup.ts >= group.ts) {
+                  console.log(`⏭️ Skipping ${controllerName} - already up to date`);
+                  return null; // No changes needed
                 }
 
-                console.log(
-                  `✅ Successfully updated controller ${controllerName}`,
-                );
-              } else {
-                console.log(
-                  `⏭️ Skipping ${controllerName} - already up to date`,
-                );
-              }
-            } finally {
-              clearTimeout(timeoutId);
-            }
-          } catch (error) {
-            if (error.name === "AbortError") {
-              console.error(
-                `⏰ Timeout updating controller ${controller.hostname || controller.name || controller.ip_address} after 8 seconds`,
-              );
-            } else {
-              console.error(
-                `❌ Error updating controller ${controller.hostname || controller.name || controller.ip_address}:`,
-                error.message,
-              );
-            }
-            // Continue with other controllers even if one fails
-          }
+                // Determine payload
+                if (existingGroup) {
+                  console.log(`🔄 Updating existing group on ${controllerName}`);
+                  return { [`groups[id="${group.id}"]`]: group };
+                } else {
+                  console.log(`➕ Adding new group to ${controllerName}`);
+                  return { "groups[]": [group] };
+                }
+              },
+            );
 
-          completed++;
-          console.log(
-            `📊 Group save progress: ${completed}/${totalControllers}`,
-          );
-          if (progressCallback) {
-            progressCallback(completed, totalControllers);
-          }
-        }
+            if (result.success) {
+              console.log(`✅ Successfully updated controller ${controllerName}`);
+            }
+          },
+          progressCallback,
+        );
+
+        console.log(
+          `📊 Group save completed: ${successCount} succeeded, ${failureCount} failed`,
+        );
 
         // Update local store after all controllers processed
         if (existingGroupIndex !== -1) {
@@ -594,40 +512,23 @@ export const useAppDataStore = defineStore("appData", {
 
     async deleteGroup(group, progressCallback) {
       const controllers = useControllersStore();
-      let payload = { [`groups[id=${group.id}]`]: [] };
+      const payload = { [`groups[id="${group.id}"]`]: [] };
 
       try {
-        let completed = 0;
-        const totalControllers = controllers.data.length;
-
         console.log(
-          `🗑️ Deleting group '${group.name}' from ${totalControllers} controllers`,
+          `🗑️ Deleting group '${group.name}' from ${controllers.data.length} controllers`,
         );
 
-        for (const controller of controllers.data) {
-          console.log(
-            `📡 Processing controller ${controller.hostname || controller.name || controller.ip_address} (${controller.ip_address})`,
-          );
+        // Broadcast delete operation to all controllers
+        const { successCount, failureCount } = await broadcastToControllers(
+          controllers.data.filter((c) => c.ip_address), // Skip controllers without IP
+          async (controller) => {
+            const controllerName = controller.hostname || controller.name || controller.ip_address;
+            console.log(`📡 Processing controller ${controllerName}`);
 
-          if (!controller.ip_address) {
-            console.log(`⏭️ Skipping ${controller.hostname || controller.name || controller.ip_address} - no IP address`);
-            completed++;
-            if (progressCallback) {
-              progressCallback(completed, totalControllers);
-            }
-            continue;
-          }
-
-          try {
-            // Use the same robust timeout pattern as other operations
-            const timeoutMs = 8000; // 8 second timeout
-            const abortController = new AbortController();
-            const timeoutId = setTimeout(() => {
-              console.log(
-                `⏰ Timeout reached for controller ${controller.name}`,
-              );
-              abortController.abort();
-            }, timeoutMs);
+            const abort = createAbortTimeout(8000, () => {
+              console.log(`⏰ Timeout reached for controller ${controllerName}`);
+            });
 
             try {
               const response = await fetch(
@@ -639,52 +540,30 @@ export const useAppDataStore = defineStore("appData", {
                     Accept: "application/json",
                   },
                   body: JSON.stringify(payload),
-                  signal: abortController.signal,
+                  signal: abort.signal,
                 },
               );
 
               if (!response.ok) {
                 const errorText = await response.text();
                 if (errorText.includes("BadSelector")) {
-                  console.log(
-                    `⚠️ Group not found on ${controller.hostname || controller.name || controller.ip_address}, already deleted`,
-                  );
+                  console.log(`⚠️ Group not found on ${controllerName}, already deleted`);
                 } else {
-                  console.warn(
-                    `⚠️ Error from ${controller.hostname || controller.name || controller.ip_address}: ${errorText}`,
-                  );
+                  console.warn(`⚠️ Error from ${controllerName}: ${errorText}`);
                 }
               } else {
-                console.log(
-                  `✅ Successfully deleted group from ${controller.name}`,
-                );
+                console.log(`✅ Successfully deleted group from ${controllerName}`);
               }
             } finally {
-              clearTimeout(timeoutId);
+              abort.clear();
             }
-          } catch (error) {
-            if (error.name === "AbortError") {
-              console.error(
-                `⏰ Timeout deleting from controller ${controller.hostname || controller.name || controller.ip_address} after 8 seconds`,
-              );
-            } else {
-              console.warn(
-                `❌ Network error with ${controller.hostname || controller.name || controller.ip_address}:`,
-                error.message,
-              );
-            }
-            // Continue with other controllers even if one fails
-          }
+          },
+          progressCallback,
+        );
 
-          // Always increment counter and update progress
-          completed++;
-          console.log(
-            `📊 Group delete progress: ${completed}/${totalControllers}`,
-          );
-          if (progressCallback) {
-            progressCallback(completed, totalControllers);
-          }
-        }
+        console.log(
+          `📊 Group delete completed: ${successCount} succeeded, ${failureCount} failed`,
+        );
 
         // Update local store regardless of individual controller errors
         this.data.groups = this.data.groups.filter((g) => g.id !== group.id);
@@ -720,128 +599,55 @@ export const useAppDataStore = defineStore("appData", {
       // Add timestamp to the scene
       scene.ts = Date.now();
 
-      let payload;
       let saveErrors = [];
       let successCount = 0;
 
       try {
-        let completed = 0;
-        const totalControllers = controllers.data.length;
-
         console.log(
-          `Saving scene '${scene.name}' to ${totalControllers} controllers`,
+          `Saving scene '${scene.name}' to ${controllers.data.length} controllers`,
         );
 
-        for (const controller of controllers.data) {
-          if (!controller.ip_address) {
-            console.log(`Skipping controller - no IP address`);
-            completed++;
-            if (progressCallback) {
-              progressCallback(completed, totalControllers);
-            }
-            continue;
-          }
+        // Broadcast save operation to all controllers
+        const result = await broadcastToControllers(
+          controllers.data.filter((c) => c.ip_address), // Skip controllers without IP
+          async (controller) => {
+            const controllerName = controller.hostname || controller.name || controller.ip_address;
 
-          try {
-            // Add timeout protection
-            const timeoutMs = 8000;
-            const abortController = new AbortController();
-            const timeoutId = setTimeout(() => {
-              console.log(`Timeout reached for controller ${controller.name}`);
-              abortController.abort();
-            }, timeoutMs);
-
-            try {
-              // Check existing scene
-              const existingDataResponse = await fetch(
-                `http://${controller.ip_address}/data`,
-                {
-                  signal: abortController.signal,
-                  headers: {
-                    "Cache-Control": "no-cache",
-                    Accept: "application/json",
-                  },
-                },
-              );
-
-              if (!existingDataResponse.ok) {
-                throw new Error(
-                  `GET failed with status ${existingDataResponse.status}`,
-                );
-              }
-
-              const existingData = await existingDataResponse.json();
-              const existingScene = existingData.scenes?.find(
-                (s) => s.id === scene.id,
-              );
-
-              if (existingScene) {
-                // Update existing scene
-                payload = { [`scenes[id=${scene.id}]`]: scene };
-                console.log("Updating existing scene on", controller.name);
-              } else {
-                // Add new scene
-                payload = { "scenes[]": [scene] };
-                console.log("Adding new scene to", controller.name);
-              }
-
-              // Only update if needed
-              if (!existingScene || existingScene.ts < scene.ts) {
-                console.log("Scene save payload:", JSON.stringify(payload));
-
-                const response = await fetch(
-                  `http://${controller.ip_address}/data`,
-                  {
-                    method: "POST",
-                    headers: {
-                      "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify(payload),
-                    signal: abortController.signal,
-                  },
+            const result = await getModifyPost(
+              controller.ip_address,
+              (existingData) => {
+                const existingScene = existingData.scenes?.find(
+                  (s) => s.id === scene.id,
                 );
 
-                if (!response.ok) {
-                  throw new Error(`POST failed with status ${response.status}`);
+                // Skip if already up to date
+                if (existingScene && existingScene.ts >= scene.ts) {
+                  console.log(`Skipping ${controllerName} - already up to date`);
+                  return null;
                 }
 
-                console.log(
-                  `✅ Successfully saved scene to ${controller.name}`,
-                );
-                successCount++;
-              } else {
-                console.log(`Skipping ${controller.name} - already up to date`);
-                successCount++;
-              }
-            } finally {
-              clearTimeout(timeoutId);
-            }
-          } catch (error) {
-            if (error.name === "AbortError") {
-              console.error(
-                `Timeout saving to controller ${controller.name} after 8 seconds`,
-              );
-            } else {
-              console.error(
-                `Error saving to controller ${controller.name}:`,
-                error.message,
-              );
-            }
+                // Determine payload
+                if (existingScene) {
+                  console.log("Updating existing scene on", controllerName);
+                  return { [`scenes[id="${scene.id}"]`]: scene };
+                } else {
+                  console.log("Adding new scene to", controllerName);
+                  return { "scenes[]": [scene] };
+                }
+              },
+            );
 
-            const errorMsg =
-              error.message || error.toString() || "Network error";
-            saveErrors.push({
-              controller: controller.hostname || controller.ip_address,
-              error: errorMsg,
-            });
-          }
+            if (result.success) {
+              console.log(`✅ Successfully saved scene to ${controllerName}`);
+              successCount++;
+            } else if (result.skipped) {
+              successCount++;
+            }
+          },
+          progressCallback,
+        );
 
-          completed++;
-          console.log(`Scene save progress: ${completed}/${totalControllers}`);
-          if (progressCallback) {
-            progressCallback(completed, totalControllers);
-          }
-        }
+        saveErrors = result.failureCount > 0 ? [{ count: result.failureCount }] : [];
 
         // Update local store
         if (existingSceneIndex !== -1) {
@@ -859,29 +665,28 @@ export const useAppDataStore = defineStore("appData", {
 
         // Log summary
         console.log("Scene save operation complete");
-        console.log("Success count:", successCount);
-        console.log("Error count:", saveErrors.length);
+        console.log("Success count:", result.successCount);
+        console.log("Error count:", result.failureCount);
 
-        if (saveErrors.length > 0) {
+        if (result.failureCount > 0) {
           console.warn(
-            `Scene saved with ${saveErrors.length} controller(s) unreachable:`,
-            saveErrors,
+            `Scene saved with ${result.failureCount} controller(s) unreachable`,
           );
         } else {
           console.log(
-            `✅ Scene "${scene.name}" saved successfully to all ${successCount} controllers`,
+            `✅ Scene "${scene.name}" saved successfully to all ${result.successCount} controllers`,
           );
         }
 
-        const result = {
+        const resultObj = {
           success: true,
-          successCount,
+          successCount: result.successCount,
           errors: saveErrors,
-          totalControllers: controllers.data.length,
+          totalControllers: controllers.data.filter((c) => c.ip_address).length,
         };
 
-        console.log("Scene save result:", JSON.stringify(result, null, 2));
-        return result;
+        console.log("Scene save result:", JSON.stringify(resultObj, null, 2));
+        return resultObj;
       } catch (error) {
         console.error("❌ Critical error saving scene:", error);
 
@@ -913,7 +718,7 @@ export const useAppDataStore = defineStore("appData", {
           error: errorMessage,
           successCount,
           errors: saveErrors,
-          totalControllers: controllers.data?.length || 0,
+          totalControllers: controllers.data?.filter((c) => c.ip_address).length || 0,
         };
       } finally {
         // Refresh data like other functions do
@@ -923,34 +728,22 @@ export const useAppDataStore = defineStore("appData", {
 
     async deleteScene(scene, progressCallback) {
       const controllers = useControllersStore();
-      let payload = { [`scenes[id=${scene.id}]`]: [] };
+      const payload = { [`scenes[id="${scene.id}"]`]: [] };
 
       try {
-        let completed = 0;
-        const totalControllers = controllers.data.length;
-
         console.log(
-          `Deleting scene '${scene.name}' from ${totalControllers} controllers`,
+          `Deleting scene '${scene.name}' from ${controllers.data.length} controllers`,
         );
 
-        for (const controller of controllers.data) {
-          if (!controller.ip_address) {
-            console.log(`Skipping controller - no IP address`);
-            completed++;
-            if (progressCallback) {
-              progressCallback(completed, totalControllers);
-            }
-            continue;
-          }
+        // Broadcast delete operation to all controllers
+        const { successCount, failureCount } = await broadcastToControllers(
+          controllers.data.filter((c) => c.ip_address), // Skip controllers without IP
+          async (controller) => {
+            const controllerName = controller.hostname || controller.name || controller.ip_address;
 
-          try {
-            // Add timeout protection like other functions
-            const timeoutMs = 8000;
-            const abortController = new AbortController();
-            const timeoutId = setTimeout(() => {
-              console.log(`Timeout reached for controller ${controller.name}`);
-              abortController.abort();
-            }, timeoutMs);
+            const abort = createAbortTimeout(8000, () => {
+              console.log(`Timeout reached for controller ${controllerName}`);
+            });
 
             try {
               const response = await fetch(
@@ -962,48 +755,30 @@ export const useAppDataStore = defineStore("appData", {
                     Accept: "application/json",
                   },
                   body: JSON.stringify(payload),
-                  signal: abortController.signal,
+                  signal: abort.signal,
                 },
               );
 
               if (!response.ok) {
                 const errorText = await response.text();
                 if (errorText.includes("BadSelector")) {
-                  console.log(
-                    `Scene not found on ${controller.name}, already deleted`,
-                  );
+                  console.log(`Scene not found on ${controllerName}, already deleted`);
                 } else {
-                  console.warn(`Error from ${controller.name}: ${errorText}`);
+                  console.warn(`Error from ${controllerName}: ${errorText}`);
                 }
               } else {
-                console.log(
-                  `✅ Successfully deleted scene from ${controller.name}`,
-                );
+                console.log(`✅ Successfully deleted scene from ${controllerName}`);
               }
             } finally {
-              clearTimeout(timeoutId);
+              abort.clear();
             }
-          } catch (error) {
-            if (error.name === "AbortError") {
-              console.error(
-                `Timeout deleting from controller ${controller.name} after 8 seconds`,
-              );
-            } else {
-              console.warn(
-                `Network error with ${controller.name}:`,
-                error.message,
-              );
-            }
-          }
+          },
+          progressCallback,
+        );
 
-          completed++;
-          console.log(
-            `Scene delete progress: ${completed}/${totalControllers}`,
-          );
-          if (progressCallback) {
-            progressCallback(completed, totalControllers);
-          }
-        }
+        console.log(
+          `Scene delete completed: ${successCount} succeeded, ${failureCount} failed`,
+        );
 
         // Update local store
         this.data.scenes = this.data.scenes.filter((s) => s.id !== scene.id);
@@ -1113,7 +888,7 @@ export const useAppDataStore = defineStore("appData", {
             let payload;
             if (existingMetadata) {
               // Update existing metadata
-              payload = { [`controllers[id=${controllerId}]`]: metadata };
+              payload = { [`controllers[id="${controllerId}"]`]: metadata };
             } else {
               // Add new metadata
               payload = { controllers: [metadata] };
@@ -1606,8 +1381,6 @@ export const useAppDataStore = defineStore("appData", {
           this.syncStatus = storeStatus.sync.FAILED;
           return false;
         }
-<<<<<<< HEAD
-=======
 
         console.log(
           `Collection complete: Found ${allData.presets.length} preset versions, ${allData.scenes.length} scene versions, ${allData.groups.length} group versions across all controllers`,
@@ -2177,7 +1950,7 @@ export const useAppDataStore = defineStore("appData", {
           // Individual preset updates
           for (const preset of update.presetsToUpdate) {
             try {
-              const payload = { [`presets[id=${preset.id}]`]: preset };
+              const payload = { [`presets[id="${preset.id}"]`]: preset };
               await robustRequest(payload, `updating preset ${preset.name}`);
               console.log(
                 `✅ Updated preset ${preset.name} on ${controllerName}`,
@@ -2223,7 +1996,7 @@ export const useAppDataStore = defineStore("appData", {
                     );
 
                     if (presetIndex !== -1) {
-                      payload = { [`presets[${presetIndex}]`]: [] };
+                      payload = { [`presets[${presetIndex}"]`]: [] };
                       description = `deleting invalid preset "${presetToDelete.name}" at index ${presetIndex}`;
                     } else {
                       console.log(
@@ -2246,7 +2019,7 @@ export const useAppDataStore = defineStore("appData", {
                     typeof presetToDelete === "object"
                       ? presetToDelete.id
                       : presetToDelete;
-                  payload = { [`presets[id=${presetId}]`]: [] };
+                  payload = { [`presets[id="${presetId}"]`]: [] };
                   description = `deleting orphaned preset ${presetId}`;
                 }
 
@@ -2299,7 +2072,7 @@ export const useAppDataStore = defineStore("appData", {
                     );
 
                     if (sceneIndex !== -1) {
-                      payload = { [`scenes[${sceneIndex}]`]: [] };
+                      payload = { [`scenes[${sceneIndex}"]`]: [] };
                       description = `deleting invalid scene "${sceneToDelete.name}" at index ${sceneIndex}`;
                     } else {
                       console.log(
@@ -2321,7 +2094,7 @@ export const useAppDataStore = defineStore("appData", {
                     typeof sceneToDelete === "object"
                       ? sceneToDelete.id
                       : sceneToDelete;
-                  payload = { [`scenes[id=${sceneId}]`]: [] };
+                  payload = { [`scenes[id="${sceneId}"]`]: [] };
                   description = `deleting orphaned scene ${sceneId}`;
                 }
 
@@ -2374,7 +2147,7 @@ export const useAppDataStore = defineStore("appData", {
           // Individual scene updates
           for (const scene of update.scenesToUpdate) {
             try {
-              const payload = { [`scenes[id=${scene.id}]`]: scene };
+              const payload = { [`scenes[id="${scene.id}"]`]: scene };
               await robustRequest(payload, `updating scene ${scene.name}`);
               console.log(
                 `✅ Updated scene ${scene.name} on ${controllerName}`,
@@ -2420,7 +2193,7 @@ export const useAppDataStore = defineStore("appData", {
                     );
 
                     if (groupIndex !== -1) {
-                      payload = { [`groups[${groupIndex}]`]: [] };
+                      payload = { [`groups[${groupIndex}"]`]: [] };
                       description = `deleting invalid group "${groupToDelete.name}" at index ${groupIndex}`;
                     } else {
                       console.log(
@@ -2442,7 +2215,7 @@ export const useAppDataStore = defineStore("appData", {
                     typeof groupToDelete === "object"
                       ? groupToDelete.id
                       : groupToDelete;
-                  payload = { [`groups[id=${groupId}]`]: [] };
+                  payload = { [`groups[id="${groupId}"]`]: [] };
                   description = `deleting orphaned group ${groupId}`;
                 }
 
@@ -2495,7 +2268,7 @@ export const useAppDataStore = defineStore("appData", {
           // Individual group updates
           for (const group of update.groupsToUpdate) {
             try {
-              const payload = { [`groups[id=${group.id}]`]: group };
+              const payload = { [`groups[id="${group.id}"]`]: group };
               await robustRequest(payload, `updating group ${group.name}`);
               console.log(
                 `✅ Updated group ${group.name} on ${controllerName}`,
@@ -2544,7 +2317,6 @@ export const useAppDataStore = defineStore("appData", {
         console.log(`🔓 Released sync lock for ${currentControllerId}`);
 
         return true;
->>>>>>> acdc221 (hopefully the last update to the appDataStore sync mechanism.)
       } catch (error) {
         console.error("❌ Critical error during synchronization:", error);
         this.syncStatus = storeStatus.sync.FAILED;

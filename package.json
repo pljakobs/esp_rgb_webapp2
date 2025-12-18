@@ -9,7 +9,8 @@
   "scripts": {
     "lint": "eslint --ext .js,.vue ./",
     "format": "prettier --write \"**/*.{js,vue,scss,html,md,json}\" --ignore-path .gitignore",
-    "test": "echo \"No test specified\" && exit 0",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "dev": "quasar dev",
     "build": "quasar build "
   },
@@ -30,6 +31,7 @@
     "@quasar/app-vite": "^2.3.0",
     "@vue/devtools": "^8.0.1",
     "autoprefixer": "^10.4.17",
+    "baseline-browser-mapping": "^2.9.10",
     "eslint": "^9.19.0",
     "eslint-config-prettier": "^10.0.1",
     "eslint-plugin-quasar": "^1.1.0",
@@ -37,7 +39,8 @@
     "postcss": "^8.5.1",
     "prettier": "^3.3.3",
     "rollup-plugin-visualizer": "^6.0.3",
-    "vite": "^7.1.5"
+    "vite": "^7.1.5",
+    "vitest": "^3.0.0"
   },
   "engines": {
     "node": ">=20",

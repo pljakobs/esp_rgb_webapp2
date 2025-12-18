@@ -187,7 +187,7 @@ export const useControllersStore = defineStore("controllersStore", {
 
           if (existingController) {
             // Update existing controller metadata
-            payload = { [`controllers[id=${metadata.id}]`]: metadata };
+            payload = { [`controllers[id="${metadata.id}"]`]: metadata };
             console.log(
               "DEBUG: Updating existing controller metadata with payload:",
               JSON.stringify(payload, null, 2),

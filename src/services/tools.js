@@ -3,6 +3,114 @@ import { useAppDataStore } from "src/stores/appDataStore";
 import { useControllersStore } from "src/stores/controllersStore";
 import { Notify } from "quasar";
 
+/**
+ * Creates an AbortController with automatic timeout
+ * @param {number} timeoutMs - Timeout in milliseconds
+ * @param {Function} onTimeout - Optional callback when timeout occurs
+ * @returns {Object} Object with controller, timeoutId, and clear function
+ */
+export function createAbortTimeout(timeoutMs, onTimeout) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => {
+    if (onTimeout) onTimeout();
+    controller.abort();
+  }, timeoutMs);
+  
+  return {
+    controller,
+    timeoutId,
+    signal: controller.signal,
+    clear: () => clearTimeout(timeoutId)
+  };
+}
+
+/**
+ * Broadcasts an operation to multiple controllers with error handling and progress tracking
+ * @param {Array} controllers - Array of controller objects
+ * @param {Function} operation - Async function to execute for each controller (receives controller)
+ * @param {Function} onProgress - Optional progress callback (completed, total)
+ * @returns {Object} Results with successCount and failureCount
+ */
+export async function broadcastToControllers(controllers, operation, onProgress) {
+  let successCount = 0;
+  let failureCount = 0;
+  const total = controllers.length;
+  
+  for (const controller of controllers) {
+    try {
+      await operation(controller);
+      successCount++;
+    } catch (error) {
+      failureCount++;
+      console.error(
+        `❌ Error on ${controller.hostname || controller.name || controller.ip_address}:`,
+        error.message || error
+      );
+    }
+    
+    if (onProgress) {
+      onProgress(successCount + failureCount, total);
+    }
+  }
+  
+  return { successCount, failureCount };
+}
+
+/**
+ * Generic GET-Modify-POST pattern for controller data operations
+ * @param {string} ipAddress - Controller IP address
+ * @param {Function} modifyFn - Function that modifies the fetched data (receives existingData)
+ * @param {number} timeoutMs - Timeout in milliseconds (default 8000)
+ * @returns {Promise<Object>} Response data
+ */
+export async function getModifyPost(ipAddress, modifyFn, timeoutMs = 8000) {
+  const abort = createAbortTimeout(timeoutMs, () => {
+    console.log(`⏰ Timeout reached for ${ipAddress}`);
+  });
+
+  try {
+    // GET existing data
+    const getResponse = await fetch(`http://${ipAddress}/data`, {
+      signal: abort.signal,
+      headers: {
+        "Cache-Control": "no-cache",
+        Accept: "application/json",
+      },
+    });
+
+    if (!getResponse.ok) {
+      throw new Error(`GET failed with status ${getResponse.status}`);
+    }
+
+    const existingData = await getResponse.json();
+    
+    // Modify data
+    const payload = await modifyFn(existingData);
+    
+    if (!payload) {
+      // No changes needed
+      return { skipped: true, existingData };
+    }
+
+    // POST modified data
+    const postResponse = await fetch(`http://${ipAddress}/data`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+      signal: abort.signal,
+    });
+
+    if (!postResponse.ok) {
+      throw new Error(`POST failed with status ${postResponse.status}`);
+    }
+
+    const result = await postResponse.json();
+    return { success: true, data: result };
+  } finally {
+    abort.clear();
+  }
+}
+
 function makeID() {
   const infoData = infoDataStore();
   const controllerID = infoData.data.deviceid;

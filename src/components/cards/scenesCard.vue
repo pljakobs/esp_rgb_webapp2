@@ -227,15 +227,35 @@
         </template>
       </q-btn>
     </q-card-section>
+
+    <!-- Sync and Log Controls -->
+    <q-card-section class="q-pt-none" v-if="infoData.data?.build_type === 'debug'">
+      <div class="row q-gutter-sm">
+        <q-btn flat color="secondary" @click="runSync" :loading="syncRunning">
+          <template v-slot:default>
+            <svgIcon name="sync" />
+            <span>Sync</span>
+          </template>
+        </q-btn>
+        <q-btn flat color="accent" @click="downloadLog" :disable="!logCaptured">
+          <template v-slot:default>
+            <svgIcon name="download" />
+            <span>Download Log</span>
+          </template>
+        </q-btn>
+      </div>
+    </q-card-section>
   </MyCard>
 </template>
 
 <script>
-import { computed, onMounted } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { Dialog, colors, Notify } from "quasar";
 import { useAppDataStore } from "src/stores/appDataStore";
 import { useControllersStore } from "src/stores/controllersStore";
 import { useScenesStore } from "src/stores/scenesStore";
+import { infoDataStore } from "src/stores/infoDataStore";
+import { syncService } from "src/services/syncService.js";
 import { storeStatus } from "src/stores/storeConstants";
 import MyCard from "src/components/myCard.vue";
 import sceneDialog from "src/components/Dialogs/sceneDialog.vue";
@@ -254,6 +274,13 @@ export default {
     const appData = useAppDataStore();
     const controllersStore = useControllersStore();
     const scenesStore = useScenesStore();
+    const infoData = infoDataStore();
+
+    // Console logger state
+    const syncRunning = ref(false);
+    const logCaptured = ref(false);
+    const consoleLoggerActive = ref(false);
+    let logCapture = null;
 
     // Initialize the scenes store when the component mounts
     onMounted(() => {
@@ -569,12 +596,164 @@ export default {
       return "lightbulb_outlined";
     };
 
+    // Console Logger Functions
+    const initConsoleLogger = () => {
+      if (consoleLoggerActive.value) return;
+
+      const logs = [];
+      const startTime = Date.now();
+
+      const originalLog = console.log;
+      const originalWarn = console.warn;
+      const originalError = console.error;
+      const originalInfo = console.info;
+
+      const formatLog = (level, args) => {
+        const timestamp = ((Date.now() - startTime) / 1000).toFixed(3);
+        const message = Array.from(args).map(arg => {
+          if (typeof arg === 'object') {
+            try {
+              return JSON.stringify(arg, null, 2);
+            } catch (e) {
+              return String(arg);
+            }
+          }
+          return String(arg);
+        }).join(' ');
+        return `[${timestamp}s] [${level}] ${message}`;
+      };
+
+      console.log = function(...args) {
+        logs.push(formatLog('LOG', args));
+        originalLog.apply(console, args);
+      };
+
+      console.warn = function(...args) {
+        logs.push(formatLog('WARN', args));
+        originalWarn.apply(console, args);
+      };
+
+      console.error = function(...args) {
+        logs.push(formatLog('ERROR', args));
+        originalError.apply(console, args);
+      };
+
+      console.info = function(...args) {
+        logs.push(formatLog('INFO', args));
+        originalInfo.apply(console, args);
+      };
+
+      logCapture = {
+        logs,
+        startTime,
+        originalLog,
+        originalWarn,
+        originalError,
+        originalInfo
+      };
+
+      consoleLoggerActive.value = true;
+      console.log('📝 Console logger activated');
+    };
+
+    const stopConsoleLogger = () => {
+      if (!consoleLoggerActive.value || !logCapture) return;
+
+      console.log = logCapture.originalLog;
+      console.warn = logCapture.originalWarn;
+      console.error = logCapture.originalError;
+      console.info = logCapture.originalInfo;
+
+      consoleLoggerActive.value = false;
+      console.log('📝 Console logger deactivated');
+    };
+
+    const runSync = async () => {
+      if (syncRunning.value) return;
+
+      syncRunning.value = true;
+      logCaptured.value = false;
+
+      // Initialize logger
+      initConsoleLogger();
+
+      try {
+        console.log('🔄 Starting sync via syncService...');
+        const result = await syncService.synchronizeData();
+
+        if (result) {
+          Notify.create({
+            type: 'positive',
+            message: 'Sync completed successfully',
+            timeout: 2000
+          });
+        } else {
+          Notify.create({
+            type: 'warning',
+            message: 'Sync completed with issues',
+            timeout: 3000
+          });
+        }
+
+        logCaptured.value = true;
+      } catch (error) {
+        console.error('❌ Sync error:', error);
+        Notify.create({
+          type: 'negative',
+          message: `Sync failed: ${error.message}`,
+          timeout: 5000
+        });
+        logCaptured.value = true;
+      } finally {
+        syncRunning.value = false;
+        stopConsoleLogger();
+      }
+    };
+
+    const downloadLog = () => {
+      if (!logCapture || !logCapture.logs.length) {
+        Notify.create({
+          type: 'warning',
+          message: 'No logs captured',
+          timeout: 2000
+        });
+        return;
+      }
+
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const filename = `sync-log-${timestamp}.txt`;
+      const content = logCapture.logs.join('\n');
+
+      const blob = new Blob([content], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      Notify.create({
+        type: 'positive',
+        message: `Log downloaded: ${filename}`,
+        timeout: 2000
+      });
+    };
+
     return {
       // Store refs
       groupNodes: computed(() => scenesStore.groupNodes),
       enhancedGroupNodes,
       expandedNodes: computed(() => scenesStore.expandedNodes),
       debugStatus: computed(() => scenesStore.debugStatus),
+      infoData,
+
+      // Console logger state
+      syncRunning,
+      logCaptured,
+      runSync,
+      downloadLog,
 
       // Local UI methods
       isExpanded,

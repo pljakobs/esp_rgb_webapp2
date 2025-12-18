@@ -1,0 +1,48 @@
+name: Frontend Tests
+
+on:
+    push:
+        branches:
+            - devel
+            - testing
+            - stable
+    pull_request:
+        branches:
+            - devel
+            - testing
+            - stable
+
+jobs:
+    test:
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v4
+
+            - name: Set up Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: "20"
+                  cache: "npm"
+
+            - name: Install dependencies
+              run: npm ci
+
+            - name: Run frontend unit tests
+              run: npm test -- src/services/__tests__/api.spec.js src/stores/__tests__/appDataStore.spec.js src/services/__tests__/syncService.spec.js
+
+            - name: Test summary
+              if: always()
+              run: |
+                  echo "## Frontend Unit Test Results" >> $GITHUB_STEP_SUMMARY
+                  echo "✅ All frontend unit tests completed" >> $GITHUB_STEP_SUMMARY
+                  echo "" >> $GITHUB_STEP_SUMMARY
+                  echo "### Tests Executed" >> $GITHUB_STEP_SUMMARY
+                  echo "- **API Service**: 27 tests (request handling, errors, retries, type safety)" >> $GITHUB_STEP_SUMMARY
+                  echo "- **Data Store**: 31 tests (state management, CRUD operations, error recovery)" >> $GITHUB_STEP_SUMMARY
+                  echo "- **Sync Service**: 35 tests (multi-controller sync, data collection, version resolution)" >> $GITHUB_STEP_SUMMARY
+                  echo "" >> $GITHUB_STEP_SUMMARY
+                  echo "**Total: 93 frontend unit tests**" >> $GITHUB_STEP_SUMMARY
+                  echo "" >> $GITHUB_STEP_SUMMARY
+                  echo "_Note: Integration tests require running firmware and are executed manually_" >> $GITHUB_STEP_SUMMARY

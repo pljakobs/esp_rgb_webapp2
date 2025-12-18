@@ -5,9 +5,8 @@
     <HostnameCard />
     <ControllerConfigCard />
     <SaveRestoreConfig />
-    <!--<DebugFunctionCard v-if="infoData.data.build_type === 'debug'" />-->
-    <DebugFunctionCard />
-    <LogViewerCard />
+    <DebugFunctionCard v-if="infoData.data?.build_type === 'debug'" />
+    <LogViewerCard v-if="infoData.data?.build_type === 'debug'" />
   </div>
 </template>
 
