@@ -229,7 +229,10 @@
     </q-card-section>
 
     <!-- Sync and Log Controls -->
-    <q-card-section class="q-pt-none" v-if="infoData.data?.build_type === 'debug'">
+    <q-card-section
+      class="q-pt-none"
+      v-if="infoData.data?.build_type === 'debug'"
+    >
       <div class="row q-gutter-sm">
         <q-btn flat color="secondary" @click="runSync" :loading="syncRunning">
           <template v-slot:default>
