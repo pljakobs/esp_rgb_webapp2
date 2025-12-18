@@ -3,12 +3,8 @@ name: frontendBuild
 on:
   workflow_run:
     workflows: ["Frontend Tests"]
-    types:
-      - completed
-    branches:
-      - devel
-      - testing
-      - stable
+    types: [completed]
+    branches: [devel, testing, stable]
 
 permissions:
   contents: write
@@ -18,6 +14,7 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    # Only run if the triggering workflow succeeded
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
 
     steps:
