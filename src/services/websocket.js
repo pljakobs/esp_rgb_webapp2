@@ -93,7 +93,15 @@ export default function useWebSocket() {
       const message = JSON.parse(event.data);
       state.data = message;
       const key = message.method;
-      console.log("=> websocket message", key, message.params);
+      const id = message.id;
+      /*
+      console.log(
+        "=> websocket message",
+        key,
+        id,
+        JSON.stringify(message.params),
+      );
+      */
       if (key === "keep_alive") {
         handleKeepAlive(message);
       }

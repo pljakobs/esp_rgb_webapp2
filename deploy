@@ -41,7 +41,7 @@ then
 	cp -auv dist/spa/* ~/devel/esp_rgbww_firmware/webapp/
 	cp fileList.h ~/devel/esp_rgbww_firmware/include
 	cd ~/devel/esp_rgbww_firmware || exit
-	make -j8
+	make -j8 flash
 	cd $dir || exit
 else
 	echo "deplyoing to $DEVBOX"

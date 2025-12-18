@@ -2,8 +2,7 @@ import { defineStore } from "pinia";
 import { storeStatus } from "./storeConstants";
 import { fetchApi } from "src/stores/storeHelpers";
 
-export const infoDataStore = defineStore({
-  id: "infoDataStore",
+export const infoDataStore = defineStore("infoDataStore", {
   state: () => ({
     data: null,
     status: storeStatus.LOADING,

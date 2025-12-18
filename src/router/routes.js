@@ -3,6 +3,8 @@ import ColorSettings from "pages/ColorSettings.vue";
 import NetworkSettings from "pages/NetworkSettings.vue";
 import SystemSettings from "pages/SystemSettings.vue";
 import NetworkInit from "pages/NetworkInit.vue";
+import GroupsAndScenes from "pages/GroupsAndScenes.vue";
+
 import testPage from "pages/testPage.vue";
 
 const routes = [
@@ -29,6 +31,7 @@ const routes = [
       },
       { path: "/test", component: testPage },
       { path: "/networkinit", component: NetworkInit },
+      { path: "/GroupsAndScenes", component: GroupsAndScenes },
     ],
   },
   // Always leave this as last one,

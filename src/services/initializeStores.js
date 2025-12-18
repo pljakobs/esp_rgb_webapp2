@@ -1,21 +1,21 @@
 import { configDataStore } from "src/stores/configDataStore";
-import { colorDataStore } from "src/stores/colorDataStore";
-import { presetDataStore } from "src/stores/presetDataStore";
+import { useColorDataStore } from "src/stores/colorDataStore";
+import { useAppDataStore } from "src/stores/appDataStore";
 import { infoDataStore } from "src/stores/infoDataStore";
-import { controllersStore } from "src/stores/controllersStore";
+import { useControllersStore } from "src/stores/controllersStore";
 import useWebSocket from "src/services/websocket.js";
 
 export default async function initializeStores() {
-  const controllers = controllersStore();
+  const controllers = useControllersStore();
   console.log(
     "initializing stores for ",
     controllers.currentController["hostname"],
   );
 
   const configStore = configDataStore();
-  const colorStore = colorDataStore();
+  const colorStore = useColorDataStore();
   const infoStore = infoDataStore();
-  const presetStore = presetDataStore();
+  const appDataStore = useAppDataStore();
   const webSocket = useWebSocket();
 
   if (controllers.currentController) {
@@ -24,12 +24,20 @@ export default async function initializeStores() {
     webSocket.connect(url);
 
     try {
-      //await controllers.fetchData();
-      await colorStore.fetchData();
-      await configStore.fetchData();
-      await infoStore.fetchData();
-      await presetStore.fetchData();
+      // Fetch controllers data first
       await controllers.fetchData();
+
+      // Then fetch the rest in parallel
+      await Promise.all([
+        infoStore.fetchData(),
+        colorStore.fetchData(),
+        configStore.fetchData(),
+        appDataStore.fetchData(),
+      ]);
+
+      // Now set up the watchers for synchronization
+      console.log("All stores initialized, setting up sync watcher");
+      appDataStore.watchForSync();
     } catch (error) {
       console.log("error initializing stores: ", error);
     }

@@ -1,8 +1,8 @@
-import { controllersStore } from "src/stores/controllersStore";
+import { useControllersStore } from "src/stores/controllersStore";
 import initializeStores from "./initializeStores";
 
 const sysCmd = async (cmd, data) => {
-  const controllers = controllersStore();
+  const controllers = useControllersStore();
   console.log(`Sending command: ${cmd}`);
   console.log("Additional body:", data);
   try {
@@ -81,6 +81,10 @@ const systemCommand = {
   },
   debug: (enable) => {
     sysCmd("debug", { enable });
+  },
+  forgetControllers: () => {
+    console.log("tell the controller to forget all other controllers");
+    sysCmd("forget_controllers");
   },
 };
 

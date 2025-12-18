@@ -48,16 +48,21 @@
           <span v-else class="text-danger">❌ {{ colorData.error }}</span
           ><br />
           Presets and Scenes:
-          <span
-            v-if="presetsData.status === storeStatus.READY"
-            class="text-success"
+          <span v-if="appData.status === storeStatus.READY" class="text-success"
             >✔️</span
           >
           <q-spinner
-            v-else-if="presetsData.status === storeStatus.LOADING"
+            v-else-if="appData.status === storeStatus.LOADING"
             color="light-blue"
           />
-          <span v-else class="text-danger">❌ {{ presetsData.error }}</span>
+
+          <span
+            v-else-if="appData.status === storeStatus.SYNCING"
+            color="light-blue"
+          >
+            <q-spinner-radio /> synching
+          </span>
+          <span v-else class="text-danger">❌ {{ appData.error }}</span>
         </div>
       </div>
     </div>
@@ -78,7 +83,20 @@
               <img src="icons/menu_outlined_24.svg" class="icon" />
             </q-avatar>
           </q-btn>
-          <q-toolbar-title> Lightinator 5 </q-toolbar-title>
+          <q-toolbar-title>
+            <div class="row items-center q-gutter-sm">
+              <!-- Controller icon -->
+              <svgIcon
+                :name="currentControllerIcon"
+                size="24px"
+                fallbackIcon="lightbulb-outlined"
+              />
+              <!-- Controller hostname -->
+              <span>{{ currentControllerHostname }}</span>
+              <!-- Lightinator 5 text -->
+              <span>- Lightinator 5</span>
+            </div>
+          </q-toolbar-title>
         </q-toolbar>
       </q-header>
       <q-drawer
@@ -89,7 +107,7 @@
         show-if-above
         bordered
       >
-        <q-select
+        <mySelect
           v-if="controllers.status === storeStatus.READY"
           v-model="controllers.currentController"
           filled
@@ -97,12 +115,36 @@
           option-label="hostname"
           option-value="ip_address"
           label="Select a controller"
-          dropdown-icon="img:icons/arrow_drop_down.svg"
           @input="handleControllerSelection"
           @popup-show="() => $nextTick(() => (isSelectOpen.value = true))"
           @popup-hide="() => $nextTick(() => (isSelectOpen.value = false))"
         >
-        </q-select>
+          <template v-slot:option="scope">
+            <q-item clickable @click="handleControllerSelection(scope.opt)">
+              <q-item-section avatar>
+                <div class="row items-center">
+                  <!-- Custom controller icon -->
+                  <svgIcon
+                    :name="getCustomControllerIconReactive(scope.opt)"
+                    size="20px"
+                    fallbackIcon="lightbulb-outlined"
+                  />
+                  <!-- Role-based icon (home/api) if applicable -->
+                  <svgIcon
+                    v-if="getIconForController(scope.opt)"
+                    :name="getIconForController(scope.opt)"
+                    size="16px"
+                    class="q-ml-xs"
+                  />
+                </div>
+              </q-item-section>
+              <q-item-section>
+                <q-item-label>{{ scope.opt.hostname }}</q-item-label>
+                <q-item-label caption>{{ scope.opt.ip_address }}</q-item-label>
+              </q-item-section>
+            </q-item>
+          </template>
+        </mySelect>
 
         <q-list>
           <q-item-label header>main menu</q-item-label>
@@ -114,6 +156,19 @@
             <q-item-section class="text-section">
               <q-item-label>Color</q-item-label>
               <q-item-label caption>Set the current output color</q-item-label>
+            </q-item-section>
+          </q-item>
+
+          <q-item clickable tag="router-link" to="/GroupsAndScenes">
+            <q-item-section class="icon-section"
+              ><svgIcon name="light_group" class="icon" />
+            </q-item-section>
+
+            <q-item-section class="text-section">
+              <q-item-label>Groups and Scenes</q-item-label>
+              <q-item-label caption>
+                configure groups of controlelrs and scenes
+              </q-item-label>
             </q-item-section>
           </q-item>
 
@@ -200,7 +255,12 @@
               class="col-xs-12 col-sm-6 col-md-7 col-lg-5 no-gutter"
               justify-center
             >
-              <RouterView></RouterView>
+              <template v-if="!configData.data.general.current_pin_config_name">
+                <ControllerConfigCard />
+              </template>
+              <template v-else>
+                <RouterView />
+              </template>
             </div>
           </div>
         </div>
@@ -212,7 +272,12 @@
             class="ws-status-btn"
             :color="buttonColor"
             :icon="buttonIcon"
-          />
+          >
+            <q-tooltip
+              >shows the status of the Websocket connection to the selected
+              controller</q-tooltip
+            >
+          </q-btn>
         </q-toolbar>
       </q-footer>
     </q-layout>
@@ -229,10 +294,11 @@ import {
   computed,
 } from "vue";
 import { configDataStore } from "src/stores/configDataStore";
-import { colorDataStore } from "src/stores/colorDataStore";
-import { presetDataStore } from "src/stores/presetDataStore";
+import { useColorDataStore } from "src/stores/colorDataStore";
+import { useAppDataStore } from "src/stores/appDataStore";
 import { infoDataStore } from "src/stores/infoDataStore";
-import { controllersStore } from "src/stores/controllersStore";
+import { useControllersStore } from "src/stores/controllersStore";
+import ControllerConfigCard from "src/components/cards/ControllerConfigCard.vue";
 
 import { storeStatus } from "src/stores/storeConstants";
 import useWebSocket, { wsStatus } from "src/services/websocket.js";
@@ -243,17 +309,21 @@ export default defineComponent({
   name: "MainLayout",
 
   setup() {
+    console.log("RgbwwLayout.vue setup start");
     const isDarkMode = ref(Dark.isActive);
 
     try {
       const leftDrawerOpen = ref(false);
 
-      const controllers = controllersStore();
+      console.log("RgbwwLayout.vue setup define stores");
+      const controllers = useControllersStore();
       const configData = configDataStore();
       const infoData = infoDataStore();
-      const colorData = colorDataStore();
-      const presetsData = presetDataStore();
+      const colorData = useColorDataStore();
+      const appData = useAppDataStore();
       const intervalId = ref(null);
+
+      console.log("RgbwwLayout.vue setup useWebSocket");
       const ws = useWebSocket();
 
       const isSelectOpen = ref(false);
@@ -345,11 +415,18 @@ export default defineComponent({
           !infoData.data.connection.connected &&
           infoData.data.connection.ssid === ""
         ) {
-          // the controller has no configured ssid wsand is not connected to a wifi network
-          // we are therefore talking to a controller in AP mode, trigger the controler config
+          // the controller has no configured ssid and is not connected to a wifi network
+          // we are therefore talking to a controller in AP mode, trigger the controller config
           // section
           console.log("new controller, redirecting to /networkinit");
           router.push("/networkinit");
+        } else if (
+          infoData.data.connection.connected &&
+          (!configData.data.general.current_pin_config_name || configData.data.general.current_pin_config_name === "")
+        ) {
+          // Network is configured, but no pin config is active
+          console.log("network configured, but no pin config active, redirecting to /SystemSettings");
+          router.push("/SystemSettings");
         } else {
           console.log("controller is configured, not redirecting");
         }
@@ -375,7 +452,7 @@ export default defineComponent({
           toggleLeftDrawer();
         },
       );
-
+      /*
       watch(
         () => isSelectOpen.value,
         (isSelectOpen) => {
@@ -397,6 +474,7 @@ export default defineComponent({
         },
         { immediate: true },
       );
+      */
 
       const toggleLeftDrawer = () => {
         if (isSmallScreen.value) {
@@ -404,12 +482,144 @@ export default defineComponent({
         }
       };
 
+      const getIconForController = (controller) => {
+        // Logic to determine the icon based on the controller properties
+        console.log("getIconForController", controller.hostname);
+        if (controller.ip_address === controllers.homeController.ip_address) {
+          console.log("home icon for ", controller.ip_address);
+          return "home";
+        } else if (
+          controller.ip_address === controllers.currentController.ip_address
+        ) {
+          console.log("api icon for", controller.ip_address);
+          return "api";
+        } else {
+          console.log("no icon for ", controller.ip_address);
+          return "";
+        }
+        //return "controller_default_icon"; // Replace with your default icon
+      };
+
+      const getCustomControllerIcon = (controller) => {
+        // Get custom controller icon from appDataStore by matching controller ID
+        console.log(
+          "getCustomControllerIcon called for",
+          controller?.hostname,
+          "ID:",
+          controller?.id,
+        );
+
+        // Check if appData store is ready before proceeding
+        if (appData.status !== storeStatus.READY) {
+          console.log("AppData store not ready yet, using default icon");
+          return "lightbulb-outlined";
+        }
+
+        if (
+          controller &&
+          controller.id &&
+          appData.data &&
+          appData.data.controllers
+        ) {
+          const controllerMetadata = appData.data.controllers.find(
+            (c) => c.id === controller.id,
+          );
+
+          if (controllerMetadata && controllerMetadata.icon) {
+            console.log(
+              "Found controller icon in appDataStore:",
+              controllerMetadata.icon,
+            );
+            return controllerMetadata.icon;
+          }
+        }
+
+        // Fallback to default light icon
+        console.log("No icon found in appDataStore, using default");
+        return "lightbulb-outlined";
+      };
+
+      // Computed property for current controller's icon
+      const currentControllerIcon = computed(() => {
+        // Make this computed property reactive to appData changes
+        if (
+          controllers.currentController &&
+          appData.status === storeStatus.READY &&
+          appData.data
+        ) {
+          return getCustomControllerIcon(controllers.currentController);
+        }
+        return "lightbulb-outlined"; // Default icon
+      });
+
+      // Computed property for current controller's hostname
+      const currentControllerHostname = computed(() => {
+        if (controllers.currentController) {
+          // First try to get name from appDataStore metadata
+          if (appData.data && appData.data.controllers) {
+            const controllerMetadata = appData.data.controllers.find(
+              (c) => c.id === controllers.currentController.id,
+            );
+            if (controllerMetadata && controllerMetadata.name) {
+              return controllerMetadata.name;
+            }
+          }
+
+          // Fallback to hostname from controllers data or configData
+          return (
+            controllers.currentController.hostname ||
+            configData.data?.general?.device_name ||
+            "Unknown"
+          );
+        }
+        return "Unknown";
+      });
+
+      // Computed property for controller icons - reactive to appData changes
+      const controllerIcons = computed(() => {
+        // Create a reactive map of controller ID to icon
+        const iconMap = {};
+
+        if (
+          controllers.data &&
+          appData.status === storeStatus.READY &&
+          appData.data?.controllers
+        ) {
+          controllers.data.forEach((controller) => {
+            if (controller && controller.id) {
+              const controllerMetadata = appData.data.controllers.find(
+                (c) => c.id === controller.id,
+              );
+              iconMap[controller.id] =
+                controllerMetadata?.icon || "lightbulb-outlined";
+            }
+          });
+        } else {
+          // Default icons when appData is not ready
+          controllers.data?.forEach((controller) => {
+            if (controller && controller.id) {
+              iconMap[controller.id] = "lightbulb-outlined";
+            }
+          });
+        }
+
+        return iconMap;
+      });
+
+      // Updated function to use the computed property
+      const getCustomControllerIconReactive = (controller) => {
+        if (controller && controller.id) {
+          return controllerIcons.value[controller.id] || "lightbulb-outlined";
+        }
+        return "lightbulb-outlined";
+      };
+
       return {
         leftDrawerOpen,
         configData,
         infoData,
         colorData,
-        presetsData,
+        appData,
         controllers,
         storeStatus,
         isSelectOpen,
@@ -419,6 +629,12 @@ export default defineComponent({
         buttonIcon,
         isDarkMode,
         toggleDarkMode,
+        getIconForController,
+        getCustomControllerIcon,
+        getCustomControllerIconReactive,
+        currentControllerIcon,
+        currentControllerHostname,
+        ControllerConfigCard,
       };
     } catch (error) {
       console.error("Error in setup function:", error);

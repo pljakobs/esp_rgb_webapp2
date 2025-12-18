@@ -1,11 +1,10 @@
 import { defineStore } from "pinia";
 import { storeStatus } from "./storeConstants";
 import { fetchApi } from "./storeHelpers";
-import { controllersStore } from "./controllersStore";
+import { useControllersStore } from "./controllersStore";
 import useWebSocket from "src/services/websocket.js";
 
-export const colorDataStore = defineStore({
-  id: "colorDataStore",
+export const useColorDataStore = defineStore("colorDataStore", {
   state: () => ({
     data: {
       raw: { r: 0, g: 0, b: 0, cw: 0, ww: 0 },
@@ -71,7 +70,7 @@ export const colorDataStore = defineStore({
     updateData(field, value) {
       console.log("updatData called, change by: ", this.change_by, field);
       if (this.change_by != "websocket" && this.change_by != "load") {
-        const controllers = controllersStore();
+        const controllers = useControllersStore();
         console.log(
           "updateData for field: ",
           field,

@@ -16,7 +16,14 @@
           @update:model-value="toggleDarkMode"
         />
       </q-card-section>
+      <q-card-section>
+        {{ hash }}<br />
+
+        <q-btn @click="makeHash">Generate new hash</q-btn>
+      </q-card-section>
     </q-card>
+
+    <groupsCard />
   </q-page>
 </template>
 
@@ -24,11 +31,18 @@
 import { ref, onMounted } from "vue";
 import { Dark } from "quasar";
 import { infoDataStore } from "src/stores/infoDataStore";
+import groupsCard from "src/components/cards/groupsCard.vue";
+import { makeID } from "src/services/tools.js";
 
 export default {
+  components: {
+    groupsCard,
+  },
   setup() {
     const infoData = infoDataStore();
     const isDarkMode = ref(Dark.isActive);
+
+    const hash = ref();
 
     // Function to refresh data
     const refreshData = () => {
@@ -48,6 +62,11 @@ export default {
       isDarkMode.value = savedDarkMode === "true";
     }
 
+    const makeHash = () => {
+      hash.value = makeID();
+      console.log("hash:", hash.value);
+    };
+
     // Fetch data when the component is mounted
     onMounted(() => {
       refreshData();
@@ -58,6 +77,8 @@ export default {
       refreshData,
       isDarkMode,
       toggleDarkMode,
+      hash,
+      makeHash,
     };
   },
 };

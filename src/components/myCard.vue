@@ -5,14 +5,14 @@
       <div class="text-h6">{{ title }}</div>
       <div
         class="q-ml-auto rotate-icon"
-        :class="{ 'rotate-up': !collapsed, 'rotate-down': collapsed }"
+        :class="{ 'rotate-up': !isCollapsed, 'rotate-down': isCollapsed }"
         @click="toggleCollapse"
       >
         <svgIcon name="arrow_drop_down" />
       </div>
     </q-card-section>
     <q-separator />
-    <q-card-section v-show="!collapsed">
+    <q-card-section v-show="!isCollapsed">
       <slot />
     </q-card-section>
   </q-card>
@@ -30,11 +30,22 @@ export default {
       type: String,
       required: true,
     },
+    collapsed: {
+      type: Boolean,
+      default: true,
+    },
   },
+  emits: ["update:collapsed"],
   data() {
     return {
-      collapsed: false,
+      isCollapsed: this.collapsed, // Initialize from prop
     };
+  },
+  watch: {
+    collapsed(newVal) {
+      // Update internal state when prop changes
+      this.isCollapsed = newVal;
+    },
   },
   computed: {
     iconColor() {
@@ -43,15 +54,9 @@ export default {
   },
   methods: {
     toggleCollapse() {
-      this.collapsed = !this.collapsed;
-    },
-  },
-  mounted() {
-    console.log("Icon name passed to MyCard:", this.icon);
-  },
-  watch: {
-    icon(newVal) {
-      this.$emit("update: icon", newVal);
+      this.isCollapsed = !this.isCollapsed;
+      // Emit the change to parent
+      this.$emit("update:collapsed", this.isCollapsed);
     },
   },
 };
@@ -59,7 +64,7 @@ export default {
 
 <style scoped>
 .rotate-icon {
-  transition: transform 0.3s ease;
+  transition: transform 0.4s ease;
   cursor: pointer;
   transform-origin: center center;
 }
