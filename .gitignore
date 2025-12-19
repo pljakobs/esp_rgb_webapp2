@@ -37,7 +37,7 @@ yarn-error.log*
 venv
 
 # npm
-package-lock.json
+#package-lock.json
 
 # deploy fragments
 src/layouts/RgbwwLayout.vue.1
