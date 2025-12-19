@@ -4,14 +4,13 @@
  * Controllers advertise themselves via mDNS as "esprgbwwAPI._http._tcp.local"
  */
 
-import { Preferences } from '@capacitor/preferences';
-import { Network } from '@capacitor/network';
+import { Preferences } from "@capacitor/preferences";
+import { Network } from "@capacitor/network";
 
-
-const STORAGE_KEY = 'selected_controller';
-const MDNS_SERVICE_TYPE = '_http._tcp'; // mDNS service type (without .local suffix)
-const MDNS_SERVICE_NAME = 'esprgbwwAPI'; // ESP RGBWW API service name
-const MDNS_DOMAIN = 'local.'; // mDNS domain
+const STORAGE_KEY = "selected_controller";
+const MDNS_SERVICE_TYPE = "_http._tcp"; // mDNS service type (without .local suffix)
+const MDNS_SERVICE_NAME = "esprgbwwAPI"; // ESP RGBWW API service name
+const MDNS_DOMAIN = "local."; // mDNS domain
 const CONTROLLER_PORT = 80;
 
 /**
@@ -25,7 +24,7 @@ export const isNativeApp = () => {
  * Check if we're running in a web browser (served from controller)
  */
 export const isWebApp = () => {
-  return !isNativeApp() && window.location.hostname !== 'localhost';
+  return !isNativeApp() && window.location.hostname !== "localhost";
 };
 
 /**
@@ -40,16 +39,16 @@ export async function getCurrentController() {
     return {
       hostname: window.location.hostname,
       ip_address: window.location.hostname,
-      source: 'webapp',
+      source: "webapp",
     };
   }
 
-  if (process.env.NODE_ENV === 'development' && !isNativeApp()) {
+  if (process.env.NODE_ENV === "development" && !isNativeApp()) {
     // Development mode (localhost)
     return {
-      hostname: 'localhost',
-      ip_address: '192.168.29.31', // Default dev IP
-      source: 'development',
+      hostname: "localhost",
+      ip_address: "192.168.29.31", // Default dev IP
+      source: "development",
     };
   }
 
@@ -59,10 +58,10 @@ export async function getCurrentController() {
     try {
       return {
         ...JSON.parse(stored.value),
-        source: 'stored',
+        source: "stored",
       };
     } catch (e) {
-      console.error('Failed to parse stored controller:', e);
+      console.error("Failed to parse stored controller:", e);
     }
   }
 
@@ -114,15 +113,15 @@ export async function scanForControllers(options = {}) {
   const networkStatus = await checkNetworkStatus();
 
   if (!networkStatus.connected) {
-    throw new Error('No network connection');
+    throw new Error("No network connection");
   }
 
   // Try native mDNS discovery first (for native apps)
   if (isNativeApp()) {
     try {
-      console.log('Starting native mDNS discovery for', MDNS_SERVICE_NAME);
+      console.log("Starting native mDNS discovery for", MDNS_SERVICE_NAME);
       // Dynamically import Zeroconf
-      const { Zeroconf } = await import('@devioarts/capacitor-mdns');
+      const { Zeroconf } = await import("@devioarts/capacitor-mdns");
 
       // Watch for services
       await Zeroconf.watch({
@@ -131,31 +130,36 @@ export async function scanForControllers(options = {}) {
       });
 
       // Listen for service discoveries
-      const listener = await Zeroconf.addListener('serviceResolved', (result) => {
-        console.log('mDNS service resolved:', result);
-        // Check if this is an ESP RGBWW controller
-        if (result.service?.name?.includes(MDNS_SERVICE_NAME)) {
-          const controller = {
-            ip_address: result.service.ipv4Addresses?.[0] || result.service.addresses?.[0],
-            hostname: result.service.hostname || result.service.name,
-            name: result.service.txtRecord?.name || result.service.name,
-            port: result.service.port || CONTROLLER_PORT,
-            firmware: result.service.txtRecord?.version,
-            id: result.service.txtRecord?.id,
-            isEspRgbwwController: true,
-          };
-          // Only add if we have a valid IP
-          if (controller.ip_address) {
-            controllers.push(controller);
-            if (onProgress) {
-              onProgress({
-                found: controllers.length,
-                controller,
-              });
+      const listener = await Zeroconf.addListener(
+        "serviceResolved",
+        (result) => {
+          console.log("mDNS service resolved:", result);
+          // Check if this is an ESP RGBWW controller
+          if (result.service?.name?.includes(MDNS_SERVICE_NAME)) {
+            const controller = {
+              ip_address:
+                result.service.ipv4Addresses?.[0] ||
+                result.service.addresses?.[0],
+              hostname: result.service.hostname || result.service.name,
+              name: result.service.txtRecord?.name || result.service.name,
+              port: result.service.port || CONTROLLER_PORT,
+              firmware: result.service.txtRecord?.version,
+              id: result.service.txtRecord?.id,
+              isEspRgbwwController: true,
+            };
+            // Only add if we have a valid IP
+            if (controller.ip_address) {
+              controllers.push(controller);
+              if (onProgress) {
+                onProgress({
+                  found: controllers.length,
+                  controller,
+                });
+              }
             }
           }
-        }
-      });
+        },
+      );
 
       // Start scanning
       await Zeroconf.scan({
@@ -164,41 +168,44 @@ export async function scanForControllers(options = {}) {
       });
 
       // Wait for discovery to complete
-      await new Promise(resolve => setTimeout(resolve, timeout));
+      await new Promise((resolve) => setTimeout(resolve, timeout));
 
       // Stop scanning and remove listener
       await Zeroconf.unwatch({
         type: MDNS_SERVICE_TYPE,
         domain: MDNS_DOMAIN,
       });
-      
+
       if (listener) {
         listener.remove();
       }
 
       console.log(`mDNS discovery found ${controllers.length} controllers`);
-      
+
       if (controllers.length > 0) {
         return controllers;
       }
     } catch (error) {
-      console.warn('Native mDNS discovery failed, falling back to IP scan:', error);
+      console.warn(
+        "Native mDNS discovery failed, falling back to IP scan:",
+        error,
+      );
     }
   }
 
   // Fallback: IP range scanning (for web or if mDNS fails)
-  console.log('Falling back to IP range scanning');
-  
+  console.log("Falling back to IP range scanning");
+
   const commonPrefixes = [
-    '192.168.1.',
-    '192.168.0.',
-    '192.168.29.',
-    '10.0.0.',
-    '10.0.1.',
+    "192.168.1.",
+    "192.168.0.",
+    "192.168.29.",
+    "10.0.0.",
+    "10.0.1.",
   ];
 
   const scanPromises = [];
-  
+
   for (const prefix of commonPrefixes) {
     for (let i = 1; i <= 50; i++) {
       const ip = `${prefix}${i}`;
@@ -218,7 +225,7 @@ export async function scanForControllers(options = {}) {
           })
           .catch(() => {
             // Ignore failures
-          })
+          }),
       );
     }
   }
@@ -238,14 +245,14 @@ async function checkController(ip, timeout = 2000) {
   try {
     const response = await fetch(`http://${ip}/info`, {
       signal: controller.signal,
-      mode: 'cors',
+      mode: "cors",
     });
 
     clearTimeout(timeoutId);
 
     if (response.ok) {
       const data = await response.json();
-      
+
       // Verify it's an ESP RGBWW controller by checking the expected structure
       if (data.general && data.general.device_name) {
         return {
@@ -289,16 +296,16 @@ export async function initializeControllerDiscovery() {
     return {
       hostname: window.location.hostname,
       ip_address: window.location.hostname,
-      source: 'webapp',
+      source: "webapp",
     };
   }
 
   // Development - use configured IP
-  if (process.env.NODE_ENV === 'development' && !isNativeApp()) {
+  if (process.env.NODE_ENV === "development" && !isNativeApp()) {
     return {
-      hostname: 'localhost',
-      ip_address: '192.168.29.31',
-      source: 'development',
+      hostname: "localhost",
+      ip_address: "192.168.29.31",
+      source: "development",
     };
   }
 
@@ -310,7 +317,7 @@ export async function initializeControllerDiscovery() {
     if (isReachable) {
       return stored;
     }
-    console.warn('Stored controller is no longer reachable');
+    console.warn("Stored controller is no longer reachable");
   }
 
   // No controller available - need to discover

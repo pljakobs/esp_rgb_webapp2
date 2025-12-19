@@ -32,6 +32,7 @@ npx quasar mode add capacitor
 ```
 
 This creates:
+
 - `src-capacitor/` directory
 - `capacitor.config.json` configuration file
 
@@ -47,9 +48,7 @@ Edit `src-capacitor/capacitor.config.json`:
   "server": {
     "androidScheme": "https",
     "cleartext": true,
-    "allowNavigation": [
-      "*"
-    ]
+    "allowNavigation": ["*"]
   },
   "plugins": {
     "SplashScreen": {
@@ -66,13 +65,13 @@ Edit `src-capacitor/android/app/src/main/AndroidManifest.xml` and add:
 
 ```xml
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    
+
     <!-- Network permissions -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE" />
-    
+
     <application
         android:usesCleartextTraffic="true"
         ... >
@@ -100,6 +99,7 @@ npx cap open android
 3. APK will be in `android/app/build/outputs/apk/debug/`
 
 For release builds:
+
 ```bash
 # Build release APK
 npx quasar build -m capacitor -T android --mode production
@@ -115,7 +115,7 @@ npx quasar build -m capacitor -T android --mode production
 2. **Discovery Check**: Calls `initializeControllerDiscovery()`
 3. **Stored Controller**: If a controller is stored, verifies it's reachable
 4. **No Controller**: Redirects to `/discovery` page
-5. **Discovery Page**: 
+5. **Discovery Page**:
    - Shows network status
    - Starts mDNS scan for `esprgbwwAPI._http._tcp.local`
    - Falls back to IP scanning if mDNS fails
@@ -127,14 +127,15 @@ npx quasar build -m capacitor -T android --mode production
 
 ```javascript
 // Service discovery parameters
-type: '_http._tcp'
-domain: 'local.'
-service: 'esprgbwwAPI'
+type: "_http._tcp";
+domain: "local.";
+service: "esprgbwwAPI";
 
 // Looks for: esprgbwwAPI._http._tcp.local
 ```
 
 When a controller is discovered:
+
 - Extracts IP address, hostname, device name
 - Reads TXT records for firmware version, controller ID
 - Verifies it's an ESP RGBWW controller
@@ -143,6 +144,7 @@ When a controller is discovered:
 ### Fallback IP Scanning
 
 If mDNS fails (e.g., on some networks):
+
 - Scans common IP ranges: 192.168.1.x, 192.168.0.x, 10.0.0.x
 - Calls `/info` endpoint on each IP
 - Verifies JSON structure matches ESP RGBWW controller
@@ -151,11 +153,13 @@ If mDNS fails (e.g., on some networks):
 ## Files Created/Modified
 
 ### New Files
+
 - `src/services/controllerDiscovery.js` - mDNS discovery and controller storage
 - `src/pages/ControllerDiscovery.vue` - Controller selection UI
 - `ANDROID_BUILD.md` - This documentation
 
 ### Modified Files
+
 - `src/App.vue` - Added native app detection and discovery redirect
 - `src/router/routes.js` - Added `/discovery` route
 - `src/stores/storeConstants.js` - Added deprecation note
@@ -209,11 +213,13 @@ Navigate to: http://localhost:9000/#/discovery
 ## Development vs Production
 
 ### Development (Web)
+
 - Uses `window.location.hostname` or configured dev IP
 - No discovery needed when served from controller
 - Fast refresh and debugging
 
 ### Native App
+
 - Uses native mDNS discovery
 - Stores selected controller in device preferences
 - Requires network permissions
@@ -226,11 +232,13 @@ Navigate to: http://localhost:9000/#/discovery
 The repository includes `.github/workflows/android-build.yml` that automatically builds Android APKs.
 
 **Triggers:**
+
 - Push to `devel`, `testing`, or `stable` branches
 - Pull requests to these branches
 - Manual workflow dispatch (with debug/release option)
 
 **Workflow Steps:**
+
 1. Checkout code
 2. Setup Node.js 20, Java 17, and Android SDK
 3. Install dependencies
@@ -240,6 +248,7 @@ The repository includes `.github/workflows/android-build.yml` that automatically
 7. Upload APK as artifact
 
 **Artifacts:**
+
 - Debug APKs: Retained for 30 days
 - Release APKs: Retained for 90 days
 - Named: `lightinator-{type}-{commit-sha}`
@@ -255,6 +264,7 @@ To manually trigger a build:
 5. Click **Run workflow**
 
 After build completes:
+
 - Download APK from **Artifacts** section
 - Install on Android device
 - Test the app
@@ -262,6 +272,7 @@ After build completes:
 ### Debug vs Release Builds
 
 **Debug Builds (Testing/Sideloading):**
+
 - ✅ **No signing keys needed** - automatically signed with debug key
 - ✅ Perfect for testing and development
 - ✅ Can be sideloaded directly to devices
@@ -270,6 +281,7 @@ After build completes:
 - ❌ Some features may behave differently
 
 **Release Builds (Play Store Distribution):**
+
 - Requires proper signing key
 - Optimized and minified code
 - Required for Play Store submission
@@ -288,6 +300,7 @@ cd android && ./gradlew assembleDebug
 ```
 
 Install the debug APK by:
+
 1. Enable "Install from Unknown Sources" on Android device
 2. Transfer APK via USB, cloud, or download from GitHub Actions
 3. Open APK file and install
@@ -299,12 +312,14 @@ Install the debug APK by:
 For signed release builds (required for Play Store), add these secrets to your GitHub repository:
 
 1. Generate a signing key:
+
    ```bash
    keytool -genkey -v -keystore release.keystore -alias lightinator \
      -keyalg RSA -keysize 2048 -validity 10000
    ```
 
 2. Encode keystore to base64:
+
    ```bash
    base64 release.keystore > release.keystore.base64
    ```
