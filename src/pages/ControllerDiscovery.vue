@@ -128,7 +128,7 @@
 </template>
 
 <script>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useQuasar } from 'quasar';
 import {
@@ -153,6 +153,7 @@ export default {
     const showManualEntry = ref(false);
     const manualIp = ref('');
     const verifying = ref(false);
+    let discoveryInterval = null;
 
     const checkNetwork = async () => {
       const status = await checkNetworkStatus();
@@ -160,47 +161,47 @@ export default {
       return status.connected;
     };
 
+    // Ongoing background discovery
+    const SCAN_TIMEOUT = 8000;
+    const DISCOVERY_INTERVAL = 10000; // 10s between scans
+
     const startScan = async () => {
       if (!(await checkNetwork())) {
         return;
       }
-
       scanning.value = true;
       scanCompleted.value = false;
       controllers.value = [];
+      await runDiscoveryLoop();
+    };
 
+    const runDiscoveryLoop = async () => {
+      // Clear any previous interval
+      if (discoveryInterval) {
+        clearInterval(discoveryInterval);
+      }
+
+      // Initial scan
+      await doDiscovery();
+
+      // Set up interval for ongoing discovery
+      discoveryInterval = setInterval(doDiscovery, DISCOVERY_INTERVAL);
+    };
+
+    const doDiscovery = async () => {
       try {
         const found = await scanForControllers({
-          timeout: 2000,
+          timeout: SCAN_TIMEOUT,
           onProgress: (progress) => {
-            console.log('Discovery progress:', progress);
+            // Optionally handle progress
           },
         });
-
+        // Merge: update controllers list reactively
         controllers.value = found;
         scanCompleted.value = true;
-
-        if (found.length === 0) {
-          $q.notify({
-            type: 'warning',
-            message: 'No controllers found. Try manual entry.',
-            position: 'top',
-          });
-        } else if (found.length === 1) {
-          // Auto-select if only one found
-          $q.notify({
-            type: 'positive',
-            message: 'Controller found!',
-            position: 'top',
-          });
-        }
       } catch (error) {
         console.error('Scan error:', error);
-        $q.notify({
-          type: 'negative',
-          message: `Scan failed: ${error.message}`,
-          position: 'top',
-        });
+        // Optionally notify user
       } finally {
         scanning.value = false;
       }
@@ -271,9 +272,16 @@ export default {
       }
     };
 
+
     onMounted(() => {
       checkNetwork();
       startScan();
+    });
+
+    onUnmounted(() => {
+      if (discoveryInterval) {
+        clearInterval(discoveryInterval);
+      }
     });
 
     return {

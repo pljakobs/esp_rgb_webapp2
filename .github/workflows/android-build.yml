@@ -90,6 +90,7 @@ jobs:
 
       - name: Sync Capacitor
         if: steps.check_capacitor.outputs.configured == 'true'
+        working-directory: src-capacitor
         run: npx cap sync android
 
       - name: Build Android Debug APK
