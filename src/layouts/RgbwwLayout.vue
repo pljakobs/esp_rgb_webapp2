@@ -1,10 +1,17 @@
 <template>
-  <div v-if="showInitialLoader">
+  <div v-if="showInitialLoader || !controllers.currentController || !controllers.currentController.ip_address || controllers.currentController.hostname === 'localhost'">
     <div class="center-container bg-light-grey">
       <div class="flex flex-center">
         <div class="q-pa-md">
           <h1><q-spinner-radio color="light-blue" /></h1>
-          loading from {{ controllers.currentController }}...
+          <div v-if="!controllers.currentController || !controllers.currentController.ip_address || controllers.currentController.hostname === 'localhost'">
+            <span>Waiting for controller discovery...</span>
+            <br />
+            <span class="text-grey">Please wait while we search for controllers on your network.</span>
+          </div>
+          <div v-else>
+            loading from {{ controllers.currentController.hostname }}...
+          </div>
           <br />Configuration:
           <span
             v-if="configData.status === storeStatus.READY"
@@ -523,7 +530,8 @@ export default defineComponent({
         //return "controller_default_icon"; // Replace with your default icon
       };
 
-      const getCustomControllerIcon = (controller) => {
+      const g
+        // CetCustomControllerIcon = (controller) => {
         // Get custom controller icon from appDataStore by matching controller ID
         console.log(
           "getCustomControllerIcon called for",
