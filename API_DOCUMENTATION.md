@@ -1,12 +1,11 @@
 # ESP RGBWW Firmware HTTP API Documentation
 
-**Version:** 4.2.0+  
-**Base URL:** `http://<controller-ip>/`  
-**Content-Type:** `application/json`  
+**Version:** 4.2.0+
+**Base URL:** `http://<controller-ip>/`
+**Content-Type:** `application/json`
 **Authentication:** Optional HTTP Basic Auth (configurable)
 
 ---
-
 ## Table of Contents
 
 1. [General Information](#general-information)
