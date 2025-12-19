@@ -1,7 +1,0 @@
-<?xml version='1.0' encoding='utf-8'?>
-<resources>
-    <string name="app_name">Lightinator</string>
-    <string name="title_activity_main">Lightinator</string>
-    <string name="package_name">com.lightinator.app</string>
-    <string name="custom_url_scheme">com.lightinator.app</string>
-</resources>
