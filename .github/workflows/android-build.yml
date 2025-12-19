@@ -6,6 +6,7 @@ on:
     paths:
       - "src/**"
       - "package.json"
+      - "package-lock.json"
       - "quasar.config.js"
       - ".github/workflows/android-build.yml"
   pull_request:
