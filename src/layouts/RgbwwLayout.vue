@@ -8,6 +8,8 @@
             <span>Waiting for controller discovery...</span>
             <br />
             <span class="text-grey">Please wait while we search for controllers on your network.</span>
+            <br />
+            <q-btn v-if="showManualEntryButton" color="primary" label="Manual Entry" icon="edit" @click="showManualEntry = true" class="q-mt-md" />
           </div>
           <div v-else>
             loading from {{ controllers.currentController.hostname }}...
@@ -67,6 +69,33 @@
         </div>
       </div>
     </div>
+    <!-- Manual Entry Dialog -->
+    <q-dialog v-model="showManualEntry">
+      <q-card style="min-width: 350px">
+        <q-card-section>
+          <div class="text-h6">Enter Controller IP or Hostname</div>
+        </q-card-section>
+        <q-card-section class="q-pt-none">
+          <q-input
+            v-model="manualIp"
+            label="IP Address or Hostname"
+            placeholder="192.168.1.100 or hostname"
+            outlined
+            @keyup.enter="connectManual"
+          />
+        </q-card-section>
+        <q-card-actions align="right">
+          <q-btn flat label="Cancel" color="primary" v-close-popup />
+          <q-btn
+            flat
+            label="Connect"
+            color="primary"
+            @click="connectManual"
+            :loading="verifying"
+          />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
   </div>
   <div v-else>
     <q-layout view="hHh lpR fFf" class="main-layout">
@@ -309,6 +338,12 @@ export default defineComponent({
   },
 
   setup() {
+    // Manual entry timer logic
+    const showManualEntryButton = ref(false);
+    const showManualEntry = ref(false);
+    const manualIp = ref("");
+    const verifying = ref(false);
+    let manualEntryTimer = null;
     console.log("RgbwwLayout.vue setup start");
     const isDarkMode = ref(Dark.isActive);
 
@@ -342,6 +377,46 @@ export default defineComponent({
       });
 
       const router = useRouter();
+      // Start 15s timer when waiting screen is shown
+      onMounted(() => {
+        if (!controllers.currentController || !controllers.currentController.ip_address || controllers.currentController.hostname === "localhost") {
+          manualEntryTimer = setTimeout(() => {
+            showManualEntryButton.value = true;
+          }, 15000);
+        }
+        window.addEventListener("resize", updateIsSmallScreen);
+      });
+
+      onUnmounted(() => {
+        window.removeEventListener("resize", updateIsSmallScreen);
+        if (manualEntryTimer) {
+          clearTimeout(manualEntryTimer);
+        }
+      });
+
+      // Manual entry logic
+      const connectManual = async () => {
+        if (!manualIp.value) {
+          return;
+        }
+        verifying.value = true;
+        try {
+          // Try to verify controller (reuse logic from ControllerDiscovery.vue)
+          // For now, just set as currentController
+          controllers.selectController({
+            id: manualIp.value,
+            hostname: manualIp.value,
+            ip_address: manualIp.value,
+            name: manualIp.value,
+          });
+          showManualEntry.value = false;
+          showManualEntryButton.value = false;
+        } catch (error) {
+          console.error("Manual connection error:", error);
+        } finally {
+          verifying.value = false;
+        }
+      };
 
       const isSmallScreen = ref(window.innerWidth <= 1024);
 
@@ -530,45 +605,7 @@ export default defineComponent({
         //return "controller_default_icon"; // Replace with your default icon
       };
 
-      const g
-        // CetCustomControllerIcon = (controller) => {
-        // Get custom controller icon from appDataStore by matching controller ID
-        console.log(
-          "getCustomControllerIcon called for",
-          controller?.hostname,
-          "ID:",
-          controller?.id,
-        );
-
-        // Check that appData store is ready before proceeding
-        if (appData.status !== storeStatus.READY) {
-          console.log("AppData store not ready yet, using default icon");
-          return "lightbulb_outlined";
-        }
-
-        if (
-          controller &&
-          controller.id &&
-          appData.data &&
-          appData.data.controllers
-        ) {
-          const controllerMetadata = appData.data.controllers.find(
-            (c) => c.id === controller.id,
-          );
-
-          if (controllerMetadata && controllerMetadata.icon) {
-            console.log(
-              "Found controller icon in appDataStore:",
-              controllerMetadata.icon,
-            );
-            return controllerMetadata.icon;
-          }
-        }
-
-        // Fallback to default light icon
-        console.log("No icon found in appDataStore, using default");
-        return "lightbulb_outlined";
-      };
+      // getCustomControllerIcon is already defined above, remove stray code
 
       // Computed property for current controller's icon
       const currentControllerIcon = computed(() => {
@@ -646,6 +683,11 @@ export default defineComponent({
       };
 
       return {
+        showManualEntryButton,
+        showManualEntry,
+        manualIp,
+        verifying,
+        connectManual,
         leftDrawerOpen,
         configData,
         infoData,
