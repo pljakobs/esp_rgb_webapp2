@@ -3,12 +3,6 @@ name: Build Android APK
 on:
   push:
     branches: [feature/androidAPK]
-    paths:
-      - "src/**"
-      - "package.json"
-      - "package-lock.json"
-      - "quasar.config.js"
-      - ".github/workflows/android-build.yml"
   pull_request:
     branches: [devel, testing, stable]
   workflow_dispatch:
