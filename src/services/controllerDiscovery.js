@@ -6,7 +6,7 @@
 
 import { Preferences } from '@capacitor/preferences';
 import { Network } from '@capacitor/network';
-import { Zeroconf } from '@devioarts/capacitor-mdns';
+
 
 const STORAGE_KEY = 'selected_controller';
 const MDNS_SERVICE_TYPE = '_http._tcp'; // mDNS service type (without .local suffix)
@@ -121,7 +121,9 @@ export async function scanForControllers(options = {}) {
   if (isNativeApp()) {
     try {
       console.log('Starting native mDNS discovery for', MDNS_SERVICE_NAME);
-      
+      // Dynamically import Zeroconf
+      const { Zeroconf } = await import('@devioarts/capacitor-mdns');
+
       // Watch for services
       await Zeroconf.watch({
         type: MDNS_SERVICE_TYPE,
@@ -131,7 +133,6 @@ export async function scanForControllers(options = {}) {
       // Listen for service discoveries
       const listener = await Zeroconf.addListener('serviceResolved', (result) => {
         console.log('mDNS service resolved:', result);
-        
         // Check if this is an ESP RGBWW controller
         if (result.service?.name?.includes(MDNS_SERVICE_NAME)) {
           const controller = {
@@ -143,11 +144,9 @@ export async function scanForControllers(options = {}) {
             id: result.service.txtRecord?.id,
             isEspRgbwwController: true,
           };
-
           // Only add if we have a valid IP
           if (controller.ip_address) {
             controllers.push(controller);
-            
             if (onProgress) {
               onProgress({
                 found: controllers.length,
