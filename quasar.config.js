@@ -22,7 +22,7 @@ const runGzipSpa = () => {
   });
 };
 
-export default configure((/* ctx */) => {
+export default configure((ctx) => {
   const generateIconSpriteServePlugin = {
     name: "generate-icon-sprite-serve",
     apply: "serve",
@@ -35,11 +35,14 @@ export default configure((/* ctx */) => {
     },
   };
 
+  // Only gzip for SPA builds
   const generateIconSpriteBuildPlugin = {
     name: "generate-icon-sprite-build",
     apply: "build",
     closeBundle() {
-      runGzipSpa();
+      if (ctx.mode.spa) {
+        runGzipSpa();
+      }
       runIconGeneration();
     },
   };

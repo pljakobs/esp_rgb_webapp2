@@ -71,6 +71,14 @@ jobs:
         if: steps.check_capacitor.outputs.configured == 'true'
         run: npx quasar build -m capacitor -T android
 
+      - name: Ensure index.html exists for Capacitor
+        if: steps.check_capacitor.outputs.configured == 'true'
+        run: |
+          if [ ! -f "src-capacitor/www/index.html" ] && [ -f "src-capacitor/www/index.html.gz" ]; then
+            echo "Decompressing index.html.gz to index.html for Capacitor compatibility"
+            gunzip -c src-capacitor/www/index.html.gz > src-capacitor/www/index.html
+          fi
+
       - name: Sync Capacitor
         if: steps.check_capacitor.outputs.configured == 'true'
         run: npx cap sync android
