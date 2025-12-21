@@ -6,7 +6,7 @@ import { visualizer } from "rollup-plugin-visualizer";
 import { execSync } from "node:child_process";
 
 const runIconGeneration = () => {
-  execSync("node generate_icon_list.js", { stdio: "inherit" });
+  execSync("node ./generate_icon_list.js", { stdio: "inherit", cwd: path.resolve(__dirname) });
 };
 
 let iconSpriteGeneratedInServe = false;
