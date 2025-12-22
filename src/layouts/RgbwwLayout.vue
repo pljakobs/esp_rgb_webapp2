@@ -122,7 +122,9 @@
                     :name="getCustomControllerIconReactive(scope.opt)"
                     size="20px"
                     fallbackIcon="lightbulb_outlined"
-                    :style="{ color: scope.opt.visible === false ? '#888' : '#FFD600' }"
+                    :style="{
+                      color: scope.opt.visible === false ? '#888' : '#FFD600',
+                    }"
                   />
                   <!-- Role-based icon (home/api) if applicable -->
                   <svgIcon
