@@ -451,17 +451,39 @@ export default {
       if (updating.value) return;
       updating.value = true;
 
-      // Get the list of available controllers (including current)
-      const availableControllers = controllersStore.data.filter(
-        (controller) => controller.visible === true,
+      // Ping all controllers to determine reachability
+      updating.value = true;
+      const pingController = async (controller) => {
+        try {
+          const response = await fetch(`http://${controller.ip_address}/ping`, { method: 'GET', timeout: 1000 });
+          if (response.ok) {
+            const data = await response.json();
+            return data.ping === 'pong';
+          }
+        } catch (e) {}
+        return false;
+      };
+
+      const pingResults = await Promise.all(
+        controllersStore.data.map(async (controller) => {
+          const reachable = await pingController(controller);
+          return { ...controller, reachable };
+        })
       );
 
-      console.log("Available controllers for update:", availableControllers);
+      // Controllers to include: all reachable
+      const availableControllers = pingResults.filter((c) => c.reachable);
+      // Unreachable but flagged visible
+      const unreachableVisible = pingResults.filter((c) => c.visible && !c.reachable);
+      // Reachable but not flagged visible
+      const reachableNotVisible = pingResults.filter((c) => !c.visible && c.reachable);
+      // Excluded: unreachable
+      const excludedControllers = pingResults.filter((c) => !c.reachable);
 
       if (availableControllers.length === 0) {
         Dialog.create({
-          title: "No Controllers Available",
-          message: `No controllers available for update.<br><br>
+          title: "No Controllers Reachable",
+          message: `No controllers are reachable for update.<br><br>
             Total controllers: ${controllersStore.data.length}<br>
             Visible (online): ${controllersStore.data.filter((c) => c.visible === true).length}<br>
             Current controller: ${controllersStore.currentController.hostname}`,
@@ -472,12 +494,37 @@ export default {
         return;
       }
 
-      // Create a dialog with controller selection
+      // Compose summary note
+      const summaryNote = `
+        <div class="q-mb-md">
+          <b>Controller reachability summary:</b><br>
+          <ul>
+            <li><b>${unreachableVisible.length}</b> controller(s) flagged visible but unreachable.</li>
+            <li><b>${reachableNotVisible.length}</b> controller(s) not flagged visible but reachable.</li>
+            <li><b>${excludedControllers.length}</b> controller(s) excluded (unreachable):<br>
+              <ul>
+                ${excludedControllers.map(c => `<li>${c.hostname} (${c.ip_address})${c.visible ? ' [visible]' : ''}</li>`).join('')}
+              </ul>
+            </li>
+          </ul>
+        </div>
+      `;
+
+      // Add the summary as a collapsible div at the top of the selection dialog
+      const summaryDropdown = `
+        <details style="margin-bottom: 1em;">
+          <summary style="cursor:pointer;font-weight:bold;">Controller reachability summary</summary>
+          ${summaryNote}
+        </details>
+      `;
+
       Dialog.create({
         component: ControllerSelectionDialog,
         componentProps: {
           controllers: availableControllers,
         },
+        message: summaryDropdown,
+        html: true,
       })
         .onOk(async (selectedControllers) => {
           // selectedControllers contains the array of selected controller objects
@@ -538,6 +585,11 @@ export default {
             // Create monitor dialog with a component-based approach
             const monitorDialog = Dialog.create({
               title: "Firmware Update Monitor",
+              html: true,
+              style: {
+                width: '80vw',
+                maxWidth: '100vw',
+              },
               message: `<div id="monitor-content">
                   <div class="text-weight-medium q-mb-md">Updating ${allControllers.length} controllers</div>
                   <div id="summary-stats" class="q-mb-md">
@@ -639,7 +691,6 @@ export default {
                         "completion-message",
                       ).style.display = "block";
                     }
-
 
                     // Enable the close button
                     monitorDialog.update({
@@ -1230,7 +1281,6 @@ export default {
 
             // Final UI update after all controllers are done
             updateUI();
-
 
             updating.value = false;
           } catch (error) {
