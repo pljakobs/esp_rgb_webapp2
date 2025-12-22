@@ -451,11 +451,9 @@ export default {
       if (updating.value) return;
       updating.value = true;
 
-      // Get the list of available controllers (excluding current)
+      // Get the list of available controllers (including current)
       const availableControllers = controllersStore.data.filter(
-        (controller) =>
-          controller.id !== controllersStore.currentController.id &&
-          controller.visible === true,
+        (controller) => controller.visible === true
       );
 
       console.log("Available controllers for update:", availableControllers);
@@ -463,7 +461,7 @@ export default {
       if (availableControllers.length === 0) {
         Dialog.create({
           title: "No Controllers Available",
-          message: `No other controllers available for update.<br><br>
+          message: `No controllers available for update.<br><br>
             Total controllers: ${controllersStore.data.length}<br>
             Visible (online): ${controllersStore.data.filter((c) => c.visible === true).length}<br>
             Current controller: ${controllersStore.currentController.hostname}`,
