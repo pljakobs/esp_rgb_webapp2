@@ -44,3 +44,7 @@ src/layouts/RgbwwLayout.vue.1
 src/layouts/RgbwwLayout.vue.2
 public/icons/iconsSprite.svg
 fileList.h
+capacitor.config.ts
+gradle.properties
+.github/workflows/android-build.yml
+src-capacitor/android/gradle.properties

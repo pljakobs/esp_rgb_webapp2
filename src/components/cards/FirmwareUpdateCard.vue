@@ -455,10 +455,13 @@ export default {
       updating.value = true;
       const pingController = async (controller) => {
         try {
-          const response = await fetch(`http://${controller.ip_address}/ping`, { method: 'GET', timeout: 1000 });
+          const response = await fetch(`http://${controller.ip_address}/ping`, {
+            method: "GET",
+            timeout: 1000,
+          });
           if (response.ok) {
             const data = await response.json();
-            return data.ping === 'pong';
+            return data.ping === "pong";
           }
         } catch (e) {}
         return false;
@@ -468,15 +471,19 @@ export default {
         controllersStore.data.map(async (controller) => {
           const reachable = await pingController(controller);
           return { ...controller, reachable };
-        })
+        }),
       );
 
       // Controllers to include: all reachable
       const availableControllers = pingResults.filter((c) => c.reachable);
       // Unreachable but flagged visible
-      const unreachableVisible = pingResults.filter((c) => c.visible && !c.reachable);
+      const unreachableVisible = pingResults.filter(
+        (c) => c.visible && !c.reachable,
+      );
       // Reachable but not flagged visible
-      const reachableNotVisible = pingResults.filter((c) => !c.visible && c.reachable);
+      const reachableNotVisible = pingResults.filter(
+        (c) => !c.visible && c.reachable,
+      );
       // Excluded: unreachable
       const excludedControllers = pingResults.filter((c) => !c.reachable);
 
@@ -503,7 +510,7 @@ export default {
             <li><b>${reachableNotVisible.length}</b> controller(s) not flagged visible but reachable.</li>
             <li><b>${excludedControllers.length}</b> controller(s) excluded (unreachable):<br>
               <ul>
-                ${excludedControllers.map(c => `<li>${c.hostname} (${c.ip_address})${c.visible ? ' [visible]' : ''}</li>`).join('')}
+                ${excludedControllers.map((c) => `<li>${c.hostname} (${c.ip_address})${c.visible ? " [visible]" : ""}</li>`).join("")}
               </ul>
             </li>
           </ul>
@@ -587,8 +594,8 @@ export default {
               title: "Firmware Update Monitor",
               html: true,
               style: {
-                width: '80vw',
-                maxWidth: '100vw',
+                width: "80vw",
+                maxWidth: "100vw",
               },
               message: `<div id="monitor-content">
                   <div class="text-weight-medium q-mb-md">Updating ${allControllers.length} controllers</div>
