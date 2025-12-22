@@ -452,7 +452,6 @@ export default {
       updating.value = true;
 
       // Ping all controllers to determine reachability
-      updating.value = true;
       const pingController = async (controller) => {
         try {
           const response = await fetch(`http://${controller.ip_address}/ping`, {
@@ -525,6 +524,8 @@ export default {
         </details>
       `;
 
+
+
       Dialog.create({
         component: ControllerSelectionDialog,
         componentProps: {
@@ -542,34 +543,36 @@ export default {
 
           console.log("Updating selected controllers:", selectedControllers);
 
+          let firmwareData;
+          let initialLoadingDialog = null;
           try {
-            // Show initial loading dialog while fetching firmware info
-            const initialLoadingDialog = Dialog.create({
-              title: "Preparing Update",
-              message: "Fetching firmware information...",
-              progress: {
-                indeterminate: true,
-              },
-              persistent: true,
-            });
+            if (!firmware.value) {
+              // Show initial loading dialog while fetching firmware info
+              initialLoadingDialog = Dialog.create({
+                title: "Preparing Update",
+                message: "Fetching firmware information...",
+                progress: {
+                  indeterminate: true,
+                },
+                persistent: true,
+              });
+              // Fetch firmware data
+              const response = await fetch(otaUrl.value, {
+                method: "GET",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+              });
+              if (!response.ok) {
+                if (initialLoadingDialog) initialLoadingDialog.hide();
+                throw new Error(`HTTP error! status: ${response.status}`);
+              }
+              firmwareData = await response.json();
+            } else {
+              firmwareData = firmware.value;
+            }
 
-            // Use the already fetched firmware if available
-            const firmwareData =
-              firmware.value ||
-              (await (async () => {
-                const response = await fetch(otaUrl.value, {
-                  method: "GET",
-                  headers: {
-                    "Content-Type": "application/json",
-                  },
-                });
-
-                if (!response.ok) {
-                  throw new Error(`HTTP error! status: ${response.status}`);
-                }
-
-                return await response.json();
-              })());
+            if (initialLoadingDialog) initialLoadingDialog.hide();
 
             console.log("Firmware data:", firmwareData);
 
@@ -585,9 +588,6 @@ export default {
               skipped: 0,
               details: [],
             };
-
-            // Hide the loading dialog
-            initialLoadingDialog.hide();
 
             // Create monitor dialog with a component-based approach
             const monitorDialog = Dialog.create({
