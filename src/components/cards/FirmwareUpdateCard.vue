@@ -453,7 +453,7 @@ export default {
 
       // Get the list of available controllers (including current)
       const availableControllers = controllersStore.data.filter(
-        (controller) => controller.visible === true
+        (controller) => controller.visible === true,
       );
 
       console.log("Available controllers for update:", availableControllers);
@@ -539,9 +539,7 @@ export default {
             const monitorDialog = Dialog.create({
               title: "Firmware Update Monitor",
               message: `<div id="monitor-content">
-                  <div class="text-weight-medium q-mb-md">Updating ${
-                    allControllers.length
-                  } controllers</div>
+                  <div class="text-weight-medium q-mb-md">Updating ${allControllers.length} controllers</div>
                   <div id="summary-stats" class="q-mb-md">
                     <div class="row q-col-gutter-md">
                       <div class="col-3 text-center">
@@ -584,45 +582,11 @@ export default {
                       </div>`,
                       )
                       .join("")}
-                    <!-- Add local controller to the list -->
-                    <div id="status-local" class="controller-status q-mb-md" style="display:none;">
-                      <div class="row items-center">
-                        <div class="col-8">
-                          <div class="text-weight-medium">${
-                            controllersStore.currentController.hostname
-                          } (Current)</div>
-                          <div class="text-caption">${
-                            controllersStore.currentController.ip_address
-                          }</div>
-                        </div>
-                        <div class="col-4 text-right">
-                          <div class="q-mr-xs status-indicator waiting">
-                            <div class="status-icon"></div>
-                            <span class="status-label">Waiting</span>
-                          </div>
-                        </div>
-                      </div>
-                      <div id="details-local" class="details q-mt-sm q-pa-xs rounded-borders" style="display:none;"></div>
-                    </div>
-                  </div>
-                  <div id="local-controller-update" class="q-mt-md q-pa-md text-center bg-grey-2 rounded-borders" style="display: none;">
-                    <div class="text-subtitle2">Update Local Controller?</div>
-                    <div class="q-mt-sm">
-                      <button id="update-local-btn" class="q-btn q-btn-item non-selectable no-outline q-btn--standard q-btn--rectangle bg-primary text-white q-btn--actionable q-focusable q-hoverable q-btn--no-uppercase q-pa-sm">
-                        <span class="q-btn__content text-center">Update Local Controller</span>
-                      </button>
-                    </div>
                   </div>
                   <div id="completion-message" class="q-mt-md text-center" style="display: none;">
                     <div class="text-h6 text-positive">Update process complete!</div>
                   </div>
                 </div>`,
-              html: true,
-              style: {
-                width: "600px",
-                maxWidth: "90vw",
-              },
-              persistent: true,
               buttons: [
                 {
                   label: "Close",
@@ -676,13 +640,6 @@ export default {
                       ).style.display = "block";
                     }
 
-                    // Enable the local controller update option
-                    const localControllerUpdateDiv = document.getElementById(
-                      "local-controller-update",
-                    );
-                    if (localControllerUpdateDiv) {
-                      localControllerUpdateDiv.style.display = "block";
-                    }
 
                     // Enable the close button
                     monitorDialog.update({
@@ -714,14 +671,8 @@ export default {
               toVersion = null,
             ) => {
               try {
-                const statusId =
-                  controller.id === controllersStore.currentController.id
-                    ? "status-local"
-                    : `status-${controller.id}`;
-                const detailsId =
-                  controller.id === controllersStore.currentController.id
-                    ? "details-local"
-                    : `details-${controller.id}`;
+                const statusId = `status-${controller.id}`;
+                const detailsId = `details-${controller.id}`;
 
                 const statusEl = document.getElementById(statusId);
                 if (!statusEl) return;
@@ -1280,28 +1231,6 @@ export default {
             // Final UI update after all controllers are done
             updateUI();
 
-            // Set up the update local button
-            const updateLocalBtn = document.getElementById("update-local-btn");
-            if (updateLocalBtn) {
-              updateLocalBtn.onclick = async () => {
-                // Hide the button to prevent multiple clicks
-                const localControllerUpdateDiv = document.getElementById(
-                  "local-controller-update",
-                );
-                if (localControllerUpdateDiv) {
-                  localControllerUpdateDiv.style.display = "none";
-                }
-
-                // Show the local controller in the list
-                const localControllerEl =
-                  document.getElementById("status-local");
-                if (localControllerEl) {
-                  localControllerEl.style.display = "block";
-                }
-
-                await updateLocalController(firmwareData);
-              };
-            }
 
             updating.value = false;
           } catch (error) {
