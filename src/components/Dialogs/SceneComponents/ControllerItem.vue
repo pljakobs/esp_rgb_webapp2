@@ -1,3 +1,14 @@
+<style scoped>
+.move-btns-box {
+  border-radius: 12px;
+  background: #f5f5f5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+}
+</style>
 <!-- filepath: /home/pjakobs/devel/esp_rgb_webapp2/src/components/Dialogs/SceneComponents/ControllerItem.vue -->
 <template>
   <div class="controller-item q-mb-sm">
@@ -32,31 +43,31 @@
       <div v-show="isExpanded">
         <q-card class="q-ma-sm">
           <q-card-section>
-            <!-- Draggable component for settings -->
-            <draggable
-              :list="settings"
-              handle=".drag-handle"
-              item-key="pos"
-              @end="onDragEnd"
-              ghost-class="ghost"
-              v-if="settings.length > 0"
-              class="q-mb-md"
-            >
-              <template #item="{ element: sceneSetting }">
+            <!-- Settings list with up/down buttons -->
+            <div v-if="settings.length > 0" class="q-mb-md">
+              <div v-for="(sceneSetting, idx) in settings" :key="sceneSetting.pos" class="row items-start q-mb-xs">
+                <div class="move-btns-box q-mr-sm column items-center bg-grey-2 rounded-borders q-pa-xs">
+                  <q-btn dense flat round @click="moveUp(idx)" :disable="idx === 0" size="sm" class="q-mb-xs">
+                    <svgIcon name="arrow_forward" style="transform: rotate(-90deg);" />
+                    <q-tooltip>Move up</q-tooltip>
+                  </q-btn>
+                  <q-btn dense flat round @click="moveDown(idx)" :disable="idx === settings.length - 1" size="sm">
+                    <svgIcon name="arrow_forward" style="transform: rotate(90deg);" />
+                    <q-tooltip>Move down</q-tooltip>
+                  </q-btn>
+                </div>
                 <scene-setting-item
                   :scene-setting="sceneSetting"
                   :color-type-options="colorTypeOptions"
                   :direction-options="directionOptions"
                   :queue-options="queueOptions"
                   @update-queue-settings="updateQueueSettings"
-                  @color-type-change="
-                    (type) => onColorTypeChange(type, sceneSetting)
-                  "
+                  @color-type-change="(type) => onColorTypeChange(type, sceneSetting)"
                   @edit-selection="editCurrentSelection(sceneSetting)"
                   @remove-setting="$emit('remove-setting', sceneSetting)"
                 />
-              </template>
-            </draggable>
+              </div>
+            </div>
 
             <!-- Add a button to add new setting - moved below the list -->
             <q-btn
@@ -79,7 +90,6 @@
 <script>
 import { ref, computed } from "vue";
 import { Dialog } from "quasar";
-import draggable from "vuedraggable";
 import { useAppDataStore } from "src/stores/appDataStore";
 import colorPickerDialog from "src/components/Dialogs/colorPickerDialog.vue";
 import ColorDisplayBadge from "src/components/ColorDisplayBadge.vue";
@@ -88,7 +98,37 @@ import SceneSettingItem from "./SceneSettingItem.vue";
 export default {
   name: "ControllerItem",
   components: {
-    draggable,
+      // no draggable
+      methods: {
+        moveUp(idx) {
+          if (idx > 0) {
+            // Create a new array copy for reactivity
+            const newSettings = this.settings.slice();
+            const temp = newSettings[idx - 1];
+            newSettings[idx - 1] = newSettings[idx];
+            newSettings[idx] = temp;
+            // Update positions
+            newSettings.forEach((setting, i) => {
+              setting.pos = i;
+            });
+            this.$emit('update-positions', newSettings);
+          }
+        },
+        moveDown(idx) {
+          if (idx < this.settings.length - 1) {
+            // Create a new array copy for reactivity
+            const newSettings = this.settings.slice();
+            const temp = newSettings[idx + 1];
+            newSettings[idx + 1] = newSettings[idx];
+            newSettings[idx] = temp;
+            // Update positions
+            newSettings.forEach((setting, i) => {
+              setting.pos = i;
+            });
+            this.$emit('update-positions', newSettings);
+          }
+        },
+      },
     ColorDisplayBadge,
     SceneSettingItem,
   },
@@ -177,18 +217,16 @@ export default {
 
     // Add a new setting (uses emit to inform parent)
     const addNewSetting = () => {
-      // Determine the highest position
-      let maxPos = 0;
-      if (props.settings.length > 0) {
-        maxPos = Math.max(
-          ...props.settings.map((s) => (s.pos !== undefined ? s.pos : 0)),
-        );
-      }
+      // Find all settings for this controller and assign next index as pos
+      const controllerSettings = props.settings.filter(
+        (s) => s.controller_id === props.controller.id
+      );
+      const nextPos = controllerSettings.length;
 
       // Create new setting with next position
       const newSetting = {
         controller_id: props.controller.id,
-        pos: maxPos + 1,
+        pos: nextPos,
         color: { hsv: {} }, // Use empty hsv object by default
       };
 

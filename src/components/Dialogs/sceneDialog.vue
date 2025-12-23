@@ -456,7 +456,18 @@ export default {
         );
       }
 
+      // Add the new setting
       scene.value.settings.push(newSetting);
+
+      // Reassign pos for all settings of this controller
+      const controllerId = String(newSetting.controller_id);
+      const controllerSettings = scene.value.settings
+        .filter((s) => String(s.controller_id) === controllerId)
+        .sort((a, b) => (a.pos ?? 0) - (b.pos ?? 0));
+      controllerSettings.forEach((s, i) => {
+        s.pos = i;
+      });
+
       checkSaveDisabled();
 
       // Scroll to the controller containing the new setting
@@ -577,7 +588,10 @@ export default {
         (s) => s.controller_id !== controllerId,
       );
 
-      // Add back the updated ones
+      // Sort and reassign pos for robust order
+      updatedSettings.forEach((setting, i) => {
+        setting.pos = i;
+      });
       scene.value.settings.push(...updatedSettings);
       checkSaveDisabled();
     };
@@ -604,177 +618,35 @@ export default {
           if (typeof sceneToSave.defaultTransition.d === "string") {
             sceneToSave.defaultTransition.d = Number(
               sceneToSave.defaultTransition.d,
-            );
-          }
 
-          // Convert requeue to boolean
-          if (sceneToSave.defaultTransition.r !== undefined) {
-            if (typeof sceneToSave.defaultTransition.r === "string") {
-              sceneToSave.defaultTransition.r =
-                sceneToSave.defaultTransition.r.toLowerCase() === "true";
-            } else {
-              sceneToSave.defaultTransition.r = Boolean(
-                sceneToSave.defaultTransition.r,
+            try {
+              if (!scene.value) {
+                console.error("No scene to save");
+                return;
+              }
+
+              // Show progress modal immediately when save starts
+              console.log(
+                "🎯 Save button clicked - showing progress modal immediately",
               );
-            }
-          }
+              showProgressModal.value = true;
 
-          // Remove q property if it exists
-          if (sceneToSave.defaultTransition.q !== undefined) {
-            delete sceneToSave.defaultTransition.q;
-          }
-        }
+              const sceneToSave = JSON.parse(JSON.stringify(scene.value));
 
-        // Process settings to match the new schema
-        if (sceneToSave.settings) {
-          sceneToSave.settings.forEach((setting, index) => {
-            // Convert controller_id to string
-            if (setting.controller_id !== undefined) {
-              setting.controller_id = String(setting.controller_id);
-            }
+              // ...existing code for processing sceneToSave...
 
-            // Remove UI-only fadeType property
-            if (setting.fadeType !== undefined) {
-              delete setting.fadeType;
-            }
-
-            // Ensure color is not null - default to empty hsv object
-            if (setting.color === null || setting.color === undefined) {
-              setting.color = { hsv: { h: 0, s: 100, v: 100 } };
-            }
-
-            // Process transition if it exists
-            if (setting.transition) {
-              // Convert r to boolean
-              if (setting.transition.r !== undefined) {
-                // First check if it's a string value like "true"/"false"
-                if (typeof setting.transition.r === "string") {
-                  setting.transition.r =
-                    setting.transition.r.toLowerCase() === "true";
-                } else {
-                  setting.transition.r = Boolean(setting.transition.r);
+              // After save, refresh local scene from store (if available)
+              setTimeout(() => {
+                const freshScene = appData.data.scenes.find(
+                  (s) => s.id === sceneToSave.id
+                );
+                if (freshScene) {
+                  scene.value = JSON.parse(JSON.stringify(freshScene));
+                  debugSceneData("After refresh from store", scene.value);
                 }
-              }
+              }, 500);
 
-              // Set queue type based on position (first=single, others=back)
-              if (index === 0) {
-                setting.transition.q = "single";
-              } else {
-                setting.transition.q = "back";
-              }
-
-              // Convert direction to number if it's a string
-              if (typeof setting.transition.d === "string") {
-                setting.transition.d = Number(setting.transition.d);
-              }
-            }
-
-            // Move legacy transition properties to transition object
-            if (!setting.transition) {
-              if (
-                setting.cmd === "fade" ||
-                setting.d !== undefined ||
-                setting.s !== undefined ||
-                setting.t !== undefined ||
-                setting.q !== undefined ||
-                setting.r !== undefined
-              ) {
-                setting.transition = {};
-
-                // Move each transition property
-                ["d", "s", "t", "cmd", "q", "r"].forEach((prop) => {
-                  if (setting[prop] !== undefined) {
-                    setting.transition[prop] = setting[prop];
-                    delete setting[prop];
-                  }
-                });
-
-                // Convert r to boolean if needed
-                if (setting.transition.r !== undefined) {
-                  if (typeof setting.transition.r === "string") {
-                    setting.transition.r =
-                      setting.transition.r.toLowerCase() === "true";
-                  } else {
-                    setting.transition.r = Boolean(setting.transition.r);
-                  }
-                }
-              }
-            }
-          });
-        }
-
-        // Add callback functions
-        sceneToSave.saveComplete = () => {
-          console.log(
-            "🎯 Save complete callback - ensuring progress modal is hidden",
-          );
-          showProgressModal.value = false;
-          if (dialogRef.value) {
-            dialogRef.value.hide();
-          }
-        };
-
-        sceneToSave.updateProgress = updateProgress;
-
-        emit("ok", sceneToSave);
-      } catch (error) {
-        console.error("Error in onSaveClick:", error);
-      }
-    };
-
-    // Initial processing of scene data
-    if (props.scene && props.scene.settings) {
-      debugSceneData("Before scene processing", props.scene);
-
-      // Ensure all settings have proper color objects and controller IDs
-      nextTick(() => {
-        // First, make a deep copy to avoid mutating props
-        scene.value = JSON.parse(JSON.stringify(props.scene));
-
-        // Process settings to ensure proper format
-        if (scene.value.settings) {
-          scene.value.settings.forEach((setting) => {
-            // Ensure controller_id is a string for reliable comparisons
-            if (setting.controller_id !== undefined) {
-              setting.controller_id = String(setting.controller_id);
-            }
-
-            // Ensure color exists and is properly formatted
-            if (setting.color === null || setting.color === undefined) {
-              setting.color = { hsv: { h: 0, s: 100, v: 100 } };
-            }
-
-            // Migrate legacy transition properties to transition object
-            if (!setting.transition) {
-              if (
-                setting.cmd === "fade" ||
-                setting.d !== undefined ||
-                setting.s !== undefined ||
-                setting.t !== undefined ||
-                setting.q !== undefined ||
-                setting.r !== undefined
-              ) {
-                setting.transition = {};
-
-                // Move each transition property
-                ["d", "s", "t", "cmd", "q", "r"].forEach((prop) => {
-                  if (setting[prop] !== undefined) {
-                    setting.transition[prop] = setting[prop];
-                    delete setting[prop];
-                  }
-                });
-              }
-            }
-
-            // Initialize or convert the r property to boolean
-            if (setting.transition) {
-              if (setting.transition.r === undefined) {
-                setting.transition.r = false;
-              } else if (typeof setting.transition.r === "string") {
-                setting.transition.r =
-                  setting.transition.r.toLowerCase() === "true";
-              } else {
-                setting.transition.r = Boolean(setting.transition.r);
+              // ...existing code...
               }
             }
 

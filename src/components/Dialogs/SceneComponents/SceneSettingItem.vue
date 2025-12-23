@@ -1,8 +1,6 @@
 <template>
   <q-item class="setting-item q-my-sm">
-    <q-item-section avatar class="drag-handle q-pr-sm cursor-move">
-      <svgIcon name="drag_indicator" />
-    </q-item-section>
+    <!-- Drag handle removed: replaced by up/down buttons in parent -->
 
     <q-item-section>
       <!-- Transition component -->
