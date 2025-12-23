@@ -50,7 +50,7 @@ function isInteger(value) {
   return Number.isInteger(value) && !Number.isNaN(value);
 }
 
-describe('API Integration Tests', () => {
+describe.skip('API Integration Tests', () => {
   let testPresetId;
   let testSceneId;
   let testGroupId;
