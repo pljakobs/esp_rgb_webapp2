@@ -617,46 +617,9 @@ export default {
           // Convert direction to number if it's a string
           if (typeof sceneToSave.defaultTransition.d === "string") {
             sceneToSave.defaultTransition.d = Number(
-              sceneToSave.defaultTransition.d,
-
-            try {
-              if (!scene.value) {
-                console.error("No scene to save");
-                return;
-              }
-
-              // Show progress modal immediately when save starts
-              console.log(
-                "🎯 Save button clicked - showing progress modal immediately",
-              );
-              showProgressModal.value = true;
-
-              const sceneToSave = JSON.parse(JSON.stringify(scene.value));
-
-              // ...existing code for processing sceneToSave...
-
-              // After save, refresh local scene from store (if available)
-              setTimeout(() => {
-                const freshScene = appData.data.scenes.find(
-                  (s) => s.id === sceneToSave.id
-                );
-                if (freshScene) {
-                  scene.value = JSON.parse(JSON.stringify(freshScene));
-                  debugSceneData("After refresh from store", scene.value);
-                }
-              }, 500);
-
-              // ...existing code...
-              }
-            }
-
-            // Set fadeType for UI (based on whether 's' or 't' is present)
-            if (setting.transition?.s !== undefined) {
-              setting.fadeType = "speed";
-            } else if (setting.transition?.t !== undefined) {
-              setting.fadeType = "time";
-            }
-          });
+              sceneToSave.defaultTransition.d
+            );
+          }
         }
 
         // Also handle the default transition if it exists
@@ -674,8 +637,9 @@ export default {
         }
 
         debugSceneData("After scene processing", scene.value);
-      });
-    } else {
+      } catch (err) {
+        console.error("Error in onSaveClick:", err);
+      }
       // If no settings, create default empty ones
       if (props.scene && !props.scene.settings) {
         scene.value.settings = [];

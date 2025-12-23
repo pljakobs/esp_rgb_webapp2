@@ -21,25 +21,9 @@
           map-options
           :display-value="displayValue"
           class="col"
-          dense
           filled
         />
-
         <q-btn
-          v-if="colorType"
-          flat
-          dense
-          round
-          @click="$emit('edit-selection')"
-        >
-          <svgIcon name="edit" />
-          <q-tooltip>Edit current selection</q-tooltip>
-        </q-btn>
-
-        <!-- Delete button moved here to be inline with color selection -->
-        <q-btn
-          flat
-          dense
           round
           color="negative"
           @click="$emit('remove-setting')"
