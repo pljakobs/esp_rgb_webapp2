@@ -2,6 +2,7 @@ import { mount } from '@vue/test-utils';
 import ControllerItem from '../ControllerItem.vue';
 import { createTestingPinia } from '@pinia/testing';
 import { useAppDataStore } from 'src/stores/appDataStore';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 describe('ControllerItem.vue', () => {
   let wrapper;
@@ -24,8 +25,8 @@ describe('ControllerItem.vue', () => {
 
   beforeEach(() => {
     wrapper = mount(ControllerItem, {
-      global: {
-        plugins: [createTestingPinia({ createSpy: jest.fn })],
+       global: {
+         plugins: [createTestingPinia({ createSpy: vi.fn })],
       },
       props: {
         controller,
@@ -69,6 +70,7 @@ describe('ControllerItem.vue', () => {
     await wrapper.vm.moveDown(0);
     let emitted = wrapper.emitted('update-positions');
     expect(emitted).toBeTruthy();
+    // After moveDown(0), the order should be [h:120, h:0]
     expect(emitted[0][0][0].pos).toBe(0);
     expect(emitted[0][0][1].pos).toBe(1);
     expect(emitted[0][0][0].color.hsv.h).toBe(120);
@@ -76,9 +78,10 @@ describe('ControllerItem.vue', () => {
     // Move up the second item
     await wrapper.vm.moveUp(1);
     emitted = wrapper.emitted('update-positions');
+    // After moveUp(1), the order should be [h:120, h:0]
     expect(emitted[1][0][0].pos).toBe(0);
     expect(emitted[1][0][1].pos).toBe(1);
-    expect(emitted[1][0][0].color.hsv.h).toBe(0);
-    expect(emitted[1][0][1].color.hsv.h).toBe(120);
+    expect(emitted[1][0][0].color.hsv.h).toBe(120);
+    expect(emitted[1][0][1].color.hsv.h).toBe(0);
   });
 });

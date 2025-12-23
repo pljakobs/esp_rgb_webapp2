@@ -83,7 +83,6 @@ export default {
       if (props.sceneSetting.color.Preset) return "preset";
       return null;
     });
-
     // Get a display value for the current color selection
     const displayValue = computed(() => {
       if (!props.sceneSetting || !props.sceneSetting.color) return "No Color";

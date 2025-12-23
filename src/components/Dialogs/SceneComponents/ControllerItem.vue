@@ -427,6 +427,30 @@ export default {
       updateQueueSettings, // Make sure this is returned!
       onColorTypeChange,
       editCurrentSelection,
+      moveUp: (idx) => {
+        if (idx > 0) {
+          const newSettings = props.settings.slice();
+          const temp = newSettings[idx - 1];
+          newSettings[idx - 1] = newSettings[idx];
+          newSettings[idx] = temp;
+          newSettings.forEach((setting, i) => {
+            setting.pos = i;
+          });
+          emit('update-positions', newSettings);
+        }
+      },
+      moveDown: (idx) => {
+        if (idx < props.settings.length - 1) {
+          const newSettings = props.settings.slice();
+          const temp = newSettings[idx + 1];
+          newSettings[idx + 1] = newSettings[idx];
+          newSettings[idx] = temp;
+          newSettings.forEach((setting, i) => {
+            setting.pos = i;
+          });
+          emit('update-positions', newSettings);
+        }
+      },
     };
   },
 };
