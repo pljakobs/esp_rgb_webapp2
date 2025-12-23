@@ -14,8 +14,6 @@ node_modules
 /src-cordova/www
 
 # Capacitor related directories and files
-/src-capacitor/www
-/src-capacitor/node_modules
 
 # Log files
 npm-debug.log*
@@ -47,4 +45,3 @@ fileList.h
 capacitor.config.ts
 gradle.properties
 .github/workflows/android-build.yml
-src-capacitor/android/gradle.properties

@@ -70,8 +70,8 @@ export default configure((/* ctx */) => {
           include: path.resolve("./src/i18n/**"),
         },
         visualizer({
-          filename: "./dist/stats.json",
-          json: true,
+          filename: "./dist/stats.html",
+          template: "treemap", // or "sunburst", "network"
         }),
       ],
     },

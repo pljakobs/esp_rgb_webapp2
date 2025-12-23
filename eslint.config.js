@@ -28,7 +28,7 @@ module.exports = (async () => {
       },
       ignores: [
         "dist/",
-        "src-capacitor/",
+        // "src-capacitor/", // removed, not used in this branch
         "src-cordova/",
         ".quasar/",
         "node_modules/",

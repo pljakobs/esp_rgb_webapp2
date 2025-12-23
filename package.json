@@ -1,6 +1,6 @@
 {
   "name": "new-webapp",
-  "version": "0.0.1",
+  "version": "5",
   "description": "The lightinator",
   "productName": "Lightinator",
   "author": "Peter Jakobs <pjakobs@mobileme.de>",
@@ -21,14 +21,14 @@
     "@vue/eslint-config-standard": "^9.0.0",
     "pinia": "^3.0.3",
     "quasar": "^2.17.7",
-    "vue": "^3.5.8",
     "vue-i18n": "^11.1.0",
-    "vue-router": "^4.4.5",
-    "vuedraggable": "^4.1.0"
+    "vue-router": "^4.4.5"
+
   },
   "devDependencies": {
     "@intlify/unplugin-vue-i18n": "^11.0.0",
     "@quasar/app-vite": "^2.3.0",
+    "@vue/compiler-sfc": "^3.5.26",
     "@vue/devtools": "^8.0.1",
     "autoprefixer": "^10.4.17",
     "baseline-browser-mapping": "^2.9.10",
@@ -40,7 +40,9 @@
     "prettier": "^3.3.3",
     "rollup-plugin-visualizer": "^6.0.3",
     "vite": "^7.1.5",
-    "vitest": "^3.0.0"
+    "vitest": "^3.0.0",
+    "vue": "^3.5.26",
+    "webpack-bundle-analyzer": "^5.1.0"
   },
   "engines": {
     "node": ">=20",
