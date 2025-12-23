@@ -524,8 +524,6 @@ export default {
         </details>
       `;
 
-
-
       Dialog.create({
         component: ControllerSelectionDialog,
         componentProps: {
