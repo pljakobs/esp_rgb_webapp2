@@ -25,7 +25,7 @@ export const useControllersStore = defineStore("controllersStore", {
         console.log("controllers start fetching data");
         this.storeStatus = storeStatus.store.LOADING;
 
-        const { localhost } = await import("./storeConstants");
+        // Use statically imported localhost
         const { jsonData, error } = await apiService.getHosts(true);
         if (error) {
           this.storeStatus = storeStatus.store.ERROR;
@@ -63,13 +63,22 @@ export const useControllersStore = defineStore("controllersStore", {
                 localhost.hostname,
               );
             } else if (this.data.length > 0) {
-              // Fallback: use first controller
-              matchController = this.data[0];
-              this.currentController = matchController;
-              this.homeController = matchController;
-              console.warn(
-                "No controller matched localhost.ip_address or hostname; using first controller as fallback.",
-              );
+              // Fallback: use first visible controller
+              const firstVisible = this.data.find((c) => c.visible !== false);
+              if (firstVisible) {
+                matchController = firstVisible;
+                this.currentController = matchController;
+                this.homeController = matchController;
+                console.warn(
+                  "No controller matched localhost.ip_address or hostname; using first visible controller as fallback.",
+                );
+              } else {
+                this.currentController = null;
+                this.homeController = null;
+                console.warn(
+                  "No visible controllers available to select for store init!",
+                );
+              }
             } else {
               this.currentController = null;
               this.homeController = null;
