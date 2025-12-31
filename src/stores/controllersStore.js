@@ -6,11 +6,11 @@ import { apiService } from "src/services/api.js";
 
 export const useControllersStore = defineStore("controllersStore", {
   state: () => ({
-    data: [],
-    storeStatus: storeStatus.store.LOADING,
-    currentController: { ...localhost }, // Initialize with localhost object
-    homeController: { ...localhost }, // Initialize with localhost object
-    http_response_status: null,
+      data: [],
+      storeStatus: storeStatus.store.LOADING,
+      currentController: null, // Will be set from /hosts response only
+      homeController: null, // Will be set from /hosts response only
+      http_response_status: null,
   }),
 
   getters: {
@@ -25,54 +25,52 @@ export const useControllersStore = defineStore("controllersStore", {
         console.log("controllers start fetching data");
         this.storeStatus = storeStatus.store.LOADING;
 
+        const { localhost } = await import("./storeConstants");
         const { jsonData, error } = await apiService.getHosts(true);
         if (error) {
+          this.storeStatus = storeStatus.store.ERROR;
+          this.error = error;
+          console.error("Error fetching controllers data:", error);
           throw error;
         }
-        this.data = jsonData["hosts"]
-          .filter((host) => host.ip_address)
-          .map((host) => {
-            return {
-              ...host,
-              ip_address: host.ip_address.trim(),
-            };
-          }); // Removing leading and trailing whitespaces from the IP address
-
+        if (jsonData && Array.isArray(jsonData.hosts)) {
+          this.data = jsonData.hosts;
+          // Try to match by IP address first
+          let matchController = this.data.find(c => c.ip_address === localhost.ip_address);
+          if (matchController) {
+            // Update localhost.hostname to match the controller's hostname
+            if (localhost.hostname !== matchController.hostname) {
+              console.log(`Updating localhost.hostname from '${localhost.hostname}' to '${matchController.hostname}' after initial fetch.`);
+              localhost.hostname = matchController.hostname;
+            }
+            this.currentController = matchController;
+            this.homeController = matchController;
+            console.log("Selected controller for store init:", matchController);
+          } else {
+            // Fallback: try to match by hostname (for dev environments)
+            matchController = this.data.find(c => c.hostname === localhost.hostname);
+            if (matchController) {
+              this.currentController = matchController;
+              this.homeController = matchController;
+              console.warn("No controller matched localhost.ip_address, but matched by hostname:", localhost.hostname);
+            } else if (this.data.length > 0) {
+              // Fallback: use first controller
+              matchController = this.data[0];
+              this.currentController = matchController;
+              this.homeController = matchController;
+              console.warn("No controller matched localhost.ip_address or hostname; using first controller as fallback.");
+            } else {
+              this.currentController = null;
+              this.homeController = null;
+              console.error("No controllers available to select for store init!");
+            }
+          }
+        }
         this.data.sort((a, b) => a.hostname.localeCompare(b.hostname));
         console.log("controllers data fetched: ", JSON.stringify(this.data));
-        console.log(
-          "current Controller: ",
-          JSON.stringify(this.currentController),
-        );
-        if (this.currentController.hostname === "localhost") {
-          let matchingController = this.data.find(
-            (controller) =>
-              controller.ip_address === this.currentController.ip_address,
-          );
-          if (matchingController) {
-            this.currentController = matchingController;
-            console.log(
-              "Updated currentController with ID:",
-              this.currentController.id,
-            );
-          }
-        }
-        if (this.homeController.hostname === "localhost") {
-          let matchingController = this.data.find(
-            (controller) =>
-              controller.ip_address === this.homeController.ip_address,
-          );
-          if (matchingController) {
-            this.homeController = matchingController;
-            console.log(
-              "Updated homeController with ID:",
-              this.homeController.id,
-            );
-          }
-        }
-        console.log("store: ", JSON.stringify(this.data));
+        console.log("current Controller: ", JSON.stringify(this.currentController));
+        console.log("home Controller: ", JSON.stringify(this.homeController));
         this.storeStatus = storeStatus.store.READY;
-        console.log("controllers data fetched: ", JSON.stringify(this.data));
 
         if (!this.websocketSubscribed) {
           const ws = useWebSocket();
@@ -82,11 +80,7 @@ export const useControllersStore = defineStore("controllersStore", {
             if (!host?.ip_address) {
               return;
             }
-            console.log(
-              "updating controller from jsonrpc message: ",
-              JSON.stringify(host),
-            );
-
+            console.log("updating controller from jsonrpc message: ", JSON.stringify(host));
             const index = this.data.findIndex(
               (controller) => controller.ip_address === host.ip_address,
             );
@@ -102,10 +96,7 @@ export const useControllersStore = defineStore("controllersStore", {
             if (!host?.ip_address) {
               return;
             }
-            console.log(
-              "adding new controller from jsonrpc message: ",
-              JSON.stringify(host),
-            );
+            console.log("adding new controller from jsonrpc message: ", JSON.stringify(host));
             const index = this.data.findIndex(
               (controller) => controller.ip_address === host.ip_address,
             );
@@ -119,19 +110,14 @@ export const useControllersStore = defineStore("controllersStore", {
             if (!host?.ip_address) {
               return;
             }
-            console.log(
-              "removing controller from jsonrpc message: ",
-              JSON.stringify(host),
-            );
+            console.log("removing controller from jsonrpc message: ", JSON.stringify(host));
             this.data = this.data.filter(
               (controller) => controller.ip_address !== host.ip_address,
             );
           });
 
           this.websocketSubscribed = true;
-          console.log(
-            "WebSocket initialized and subscribed to controller events.",
-          );
+          console.log("WebSocket initialized and subscribed to controller events.");
         }
       } catch (error) {
         this.storeStatus = storeStatus.store.ERROR;

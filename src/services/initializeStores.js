@@ -3,7 +3,7 @@ import { useColorDataStore } from "src/stores/colorDataStore";
 import { useAppDataStore } from "src/stores/appDataStore";
 import { infoDataStore } from "src/stores/infoDataStore";
 import { useControllersStore } from "src/stores/controllersStore";
-import { storeStatus } from "src/stores/storeConstants";
+import { storeStatus, localhost } from "src/stores/storeConstants";
 import useWebSocket from "src/services/websocket.js";
 
 const INIT_DELAYS = {
@@ -38,7 +38,8 @@ export default async function initializeStores(options = {}) {
   const webSocket = useWebSocket();
 
   if (!controllers.currentController) {
-    console.warn("No current controller selected; skipping store init");
+    controllers.currentController = localhost;
+    console.warn("store uninitialized: setting localhost as currentController");
     return;
   }
 
