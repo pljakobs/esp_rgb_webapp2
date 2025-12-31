@@ -617,7 +617,7 @@ export default {
           // Convert direction to number if it's a string
           if (typeof sceneToSave.defaultTransition.d === "string") {
             sceneToSave.defaultTransition.d = Number(
-              sceneToSave.defaultTransition.d
+              sceneToSave.defaultTransition.d,
             );
           }
         }
@@ -653,7 +653,7 @@ export default {
           debugSceneData("After group change for new scene", scene.value);
         });
       }
-    }
+    };
 
     // Initial check for save disabled state
     checkSaveDisabled();
