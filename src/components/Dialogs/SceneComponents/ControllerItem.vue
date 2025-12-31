@@ -45,14 +45,41 @@
           <q-card-section>
             <!-- Settings list with up/down buttons -->
             <div v-if="settings.length > 0" class="q-mb-md">
-              <div v-for="(sceneSetting, idx) in settings" :key="sceneSetting.pos" class="row items-start q-mb-xs">
-                <div class="move-btns-box q-mr-sm column items-center bg-grey-2 rounded-borders q-pa-xs">
-                  <q-btn dense flat round @click="moveUp(idx)" :disable="idx === 0" size="sm" class="q-mb-xs">
-                    <svgIcon name="arrow_forward" style="transform: rotate(-90deg);" />
+              <div
+                v-for="(sceneSetting, idx) in settings"
+                :key="sceneSetting.pos"
+                class="row items-start q-mb-xs"
+              >
+                <div
+                  class="move-btns-box q-mr-sm column items-center bg-grey-2 rounded-borders q-pa-xs"
+                >
+                  <q-btn
+                    dense
+                    flat
+                    round
+                    @click="moveUp(idx)"
+                    :disable="idx === 0"
+                    size="sm"
+                    class="q-mb-xs"
+                  >
+                    <svgIcon
+                      name="arrow_forward"
+                      style="transform: rotate(-90deg)"
+                    />
                     <q-tooltip>Move up</q-tooltip>
                   </q-btn>
-                  <q-btn dense flat round @click="moveDown(idx)" :disable="idx === settings.length - 1" size="sm">
-                    <svgIcon name="arrow_forward" style="transform: rotate(90deg);" />
+                  <q-btn
+                    dense
+                    flat
+                    round
+                    @click="moveDown(idx)"
+                    :disable="idx === settings.length - 1"
+                    size="sm"
+                  >
+                    <svgIcon
+                      name="arrow_forward"
+                      style="transform: rotate(90deg)"
+                    />
                     <q-tooltip>Move down</q-tooltip>
                   </q-btn>
                 </div>
@@ -62,7 +89,9 @@
                   :direction-options="directionOptions"
                   :queue-options="queueOptions"
                   @update-queue-settings="updateQueueSettings"
-                  @color-type-change="(type) => onColorTypeChange(type, sceneSetting)"
+                  @color-type-change="
+                    (type) => onColorTypeChange(type, sceneSetting)
+                  "
                   @edit-selection="editCurrentSelection(sceneSetting)"
                   @remove-setting="$emit('remove-setting', sceneSetting)"
                 />
@@ -98,37 +127,37 @@ import SceneSettingItem from "./SceneSettingItem.vue";
 export default {
   name: "ControllerItem",
   components: {
-      // no draggable
-      methods: {
-        moveUp(idx) {
-          if (idx > 0) {
-            // Create a new array copy for reactivity
-            const newSettings = this.settings.slice();
-            const temp = newSettings[idx - 1];
-            newSettings[idx - 1] = newSettings[idx];
-            newSettings[idx] = temp;
-            // Update positions
-            newSettings.forEach((setting, i) => {
-              setting.pos = i;
-            });
-            this.$emit('update-positions', newSettings);
-          }
-        },
-        moveDown(idx) {
-          if (idx < this.settings.length - 1) {
-            // Create a new array copy for reactivity
-            const newSettings = this.settings.slice();
-            const temp = newSettings[idx + 1];
-            newSettings[idx + 1] = newSettings[idx];
-            newSettings[idx] = temp;
-            // Update positions
-            newSettings.forEach((setting, i) => {
-              setting.pos = i;
-            });
-            this.$emit('update-positions', newSettings);
-          }
-        },
+    // no draggable
+    methods: {
+      moveUp(idx) {
+        if (idx > 0) {
+          // Create a new array copy for reactivity
+          const newSettings = this.settings.slice();
+          const temp = newSettings[idx - 1];
+          newSettings[idx - 1] = newSettings[idx];
+          newSettings[idx] = temp;
+          // Update positions
+          newSettings.forEach((setting, i) => {
+            setting.pos = i;
+          });
+          this.$emit("update-positions", newSettings);
+        }
       },
+      moveDown(idx) {
+        if (idx < this.settings.length - 1) {
+          // Create a new array copy for reactivity
+          const newSettings = this.settings.slice();
+          const temp = newSettings[idx + 1];
+          newSettings[idx + 1] = newSettings[idx];
+          newSettings[idx] = temp;
+          // Update positions
+          newSettings.forEach((setting, i) => {
+            setting.pos = i;
+          });
+          this.$emit("update-positions", newSettings);
+        }
+      },
+    },
     ColorDisplayBadge,
     SceneSettingItem,
   },
@@ -219,7 +248,7 @@ export default {
     const addNewSetting = () => {
       // Find all settings for this controller and assign next index as pos
       const controllerSettings = props.settings.filter(
-        (s) => s.controller_id === props.controller.id
+        (s) => s.controller_id === props.controller.id,
       );
       const nextPos = controllerSettings.length;
 
@@ -436,7 +465,7 @@ export default {
           newSettings.forEach((setting, i) => {
             setting.pos = i;
           });
-          emit('update-positions', newSettings);
+          emit("update-positions", newSettings);
         }
       },
       moveDown: (idx) => {
@@ -448,7 +477,7 @@ export default {
           newSettings.forEach((setting, i) => {
             setting.pos = i;
           });
-          emit('update-positions', newSettings);
+          emit("update-positions", newSettings);
         }
       },
     };

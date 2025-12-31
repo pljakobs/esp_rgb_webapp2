@@ -333,6 +333,12 @@ export default {
     const pinConfigNames = ref([]);
     const availablePins = ref([]);
     const remotePinConfigs = ref([]);
+    const socSpecificConfigs = computed(() =>
+      configData.data.hardware.pinconfigs.filter(
+        (config) =>
+          config.soc.toLowerCase() === infoData.data.soc.toLowerCase(),
+      ),
+    );
 
     // Helper function to show notifications with SVG icons
     const showNotification = (type, iconName, message, timeout = 3000) => {

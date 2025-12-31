@@ -1,3 +1,2 @@
-
-import config from './vite.config.js';
+import config from "./vite.config.js";
 export default config;

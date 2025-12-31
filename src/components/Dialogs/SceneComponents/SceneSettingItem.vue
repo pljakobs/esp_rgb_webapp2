@@ -23,11 +23,7 @@
           class="col"
           filled
         />
-        <q-btn
-          round
-          color="negative"
-          @click="$emit('remove-setting')"
-        >
+        <q-btn round color="negative" @click="$emit('remove-setting')">
           <svgIcon name="delete" />
           <q-tooltip>Remove</q-tooltip>
         </q-btn>
