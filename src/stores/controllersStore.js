@@ -44,7 +44,10 @@ export const useControllersStore = defineStore("controllersStore", {
             this.homeController = matchController;
             console.log("Selected controller for store init:", matchController);
           } else {
-            // No match found: use the address from storeConstants (localhost)
+            // Debug: log all ip addresses for diagnosis
+            console.error("No controller matched ip_address:", localhost.ip_address);
+            console.error("Available controller ip_addresses:", this.data.map(c => c.ip_address));
+            // Use the address from storeConstants (localhost)
             this.currentController = {
               hostname: localhost.hostname,
               ip_address: localhost.ip_address,
