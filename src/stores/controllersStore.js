@@ -35,57 +35,26 @@ export const useControllersStore = defineStore("controllersStore", {
         }
         if (jsonData && Array.isArray(jsonData.hosts)) {
           this.data = jsonData.hosts;
-          // Try to match by IP address first
+          // Try to match by IP address only, ensure type safety
           let matchController = this.data.find(
-            (c) => c.ip_address === localhost.ip_address,
+            (c) => String(c.ip_address) === String(localhost.ip_address)
           );
           if (matchController) {
-            // Update localhost.hostname to match the controller's hostname
-            if (localhost.hostname !== matchController.hostname) {
-              console.log(
-                `Updating localhost.hostname from '${localhost.hostname}' to '${matchController.hostname}' after initial fetch.`,
-              );
-              localhost.hostname = matchController.hostname;
-            }
             this.currentController = matchController;
             this.homeController = matchController;
             console.log("Selected controller for store init:", matchController);
           } else {
-            // Fallback: try to match by hostname (for dev environments)
-            matchController = this.data.find(
-              (c) => c.ip_address === localhost.ip_address,
+            // No match found: use the address from storeConstants (localhost)
+            this.currentController = {
+              hostname: localhost.hostname,
+              ip_address: localhost.ip_address,
+              visible: true,
+              // Add any other default fields as needed
+            };
+            this.homeController = this.currentController;
+            console.warn(
+              `No controller matched ip_address '${localhost.ip_address}'. Using localhost as currentController.`
             );
-            if (matchController) {
-              this.currentController = matchController;
-              this.homeController = matchController;
-              console.warn(
-                "No controller matched localhost.ip_address, but matched by hostname:",
-                localhost.hostname,
-              );
-            } else if (this.data.length > 0) {
-              // Fallback: use first visible controller
-              const firstVisible = this.data.find((c) => c.visible !== false);
-              if (firstVisible) {
-                matchController = firstVisible;
-                this.currentController = matchController;
-                this.homeController = matchController;
-                console.warn(
-                  "No controller matched localhost.ip_address or hostname; using first visible controller as fallback.",
-                );
-              } else {
-                this.currentController = null;
-                this.homeController = null;
-                console.warn(
-                  "No visible controllers available to select for store init!",
-                );
-              }
-            } else {
-              this.currentController = null;
-              this.homeController = null;
-              console.error(
-                "No controllers available to select for store init!",
-              );
-            }
           }
         }
         this.data.sort((a, b) => a.hostname.localeCompare(b.hostname));
