@@ -6,11 +6,11 @@ import { apiService } from "src/services/api.js";
 
 export const useControllersStore = defineStore("controllersStore", {
   state: () => ({
-      data: [],
-      storeStatus: storeStatus.store.LOADING,
-      currentController: null, // Will be set from /hosts response only
-      homeController: null, // Will be set from /hosts response only
-      http_response_status: null,
+    data: [],
+    storeStatus: storeStatus.store.LOADING,
+    currentController: null, // Will be set from /hosts response only
+    homeController: null, // Will be set from /hosts response only
+    http_response_status: null,
   }),
 
   getters: {
@@ -36,11 +36,15 @@ export const useControllersStore = defineStore("controllersStore", {
         if (jsonData && Array.isArray(jsonData.hosts)) {
           this.data = jsonData.hosts;
           // Try to match by IP address first
-          let matchController = this.data.find(c => c.ip_address === localhost.ip_address);
+          let matchController = this.data.find(
+            (c) => c.ip_address === localhost.ip_address,
+          );
           if (matchController) {
             // Update localhost.hostname to match the controller's hostname
             if (localhost.hostname !== matchController.hostname) {
-              console.log(`Updating localhost.hostname from '${localhost.hostname}' to '${matchController.hostname}' after initial fetch.`);
+              console.log(
+                `Updating localhost.hostname from '${localhost.hostname}' to '${matchController.hostname}' after initial fetch.`,
+              );
               localhost.hostname = matchController.hostname;
             }
             this.currentController = matchController;
@@ -48,27 +52,39 @@ export const useControllersStore = defineStore("controllersStore", {
             console.log("Selected controller for store init:", matchController);
           } else {
             // Fallback: try to match by hostname (for dev environments)
-            matchController = this.data.find(c => c.hostname === localhost.hostname);
+            matchController = this.data.find(
+              (c) => c.ip_address === localhost.ip_address,
+            );
             if (matchController) {
               this.currentController = matchController;
               this.homeController = matchController;
-              console.warn("No controller matched localhost.ip_address, but matched by hostname:", localhost.hostname);
+              console.warn(
+                "No controller matched localhost.ip_address, but matched by hostname:",
+                localhost.hostname,
+              );
             } else if (this.data.length > 0) {
               // Fallback: use first controller
               matchController = this.data[0];
               this.currentController = matchController;
               this.homeController = matchController;
-              console.warn("No controller matched localhost.ip_address or hostname; using first controller as fallback.");
+              console.warn(
+                "No controller matched localhost.ip_address or hostname; using first controller as fallback.",
+              );
             } else {
               this.currentController = null;
               this.homeController = null;
-              console.error("No controllers available to select for store init!");
+              console.error(
+                "No controllers available to select for store init!",
+              );
             }
           }
         }
         this.data.sort((a, b) => a.hostname.localeCompare(b.hostname));
         console.log("controllers data fetched: ", JSON.stringify(this.data));
-        console.log("current Controller: ", JSON.stringify(this.currentController));
+        console.log(
+          "current Controller: ",
+          JSON.stringify(this.currentController),
+        );
         console.log("home Controller: ", JSON.stringify(this.homeController));
         this.storeStatus = storeStatus.store.READY;
 
@@ -80,7 +96,10 @@ export const useControllersStore = defineStore("controllersStore", {
             if (!host?.ip_address) {
               return;
             }
-            console.log("updating controller from jsonrpc message: ", JSON.stringify(host));
+            console.log(
+              "updating controller from jsonrpc message: ",
+              JSON.stringify(host),
+            );
             const index = this.data.findIndex(
               (controller) => controller.ip_address === host.ip_address,
             );
@@ -96,7 +115,10 @@ export const useControllersStore = defineStore("controllersStore", {
             if (!host?.ip_address) {
               return;
             }
-            console.log("adding new controller from jsonrpc message: ", JSON.stringify(host));
+            console.log(
+              "adding new controller from jsonrpc message: ",
+              JSON.stringify(host),
+            );
             const index = this.data.findIndex(
               (controller) => controller.ip_address === host.ip_address,
             );
@@ -110,14 +132,19 @@ export const useControllersStore = defineStore("controllersStore", {
             if (!host?.ip_address) {
               return;
             }
-            console.log("removing controller from jsonrpc message: ", JSON.stringify(host));
+            console.log(
+              "removing controller from jsonrpc message: ",
+              JSON.stringify(host),
+            );
             this.data = this.data.filter(
               (controller) => controller.ip_address !== host.ip_address,
             );
           });
 
           this.websocketSubscribed = true;
-          console.log("WebSocket initialized and subscribed to controller events.");
+          console.log(
+            "WebSocket initialized and subscribed to controller events.",
+          );
         }
       } catch (error) {
         this.storeStatus = storeStatus.store.ERROR;
@@ -154,10 +181,10 @@ export const useControllersStore = defineStore("controllersStore", {
         console.log(
           `DEBUG: Fetching existing data from http://${controller.ip_address}/data`,
         );
-        const { jsonData: existingData, error: existingError } = await apiService.getDataFromController(
-          controller.ip_address,
-          { headers: { Accept: "application/json" } }
-        );
+        const { jsonData: existingData, error: existingError } =
+          await apiService.getDataFromController(controller.ip_address, {
+            headers: { Accept: "application/json" },
+          });
 
         let payload;
         if (!existingError && existingData) {
@@ -197,8 +224,8 @@ export const useControllersStore = defineStore("controllersStore", {
 
         console.log(`DEBUG: POSTing to http://${controller.ip_address}/data`);
         const { jsonData, error } = await apiService.updateDataOnController(
-          controller.ip_address, 
-          payload
+          controller.ip_address,
+          payload,
         );
 
         if (error) {
