@@ -24,14 +24,18 @@ export default defineComponent({
       const webhost = window.location.hostname;
       console.log("webhost", webhost);
 
+      let lastIp = controllers.currentController?.ip_address;
       watch(
-        () => controllers.currentController,
-        () => {
-          console.log(
-            "switching to controller",
-            controllers.currentController.hostname,
-          );
-          initializeStores();
+        () => controllers.currentController?.ip_address,
+        (newIp, oldIp) => {
+          if (newIp && newIp !== oldIp) {
+            console.log(
+              "switching to controller",
+              controllers.currentController.hostname,
+            );
+            initializeStores();
+          }
+          lastIp = newIp;
         },
       );
 
