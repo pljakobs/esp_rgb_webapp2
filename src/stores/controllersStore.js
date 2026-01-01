@@ -25,7 +25,6 @@ export const useControllersStore = defineStore("controllersStore", {
         console.log("controllers start fetching data");
         this.storeStatus = storeStatus.store.LOADING;
 
-        // Use statically imported localhost
         const { jsonData, error } = await apiService.getHosts(true);
         if (error) {
           this.storeStatus = storeStatus.store.ERROR;
@@ -35,38 +34,55 @@ export const useControllersStore = defineStore("controllersStore", {
         }
         if (jsonData && Array.isArray(jsonData.hosts)) {
           this.data = jsonData.hosts;
-          // Try to match by IP address only, ensure type safety
-          let matchController = this.data.find(
-            (c) => String(c.ip_address) === String(localhost.ip_address)
-          );
-          if (matchController) {
-            this.currentController = matchController;
-            this.homeController = matchController;
-            console.log("Selected controller for store init:", matchController);
-          } else {
-            // Debug: log all ip addresses for diagnosis
-            console.error("No controller matched ip_address:", localhost.ip_address);
-            console.error("Available controller ip_addresses:", this.data.map(c => c.ip_address));
-            // Use the address from storeConstants (localhost)
+          // 1. If ip_address is numeric, match and update hostname, set controllers
+          if (/^\d+\.\d+\.\d+\.\d+$/.test(localhost.ip_address)) {
+            const match = this.data.find(
+              (c) => String(c.ip_address) === String(localhost.ip_address),
+            );
+            if (match) {
+              localhost.hostname = match.hostname;
+              this.currentController = match;
+              this.homeController = match;
+              console.log(
+                `Matched numeric ip_address, set localhost.hostname to '${match.hostname}' and set controllers`,
+              );
+            }
+          }
+          // 2. If ip_address is FQDN, extract shortname and set as hostname, set controllers
+          else if (
+            typeof localhost.ip_address === "string" &&
+            localhost.ip_address.includes(".")
+          ) {
+            const shortName = localhost.ip_address.split(".")[0];
+            localhost.hostname = shortName;
+            const match = this.data.find(
+              (c) => String(c.hostname).toLowerCase() === shortName.toLowerCase()
+            );
+            if (match) {
+              this.currentController = match;
+              this.homeController = match;
+              console.log(
+                `Extracted shortname '${shortName}' from FQDN, set as localhost.hostname and set controllers`,
+              );
+            } else {
+              console.log(
+                `Extracted shortname '${shortName}' from FQDN, set as localhost.hostname but no controller matched`,
+              );
+            }
+          }
+          // Fallback: if still not set, use placeholder
+          if (!this.currentController || !this.homeController) {
             this.currentController = {
               hostname: localhost.hostname,
               ip_address: localhost.ip_address,
               visible: true,
-              // Add any other default fields as needed
             };
             this.homeController = this.currentController;
-            console.warn(
-              `No controller matched ip_address '${localhost.ip_address}'. Using localhost as currentController.`
-            );
+            console.warn("No controller matched in early phase, using placeholder from storeConstants.js");
           }
         }
         this.data.sort((a, b) => a.hostname.localeCompare(b.hostname));
         console.log("controllers data fetched: ", JSON.stringify(this.data));
-        console.log(
-          "current Controller: ",
-          JSON.stringify(this.currentController),
-        );
-        console.log("home Controller: ", JSON.stringify(this.homeController));
         this.storeStatus = storeStatus.store.READY;
 
         if (!this.websocketSubscribed) {
@@ -126,6 +142,34 @@ export const useControllersStore = defineStore("controllersStore", {
           console.log(
             "WebSocket initialized and subscribed to controller events.",
           );
+        }
+
+        // 3. After infoDataStore is ready, set currentController/homeController to the controller object matching deviceid
+        const infoStore = infoDataStore();
+        if (
+          infoStore.status === storeStatus.READY &&
+          infoStore.data &&
+          infoStore.data.deviceid
+        ) {
+          const matchById = this.data.find(
+            (c) => String(c.id) === String(infoStore.data.deviceid),
+          );
+          if (matchById) {
+            if (matchById.hostname !== localhost.hostname) {
+              console.log(
+                `Updating localhost.hostname from '${localhost.hostname}' to '${matchById.hostname}' based on infoDataStore.deviceid`,
+              );
+              localhost.hostname = matchById.hostname;
+            }
+            if (this.currentController !== matchById) {
+              this.currentController = matchById;
+              this.homeController = matchById;
+              console.log(
+                "Updated currentController and homeController to match deviceid:",
+                matchById,
+              );
+            }
+          }
         }
       } catch (error) {
         this.storeStatus = storeStatus.store.ERROR;
