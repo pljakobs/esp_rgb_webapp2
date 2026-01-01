@@ -311,7 +311,8 @@ async function applyScene(scene) {
       // Build the sequence array for this controller
       const sequence = [];
 
-      for (const setting of settings) {
+      for (let settingIndex = 0; settingIndex < settings.length; settingIndex++) {
+        const setting = settings[settingIndex];
         // Parse the color information
         let colorObject = {};
 
@@ -388,9 +389,12 @@ async function applyScene(scene) {
           // Always set cmd to "fade" for color transitions
           transitionItem.cmd = "fade";
 
-          // Add queue type
+          // Add queue type - for multiple settings on same controller, use "back" for all after the first
           if (setting.transition.q) {
             transitionItem.q = setting.transition.q;
+          } else if (settings.length > 1 && settingIndex > 0) {
+            // If multiple settings and not the first one, default to "back" queue
+            transitionItem.q = "back";
           }
 
           // Add direction if present

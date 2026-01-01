@@ -620,6 +620,33 @@ export default {
               sceneToSave.defaultTransition.d,
             );
           }
+          // Normalize repeat flag to boolean
+          if (typeof sceneToSave.defaultTransition.r === "string") {
+            sceneToSave.defaultTransition.r =
+              sceneToSave.defaultTransition.r.toLowerCase() === "true";
+          } else {
+            sceneToSave.defaultTransition.r = Boolean(
+              sceneToSave.defaultTransition.r,
+            );
+          }
+          // Ensure optional keys exist; use null when unused
+          if (sceneToSave.defaultTransition.cmd === undefined) {
+            sceneToSave.defaultTransition.cmd = null;
+          }
+          if (sceneToSave.defaultTransition.q === undefined) {
+            sceneToSave.defaultTransition.q = null;
+          }
+          // Ensure time and speed fields exist
+          if (sceneToSave.defaultTransition.t === undefined) {
+            sceneToSave.defaultTransition.t = 0;
+          }
+          if (sceneToSave.defaultTransition.s === undefined) {
+            sceneToSave.defaultTransition.s = 0;
+          }
+
+          // Map UI's defaultTransition to schema's top-level transition
+          sceneToSave.transition = sceneToSave.defaultTransition;
+          delete sceneToSave.defaultTransition;
         }
 
         // Also handle the default transition if it exists
@@ -636,22 +663,77 @@ export default {
           }
         }
 
+        // Prepare settings for saving: ensure types and required keys
+        if (Array.isArray(sceneToSave.settings)) {
+          sceneToSave.settings = sceneToSave.settings.map((s, idx) => {
+            const cleaned = { ...s };
+
+            // Ensure controller_id is a string per schema
+            if (cleaned.controller_id !== undefined) {
+              cleaned.controller_id = String(cleaned.controller_id);
+            }
+
+            // Ensure positional metadata exists (storage uses pos)
+            if (cleaned.pos === undefined) {
+              cleaned.pos = idx;
+            } else {
+              // Coerce to integer
+              cleaned.pos = Number(cleaned.pos) || 0;
+            }
+
+            // Normalize and prune transition if present
+            if (cleaned.transition) {
+              if (typeof cleaned.transition.d === "string") {
+                cleaned.transition.d = Number(cleaned.transition.d);
+              }
+              if (typeof cleaned.transition.r === "string") {
+                cleaned.transition.r =
+                  cleaned.transition.r.toLowerCase() === "true";
+              } else {
+                cleaned.transition.r = Boolean(cleaned.transition.r);
+              }
+              // Ensure keys exist; use null when unused
+              if (cleaned.transition.cmd === undefined) {
+                cleaned.transition.cmd = null;
+              }
+              if (cleaned.transition.q === undefined) {
+                cleaned.transition.q = null;
+              }
+              if (cleaned.transition.t === undefined) {
+                cleaned.transition.t = 0;
+              }
+              if (cleaned.transition.s === undefined) {
+                cleaned.transition.s = 0;
+              }
+            }
+
+            // HSV ct is optional; drop if explicitly null
+            if (
+              cleaned.color &&
+              cleaned.color.hsv &&
+              cleaned.color.hsv.ct === null
+            ) {
+              delete cleaned.color.hsv.ct;
+            }
+
+            return cleaned;
+          });
+        }
+
         debugSceneData("After scene processing", scene.value);
+
+        // Attach callbacks to the scene data
+        sceneToSave.updateProgress = updateProgress;
+        sceneToSave.saveComplete = () => {
+          console.log("🎯 Scene save complete callback");
+          showProgressModal.value = false;
+        };
+
+        // Emit the scene data to parent
+        emit("ok", sceneToSave);
       } catch (err) {
         console.error("Error in onSaveClick:", err);
-      }
-      // If no settings, create default empty ones
-      if (props.scene && !props.scene.settings) {
-        scene.value.settings = [];
-      }
-
-      // If a group is already selected and this is a new scene, create default settings
-      if (scene.value && scene.value.group_id && !isEditMode.value) {
-        debugSceneData("Initial scene data for new scene", scene.value);
-        nextTick(() => {
-          onGroupChange(scene.value.group_id);
-          debugSceneData("After group change for new scene", scene.value);
-        });
+        showProgressModal.value = false;
       }
     };
 
