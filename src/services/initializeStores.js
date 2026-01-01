@@ -1,3 +1,4 @@
+import { watch } from 'vue';
 import { configDataStore } from "src/stores/configDataStore";
 import { useColorDataStore } from "src/stores/colorDataStore";
 import { useAppDataStore } from "src/stores/appDataStore";
@@ -36,6 +37,20 @@ export default async function initializeStores(options = {}) {
   const infoStore = infoDataStore();
   const appDataStore = useAppDataStore();
   const webSocket = useWebSocket();
+
+  // Watch for changes to currentController and (re)connect websocket
+  watch(
+    () => controllers.currentController && controllers.currentController.ip_address,
+    (ip, prevIp) => {
+      if (ip && ip !== prevIp) {
+        const wsUrl = `ws://${ip}/ws`;
+        if (webSocket.url?.value !== wsUrl) {
+          webSocket.connect(wsUrl);
+        }
+      }
+    },
+    { immediate: true }
+  );
 
   if (!controllers.currentController) {
     controllers.currentController = localhost;
