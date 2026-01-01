@@ -11,7 +11,7 @@
         @update-queue-settings="$emit('update-queue-settings')"
       />
 
-      <!-- Color selection with delete button inline -->
+      <!-- Color selection with color swatch -->
       <div class="row items-center q-gutter-sm">
         <mySelect
           :model-value="colorType"
@@ -23,10 +23,11 @@
           class="col"
           filled
         />
-        <q-btn round color="negative" @click="$emit('remove-setting')">
-          <svgIcon name="delete" />
-          <q-tooltip>Remove</q-tooltip>
-        </q-btn>
+        <color-display-badge
+          :color="sceneSetting.color"
+          @click="$emit('edit-selection')"
+          class="color-swatch-clickable"
+        />
       </div>
     </q-item-section>
   </q-item>
@@ -36,6 +37,7 @@
 import { computed } from "vue";
 import mySelect from "src/components/mySelect.vue";
 import TransitionPanel from "./TransitionPanel.vue";
+import ColorDisplayBadge from "src/components/ColorDisplayBadge.vue";
 import { useAppDataStore } from "src/stores/appDataStore";
 
 export default {
@@ -43,6 +45,7 @@ export default {
   components: {
     mySelect,
     TransitionPanel,
+    ColorDisplayBadge,
   },
   props: {
     sceneSetting: {
@@ -66,7 +69,6 @@ export default {
     "update-queue-settings",
     "color-type-change",
     "edit-selection",
-    "remove-setting",
   ],
   setup(props, { emit }) {
     const appData = useAppDataStore();
@@ -156,5 +158,14 @@ export default {
 
 .drag-handle {
   cursor: move;
+}
+
+.color-swatch-clickable {
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.color-swatch-clickable:hover {
+  transform: scale(1.1);
 }
 </style>

@@ -75,12 +75,24 @@
                     @click="moveDown(idx)"
                     :disable="idx === settings.length - 1"
                     size="sm"
+                    class="q-mb-xs"
                   >
                     <svgIcon
                       name="arrow_forward"
                       style="transform: rotate(90deg)"
                     />
                     <q-tooltip>Move down</q-tooltip>
+                  </q-btn>
+                  <q-btn
+                    dense
+                    flat
+                    round
+                    color="negative"
+                    @click="$emit('remove-setting', sceneSetting)"
+                    size="sm"
+                  >
+                    <svgIcon name="delete" />
+                    <q-tooltip>Remove</q-tooltip>
                   </q-btn>
                 </div>
                 <scene-setting-item
@@ -93,7 +105,6 @@
                     (type) => onColorTypeChange(type, sceneSetting)
                   "
                   @edit-selection="editCurrentSelection(sceneSetting)"
-                  @remove-setting="$emit('remove-setting', sceneSetting)"
                 />
               </div>
             </div>
@@ -526,6 +537,13 @@ export default {
 .ghost {
   opacity: 0.5;
   background: #c8ebfb;
+}
+
+.scene-setting-item {
+  width: 320px;
+  min-width: 320px;
+  max-width: 320px;
+  box-sizing: border-box;
 }
 
 @media (max-width: 599px) {

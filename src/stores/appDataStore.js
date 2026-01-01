@@ -629,7 +629,7 @@ export const useAppDataStore = defineStore("appData", {
                 // Determine payload
                 if (existingScene) {
                   console.log("Updating existing scene on", controllerName);
-                  return { [`scenes[id="${scene.id}"]`]: scene };
+                  return { [`scenes[id=${scene.id}]`]: scene };
                 } else {
                   console.log("Adding new scene to", controllerName);
                   return { "scenes[]": [scene] };
@@ -2147,7 +2147,7 @@ export const useAppDataStore = defineStore("appData", {
           // Individual scene updates
           for (const scene of update.scenesToUpdate) {
             try {
-              const payload = { [`scenes[id="${scene.id}"]`]: scene };
+              const payload = { [`scenes[id=${scene.id}]`]: scene };
               await robustRequest(payload, `updating scene ${scene.name}`);
               console.log(
                 `✅ Updated scene ${scene.name} on ${controllerName}`,
