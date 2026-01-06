@@ -13,6 +13,18 @@
         class="q-mb-md"
       />
 
+      <q-toggle
+        v-model="configData.data.general.allow_web_icons"
+        label="Allow Web Icons (Google Fonts)"
+        @update:model-value="
+          updateConfig(
+            'general.allow_web_icons',
+            configData.data.general.allow_web_icons,
+          )
+        "
+        class="q-mb-md"
+      />
+
       <div class="icon-selector-section">
         <div class="text-subtitle2 q-mb-sm">Controller Icon</div>
 
@@ -33,9 +45,14 @@
                 color="primary"
                 @click="showMaterialBrowser = true"
                 label="change Icon"
+                :disable="configData.data.general?.allow_web_icons === false"
               >
                 <svgIcon name="search" size="24px" style="margin-left: 8px" />
-                <q-tooltip>Browse Material Design Icons</q-tooltip>
+                <q-tooltip
+                  v-if="configData.data.general?.allow_web_icons === false"
+                  >Enable 'Allow Web Icons' to browse Google Fonts</q-tooltip
+                >
+                <q-tooltip v-else>Browse Material Design Icons</q-tooltip>
               </q-btn>
 
               <!-- Test Web Icon -->
