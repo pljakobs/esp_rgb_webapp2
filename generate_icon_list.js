@@ -120,9 +120,10 @@ function buildSpriteContent(sourceDir) {
   }
 
   const symbols = iconFiles.map((file) => {
-    const id = path
-      .basename(file)
+    const relativePath = path.relative(sourceDir, file);
+    const id = relativePath
       .replace(/\.svg(\.gz)?$/i, "")
+      .replace(/[\\/]/g, "_")
       .replace(/[^a-z0-9_-]/gi, "_");
 
     let svgContent = fs.readFileSync(file);
