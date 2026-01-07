@@ -40,7 +40,12 @@ function getSpriteUrl(forceReload = false) {
 }
 
 function normalizeIconName(name) {
-  return name.replace(/\.svg(\.gz)?$/i, "").replace(/[^a-z0-9_-]/gi, "_");
+  // Replace slashes with underscores to match sprite ID convention
+  let normalized = name.replace(/\//g, "_");
+  // Remove file extensions
+  normalized = normalized.replace(/\.svg(\.gz)?$/i, "");
+  // Replace incompatible characters with underscores
+  return normalized.replace(/[^a-z0-9_-]/gi, "_");
 }
 
 function ensureSpriteLoaded({ forceReload = false } = {}) {

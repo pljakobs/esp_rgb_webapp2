@@ -11,7 +11,7 @@ export const storeStatus = {
   store: {
     IDLE: "idle",
     LOADING: "loading",
-    READY: "ready", 
+    READY: "ready",
     ERROR: "error",
   },
   sync: {
@@ -20,7 +20,7 @@ export const storeStatus = {
     COMPLETED: "completed",
     FAILED: "failed",
   },
-  
+
   // Legacy single-status system (deprecated)
   IDLE: "idle",
   LOADING: "loading",

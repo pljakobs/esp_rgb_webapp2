@@ -110,8 +110,8 @@
           option-value="ip_address"
           label="Select a controller"
           @input="handleControllerSelection"
-          @popup-show="() => $nextTick(() => (isSelectOpen.value = true))"
-          @popup-hide="() => $nextTick(() => (isSelectOpen.value = false))"
+          @popup-show="() => $nextTick(() => (isSelectOpen = true))"
+          @popup-hide="() => $nextTick(() => (isSelectOpen = false))"
         >
           <template v-slot:option="scope">
             <q-item clickable @click="handleControllerSelection(scope.opt)">
@@ -123,7 +123,13 @@
                     size="20px"
                     fallbackIcon="lightbulb_outlined"
                     :style="{
-                      color: scope.opt.visible === false ? '#888' : '#FFD600',
+                      color:
+                        scope.opt.visible === false
+                          ? '#888'
+                          : getCustomControllerIconReactive(scope.opt) ===
+                              'lightbulb_outlined'
+                            ? undefined
+                            : '#FFD600',
                     }"
                   />
                   <!-- Role-based icon (home/api) if applicable -->
@@ -548,7 +554,7 @@ export default defineComponent({
           appData.data.controllers
         ) {
           const controllerMetadata = appData.data.controllers.find(
-            (c) => c.id === controller.id,
+            (c) => String(c.id) === String(controller.id),
           );
 
           if (controllerMetadata && controllerMetadata.icon) {
@@ -584,7 +590,7 @@ export default defineComponent({
           // First try to get name from appDataStore metadata
           if (appData.data && appData.data.controllers) {
             const controllerMetadata = appData.data.controllers.find(
-              (c) => c.id === controllers.currentController.id,
+              (c) => String(c.id) === String(controllers.currentController.id),
             );
             if (controllerMetadata && controllerMetadata.name) {
               return controllerMetadata.name;
@@ -603,29 +609,74 @@ export default defineComponent({
 
       // Computed property for controller icons - reactive to appData changes
       const controllerIcons = computed(() => {
-        // Create a reactive map of controller ID to icon
+        // Create a reactive map of controller IP (or ID) to icon
         const iconMap = {};
+        console.log(
+          "Debugging controllerIcons computed property:",
+          "controllers.data:",
+          controllers.data ? controllers.data.length : "null",
+          "appData.status:",
+          appData.status,
+          "appData.data.controllers:",
+          appData.data?.controllers
+            ? appData.data.controllers.length
+            : "undefined",
+        );
 
         if (
           controllers.data &&
-          appData.status === storeStatus.READY &&
+           (appData.status === storeStatus.READY || appData.status === "synced") &&
           appData.data?.controllers
         ) {
           controllers.data.forEach((controller) => {
-            if (controller && controller.id) {
-              const controllerMetadata = appData.data.controllers.find(
-                (c) => c.id === controller.id,
+            if (controller) {
+              // Try to find metadata by ID first, then by IP
+              let controllerMetadata = null;
+
+              if (controller.id) {
+                // Try ID Match
+                controllerMetadata = appData.data.controllers.find(
+                  (c) => String(c.id) === String(controller.id),
+                );
+              }
+
+              if (!controllerMetadata && controller.ip_address) {
+                // Try IP Match
+                controllerMetadata = appData.data.controllers.find(
+                  (c) => c["ip-address"] === controller.ip_address,
+                );
+              }
+
+              const icon = controllerMetadata?.icon || "lightbulb_outlined";
+
+              // Map by ID if available
+              if (controller.id) {
+                iconMap[controller.id] = icon;
+              }
+              // ALWAYS map by IP as well for robustness
+              if (controller.ip_address) {
+                iconMap[controller.ip_address] = icon;
+              }
+
+              console.log(
+                "Icon lookup for",
+                controller.hostname,
+                "(id:",
+                controller.id,
+                "ip:",
+                controller.ip_address,
+                ") found:",
+                icon,
               );
-              iconMap[controller.id] =
-                controllerMetadata?.icon || "lightbulb_outlined";
             }
           });
         } else {
+          console.log("Conditions for icon matching not met");
           // Default icons when appData is not ready
           controllers.data?.forEach((controller) => {
-            if (controller && controller.id) {
-              iconMap[controller.id] = "lightbulb_outlined";
-            }
+            if (controller.id) iconMap[controller.id] = "lightbulb_outlined";
+            if (controller.ip_address)
+              iconMap[controller.ip_address] = "lightbulb_outlined";
           });
         }
 
@@ -634,9 +685,27 @@ export default defineComponent({
 
       // Updated function to use the computed property
       const getCustomControllerIconReactive = (controller) => {
-        if (controller && controller.id) {
-          return controllerIcons.value[controller.id] || "lightbulb_outlined";
+        if (!controller) {
+            console.log("getCustomControllerIconReactive: controller is null");
+            return "lightbulb_outlined";
         }
+
+        // Try lookup by ID first
+        if (controller.id && controllerIcons.value[controller.id]) {
+          console.log(`getCustomControllerIconReactive success (ID): ${controller.id} -> ${controllerIcons.value[controller.id]}`);
+          return controllerIcons.value[controller.id];
+        }
+
+        // Try lookup by IP
+        if (
+          controller.ip_address &&
+          controllerIcons.value[controller.ip_address]
+        ) {
+          console.log(`getCustomControllerIconReactive success (IP): ${controller.ip_address} -> ${controllerIcons.value[controller.ip_address]}`);
+          return controllerIcons.value[controller.ip_address];
+        }
+        
+        console.log(`getCustomControllerIconReactive fail: ${controller.hostname} (id: ${controller.id}, ip: ${controller.ip_address})`);
         return "lightbulb_outlined";
       };
 

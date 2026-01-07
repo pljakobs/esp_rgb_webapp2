@@ -23,7 +23,13 @@
           )
         "
         class="q-mb-md"
-      />
+      >
+        <q-tooltip
+          >When enabled, you can select icons from the Google Fonts library, but
+          there is a risk of sending data to google (ip-address, browser,
+          referrer etc).</q-tooltip
+        >
+      </q-toggle>
 
       <div class="icon-selector-section">
         <div class="text-subtitle2 q-mb-sm">Controller Icon</div>
@@ -48,12 +54,12 @@
                 :disable="configData.data.general?.allow_web_icons === false"
               >
                 <svgIcon name="search" size="24px" style="margin-left: 8px" />
-                <q-tooltip
-                  v-if="configData.data.general?.allow_web_icons === false"
-                  >Enable 'Allow Web Icons' to browse Google Fonts</q-tooltip
-                >
-                <q-tooltip v-else>Browse Material Design Icons</q-tooltip>
               </q-btn>
+              <q-tooltip
+                v-if="configData.data.general?.allow_web_icons === false"
+                >Enable 'Allow Web Icons' to browse Google Fonts</q-tooltip
+              >
+              <q-tooltip v-else>Browse Material Design Icons</q-tooltip>
 
               <!-- Test Web Icon -->
               <div
