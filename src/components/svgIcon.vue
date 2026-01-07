@@ -24,6 +24,8 @@
  * - Web icon caching (24hr expiry)
  * - CORS handling for web icons
  */
+import { configDataStore } from "src/stores/configDataStore";
+
 const SPRITE_URL = "icons/iconsSprite.svg";
 const SPRITE_ELEMENT_ID = "svg-icon-sprite";
 let spriteLoadPromise = null;
@@ -38,7 +40,12 @@ function getSpriteUrl(forceReload = false) {
 }
 
 function normalizeIconName(name) {
-  return name.replace(/\.svg(\.gz)?$/i, "").replace(/[^a-z0-9_-]/gi, "_");
+  // Replace slashes with underscores to match sprite ID convention
+  let normalized = name.replace(/\//g, "_");
+  // Remove file extensions
+  normalized = normalized.replace(/\.svg(\.gz)?$/i, "");
+  // Replace incompatible characters with underscores
+  return normalized.replace(/[^a-z0-9_-]/gi, "_");
 }
 
 function ensureSpriteLoaded({ forceReload = false } = {}) {
@@ -201,12 +208,29 @@ export default {
       this.hasError = false;
 
       try {
-        await (this.isWebUrl ? this.fetchWebIcon() : this.fetchLocalIcon());
+        const configStore = configDataStore();
+        // Check if web icons are allowed (default to true if undefined for backward compatibility)
+        const allowWebIcons = configStore.data?.general?.allow_web_icons !== false;
+
+        if (this.isWebUrl) {
+          if (allowWebIcons) {
+             await this.fetchWebIcon();
+          } else {
+             // If web icons not allowed, fail immediately to trigger fallback
+             throw new Error("Web icons disabled by configuration");
+          }
+        } else {
+          await this.fetchLocalIcon();
+        }
       } catch (error) {
-        console.error(
-          `Primary icon failed (${this.isWebUrl ? "web" : "local"}):`,
-          error,
-        );
+        if (!this.isWebUrl || error.message !== "Web icons disabled by configuration") {
+             // Only log errors that aren't expected due to configuration
+             console.error(
+              `Primary icon failed (${this.isWebUrl ? "web" : "local"}):`,
+              error,
+            );
+        }
+        
         this.hasError = true;
 
         // Try fallback local icon if primary failed
@@ -216,7 +240,6 @@ export default {
           } catch (fallbackError) {
             console.error("Fallback icon also failed:", fallbackError);
           }
-        } else {
         }
       } finally {
         this.isLoading = false;
@@ -243,7 +266,6 @@ export default {
             const cacheAge = Date.now() - cacheData.timestamp;
             const maxAge = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
 
-
             if (cacheAge < maxAge) {
               this.svgContent = cacheData.content;
               return;
@@ -261,7 +283,6 @@ export default {
       // Fetch from web with timeout
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 5000);
-
 
       try {
         const response = await fetch(this.name, {
@@ -302,7 +323,6 @@ export default {
             timestamp: Date.now(),
           }),
         );
-
       } catch (error) {
         clearTimeout(timeoutId);
         throw error;
@@ -322,22 +342,24 @@ export default {
         if (!reloadedSymbol) {
           // If the icon doesn't exist, try some common fallbacks for problematic icons
           const fallbackMappings = {
-            'lights_led_strip_variant': 'lightbulb',
-            'led_strip_variant': 'lightbulb',
-            'lights_led-strip-variant': 'lightbulb',
-            'led-strip-variant': 'lightbulb'
+            lights_led_strip_variant: "lightbulb_outlined",
+            led_strip_variant: "lightbulb_outlined",
+            "lights_led-strip-variant": "lightbulb_outlined",
+            "led-strip-variant": "lightbulb_outlined",
           };
-          
+
           const fallbackIcon = fallbackMappings[symbolId];
           if (fallbackIcon) {
-            console.warn(`Icon '${symbolId}' not found, using fallback: ${fallbackIcon}`);
+            console.warn(
+              `Icon '${symbolId}' not found, using fallback: ${fallbackIcon}`,
+            );
             const fallbackSymbol = document.getElementById(fallbackIcon);
             if (fallbackSymbol) {
               this.setSvgContentFromSymbol(fallbackSymbol);
               return;
             }
           }
-          
+
           throw new Error(`Icon not found in sprite: ${symbolId}`);
         }
         this.setSvgContentFromSymbol(reloadedSymbol);
@@ -488,7 +510,6 @@ export default {
             timestamp: Date.now(),
           }),
         );
-
       } catch (error) {
         clearTimeout(timeoutId);
         throw error;
