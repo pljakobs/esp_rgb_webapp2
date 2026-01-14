@@ -4,8 +4,12 @@
       <div class="flex flex-center">
         <div class="q-pa-md">
           <h1><q-spinner-radio color="light-blue" /></h1>
-          loading from {{ controllers.currentController }}...
-          <br />Configuration:
+          loading from
+          {{
+            controllers.currentController
+              ? controllers.currentController.hostname
+              : "..."
+          }}... <br />Configuration:
           <span
             v-if="configData.status === storeStatus.READY"
             class="text-success"
@@ -516,17 +520,21 @@ export default defineComponent({
 
       const getIconForController = (controller) => {
         // Logic to determine the icon based on the controller properties
-        console.log("getIconForController", controller.hostname);
-        if (controller.ip_address === controllers.homeController.ip_address) {
-          console.log("home icon for ", controller.ip_address);
+        // console.log("getIconForController", controller.hostname);
+        if (
+          controllers.homeController &&
+          controller.ip_address === controllers.homeController.ip_address
+        ) {
+          // console.log("home icon for ", controller.ip_address);
           return "home";
         } else if (
+          controllers.currentController &&
           controller.ip_address === controllers.currentController.ip_address
         ) {
-          console.log("api icon for", controller.ip_address);
+          // console.log("api icon for", controller.ip_address);
           return "api";
         } else {
-          console.log("no icon for ", controller.ip_address);
+          // console.log("no icon for ", controller.ip_address);
           return "";
         }
         //return "controller_default_icon"; // Replace with your default icon
@@ -625,7 +633,8 @@ export default defineComponent({
 
         if (
           controllers.data &&
-           (appData.status === storeStatus.READY || appData.status === "synced") &&
+          (appData.status === storeStatus.READY ||
+            appData.status === "synced") &&
           appData.data?.controllers
         ) {
           controllers.data.forEach((controller) => {
@@ -686,13 +695,15 @@ export default defineComponent({
       // Updated function to use the computed property
       const getCustomControllerIconReactive = (controller) => {
         if (!controller) {
-            console.log("getCustomControllerIconReactive: controller is null");
-            return "lightbulb_outlined";
+          console.log("getCustomControllerIconReactive: controller is null");
+          return "lightbulb_outlined";
         }
 
         // Try lookup by ID first
         if (controller.id && controllerIcons.value[controller.id]) {
-          console.log(`getCustomControllerIconReactive success (ID): ${controller.id} -> ${controllerIcons.value[controller.id]}`);
+          console.log(
+            `getCustomControllerIconReactive success (ID): ${controller.id} -> ${controllerIcons.value[controller.id]}`,
+          );
           return controllerIcons.value[controller.id];
         }
 
@@ -701,11 +712,15 @@ export default defineComponent({
           controller.ip_address &&
           controllerIcons.value[controller.ip_address]
         ) {
-          console.log(`getCustomControllerIconReactive success (IP): ${controller.ip_address} -> ${controllerIcons.value[controller.ip_address]}`);
+          console.log(
+            `getCustomControllerIconReactive success (IP): ${controller.ip_address} -> ${controllerIcons.value[controller.ip_address]}`,
+          );
           return controllerIcons.value[controller.ip_address];
         }
-        
-        console.log(`getCustomControllerIconReactive fail: ${controller.hostname} (id: ${controller.id}, ip: ${controller.ip_address})`);
+
+        console.log(
+          `getCustomControllerIconReactive fail: ${controller.hostname} (id: ${controller.id}, ip: ${controller.ip_address})`,
+        );
         return "lightbulb_outlined";
       };
 

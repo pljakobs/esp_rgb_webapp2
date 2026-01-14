@@ -1,6 +1,10 @@
-import { apiService } from 'src/services/api.js';
-import { useControllersStore } from 'src/stores/controllersStore.js';
-import { validatePreset, validateScene, validateGroup } from 'src/services/schemaValidator.js';
+import { apiService } from "src/services/api.js";
+import { useControllersStore } from "src/stores/controllersStore.js";
+import {
+  validatePreset,
+  validateScene,
+  validateGroup,
+} from "src/services/schemaValidator.js";
 
 /**
  * Distributed Synchronization Service
@@ -20,7 +24,7 @@ export class SyncService {
    */
   getCurrentControllerId() {
     const controllers = useControllersStore();
-    
+
     // Use the current controller from the store
     if (controllers.currentController?.id) {
       return controllers.currentController.id;
@@ -37,7 +41,7 @@ export class SyncService {
     const firstController = controllers.data.find(
       (c) => c.id && c.ip_address && c.visible === true,
     );
-    
+
     if (firstController?.id) {
       console.log(`Using fallback controller ID: ${firstController.id}`);
       return firstController.id;
@@ -54,8 +58,8 @@ export class SyncService {
    */
   async acquireDistributedLocks(controllers) {
     const currentId = this.getCurrentControllerId();
-    const now = Math.floor(Date.now() / 1000); // Unix timestamp in seconds
-    const lockExpirySeconds = this.SYNC_LOCK_TIMEOUT_MS / 1000;
+    const now = Date.now(); // Unix timestamp in milliseconds
+    const lockExpiryMs = this.SYNC_LOCK_TIMEOUT_MS;
 
     console.log(`🔒 Acquiring distributed locks for ${currentId}`);
 
@@ -66,7 +70,7 @@ export class SyncService {
     for (const controller of controllers) {
       const { jsonData, error } = await apiService.getDataFromController(
         controller.ip_address,
-        { timeout: 5000 }
+        { timeout: 5000 },
       );
 
       if (error || !jsonData) {
@@ -74,59 +78,72 @@ export class SyncService {
         continue;
       }
 
-      const existingLock = jsonData['sync-lock'] || { id: '', ts: 0 };
+      const existingLock = jsonData["sync-lock"] || { id: "", ts: 0 };
       const lockAge = now - existingLock.ts;
 
       // Check if there's a valid lock by another client
-      if (existingLock.id && existingLock.id !== currentId && lockAge < lockExpirySeconds) {
-        console.warn(`❌ Valid lock exists on ${controller.hostname} by ${existingLock.id}`);
+      if (
+        existingLock.id &&
+        existingLock.id !== currentId &&
+        lockAge < lockExpiryMs
+      ) {
+        console.warn(
+          `❌ Valid lock exists on ${controller.hostname} by ${existingLock.id}`,
+        );
         return {
           success: false,
           locksAcquired: 0,
           reason: `Valid lock exists on ${controller.hostname} by ${existingLock.id}`,
           lockedBy: existingLock.id,
-          shouldRetry: true
+          shouldRetry: true,
         };
       }
 
-      if (existingLock.id && lockAge >= lockExpirySeconds) {
+      if (existingLock.id && lockAge >= lockExpiryMs) {
         staleLocks++;
-        console.log(`🔓 Stale lock on ${controller.hostname} (${lockAge}s old)`);
+        console.log(
+          `🔓 Stale lock on ${controller.hostname} (${Math.round(lockAge / 1000)}s old)`,
+        );
       }
     }
 
     // Phase 2: Acquire locks on all controllers
     for (const controller of controllers) {
       const lockData = {
-        'sync-lock': { id: currentId, ts: now }
+        "sync-lock": { id: currentId, ts: now },
       };
 
       const { error } = await apiService.updateDataOnController(
         controller.ip_address,
         lockData,
-        { timeout: 5000 }
+        { timeout: 5000 },
       );
 
       if (error) {
         console.error(`❌ Failed to acquire lock on ${controller.hostname}`);
         // Release locks we already acquired
-        await this.releaseDistributedLocks(controllers.slice(0, locksAcquired), currentId);
+        await this.releaseDistributedLocks(
+          controllers.slice(0, locksAcquired),
+          currentId,
+        );
         return {
           success: false,
           locksAcquired,
           reason: `Failed to acquire lock on ${controller.hostname}`,
-          shouldRetry: true
+          shouldRetry: true,
         };
       }
 
       locksAcquired++;
     }
 
-    console.log(`✅ Acquired ${locksAcquired} locks${staleLocks > 0 ? ` (${staleLocks} stale)` : ''}`);
+    console.log(
+      `✅ Acquired ${locksAcquired} locks${staleLocks > 0 ? ` (${staleLocks} stale)` : ""}`,
+    );
     return {
       success: true,
       locksAcquired,
-      staleLocks
+      staleLocks,
     };
   }
 
@@ -142,7 +159,7 @@ export class SyncService {
     for (const controller of controllers) {
       const { jsonData, error } = await apiService.getDataFromController(
         controller.ip_address,
-        { timeout: 5000 }
+        { timeout: 5000 },
       );
 
       if (error || !jsonData) {
@@ -150,18 +167,20 @@ export class SyncService {
         return {
           success: false,
           reason: `Cannot verify lock on ${controller.hostname}`,
-          shouldRetry: true
+          shouldRetry: true,
         };
       }
 
-      const lock = jsonData['sync-lock'] || { id: '', ts: 0 };
+      const lock = jsonData["sync-lock"] || { id: "", ts: 0 };
 
       if (lock.id !== expectedLockId) {
-        console.error(`❌ Lock verification failed on ${controller.hostname}: expected ${expectedLockId}, got ${lock.id}`);
+        console.error(
+          `❌ Lock verification failed on ${controller.hostname}: expected ${expectedLockId}, got ${lock.id}`,
+        );
         return {
           success: false,
           reason: `Verification failed on ${controller.hostname}: lock held by ${lock.id}`,
-          shouldRetry: true
+          shouldRetry: true,
         };
       }
     }
@@ -180,16 +199,19 @@ export class SyncService {
 
     for (const controller of controllers) {
       const lockData = {
-        'sync-lock': { id: '', ts: 0 }
+        "sync-lock": { id: "", ts: 0 },
       };
 
-      await apiService.updateDataOnController(
-        controller.ip_address,
-        lockData,
-        { timeout: 5000 }
-      ).catch(err => {
-        console.warn(`⚠️ Failed to release lock on ${controller.hostname}:`, err);
-      });
+      await apiService
+        .updateDataOnController(controller.ip_address, lockData, {
+          timeout: 5000,
+        })
+        .catch((err) => {
+          console.warn(
+            `⚠️ Failed to release lock on ${controller.hostname}:`,
+            err,
+          );
+        });
     }
   }
 
@@ -204,7 +226,9 @@ export class SyncService {
   async getConsolidatedView(progressCallback) {
     // Check if already syncing
     if (this.isCurrentlySyncing) {
-      console.log("🔄 Collection already in progress, skipping duplicate request");
+      console.log(
+        "🔄 Collection already in progress, skipping duplicate request",
+      );
       return null;
     }
 
@@ -213,46 +237,61 @@ export class SyncService {
     try {
       // Fetch the list of all hosts from the /hosts endpoint
       console.log("📋 Fetching list of hosts from /hosts endpoint");
-      const { jsonData: hostsResponse, error: hostsError } = await apiService.getHosts(true);
-      
-      if (hostsError || !hostsResponse || !hostsResponse.hosts || !Array.isArray(hostsResponse.hosts)) {
+      const { jsonData: hostsResponse, error: hostsError } =
+        await apiService.getHosts(true);
+
+      if (
+        hostsError ||
+        !hostsResponse ||
+        !hostsResponse.hosts ||
+        !Array.isArray(hostsResponse.hosts)
+      ) {
         console.error("❌ Failed to fetch hosts list:", hostsError);
         return null;
       }
 
       const hostsData = hostsResponse.hosts;
-      
+
       // Get current controller ID to ensure it's always included
       const currentControllerId = await this.getCurrentControllerId();
 
       // Filter to only reachable hosts with IP addresses
       // For collection: only visible=true controllers
       // For pushing: visible=true + current controller (even if invisible)
-      const reachableControllers = hostsData.filter(
-        (h) => h.id && h.ip_address && h.visible === true
-      ).map(h => ({
-        id: h.id,
-        hostname: h.hostname || h.id,
-        ip_address: h.ip_address
-      }));
-      
+      const reachableControllers = hostsData
+        .filter((h) => h.id && h.ip_address && h.visible === true)
+        .map((h) => ({
+          id: h.id,
+          hostname: h.hostname || h.id,
+          ip_address: h.ip_address,
+        }));
+
       // Build list of controllers to push to (includes current controller even if invisible)
-      const pushTargets = hostsData.filter(
-        (h) => h.id && h.ip_address && (h.visible === true || h.id === currentControllerId)
-      ).map(h => ({
-        id: h.id,
-        hostname: h.hostname || h.id,
-        ip_address: h.ip_address
-      }));
+      const pushTargets = hostsData
+        .filter(
+          (h) =>
+            h.id &&
+            h.ip_address &&
+            (h.visible === true || h.id === currentControllerId),
+        )
+        .map((h) => ({
+          id: h.id,
+          hostname: h.hostname || h.id,
+          ip_address: h.ip_address,
+        }));
 
       if (reachableControllers.length === 0) {
         console.error("❌ No reachable controllers found");
         return null;
       }
 
-      console.log(`🔄 Collecting data from ${reachableControllers.length} controllers`);
+      console.log(
+        `🔄 Collecting data from ${reachableControllers.length} controllers`,
+      );
       if (pushTargets.length > reachableControllers.length) {
-        console.log(`📤 Will push to ${pushTargets.length} controllers (including current invisible controller)`);
+        console.log(
+          `📤 Will push to ${pushTargets.length} controllers (including current invisible controller)`,
+        );
       }
 
       // Collect all data from all controllers
@@ -270,18 +309,22 @@ export class SyncService {
 
       for (const controller of reachableControllers) {
         try {
-          console.log(`📥 Fetching from ${controller.hostname} (${completed + 1}/${total})`);
-          
+          console.log(
+            `📥 Fetching from ${controller.hostname} (${completed + 1}/${total})`,
+          );
+
           const { jsonData, error } = await apiService.getDataFromController(
             controller.ip_address,
-            { timeout: 8000 }
+            { timeout: 8000 },
           );
 
           if (error) {
             if (error.isTimeout) {
               console.warn(`⏰ Timeout fetching from ${controller.hostname}`);
             } else {
-              console.warn(`⚠️ Failed to fetch from ${controller.hostname}: ${error.message || error}`);
+              console.warn(
+                `⚠️ Failed to fetch from ${controller.hostname}: ${error.message || error}`,
+              );
             }
           } else if (jsonData) {
             this.collectDataFromController(jsonData, allData);
@@ -291,13 +334,16 @@ export class SyncService {
           if (progressCallback) {
             progressCallback(completed, total);
           }
-          
+
           // Add delay between requests
           if (completed < total) {
             await this.sleep(DELAY_BETWEEN_REQUESTS);
           }
         } catch (error) {
-          console.error(`❌ Error fetching from ${controller.hostname}:`, error);
+          console.error(
+            `❌ Error fetching from ${controller.hostname}:`,
+            error,
+          );
           completed++;
           if (progressCallback) {
             progressCallback(completed, total);
@@ -308,17 +354,18 @@ export class SyncService {
       // Build consolidated view: deduplicate and filter illegal items
       const consolidated = this.buildConsolidatedView(allData);
 
-      console.log(`📊 Consolidated view: ${consolidated.presets.length} presets, ${consolidated.scenes.length} scenes, ${consolidated.groups.length} groups`);
-      
+      console.log(
+        `📊 Consolidated view: ${consolidated.presets.length} presets, ${consolidated.scenes.length} scenes, ${consolidated.groups.length} groups`,
+      );
+
       // Return consolidated data and both controller lists
       // - reachableControllers: used for collection (visible only)
       // - pushTargets: used for pushing (visible + current controller)
       return {
         data: consolidated,
         controllers: reachableControllers,
-        pushTargets: pushTargets
+        pushTargets: pushTargets,
       };
-
     } catch (error) {
       console.error("❌ Error during data collection:", error);
       return null;
@@ -334,16 +381,17 @@ export class SyncService {
    */
   buildConsolidatedView(allData) {
     const consolidated = {
-      presets: [],
+      presets: [], // Presets are controller-local
       scenes: [],
       groups: [],
-      controllers: []
+      controllers: [],
     };
 
-    // Deduplicate presets
+    // Deduplicate presets - SKIPPED (Local only)
+    /*
     const presetMap = new Map();
-    allData.presets.forEach(preset => {
-      if (this.isValidItem(preset, 'preset')) {
+    allData.presets.forEach((preset) => {
+      if (this.isValidItem(preset, "preset")) {
         const existing = presetMap.get(preset.id);
         // Keep the one with the latest timestamp
         if (!existing || preset.ts > existing.ts) {
@@ -352,16 +400,17 @@ export class SyncService {
       }
     });
     consolidated.presets = Array.from(presetMap.values());
+    */
 
     // Deduplicate and merge scenes
     const sceneMap = new Map();
-    allData.scenes.forEach(scene => {
-      if (!this.isValidItem(scene, 'scene')) {
+    allData.scenes.forEach((scene) => {
+      if (!this.isValidItem(scene, "scene")) {
         return;
       }
 
       const existing = sceneMap.get(scene.id);
-      
+
       if (!existing) {
         // First occurrence of this scene
         sceneMap.set(scene.id, { ...scene });
@@ -375,8 +424,8 @@ export class SyncService {
 
     // Deduplicate groups
     const groupMap = new Map();
-    allData.groups.forEach(group => {
-      if (this.isValidItem(group, 'group')) {
+    allData.groups.forEach((group) => {
+      if (this.isValidItem(group, "group")) {
         const existing = groupMap.get(group.id);
         if (!existing || group.ts > existing.ts) {
           groupMap.set(group.id, group);
@@ -387,7 +436,7 @@ export class SyncService {
 
     // Deduplicate controllers
     const controllerMap = new Map();
-    allData.controllers.forEach(controller => {
+    allData.controllers.forEach((controller) => {
       if (controller.hostname && controller.hostname !== "") {
         const existing = controllerMap.get(controller.hostname);
         if (!existing || controller.ts > existing.ts) {
@@ -412,8 +461,8 @@ export class SyncService {
     const merged = { ...existing };
 
     // Take newest non-empty name
-    if (newScene.name && newScene.name !== '') {
-      if (!existing.name || existing.name === '' || newScene.ts > existing.ts) {
+    if (newScene.name && newScene.name !== "") {
+      if (!existing.name || existing.name === "" || newScene.ts > existing.ts) {
         merged.name = newScene.name;
       }
     }
@@ -428,14 +477,14 @@ export class SyncService {
       const itemMap = new Map();
 
       // Add existing items
-      existing.items.forEach(item => {
+      existing.items.forEach((item) => {
         if (item.id) {
           itemMap.set(item.id, item);
         }
       });
 
       // Add/update with new items (newer items override by same ID)
-      newScene.items.forEach(item => {
+      newScene.items.forEach((item) => {
         if (item.id) {
           const existingItem = itemMap.get(item.id);
           if (!existingItem || newScene.ts > existing.ts) {
@@ -487,16 +536,19 @@ export class SyncService {
    */
   collectDataFromController(jsonData, allData) {
     // Collect valid data
+    // Presets are controller-local, so we don't collect them for sync
+    /*
     if (Array.isArray(jsonData.presets)) {
-      jsonData.presets.forEach(preset => {
+      jsonData.presets.forEach((preset) => {
         if (preset.id && preset.ts) {
           allData.presets.push(preset);
         }
       });
     }
+    */
 
     if (Array.isArray(jsonData.scenes)) {
-      jsonData.scenes.forEach(scene => {
+      jsonData.scenes.forEach((scene) => {
         if (scene.id && scene.ts) {
           allData.scenes.push(scene);
         }
@@ -504,7 +556,7 @@ export class SyncService {
     }
 
     if (Array.isArray(jsonData.groups)) {
-      jsonData.groups.forEach(group => {
+      jsonData.groups.forEach((group) => {
         if (group.id && group.ts) {
           allData.groups.push(group);
         }
@@ -512,7 +564,7 @@ export class SyncService {
     }
 
     if (Array.isArray(jsonData.controllers)) {
-      jsonData.controllers.forEach(ctrl => {
+      jsonData.controllers.forEach((ctrl) => {
         if (ctrl.hostname && ctrl.ts) {
           allData.controllers.push(ctrl);
         }
@@ -534,12 +586,12 @@ export class SyncService {
     // - Updating items with older timestamps
     // - Removing duplicates (same ID) by keeping newest
     // - Removing invalid items (nil name/id)
-    
+
     // Future optimization: calculate actual diffs and send only changes
     return {
       presets: consolidated.presets,
       scenes: consolidated.scenes,
-      groups: consolidated.groups
+      groups: consolidated.groups,
     };
   }
 
@@ -560,10 +612,16 @@ export class SyncService {
       return false;
     }
 
-    const { data: consolidated, controllers: reachableControllers, pushTargets } = result;
+    const {
+      data: consolidated,
+      controllers: reachableControllers,
+      pushTargets,
+    } = result;
 
     // Phase 2: Push consolidated data to all controllers (including current invisible controller)
-    console.log(`📤 Pushing consolidated data to ${pushTargets.length} controllers`);
+    console.log(
+      `📤 Pushing consolidated data to ${pushTargets.length} controllers`,
+    );
 
     let successCount = 0;
     let failureCount = 0;
@@ -572,7 +630,7 @@ export class SyncService {
       try {
         // Build data payload
         const payload = {
-          presets: consolidated.presets,
+          // presets: consolidated.presets, // Presets are controller-local
           scenes: consolidated.scenes,
           groups: consolidated.groups,
         };
@@ -581,7 +639,7 @@ export class SyncService {
         const { jsonData, error } = await apiService.updateDataOnController(
           controller.ip_address,
           payload,
-          { timeout: 8000 }
+          { timeout: 8000 },
         );
 
         if (error) {
@@ -600,21 +658,30 @@ export class SyncService {
       }
     }
 
-    console.log(`🎉 Sync complete: ${successCount} succeeded, ${failureCount} failed`);
-    
+    console.log(
+      `🎉 Sync complete: ${successCount} succeeded, ${failureCount} failed`,
+    );
+
     // Phase 3: Verify all controllers agree (verify all push targets including current invisible controller)
     if (failureCount === 0) {
-      console.log(`🔍 Verifying data consistency across ${pushTargets.length} controllers...`);
-      const verificationResult = await this.verifyDataConsistency(pushTargets, consolidated);
-      
+      console.log(
+        `🔍 Verifying data consistency across ${pushTargets.length} controllers...`,
+      );
+      const verificationResult = await this.verifyDataConsistency(
+        pushTargets,
+        consolidated,
+      );
+
       if (!verificationResult.consistent) {
-        console.error(`❌ Data inconsistency detected: ${verificationResult.message}`);
+        console.error(
+          `❌ Data inconsistency detected: ${verificationResult.message}`,
+        );
         return false;
       }
-      
+
       console.log(`✅ All controllers have consistent data`);
     }
-    
+
     return failureCount === 0;
   }
 
@@ -631,43 +698,47 @@ export class SyncService {
     for (const controller of controllers) {
       try {
         console.log(`🔍 Verifying ${controller.hostname}...`);
-        
+
         const { jsonData, error } = await apiService.getDataFromController(
           controller.ip_address,
-          { timeout: 5000 }
+          { timeout: 5000 },
         );
 
         if (error || !jsonData) {
-          console.warn(`⚠️ Failed to fetch verification data from ${controller.hostname}`);
+          console.warn(
+            `⚠️ Failed to fetch verification data from ${controller.hostname}`,
+          );
           fetchErrors++;
           continue;
         }
 
-        // Compare presets
+        // Compare presets - SKIPPED (Local only)
+        /*
         const presetMismatch = this._compareArrays(
           expectedData.presets,
           jsonData.presets || [],
-          'id'
+          "id",
         );
         if (presetMismatch) {
           inconsistencies.push({
             controller: controller.hostname,
-            type: 'presets',
-            issue: presetMismatch
+            type: "presets",
+            issue: presetMismatch,
           });
         }
+        */
 
         // Compare scenes
         const sceneMismatch = this._compareArrays(
           expectedData.scenes,
           jsonData.scenes || [],
-          'id'
+          "id",
         );
         if (sceneMismatch) {
           inconsistencies.push({
             controller: controller.hostname,
-            type: 'scenes',
-            issue: sceneMismatch
+            type: "scenes",
+            issue: sceneMismatch,
           });
         }
 
@@ -675,13 +746,13 @@ export class SyncService {
         const groupMismatch = this._compareArrays(
           expectedData.groups,
           jsonData.groups || [],
-          'id'
+          "id",
         );
         if (groupMismatch) {
           inconsistencies.push({
             controller: controller.hostname,
-            type: 'groups',
-            issue: groupMismatch
+            type: "groups",
+            issue: groupMismatch,
           });
         }
 
@@ -698,7 +769,7 @@ export class SyncService {
         consistent: false,
         message: `Failed to fetch data from ${fetchErrors} controller(s)`,
         inconsistencies,
-        fetchErrors
+        fetchErrors,
       };
     }
 
@@ -706,13 +777,13 @@ export class SyncService {
       return {
         consistent: false,
         message: `Found ${inconsistencies.length} inconsistency(ies)`,
-        inconsistencies
+        inconsistencies,
       };
     }
 
     return {
       consistent: true,
-      message: 'All controllers have consistent data'
+      message: "All controllers have consistent data",
     };
   }
 
@@ -729,8 +800,8 @@ export class SyncService {
     }
 
     // Create maps for comparison
-    const expectedMap = new Map(expected.map(item => [item[keyField], item]));
-    const actualMap = new Map(actual.map(item => [item[keyField], item]));
+    const expectedMap = new Map(expected.map((item) => [item[keyField], item]));
+    const actualMap = new Map(actual.map((item) => [item[keyField], item]));
 
     // Check for missing items
     for (const id of expectedMap.keys()) {
@@ -753,7 +824,7 @@ export class SyncService {
    * Sleep utility
    */
   sleep(ms) {
-    return new Promise(resolve => setTimeout(resolve, Math.max(ms, 0)));
+    return new Promise((resolve) => setTimeout(resolve, Math.max(ms, 0)));
   }
 }
 
