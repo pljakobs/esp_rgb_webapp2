@@ -55,9 +55,30 @@ describe("ControllerItem.vue", () => {
       color: { hsv: {} },
     };
     await wrapper.setProps({ settings: [setting] });
-    // Find the child SceneSettingItem and trigger remove
-    const child = wrapper.findComponent({ name: "SceneSettingItem" });
-    child.vm.$emit("remove-setting", setting);
+    
+    // Find the delete button (color="negative") and trigger click
+    const deleteBtn = wrapper.findAll(".q-btn--dense").find(btn => btn.attributes("color") === "negative");
+    // If finding by class fails (due to stubs), try finding component
+    if (deleteBtn) {
+        await deleteBtn.trigger("click");
+    } else {
+        // Fallback for stubs: matching based on props/attrs on the stub
+        let deleteBtnStub = wrapper.findAllComponents({ name: "q-btn" })
+            .find(w => w.attributes("color") === "negative");
+        
+        if (!deleteBtnStub) {
+             // Second fallback: find by tag name directly if component resolution fails
+             const stubs = wrapper.findAll('q-btn-stub, q-btn'); 
+             deleteBtnStub = stubs.find(w => w.attributes('color') === 'negative');
+        }
+
+        if (!deleteBtnStub) {
+            console.error("DEBUG HTML for failing test:", wrapper.html());
+            throw new Error("Could not find delete button stub");
+        }
+        await deleteBtnStub.trigger("click");
+    }
+
     await wrapper.vm.$nextTick();
     const emitted = wrapper.emitted("remove-setting");
     expect(emitted).toBeTruthy();

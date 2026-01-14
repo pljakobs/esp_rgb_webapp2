@@ -629,13 +629,14 @@ export default {
               sceneToSave.defaultTransition.r,
             );
           }
-          // Ensure optional keys exist; use null when unused
-          if (sceneToSave.defaultTransition.cmd === undefined) {
-            sceneToSave.defaultTransition.cmd = null;
+          // Delete null cmd/q parameters to keep schema clean
+          if (sceneToSave.defaultTransition.cmd === null) {
+            delete sceneToSave.defaultTransition.cmd;
           }
-          if (sceneToSave.defaultTransition.q === undefined) {
-            sceneToSave.defaultTransition.q = null;
+          if (sceneToSave.defaultTransition.q === null) {
+            delete sceneToSave.defaultTransition.q;
           }
+          
           // Ensure time and speed fields exist
           if (sceneToSave.defaultTransition.t === undefined) {
             sceneToSave.defaultTransition.t = 0;
@@ -692,13 +693,11 @@ export default {
               } else {
                 cleaned.transition.r = Boolean(cleaned.transition.r);
               }
-              // Ensure keys exist; use null when unused
-              if (cleaned.transition.cmd === undefined) {
-                cleaned.transition.cmd = null;
-              }
-              if (cleaned.transition.q === undefined) {
-                cleaned.transition.q = null;
-              }
+
+              // Delete null cmd/q parameters
+              if (cleaned.transition.cmd === null) delete cleaned.transition.cmd;
+              if (cleaned.transition.q === null) delete cleaned.transition.q;
+              
               if (cleaned.transition.t === undefined) {
                 cleaned.transition.t = 0;
               }

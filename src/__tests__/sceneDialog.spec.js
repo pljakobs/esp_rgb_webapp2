@@ -57,6 +57,11 @@ describe('sceneDialog serialization', () => {
     const wrapper = shallowMount(SceneDialog, {
       props: { scene: makeScene() },
       global: {
+        mocks: {
+          $q: {
+            platform: { is: { mobile: false } },
+          },
+        },
         stubs: {
           'q-dialog': true,
           'q-card': true,
@@ -93,7 +98,7 @@ describe('sceneDialog serialization', () => {
     expect(Array.isArray(payload.settings)).toBe(true);
     for (const s of payload.settings) {
       expect(typeof s.controller_id).toBe('string');
-      expect(s.pos).toBeUndefined();
+      expect(typeof s.pos).toBe('number');
       if (s.transition) {
         expect(typeof s.transition.d).toBe('number');
         expect(typeof s.transition.r).toBe('boolean');

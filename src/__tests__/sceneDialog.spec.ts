@@ -60,6 +60,11 @@ describe('sceneDialog serialization', () => {
     const wrapper = shallowMount(SceneDialog, {
       props: { scene: makeScene() },
       global: {
+        mocks: {
+          $q: {
+            platform: { is: { mobile: false } },
+          },
+        },
         stubs: {
           // Stub Quasar and child components used in template
           'q-dialog': true,
@@ -103,8 +108,8 @@ describe('sceneDialog serialization', () => {
     for (const s of payload.settings) {
       // controller_id is string
       expect(typeof s.controller_id).toBe('string');
-      // pos removed
-      expect(s.pos).toBeUndefined();
+      // pos preserved as per schema
+      expect(typeof s.pos).toBe('number');
       // transition normalized and pruned
       if (s.transition) {
         expect(typeof s.transition.d).toBe('number');
