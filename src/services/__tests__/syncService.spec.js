@@ -478,14 +478,14 @@ describe('SyncService', () => {
 
     it('should detect data inconsistency after push', async () => {
       const consolidatedData = {
-        presets: [{ id: 'p1', name: 'Preset 1', ts: 1000 }],
-        scenes: [],
+        presets: [],
+        scenes: [{ id: 's1', name: 'Scene 1', ts: 1000 }],
         groups: []
       };
 
       const inconsistentData = {
-        presets: [], // Missing preset!
-        scenes: [],
+        presets: [],
+        scenes: [], // Missing scene!
         groups: []
       };
 
@@ -552,7 +552,7 @@ describe('SyncService', () => {
   });
 
   describe('collectDataFromController', () => {
-    it('should collect valid presets', () => {
+    it('should not collect presets (local only)', () => {
       const allData = { presets: [], scenes: [], groups: [], controllers: [] };
       const jsonData = {
         presets: [
@@ -563,11 +563,10 @@ describe('SyncService', () => {
 
       syncService.collectDataFromController(jsonData, allData);
 
-      expect(allData.presets).toHaveLength(2);
-      expect(allData.presets[0].id).toBe('preset1');
+      expect(allData.presets).toHaveLength(0);
     });
 
-    it('should skip presets without ID or timestamp', () => {
+    it('should skip presets without ID or timestamp (implicitly by not collecting)', () => {
       const allData = { presets: [], scenes: [], groups: [], controllers: [] };
       const jsonData = {
         presets: [
@@ -579,8 +578,7 @@ describe('SyncService', () => {
 
       syncService.collectDataFromController(jsonData, allData);
 
-      expect(allData.presets).toHaveLength(1);
-      expect(allData.presets[0].id).toBe('preset1');
+      expect(allData.presets).toHaveLength(0);
     });
 
     it('should collect valid scenes', () => {
@@ -844,7 +842,7 @@ describe('SyncService', () => {
 
     describe('Lock Acquisition - Stale Locks', () => {
       it('should acquire locks when one controller has a stale lock (>6s old)', async () => {
-        const STALE_TS = NOW - 10; // 10 seconds old - stale
+        const STALE_TS = (NOW * 1000) - 10000; // 10 seconds old - stale
 
         apiService.getDataFromController
           .mockResolvedValueOnce({
@@ -883,7 +881,7 @@ describe('SyncService', () => {
 
     describe('Lock Acquisition - Valid Lock Exists', () => {
       it('should back out and retry when one controller has a valid lock', async () => {
-        const FRESH_TS = NOW - 2; // 2 seconds old - still valid
+        const FRESH_TS = (NOW * 1000) - 2000; // 2 seconds old - still valid
 
         apiService.getDataFromController
           .mockResolvedValueOnce({
@@ -1299,24 +1297,10 @@ describe('SyncService', () => {
         const pushCall = apiService.updateDataOnController.mock.calls[0];
         const payload = pushCall[1];
 
-        // Should have 12 unique presets (invalid one with null name/id filtered out, duplicates removed)
-        // Real data has: ctrl-1 (1 valid), ctrl-2 (12 presets), ctrl-3 (12 duplicate presets)
-        // After deduplication: 12 unique presets (the 12 from ctrl-2/ctrl-3, all have same IDs with ts=2147483647)
-        expect(payload.presets.length).toBe(12);
-        expect(payload.presets.every(p => p.id && p.name)).toBe(true);
-        
-        // Verify invalid preset was filtered out
-        const hasInvalidPreset = payload.presets.some(p => p.id === null || p.name === null);
-        expect(hasInvalidPreset).toBe(false);
-
-        // Verify specific presets exist
-        const testPreset = payload.presets.find(p => p.id === '6668181-927384476');
-        expect(testPreset).toBeTruthy();
-        expect(testPreset.name).toBe('test');
-
-        const pinkPreset = payload.presets.find(p => p.id === '10966439-624801566');
-        expect(pinkPreset).toBeTruthy();
-        expect(pinkPreset.name).toBe('Pink');
+        // START CHANGE: Presets are no longer synchronized
+        // expect(payload.presets.length).toBe(12);
+        expect(payload.presets).toBeUndefined();
+        // END CHANGE
 
         // Should have 4 unique scenes (deduped by ID)
         // Real data: ctrl-1 (1 scene), ctrl-2 (4 scenes), ctrl-3 (4 duplicate scenes)
@@ -1346,8 +1330,7 @@ describe('SyncService', () => {
         expect(payload1).toEqual(payload3);
 
         // Verify they all have the same counts
-        expect(payload1.presets.length).toBe(payload2.presets.length);
-        expect(payload2.presets.length).toBe(payload3.presets.length);
+        // Presets are local only, so checking scenes and groups
         expect(payload1.scenes.length).toBe(payload2.scenes.length);
         expect(payload2.scenes.length).toBe(payload3.scenes.length);
         expect(payload1.groups.length).toBe(payload2.groups.length);

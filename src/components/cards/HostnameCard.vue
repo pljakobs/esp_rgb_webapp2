@@ -124,7 +124,7 @@ export default {
       ) {
         // Look for the controller metadata in appDataStore
         const controllerMetadata = appDataStore.data.controllers.find(
-          (c) => c.id === currentController.id,
+          (c) => String(c.id) === String(currentController.id),
         );
 
         if (controllerMetadata && controllerMetadata.icon) {
@@ -181,7 +181,7 @@ export default {
         // Update hostname field from controller metadata or controller data
         if (appDataStore.data && appDataStore.data.controllers) {
           const controllerMetadata = appDataStore.data.controllers.find(
-            (c) => c.id === currentController.id,
+            (c) => String(c.id) === String(currentController.id),
           );
 
           if (controllerMetadata && controllerMetadata.name) {
@@ -239,7 +239,7 @@ export default {
       try {
         // Get current controller metadata to preserve existing values
         const existingMetadata = appDataStore.data.controllers.find(
-          (c) => c.id === currentController.id,
+          (c) => String(c.id) === String(currentController.id),
         );
 
         // Prepare metadata with correct property names
@@ -296,7 +296,7 @@ export default {
 
         // Get current controller metadata to preserve existing values
         const existingMetadata = appDataStore.data.controllers.find(
-          (c) => c.id === currentController.id,
+          (c) => String(c.id) === String(currentController.id),
         );
 
         // Prepare metadata with correct property names (using 'name' instead of 'hostname')
@@ -409,7 +409,7 @@ export default {
         if (currentController) {
           // Only update if the current controller's metadata might have changed
           const controllerMetadata = newControllers?.find(
-            (c) => c.id === currentController.id,
+            (c) => String(c.id) === String(currentController.id),
           );
           if (controllerMetadata) {
             console.log(

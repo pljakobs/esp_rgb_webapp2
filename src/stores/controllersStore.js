@@ -56,7 +56,8 @@ export const useControllersStore = defineStore("controllersStore", {
             const shortName = localhost.ip_address.split(".")[0];
             localhost.hostname = shortName;
             const match = this.data.find(
-              (c) => String(c.hostname).toLowerCase() === shortName.toLowerCase()
+              (c) =>
+                String(c.hostname).toLowerCase() === shortName.toLowerCase(),
             );
             if (match) {
               this.currentController = match;
@@ -78,7 +79,9 @@ export const useControllersStore = defineStore("controllersStore", {
               visible: true,
             };
             this.homeController = this.currentController;
-            console.warn("No controller matched in early phase, using placeholder from storeConstants.js");
+            console.warn(
+              "No controller matched in early phase, using placeholder from storeConstants.js",
+            );
           }
         }
         this.data.sort((a, b) => a.hostname.localeCompare(b.hostname));
@@ -196,6 +199,9 @@ export const useControllersStore = defineStore("controllersStore", {
 
     async updateControllerMetadata(controller, metadata) {
       try {
+        // Ensure timestamp is updated to current Unix time (milliseconds)
+        metadata.ts = Date.now();
+
         // Save controller metadata to the backend in the controllers section
         console.log(
           `DEBUG: Updating metadata for controller ${controller.hostname}:`,

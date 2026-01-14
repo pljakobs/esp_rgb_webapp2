@@ -2,7 +2,11 @@ import { watch } from "vue";
 import { defineStore } from "pinia";
 import { useControllersStore } from "src/stores/controllersStore";
 import { storeStatus } from "src/stores/storeConstants";
-import { broadcastToControllers, getModifyPost, createAbortTimeout } from "src/services/tools";
+import {
+  broadcastToControllers,
+  getModifyPost,
+  createAbortTimeout,
+} from "src/services/tools";
 import { makeID } from "src/services/tools";
 import { apiService } from "src/services/api.js";
 import { syncService } from "src/services/syncService.js";
@@ -87,7 +91,7 @@ export const useAppDataStore = defineStore("appData", {
         return storeStatus.READY;
       }
       return storeStatus.IDLE;
-    }
+    },
   },
 
   actions: {
@@ -95,19 +99,101 @@ export const useAppDataStore = defineStore("appData", {
       try {
         this.storeStatus = storeStatus.store.LOADING;
         const { jsonData } = await apiService.getData();
-        
+
         if (!jsonData) {
           this.storeStatus = storeStatus.store.ERROR;
           return;
         }
-        this.data = jsonData;
+
+        // Merge fetched data with local data based on timestamps instead of blindly overwriting
+        // This preserves optimistic updates and prevents race conditions when switching controllers
+        if (this.data && (this.data.presets || this.data.controllers)) {
+          console.log("Merging fetched data with local data...");
+
+          // Helper for timestamp comparison and merging
+          const mergeItems = (localList, remoteList, type) => {
+            if (!remoteList) return localList || [];
+            if (!localList) return remoteList;
+
+            const itemMap = new Map();
+
+            // Add local items (with optimistic updates)
+            for (const item of localList) {
+              if (item.id) itemMap.set(item.id, item);
+            }
+
+            // Merge remote items only if they are newer
+            for (const item of remoteList) {
+              if (!item.id) continue;
+
+              const localItem = itemMap.get(item.id);
+              // Sanitizing remote item timestamp if it's 0 (invalid)
+              if (!item.ts) item.ts = 0;
+
+              if (!localItem) {
+                // New item from remote
+                itemMap.set(item.id, item);
+              } else {
+                // Determine which one is newer
+                const localTs = localItem.ts || 0;
+                const remoteTs = item.ts || 0;
+
+                if (remoteTs > localTs) {
+                  // Remote is newer, update local
+                  itemMap.set(item.id, item);
+                  console.log(
+                    `Updated ${type} ${item.id} from remote (newer timestamp: ${remoteTs} > ${localTs})`,
+                  );
+                } else if (remoteTs < localTs) {
+                  // Keep local (optimistic update or unsynced change)
+                  console.log(
+                    `Kept local ${type} ${item.id} (newer timestamp: ${localTs} > ${remoteTs})`,
+                  );
+                }
+              }
+            }
+
+            return Array.from(itemMap.values());
+          };
+
+          // Merge collections
+          this.data["last-color"] =
+            jsonData["last-color"] || this.data["last-color"];
+          this.data["sync-lock"] =
+            jsonData["sync-lock"] || this.data["sync-lock"];
+
+          this.data.presets = mergeItems(
+            this.data.presets,
+            jsonData.presets,
+            "preset",
+          );
+          this.data.scenes = mergeItems(
+            this.data.scenes,
+            jsonData.scenes,
+            "scene",
+          );
+          this.data.groups = mergeItems(
+            this.data.groups,
+            jsonData.groups,
+            "group",
+          );
+
+          // Special handling for controllers: use hostname as key if id is missing or for deduplication
+          // But strict merging usually uses IDs. Let's assume ID presence for consistency with other collections
+          // However, controllers array structure might differ. Let's strictly merge by ID if present
+          this.data.controllers = mergeItems(
+            this.data.controllers,
+            jsonData.controllers,
+            "controller",
+          );
+        } else {
+          // No local data yet, just use fetched data
+          this.data = jsonData;
+        }
+
         this.storeStatus = storeStatus.store.READY;
-        
-        console.log("lastColor data: ", this.data["last-color"]);
-        console.log("presets data: ", this.data.presets);
-        console.log("scenes data: ", this.data.scenes);
-        console.log("groups data: ", this.data.groups);
-        console.log("controllers data: ", this.data.controllers);
+
+        console.log("Data fetch completed and merged");
       } catch (error) {
         console.error("Failed to fetch app data:", error);
         this.storeStatus = storeStatus.store.ERROR;
@@ -125,12 +211,16 @@ export const useAppDataStore = defineStore("appData", {
           this.syncStatus !== storeStatus.sync.COMPLETED &&
           this.syncStatus !== storeStatus.sync.RUNNING
         ) {
-          console.log("Controllers ready, starting one-time synchronization...");
+          console.log(
+            "Controllers ready, starting one-time synchronization...",
+          );
           this.synchronizeAllData((completed, total) => {
             console.log(`Sync progress: ${completed}/${total}`);
           });
         } else {
-          console.log(`Sync check: controllers=${controllers.storeStatus}, app=${this.storeStatus}, sync=${this.syncStatus} - no sync needed`);
+          console.log(
+            `Sync check: controllers=${controllers.storeStatus}, app=${this.storeStatus}, sync=${this.syncStatus} - no sync needed`,
+          );
         }
       };
 
@@ -139,7 +229,10 @@ export const useAppDataStore = defineStore("appData", {
         const stopControllersWatch = watch(
           () => controllers.storeStatus,
           (newStatus, oldStatus) => {
-            if (newStatus === storeStatus.store.READY && oldStatus !== storeStatus.store.READY) {
+            if (
+              newStatus === storeStatus.store.READY &&
+              oldStatus !== storeStatus.store.READY
+            ) {
               console.log("Controllers store became ready, checking sync...");
               maybeStartSync();
             }
@@ -150,7 +243,10 @@ export const useAppDataStore = defineStore("appData", {
         const stopSelfWatch = watch(
           () => this.storeStatus,
           (newStatus, oldStatus) => {
-            if (newStatus === storeStatus.store.READY && oldStatus !== storeStatus.store.READY) {
+            if (
+              newStatus === storeStatus.store.READY &&
+              oldStatus !== storeStatus.store.READY
+            ) {
               console.log("AppData store became ready, checking sync...");
               maybeStartSync();
             }
@@ -188,6 +284,7 @@ export const useAppDataStore = defineStore("appData", {
       }
 
       // Add or update timestamp
+      // Use standard Unix timestamp (milliseconds)
       preset.ts = Date.now();
 
       // Store the favorite status and temporarily remove it from the preset
@@ -204,7 +301,10 @@ export const useAppDataStore = defineStore("appData", {
 
       try {
         let completed = 0;
-        for (const controller of controllers.data) {
+        // Presets are controller local, only save to current controller
+        const targetControllers = controllers.currentController ? [controllers.currentController] : [];
+
+        for (const controller of targetControllers) {
           if (this.abortSaveOperation) {
             console.log("Save operation aborted");
             return; // Exit early
@@ -232,7 +332,7 @@ export const useAppDataStore = defineStore("appData", {
               );
               completed++;
               if (progressCallback) {
-                progressCallback(completed, controllers.data.length);
+                progressCallback(completed, targetControllerss.length);
               }
               continue;
             }
@@ -263,7 +363,11 @@ export const useAppDataStore = defineStore("appData", {
             console.log("addPreset payload: ", JSON.stringify(payload));
           }
 
-          if (!existingPreset || existingPreset.ts < preset.ts) {
+          if (
+            !existingPreset ||
+            existingPreset.ts < preset.ts ||
+            existingPreset.ts > preset.ts + 60
+          ) {
             console.log("preset uri: ", `http://${controller.ip_address}/data`);
             console.log("preset payload: ", JSON.stringify(payload));
 
@@ -308,7 +412,7 @@ export const useAppDataStore = defineStore("appData", {
 
           completed++;
           if (progressCallback) {
-            progressCallback(completed, controllers.data.length);
+            progressCallback(completed, targetControllers.length);
           }
         }
 
@@ -337,11 +441,14 @@ export const useAppDataStore = defineStore("appData", {
 
       try {
         let completed = 0;
-        for (const controller of controllers.data) {
+        // Presets are controller local, only delete from current controller
+        const targetControllers = controllers.currentController ? [controllers.currentController] : [];
+
+        for (const controller of targetControllers) {
           if (!controller.ip_address) {
             completed++;
             if (progressCallback)
-              progressCallback(completed, controllers.data.length);
+              progressCallback(completed, targetControllers.length);
             continue;
           }
 
@@ -380,7 +487,7 @@ export const useAppDataStore = defineStore("appData", {
           // Always increment counter and update progress
           completed++;
           if (progressCallback) {
-            progressCallback(completed, controllers.data.length);
+            progressCallback(completed, targetControllers.length);
           }
         }
 
@@ -439,6 +546,7 @@ export const useAppDataStore = defineStore("appData", {
       );
 
       // Add timestamp to the group
+      // Use standard Unix timestamp (milliseconds)
       group.ts = Date.now();
 
       try {
@@ -450,7 +558,8 @@ export const useAppDataStore = defineStore("appData", {
         const { successCount, failureCount } = await broadcastToControllers(
           controllers.data,
           async (controller) => {
-            const controllerName = controller.hostname || controller.name || controller.ip_address;
+            const controllerName =
+              controller.hostname || controller.name || controller.ip_address;
             console.log(`📡 Processing controller ${controllerName}`);
 
             const result = await getModifyPost(
@@ -460,15 +569,23 @@ export const useAppDataStore = defineStore("appData", {
                   (g) => g.id === group.id,
                 );
 
-                // Skip if already up to date
-                if (existingGroup && existingGroup.ts >= group.ts) {
-                  console.log(`⏭️ Skipping ${controllerName} - already up to date`);
+                // Skip if already up to date, unless the timestamp is unreasonably in the future (garbage/overflow)
+                if (
+                  existingGroup &&
+                  existingGroup.ts >= group.ts &&
+                  existingGroup.ts < group.ts + 60
+                ) {
+                  console.log(
+                    `⏭️ Skipping ${controllerName} - already up to date`,
+                  );
                   return null; // No changes needed
                 }
 
                 // Determine payload
                 if (existingGroup) {
-                  console.log(`🔄 Updating existing group on ${controllerName}`);
+                  console.log(
+                    `🔄 Updating existing group on ${controllerName}`,
+                  );
                   return { [`groups[id="${group.id}"]`]: group };
                 } else {
                   console.log(`➕ Adding new group to ${controllerName}`);
@@ -478,7 +595,9 @@ export const useAppDataStore = defineStore("appData", {
             );
 
             if (result.success) {
-              console.log(`✅ Successfully updated controller ${controllerName}`);
+              console.log(
+                `✅ Successfully updated controller ${controllerName}`,
+              );
             }
           },
           progressCallback,
@@ -523,11 +642,14 @@ export const useAppDataStore = defineStore("appData", {
         const { successCount, failureCount } = await broadcastToControllers(
           controllers.data.filter((c) => c.ip_address), // Skip controllers without IP
           async (controller) => {
-            const controllerName = controller.hostname || controller.name || controller.ip_address;
+            const controllerName =
+              controller.hostname || controller.name || controller.ip_address;
             console.log(`📡 Processing controller ${controllerName}`);
 
             const abort = createAbortTimeout(8000, () => {
-              console.log(`⏰ Timeout reached for controller ${controllerName}`);
+              console.log(
+                `⏰ Timeout reached for controller ${controllerName}`,
+              );
             });
 
             try {
@@ -547,12 +669,16 @@ export const useAppDataStore = defineStore("appData", {
               if (!response.ok) {
                 const errorText = await response.text();
                 if (errorText.includes("BadSelector")) {
-                  console.log(`⚠️ Group not found on ${controllerName}, already deleted`);
+                  console.log(
+                    `⚠️ Group not found on ${controllerName}, already deleted`,
+                  );
                 } else {
                   console.warn(`⚠️ Error from ${controllerName}: ${errorText}`);
                 }
               } else {
-                console.log(`✅ Successfully deleted group from ${controllerName}`);
+                console.log(
+                  `✅ Successfully deleted group from ${controllerName}`,
+                );
               }
             } finally {
               abort.clear();
@@ -597,6 +723,7 @@ export const useAppDataStore = defineStore("appData", {
       );
 
       // Add timestamp to the scene
+      // Use standard Unix timestamp (milliseconds)
       scene.ts = Date.now();
 
       let saveErrors = [];
@@ -611,7 +738,8 @@ export const useAppDataStore = defineStore("appData", {
         const result = await broadcastToControllers(
           controllers.data.filter((c) => c.ip_address), // Skip controllers without IP
           async (controller) => {
-            const controllerName = controller.hostname || controller.name || controller.ip_address;
+            const controllerName =
+              controller.hostname || controller.name || controller.ip_address;
 
             const result = await getModifyPost(
               controller.ip_address,
@@ -620,9 +748,15 @@ export const useAppDataStore = defineStore("appData", {
                   (s) => s.id === scene.id,
                 );
 
-                // Skip if already up to date
-                if (existingScene && existingScene.ts >= scene.ts) {
-                  console.log(`Skipping ${controllerName} - already up to date`);
+                // Skip if already up to date, unless the timestamp is unreasonably in the future (garbage/overflow)
+                if (
+                  existingScene &&
+                  existingScene.ts >= scene.ts &&
+                  existingScene.ts < scene.ts + 60
+                ) {
+                  console.log(
+                    `Skipping ${controllerName} - already up to date`,
+                  );
                   return null;
                 }
 
@@ -647,7 +781,8 @@ export const useAppDataStore = defineStore("appData", {
           progressCallback,
         );
 
-        saveErrors = result.failureCount > 0 ? [{ count: result.failureCount }] : [];
+        saveErrors =
+          result.failureCount > 0 ? [{ count: result.failureCount }] : [];
 
         // Update local store
         if (existingSceneIndex !== -1) {
@@ -718,7 +853,8 @@ export const useAppDataStore = defineStore("appData", {
           error: errorMessage,
           successCount,
           errors: saveErrors,
-          totalControllers: controllers.data?.filter((c) => c.ip_address).length || 0,
+          totalControllers:
+            controllers.data?.filter((c) => c.ip_address).length || 0,
         };
       } finally {
         // Refresh data like other functions do
@@ -739,7 +875,8 @@ export const useAppDataStore = defineStore("appData", {
         const { successCount, failureCount } = await broadcastToControllers(
           controllers.data.filter((c) => c.ip_address), // Skip controllers without IP
           async (controller) => {
-            const controllerName = controller.hostname || controller.name || controller.ip_address;
+            const controllerName =
+              controller.hostname || controller.name || controller.ip_address;
 
             const abort = createAbortTimeout(8000, () => {
               console.log(`Timeout reached for controller ${controllerName}`);
@@ -762,12 +899,16 @@ export const useAppDataStore = defineStore("appData", {
               if (!response.ok) {
                 const errorText = await response.text();
                 if (errorText.includes("BadSelector")) {
-                  console.log(`Scene not found on ${controllerName}, already deleted`);
+                  console.log(
+                    `Scene not found on ${controllerName}, already deleted`,
+                  );
                 } else {
                   console.warn(`Error from ${controllerName}: ${errorText}`);
                 }
               } else {
-                console.log(`✅ Successfully deleted scene from ${controllerName}`);
+                console.log(
+                  `✅ Successfully deleted scene from ${controllerName}`,
+                );
               }
             } finally {
               abort.clear();
@@ -810,6 +951,7 @@ export const useAppDataStore = defineStore("appData", {
       }
 
       // Add timestamp to the metadata
+      // Use standard Unix timestamp (milliseconds)
       metadata.ts = Date.now();
       metadata.id = controllerId;
 
@@ -822,15 +964,30 @@ export const useAppDataStore = defineStore("appData", {
         (c) => c.id === controllerId,
       );
 
+      // Optimistic Update: Update local store immediately for instant UI feedback
+      // instead of waiting for the slow network sync loop to complete.
+      if (existingControllerIndex !== -1) {
+        this.data.controllers[existingControllerIndex] = metadata;
+        console.log(
+          "Updated existing controller metadata locally (Optimistic)",
+        );
+      } else {
+        this.data.controllers.push(metadata);
+        console.log("Added new controller metadata locally (Optimistic)");
+      }
+
       try {
         let completed = 0;
-        const totalControllers = controllers.data.length;
+        // Snapshot the list of controllers to ensure the process continues correctly
+        // even if the user switches controllers (which updates controllers.data)
+        const targetControllers = [...controllers.data];
+        const totalControllers = targetControllers.length;
 
         console.log(
           `🔄 Saving controller metadata for '${metadata.name || metadata.hostname}' to ${totalControllers} controllers`,
         );
 
-        for (const controller of controllers.data) {
+        for (const controller of targetControllers) {
           if (this.abortSaveOperation) {
             console.log("Save operation aborted");
             break;
@@ -884,7 +1041,11 @@ export const useAppDataStore = defineStore("appData", {
             );
           }
 
-          if (!existingMetadata || existingMetadata.ts < metadata.ts) {
+          if (
+            !existingMetadata ||
+            existingMetadata.ts < metadata.ts ||
+            existingMetadata.ts > metadata.ts + 60
+          ) {
             let payload;
             if (existingMetadata) {
               // Update existing metadata
@@ -936,17 +1097,6 @@ export const useAppDataStore = defineStore("appData", {
           }
         }
 
-        if (!this.abortSaveOperation) {
-          // Update local appDataStore
-          if (existingControllerIndex !== -1) {
-            this.data.controllers[existingControllerIndex] = metadata;
-            console.log("Updated existing controller metadata locally");
-          } else {
-            this.data.controllers.push(metadata);
-            console.log("Added new controller metadata locally");
-          }
-        }
-
         console.log("Controller metadata save operation completed");
         return true;
       } catch (error) {
@@ -976,7 +1126,7 @@ export const useAppDataStore = defineStore("appData", {
     // Get the current controller ID (this would be determined by the context)
     getCurrentControllerId() {
       const controllers = useControllersStore();
-      
+
       // Use the current controller from the store
       if (controllers.currentController?.id) {
         return controllers.currentController.id;
@@ -993,7 +1143,7 @@ export const useAppDataStore = defineStore("appData", {
       const firstController = controllers.data.find(
         (c) => c.id && c.ip_address && c.visible === true,
       );
-      
+
       if (firstController?.id) {
         console.log(`Using fallback controller ID: ${firstController.id}`);
         return firstController.id;
@@ -1053,8 +1203,16 @@ export const useAppDataStore = defineStore("appData", {
               continue;
             }
 
-            const lockAge = Date.now() - timestamp;
-            if (lockAge < 5 * 60 * 1000) {
+            // checkSyncLockAvailable
+            // Use standard Unix timestamp (milliseconds)
+            const now = Date.now();
+            const lockAge = now - timestamp;
+
+            // Check if timestamp is in the future (garbage) allows overwriting
+            // If timestamp is > now + 60s, it's considered invalid/garbage
+            const isFutureGarbage = timestamp > now + 60000;
+
+            if (lockAge < 300000 && !isFutureGarbage) {
               console.log(
                 `🔒 Sync lock held by ${syncLock.id} on ${controllerName} (age: ${Math.round(lockAge / 1000)}s)`,
               );
@@ -1063,7 +1221,7 @@ export const useAppDataStore = defineStore("appData", {
             }
 
             console.log(
-              `⏰ Stale sync lock from ${syncLock.id} detected on ${controllerName} (age: ${Math.round(lockAge / 1000)}s), considering available`,
+              `⏰ Stale sync lock from ${syncLock.id} detected on ${controllerName} (age: ${Math.round(lockAge)}s), considering available`,
             );
           }
         } catch (error) {
@@ -1148,8 +1306,16 @@ export const useAppDataStore = defineStore("appData", {
             ) {
               const timestamp = Number(existingLock.ts);
               if (Number.isFinite(timestamp)) {
-                const lockAge = Date.now() - timestamp;
-                if (lockAge < 5 * 60 * 1000) {
+                // acquireSyncLock
+                // Use standard Unix timestamp (milliseconds)
+                const now = Date.now();
+                const lockAge = now - timestamp;
+
+                // Check if timestamp is in the future (garbage) allows overwriting
+                // If timestamp is > now + 60s, it's considered invalid/garbage
+                const isFutureGarbage = timestamp > now + 60000;
+
+                if (lockAge < 300000 && !isFutureGarbage) {
                   console.error(
                     `❌ Controller ${controllerName} already has active lock from ${existingLock.id} (age: ${Math.round(lockAge / 1000)}s)`,
                   );
@@ -1403,9 +1569,23 @@ export const useAppDataStore = defineStore("appData", {
           controllers: new Map(),
         };
 
+        // Helper to sanitize timestamps
+        const now = Date.now();
+        const sanitizeTs = (item, type) => {
+          // If timestamp is in the future (with 1 hour buffer), assume it's invalid/garbage
+          // and overwrite it with current timestamp to bring it back to valid range
+          if (item.ts > now + 3600000) {
+            console.log(
+              `🔧 Fixing future timestamp for ${type} "${item.name || item.id || item.hostname}" (ID: ${item.id}): ${item.ts} -> ${now}`,
+            );
+            item.ts = now;
+          }
+        };
+
         // Process presets
         for (const preset of allData.presets) {
           if (!preset.id) continue;
+          sanitizeTs(preset, "preset");
 
           const existing = latestItems.presets.get(preset.id);
           if (!existing || preset.ts > existing.ts) {
@@ -1416,6 +1596,7 @@ export const useAppDataStore = defineStore("appData", {
         // Process scenes
         for (const scene of allData.scenes) {
           if (!scene.id) continue;
+          sanitizeTs(scene, "scene");
 
           const existing = latestItems.scenes.get(scene.id);
           if (!existing || scene.ts > existing.ts) {
@@ -1426,6 +1607,7 @@ export const useAppDataStore = defineStore("appData", {
         // Process groups
         for (const group of allData.groups) {
           if (!group.id) continue;
+          sanitizeTs(group, "group");
 
           const existing = latestItems.groups.get(group.id);
           if (!existing || group.ts > existing.ts) {
@@ -1436,6 +1618,7 @@ export const useAppDataStore = defineStore("appData", {
         // Process controllers
         for (const controllerMetadata of allData.controllers) {
           if (!controllerMetadata.hostname) continue;
+          sanitizeTs(controllerMetadata, "controller");
 
           const existing = latestItems.controllers.get(
             controllerMetadata.hostname,
@@ -2062,7 +2245,10 @@ export const useAppDataStore = defineStore("appData", {
                     `getting scenes from ${controller.name || controller.hostname} for invalid scene cleanup`,
                   );
 
-                  if (scenesResponse?.scenes && Array.isArray(scenesResponse.scenes)) {
+                  if (
+                    scenesResponse?.scenes &&
+                    Array.isArray(scenesResponse.scenes)
+                  ) {
                     // Find the scene by name and timestamp to get its actual array index
                     const sceneIndex = scenesResponse.scenes.findIndex(
                       (scene) =>
@@ -2184,7 +2370,10 @@ export const useAppDataStore = defineStore("appData", {
                     `getting groups from ${controller.name || controller.hostname} for invalid group cleanup`,
                   );
 
-                  if (groupsResponse?.groups && Array.isArray(groupsResponse.groups)) {
+                  if (
+                    groupsResponse?.groups &&
+                    Array.isArray(groupsResponse.groups)
+                  ) {
                     // Find the group by name and timestamp to get its actual array index
                     const groupIndex = groupsResponse.groups.findIndex(
                       (group) =>
