@@ -1330,8 +1330,7 @@ describe('SyncService', () => {
         expect(payload1).toEqual(payload3);
 
         // Verify they all have the same counts
-        expect(payload1.presets.length).toBe(payload2.presets.length);
-        expect(payload2.presets.length).toBe(payload3.presets.length);
+        // Presets are local only, so checking scenes and groups
         expect(payload1.scenes.length).toBe(payload2.scenes.length);
         expect(payload2.scenes.length).toBe(payload3.scenes.length);
         expect(payload1.groups.length).toBe(payload2.groups.length);
