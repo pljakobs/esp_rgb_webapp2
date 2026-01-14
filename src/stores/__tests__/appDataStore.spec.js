@@ -299,10 +299,10 @@ describe('AppDataStore', () => {
       await store.savePreset(preset, progressCallback);
 
       expect(progressCallback).toHaveBeenCalled();
-      // Should be called for each controller
+      // Should be called for the single current controller
       expect(progressCallback).toHaveBeenCalledWith(
         expect.any(Number),
-        mockControllersStore.data.length
+        1
       );
     });
 
@@ -650,31 +650,23 @@ describe('AppDataStore', () => {
   });
 
   describe('Error Recovery', () => {
-    it('should continue processing other controllers on error', async () => {
+    it('should handle save error gracefully', async () => {
       const preset = {
         id: 'test-preset',
         name: 'Test Preset',
         color: { hsv: { h: 180, s: 100, v: 75 } }
       };
 
-      // First controller fails, second succeeds
+      // Controller fails
       mockFetch
-        .mockRejectedValueOnce(new Error('Controller 1 error'))
-        .mockResolvedValueOnce({
-          ok: true,
-          json: async () => ({ presets: [] })
-        })
-        .mockResolvedValueOnce({
-          ok: true,
-          json: async () => ({ status: 'ok' })
-        });
+        .mockRejectedValueOnce(new Error('Controller 1 error'));
 
       const progressCallback = vi.fn();
 
       await store.savePreset(preset, progressCallback);
 
-      // Should call progress for both controllers
-      expect(progressCallback).toHaveBeenCalledTimes(mockControllersStore.data.length);
+      // Should call progress for the single controller
+      expect(progressCallback).toHaveBeenCalledTimes(1);
     });
 
     it('should handle network timeout gracefully', async () => {
