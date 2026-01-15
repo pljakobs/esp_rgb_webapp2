@@ -37,10 +37,16 @@
             dense
             outlined
             placeholder="Search icons..."
-            clearable
             debounce="300"
           >
             <template v-slot:append>
+              <svgIcon
+                v-if="searchQuery"
+                name="close"
+                size="20px"
+                class="cursor-pointer q-mr-sm"
+                @click="searchQuery = ''"
+              />
               <svgIcon name="search" size="20px" color="#757575" />
             </template>
           </q-input>
