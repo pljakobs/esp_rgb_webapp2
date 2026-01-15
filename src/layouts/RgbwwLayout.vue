@@ -113,12 +113,12 @@
           option-label="hostname"
           option-value="ip_address"
           label="Select a controller"
-          @input="handleControllerSelection"
+          @update:model-value="handleControllerSelection"
           @popup-show="() => $nextTick(() => (isSelectOpen = true))"
           @popup-hide="() => $nextTick(() => (isSelectOpen = false))"
         >
           <template v-slot:option="scope">
-            <q-item clickable @click="handleControllerSelection(scope.opt)">
+            <q-item clickable @click="scope.toggleOption(scope.opt)">
               <q-item-section avatar>
                 <div class="row items-center">
                   <!-- Custom controller icon -->
@@ -187,7 +187,7 @@
             <q-item-section class="text-section">
               <q-item-label>Color settings</q-item-label>
               <q-item-label caption
-                >confiure the color model and others</q-item-label
+                >configure the color model and transition mode</q-item-label
               >
             </q-item-section>
           </q-item>
@@ -200,7 +200,7 @@
             <q-item-section class="text-section">
               <q-item-label>Network settings</q-item-label>
               <q-item-label caption
-                >Configure the network, mqtt and more</q-item-label
+                >Configure the network, mqtt and telemetry</q-item-label
               >
             </q-item-section>
           </q-item>
@@ -213,7 +213,8 @@
             <q-item-section class="text-section">
               <q-item-label>System settings</q-item-label>
               <q-item-label caption
-                >configure pins, upgrade firmware, backup and restore settings
+                >configure pins, hostname and icon, upgrade firmware, backup and
+                restore settings
               </q-item-label>
             </q-item-section>
           </q-item>
@@ -229,7 +230,16 @@
             </q-item-section>
           </q-item>
 
-          <q-item clickable tag="router-link" to="/test">
+          <q-item
+            v-if="
+              infoData.data &&
+              infoData.data.build_type &&
+              infoData.data.build_type === 'debug'
+            "
+            clickable
+            tag="router-link"
+            to="/test"
+          >
             <q-item-section class="icon-section"
               ><svgIcon name="lightbulb_outlined" class="icon" />
             </q-item-section>
@@ -419,6 +429,9 @@ export default defineComponent({
           event,
         );
         controllers.selectController(event);
+        if (isSmallScreen.value) {
+          leftDrawerOpen.value = false;
+        }
       };
 
       const checkControllerConfigured = () => {
@@ -482,12 +495,6 @@ export default defineComponent({
         checkControllerConfigured();
       }
 
-      watch(
-        () => controllers.currentController,
-        () => {
-          toggleLeftDrawer();
-        },
-      );
       /*
       watch(
         () => isSelectOpen.value,

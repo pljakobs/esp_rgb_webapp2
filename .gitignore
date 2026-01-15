@@ -45,3 +45,4 @@ fileList.h
 capacitor.config.ts
 gradle.properties
 .github/workflows/android-build.yml
+API_CENTRALIZATION_SUMMARY.md API_DOCUMENTATION.md API_DOCUMENTATION_SUMMARY.md API_IMPLEMENTATION_SUMMARY.md API_QUICK_REFERENCE.md API_TESTING.md API_TESTING_CHECKLIST.md
