@@ -43,11 +43,11 @@ For phase one, all I really intend to achieve is a feature complete re-implement
   
 [x] network initialization 
 
-[ ] reliable captive page for 8266
+[x] reliable captive page for 8266
 
 [x] firmware OTA
 
-[ ] pin config
+[x] pin config
 
 [x] presets for HSV and RAW and favorites 
 
@@ -58,17 +58,17 @@ As I said above, one of the appeals of Quasar is that it allows to build native 
 
 [x] naming the controller in the app should write the name back to the controller, so that it is able to be identified by that name by others, too
 
-[ ] grouping controllers will allow to create scenes that apply to multiple controllers right from the device, without support from any home automation system.
+[x] grouping controllers will allow to create scenes that apply to multiple controllers right from the device, without support from any home automation system.
 
-[ ] the grouping and scenes information should probably by saved to the controllers and provided to new apps that talk to them so they are not bound to individual devices.
+[x] the grouping and scenes information should probably by saved to the controllers and provided to new apps that talk to them so they are not bound to individual devices.
 
-[ ] a ui element to manage scenes will have to be added
+[x] a ui element to manage scenes will have to be added
 
 [x] mDNS controller detection
 
 [x] single instance UI allows access to all controllers
 
-[ ] mDNS for UI Access (accessing lightinator.local or so)
+[x] mDNS for UI Access (accessing lightinator.local or so)
 
 [ ] implemenat a "boost" mode where white can be boosted to 300% using RGB WW and CW together
 
