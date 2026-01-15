@@ -46,3 +46,16 @@ capacitor.config.ts
 gradle.properties
 .github/workflows/android-build.yml
 API_CENTRALIZATION_SUMMARY.md API_DOCUMENTATION.md API_DOCUMENTATION_SUMMARY.md API_IMPLEMENTATION_SUMMARY.md API_QUICK_REFERENCE.md API_TESTING.md API_TESTING_CHECKLIST.md
+.editorconfig
+analyze-stats.js
+check-missing-icons.js check-missing-icons.sh
+deploy.back
+download_extended_icons.sh
+download_room_icons.js
+download_room_icons.sh
+eslint.config.js
+generate_icon_list.js
+iconlist.txt
+minifyFontnames.sh
+minify_iconfonts.js
+*.old
