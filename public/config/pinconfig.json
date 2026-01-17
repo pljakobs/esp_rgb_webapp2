@@ -1,5 +1,5 @@
 {
-  "version": 15,
+  "version": 16,
   "available_pins": [
     {
       "soc": "esp8266",
@@ -42,6 +42,19 @@
         { "name": "blue", "pin": "4" },
         { "name": "warmwhite", "pin": "5" },
         { "name": "coldwhite", "pin": "6" }
+      ]
+    },
+    {
+      "name": "Lightinator Mini (alternative)",
+      "soc": "esp32c3",
+      "model": "rgbww",
+      "clear_pin": 18,
+      "channels": [
+        { "name": "red", "pin": ",3" },
+        { "name": "green", "pin": "0" },
+        { "name": "blue", "pin": "4" },
+        { "name": "warmwhite", "pin": "6" },
+        { "name": "coldwhite", "pin": "5" }
       ]
     },
     {
