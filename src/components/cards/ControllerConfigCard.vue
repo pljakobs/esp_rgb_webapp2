@@ -465,7 +465,7 @@ export default {
 
       // Prepare pin configuration changes
       if (localCurrentPinConfigName.value !== originalValues.pinConfigName) {
-        const currentConfig = socSpecificConfigs.value.find(
+        const currentConfig = compatiblePinConfigs.value.find(
           (config) => config.name === localCurrentPinConfigName.value,
         );
 
@@ -816,6 +816,10 @@ export default {
       if (newVal) {
         getCurrentPinConfig();
       }
+    });
+
+    watch(localCurrentPinConfigName, () => {
+      getCurrentPinConfig();
     });
 
     watch(
