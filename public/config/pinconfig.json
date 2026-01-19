@@ -1,5 +1,5 @@
 {
-  "version": 16,
+  "version": 17,
   "available_pins": [
     {
       "soc": "esp8266",
