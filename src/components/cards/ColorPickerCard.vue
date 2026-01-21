@@ -187,7 +187,13 @@ export default {
       // Update the global store
       if (newColor.hsv) {
         colorStore.change_by = "component";
-        colorStore.updateData("hsv", newColor.hsv);
+        if (newColor.ct !== undefined) {
+           // We have to add ct to the payload
+           colorStore.updateData("hsv", { ...newColor.hsv, ct: newColor.ct});
+        }else {
+          console.warn("handleColorChange: hsv update without ct");
+          colorStore.updateData("hsv", newColor.hsv);
+        }
       } else if (newColor.raw) {
         colorStore.change_by = "component";
         colorStore.updateData("raw", newColor.raw);

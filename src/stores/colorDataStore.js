@@ -88,6 +88,7 @@ export const useColorDataStore = defineStore("colorDataStore", {
               h: Math.round(value.h * 100) / 100,
               s: Math.round(value.s * 100) / 100,
               v: Math.round(value.v * 100) / 100,
+              ct: value.ct,
             };
 
             console.log("updateData sanitized hsv", JSON.stringify(value));
