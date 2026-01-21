@@ -603,9 +603,13 @@ export default {
       const local = configData.data.hardware.pinconfigs || [];
       const remote = remotePinConfigs.value || [];
       // Merge, remote first if not in local
+      // this will overwrite local with remote if names match
+      // meaning we will lose local edits. To change this,
+      // every pin config will have to have a version or time stamp
+      // ToDo: implement versioning to avoid unwanted overwrites of local edits
       const merged = [
-        ...local,
-        ...remote.filter((rc) => !local.some((lc) => lc.name === rc.name)),
+        ...remote,
+        ...local.filter((lc) => !remote.some((rc) => rc.name === lc.name)),
       ];
       // Debug output
       console.log("[PinConfig Debug] SoC:", soc);
