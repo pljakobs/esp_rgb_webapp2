@@ -11,7 +11,7 @@
     </q-card-section>
     
     <!-- Added CT Slider Section -->
-    <q-card-section class="q-px-lg q-pt-md" style="max-width: 300px; margin: 0 auto;">
+    <q-card-section class="q-px-lg q-pt-md" style="max-width: 300px; margin: 0 auto;" v-if="showCtSlider">
       <div class="text-caption text-grey-7 q-mb-xs">Color Temperature</div>
       <div class="row items-center no-wrap">
         <svgIcon name="thermostat" class="q-mr-sm text-grey-7" />
@@ -89,6 +89,21 @@ export default {
             return 9000
         }
     })
+
+    const showCtSlider = computed(() => {
+      const defaultColorOptions = ["RGB", "RGBWW", "RGBCW", "RGBWWCW"];
+      const options =
+        configData.data.general?.supported_color_models?.length > 0
+          ? configData.data.general.supported_color_models
+          : defaultColorOptions;
+      
+      const colorModelIndex = configData.data.color.color_mode;
+      const currentMode = (colorModelIndex >= 0 && colorModelIndex < options.length)
+        ? options[colorModelIndex]
+        : options[0];
+
+      return currentMode === "RGBWW";
+    });
 
     // Flag to prevent emitting during prop updates from websocket events
     const updatingFromProps = ref(false);
@@ -168,6 +183,7 @@ export default {
       ct,
       minCt,
       maxCt,
+      showCtSlider,
       onAddPreset,
     };
   },
