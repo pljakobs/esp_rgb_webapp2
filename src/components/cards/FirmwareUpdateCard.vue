@@ -25,8 +25,8 @@
     </q-card-actions>
 
     <q-card-section v-if="firmware">
-      Current: firmware: {{ infoData.data.git_version }} webapp:
-      {{ infoData.data.webapp_version }}
+      Current: firmware: {{ infoData.data.app?.git_version }} webapp:
+      {{ infoData.data.app?.webapp_version }}
     </q-card-section>
   </MyCard>
 </template>
@@ -35,7 +35,7 @@
 import { ref, nextTick, createApp, h } from "vue";
 import { Dialog, Notify } from "quasar";
 import { configDataStore } from "src/stores/configDataStore";
-import { infoDataStore } from "src/stores/infoDataStore";
+import { infoDataStore, normalizeInfoData } from "src/stores/infoDataStore";
 import { useControllersStore } from "src/stores/controllersStore";
 import MyCard from "src/components/myCard.vue";
 import FirmwareSelectDialog from "src/components/Dialogs/firmwareSelectDialog.vue";
@@ -157,7 +157,7 @@ export default {
         if (data.firmware && Array.isArray(data.firmware)) {
           data.firmware.forEach((fw) => {
             // Only include firmware for the current SOC
-            if (fw.soc === infoData.data.soc) {
+            if (fw.soc === infoData.data.device?.soc) {
               // Ensure all required properties exist
               const firmwareOption = {
                 ...fw,
@@ -173,7 +173,7 @@ export default {
         if (data.history && Array.isArray(data.history)) {
           data.history.forEach((histItem) => {
             // Only include firmware for the current SOC
-            if (histItem.soc === infoData.data.soc) {
+            if (histItem.soc === infoData.data.device?.soc) {
               // Skip if this exact version is already in the options
               const isDuplicate = allFirmwareOptions.some(
                 (fw) =>
@@ -202,13 +202,13 @@ export default {
         availableFirmware.value.sort((a, b) => {
           // Put current build type first
           if (
-            a.type === infoData.data.build_type &&
-            b.type !== infoData.data.build_type
+            a.type === infoData.data.app?.build_type &&
+            b.type !== infoData.data.app?.build_type
           )
             return -1;
           if (
-            a.type !== infoData.data.build_type &&
-            b.type === infoData.data.build_type
+            a.type !== infoData.data.app?.build_type &&
+            b.type === infoData.data.app?.build_type
           )
             return 1;
 
@@ -263,7 +263,7 @@ export default {
         // Create a copy of infoData.data and add branch property
         const currentInfoWithBranch = {
           ...infoData.data,
-          branch: getBranchFromVersion(infoData.data.git_version),
+          branch: getBranchFromVersion(infoData.data.app?.git_version),
         };
 
         // Use the component-based dialog
@@ -369,8 +369,8 @@ export default {
 
                 // If we get a response, check the uptime
                 if (response.ok) {
-                  const infoData = await response.json();
-                  newUptime = infoData.uptime;
+                  const infoData = normalizeInfoData(await response.json());
+                  newUptime = infoData.runtime?.uptime;
 
                   // If uptime is less than before, controller has successfully rebooted
                   if (newUptime < initialUptime) {
@@ -843,10 +843,10 @@ export default {
                 );
 
                 // Get current uptime for reboot verification
-                const uptime = infoData.data.uptime;
-                const soc = infoData.data.soc;
-                const build_type = infoData.data.build_type;
-                const git_version = infoData.data.git_version;
+                const uptime = infoData.data.runtime?.uptime;
+                const soc = infoData.data.device?.soc;
+                const build_type = infoData.data.app?.build_type;
+                const git_version = infoData.data.app?.git_version;
 
                 // Extract branch from version and show controller info
                 const controllerBranch = getBranchFromVersion(git_version);
@@ -1012,7 +1012,7 @@ export default {
                     );
 
                     if (infoResponse.ok) {
-                      controllerInfo = await infoResponse.json();
+                      controllerInfo = normalizeInfoData(await infoResponse.json());
                     } else {
                       retryCount++;
                       updateStatus(
@@ -1061,7 +1061,10 @@ export default {
                 }
 
                 // Successfully got controller info, now process it
-                const { soc, build_type, git_version, uptime } = controllerInfo;
+                const soc = controllerInfo.device?.soc;
+                const build_type = controllerInfo.app?.build_type;
+                const git_version = controllerInfo.app?.git_version;
+                const uptime = controllerInfo.runtime?.uptime;
 
                 // Extract branch from version and show controller info
                 const controllerBranch = getBranchFromVersion(git_version);
