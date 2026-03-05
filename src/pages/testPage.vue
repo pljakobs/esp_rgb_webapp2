@@ -5,7 +5,7 @@
         <h2>Test Page</h2>
       </q-card-section>
       <q-card-section>
-        free heap: {{ infoData.data.heap_free }}<br />
+        free heap: {{ infoData.data.runtime?.heap_free }}<br />
         <button @click="refreshData">Refresh Data</button>
       </q-card-section>
       <q-card-section>

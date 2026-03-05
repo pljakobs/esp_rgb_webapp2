@@ -122,7 +122,7 @@
         <div class="text-h6 q-mb-md">Configure Device Pins</div>
         <div class="text-subtitle2 q-mb-lg">
           Select a pin configuration for your
-          {{ infoData.data.soc.toUpperCase() }} device
+          {{ infoData.data.device?.soc?.toUpperCase() }} device
         </div>
         <div v-if="socSpecificConfigs.length === 0" class="q-mt-md">
           <q-banner class="text-warning bg-warning-light q-mb-md" rounded>
@@ -134,7 +134,7 @@
             </div>
             <div class="text-body2 q-mt-sm">
               No pre-configured pin layouts are available for your
-              {{ infoData.data.soc.toUpperCase() }} device. You can continue
+              {{ infoData.data.device?.soc?.toUpperCase() }} device. You can continue
               with the setup and configure the pins manually in the main
               interface later.
             </div>
@@ -209,21 +209,37 @@
       <!-- Step 4: Telemetry -->
       <div v-if="step === 4" class="q-pa-md">
         <div class="text-h6 q-mb-md">Telemetry</div>
-        <div class="text-subtitle2 q-mb-lg">
-          Do you want to allow anonymous statistics to be sent to the developer? This helps improving the firmware.
+
+        <div class="text-subtitle2 q-mb-sm">Anonymous Statistics</div>
+        <div class="text-body2 q-mb-md text-grey-7">
+          Allow anonymous statistics to be sent to the developer? This helps
+          improving the firmware.
         </div>
         <q-btn-toggle
-            v-model="telemetryEnabled"
-            :options="[
-              {label: 'Yes', value: true},
-              {label: 'No', value: false}
-            ]"
-          />
+          v-model="statsEnabled"
+          class="q-mb-lg"
+          :options="[
+            { label: 'Yes', value: true },
+            { label: 'No', value: false },
+          ]"
+        />
+
+        <div class="text-subtitle2 q-mb-sm">Remote Logging</div>
+        <div class="text-body2 q-mb-md text-grey-7">
+          Enable sending debug logs to the configured telemetry server?
+        </div>
+        <q-btn-toggle
+          v-model="logEnabled"
+          class="q-mb-lg"
+          :options="[
+            { label: 'Yes', value: true },
+            { label: 'No', value: false },
+          ]"
+        />
+
         <div class="text-caption q-mt-md">
-          If you don't make a selection, telemetry will be
-          <strong>{{ isDebug ? 'enabled' : 'disabled' }}</strong> by default for this
-          <strong>{{ isDebug ? 'debug' : 'release' }}</strong> build.
-          You can change this setting at any time under Network Settings > Telemetry.
+          You can change these settings at any time under Network Settings >
+          Telemetry.
         </div>
         <div class="q-mt-md">
           <q-btn
@@ -235,7 +251,7 @@
           <div v-if="showDetails">
             <div>
               With this build, the following data is sent every 30s:
-              <q-scroll-area style="height: 200px;">
+              <q-scroll-area style="height: 200px">
                 <q-table
                   :rows="telemetryDataRows"
                   :columns="telemetryDataColumns"
@@ -244,7 +260,12 @@
                   bordered
                   wrap-cells
                   :hide-bottom="true"
-                  :pagination="{ rowsPerPage: telemetryDataRows.length, page: 1, sortBy: null, descending: false }"
+                  :pagination="{
+                    rowsPerPage: telemetryDataRows.length,
+                    page: 1,
+                    sortBy: null,
+                    descending: false,
+                  }"
                 />
               </q-scroll-area>
             </div>
@@ -447,7 +468,10 @@ import { storeStatus } from "src/stores/storeConstants";
 import systemCommand from "src/services/systemCommands.js";
 import svgIcon from "src/components/svgIcon.vue";
 import ColorSlider from "src/components/ColorSlider.vue";
-import { telemetryDataColumns, telemetryDataRows } from "src/stores/telemetryData.js";
+import {
+  telemetryDataColumns,
+  telemetryDataRows,
+} from "src/stores/telemetryData.js";
 
 export default {
   name: "NetworkSetupWizard",
@@ -465,23 +489,33 @@ export default {
     // Hostname
     const hostname = ref(configData.data.general.device_name || "");
 
-    // Telemetry
-    const telemetryEnabled = computed({
-      get: () => configData.data?.telemetry?.enabled,
+    // Telemetry Stats
+    const statsEnabled = computed({
+      get: () => configData.data.telemetry?.statsEnabled === "ON",
       set: (value) => {
-        if (configData.data?.telemetry) {
-          configData.data.telemetry.enabled = value;
-        }
+        configData.updateData("telemetry.statsEnabled", value ? "ON" : "OFF");
+      },
+    });
+
+    // Telemetry Logs
+    const logEnabled = computed({
+      get: () => configData.data.telemetry?.logEnabled === "ON",
+      set: (value) => {
+        configData.updateData("telemetry.logEnabled", value ? "ON" : "OFF");
       },
     });
 
     // Telemetry details
     const showDetails = ref(false);
-    const detailsButtonLabel = computed(() => showDetails.value ? 'Hide Details' : 'Show Details');
+    const detailsButtonLabel = computed(() =>
+      showDetails.value ? "Hide Details" : "Show Details",
+    );
     const toggleDetails = () => {
       showDetails.value = !showDetails.value;
     };
-    const isDebug = computed(() => infoData.data?.firmware?.includes("DEBUG") ?? false);
+    const isDebug = computed(
+      () => infoData.data?.app?.build_type === 'debug',
+    );
 
     // Pin config
     const currentPinConfigName = ref(
@@ -492,7 +526,7 @@ export default {
     const socSpecificConfigs = computed(() =>
       configData.data.hardware.pinconfigs.filter(
         (config) =>
-          config.soc.toLowerCase() === infoData.data.soc.toLowerCase(),
+          config.soc.toLowerCase() === infoData.data.device?.soc?.toLowerCase(),
       ),
     );
 
@@ -845,9 +879,9 @@ export default {
     });
 
     watch(
-      () => infoData.data.soc,
+      () => infoData.data.device?.soc,
       () => {
-        if (infoData.data.soc) getPinConfigNames();
+        if (infoData.data.device?.soc) getPinConfigNames();
       },
     );
     watch(
@@ -920,8 +954,10 @@ export default {
       emitColorModel,
       trimHostname,
       trimNetworkName,
+      // Return updated properties
       trimPassword,
-      telemetryEnabled,
+      statsEnabled,
+      logEnabled,
       showDetails,
       detailsButtonLabel,
       toggleDetails,

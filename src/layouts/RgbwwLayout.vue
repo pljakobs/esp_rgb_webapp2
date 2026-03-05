@@ -233,8 +233,8 @@
           <q-item
             v-if="
               infoData.data &&
-              infoData.data.build_type &&
-              infoData.data.build_type === 'debug'
+              infoData.data.app?.build_type &&
+              infoData.data.app.build_type === 'debug'
             "
             clickable
             tag="router-link"

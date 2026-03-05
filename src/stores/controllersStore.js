@@ -152,10 +152,10 @@ export const useControllersStore = defineStore("controllersStore", {
         if (
           infoStore.status === storeStatus.READY &&
           infoStore.data &&
-          infoStore.data.deviceid
+          infoStore.data.device?.deviceid
         ) {
           const matchById = this.data.find(
-            (c) => String(c.id) === String(infoStore.data.deviceid),
+            (c) => String(c.id) === String(infoStore.data.device.deviceid),
           );
           if (matchById) {
             if (matchById.hostname !== localhost.hostname) {

@@ -13,6 +13,16 @@ import { syncService } from "src/services/syncService.js";
 
 const SYNC_LOCK_TIMEOUT_MS = 6000;
 const SYNC_VERIFY_RETRIES = 3;
+
+// TODO: BUG — ConfigDB selector values must NOT be quoted.
+// The firmware's WriteStream.cpp (line 238) uses a raw byte comparison:
+//   propValue.equals(value, valuelen)
+// So `[id="${x}"]` tries to match the stored value against `"x"` (with literal
+// double-quotes), which always fails → firmware returns HTTP 400 BadSelector.
+// All delete and update-existing operations below are silently broken.
+// Fix: change every  `collection[id="${x}"]`  →  `collection[id=${x}]`
+// Affected lines (as of last audit): 360, 442, 518, 593, 638, 871,
+//   1056, 2141, 2210, 2288, 2412, 2465.
 const SYNC_VERIFY_DELAY_MS = 150;
 const MIN_REQUIRED_SYNC_LOCKS = 1;
 
@@ -302,7 +312,9 @@ export const useAppDataStore = defineStore("appData", {
       try {
         let completed = 0;
         // Presets are controller local, only save to current controller
-        const targetControllers = controllers.currentController ? [controllers.currentController] : [];
+        const targetControllers = controllers.currentController
+          ? [controllers.currentController]
+          : [];
 
         for (const controller of targetControllers) {
           if (this.abortSaveOperation) {
@@ -442,7 +454,9 @@ export const useAppDataStore = defineStore("appData", {
       try {
         let completed = 0;
         // Presets are controller local, only delete from current controller
-        const targetControllers = controllers.currentController ? [controllers.currentController] : [];
+        const targetControllers = controllers.currentController
+          ? [controllers.currentController]
+          : [];
 
         for (const controller of targetControllers) {
           if (!controller.ip_address) {
@@ -1548,6 +1562,7 @@ export const useAppDataStore = defineStore("appData", {
           return false;
         }
 
+        /* DEAD CODE
         console.log(
           `Collection complete: Found ${allData.presets.length} preset versions, ${allData.scenes.length} scene versions, ${allData.groups.length} group versions across all controllers`,
         );
@@ -2506,6 +2521,7 @@ export const useAppDataStore = defineStore("appData", {
         console.log(`🔓 Released sync lock for ${currentControllerId}`);
 
         return true;
+        */
       } catch (error) {
         console.error("❌ Critical error during synchronization:", error);
         this.syncStatus = storeStatus.sync.FAILED;
