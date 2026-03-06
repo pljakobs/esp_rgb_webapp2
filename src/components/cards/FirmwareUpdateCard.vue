@@ -384,37 +384,13 @@ export default {
           selectedFirmware,
         );
 
-        const postResponse = await fetch(
-          `http://${controller.ip_address}/update`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(selectedFirmware.files),
-          },
-        );
-
-        if (!postResponse.ok) {
-          Dialog.create({
-            title: "Update failed",
-            message: `Update failed for ${controller.hostname}! status: ${postResponse.status}`,
-            color: "negative",
-            icon: "report_problem",
-            persistent: true,
-          });
-          return { success: false };
-        }
-
-        // Show the countdown dialog for current controller only
+        // For the current controller: reset state and start the fallback timer
+        // BEFORE sending the POST. The firmware can send ota_status WS messages
+        // before the HTTP response arrives, so we must not reset state after fetch().
         if (controller.id === controllersStore.currentController.id) {
-          // Reset any previous OTA progress state
           clearInterval(fallbackProgressInterval);
           clearTimeout(fallbackReloadTimer);
 
-          // Start immediately in time-based fallback mode.
-          // If the firmware sends ota_status WS messages the handler above will
-          // cancel these timers and switch to step-driven mode on the first message.
           const totalDuration = 20000;
           const tickInterval = 100;
           let elapsed = 0;
@@ -442,7 +418,38 @@ export default {
             url.searchParams.set("_t", Date.now());
             window.location.replace(url.toString());
           }, totalDuration);
+        }
 
+        const postResponse = await fetch(
+          `http://${controller.ip_address}/update`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(selectedFirmware.files),
+          },
+        );
+
+        if (!postResponse.ok) {
+          // Cancel fallback timers — update never started
+          if (controller.id === controllersStore.currentController.id) {
+            clearInterval(fallbackProgressInterval);
+            clearTimeout(fallbackReloadTimer);
+            otaProgress.value.active = false;
+          }
+          Dialog.create({
+            title: "Update failed",
+            message: `Update failed for ${controller.hostname}! status: ${postResponse.status}`,
+            color: "negative",
+            icon: "report_problem",
+            persistent: true,
+          });
+          return { success: false };
+        }
+
+        // POST succeeded — open the dialog (timers + WS handler are already wired up)
+        if (controller.id === controllersStore.currentController.id) {
           Dialog.create({
             component: FirmwareUpdateProgressDialog,
             componentProps: { otaProgress },
