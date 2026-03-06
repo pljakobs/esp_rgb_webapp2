@@ -32,12 +32,12 @@
 </template>
 
 <script>
-import { ref, nextTick, createApp, h, onUnmounted } from "vue";
+import { ref, nextTick, createApp, h, onUnmounted, watch } from "vue";
 import { Dialog, Notify } from "quasar";
 import { configDataStore } from "src/stores/configDataStore";
 import { infoDataStore, normalizeInfoData } from "src/stores/infoDataStore";
 import { useControllersStore } from "src/stores/controllersStore";
-import useWebSocket from "src/services/websocket.js";
+import useWebSocket, { wsStatus } from "src/services/websocket.js";
 import MyCard from "src/components/myCard.vue";
 import FirmwareSelectDialog from "src/components/Dialogs/firmwareSelectDialog.vue";
 import FirmwareUpdateProgressDialog from "src/components/Dialogs/firmwareUpdateProgressDialog.vue";
@@ -73,6 +73,39 @@ export default {
     let fallbackReloadTimer = null;
 
     const ws = useWebSocket();
+
+    // If the socket drops while a WS-driven OTA is active (step >= 1),
+    // the firmware sent step 4 and rebooted before the message was delivered.
+    // Treat it as an implicit step 4 so the UI transitions and reloads.
+    watch(
+      () => ws.status.value,
+      (newStatus) => {
+        if (
+          newStatus === wsStatus.FAILED &&
+          otaProgress.value.active &&
+          !otaProgress.value.fallbackMode &&
+          otaProgress.value.step >= 1
+        ) {
+          otaProgress.value.step = 4;
+          otaProgress.value.message = "Device rebooting...";
+          otaProgress.value.reloadCountdown = 4;
+          clearTimeout(reloadTimer);
+          clearInterval(countdownTimer);
+          countdownTimer = setInterval(() => {
+            otaProgress.value.reloadCountdown -= 1;
+            if (otaProgress.value.reloadCountdown <= 0) {
+              clearInterval(countdownTimer);
+            }
+          }, 1000);
+          reloadTimer = setTimeout(() => {
+            clearInterval(countdownTimer);
+            const url = new URL(window.location.href);
+            url.searchParams.set("_t", Date.now());
+            window.location.replace(url.toString());
+          }, 4000);
+        }
+      },
+    );
     ws.onJson("ota_status", (params) => {
       // Switch from time-based to WS-driven mode on first message
       clearInterval(fallbackProgressInterval);
