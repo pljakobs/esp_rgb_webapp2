@@ -134,9 +134,9 @@
             </div>
             <div class="text-body2 q-mt-sm">
               No pre-configured pin layouts are available for your
-              {{ infoData.data.device?.soc?.toUpperCase() }} device. You can continue
-              with the setup and configure the pins manually in the main
-              interface later.
+              {{ infoData.data.device?.soc?.toUpperCase() }} device. You can
+              continue with the setup and configure the pins manually in the
+              main interface later.
             </div>
           </q-banner>
           <div class="text-caption text-grey-7">
@@ -513,9 +513,7 @@ export default {
     const toggleDetails = () => {
       showDetails.value = !showDetails.value;
     };
-    const isDebug = computed(
-      () => infoData.data?.app?.build_type === 'debug',
-    );
+    const isDebug = computed(() => infoData.data?.app?.build_type === "debug");
 
     // Pin config
     const currentPinConfigName = ref(

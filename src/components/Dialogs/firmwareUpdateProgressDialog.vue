@@ -1,67 +1,108 @@
 <template>
   <q-dialog ref="dialogRef" @hide="onDialogHide" persistent>
-    <q-card class="shadow-4 q-pa-md" style="max-width: 300px">
+    <q-card class="shadow-4 q-pa-md" style="min-width: 340px; max-width: 420px">
       <q-card-section>
         <div class="text-h6">Updating Firmware...</div>
       </q-card-section>
 
-      <q-card-section class="row items-center">
+      <q-card-section>
         <q-linear-progress
-          :value="progress"
-          color="primary"
-          class="full-width"
+          :value="otaProgress.fallbackMode ? otaProgress.timeFraction : otaProgress.step / 4"
+          :color="
+            otaProgress.step === 0 && !otaProgress.fallbackMode
+              ? 'negative'
+              : otaProgress.step === 4
+                ? 'positive'
+                : 'primary'
+          "
+          size="14px"
+          rounded
+          class="q-mb-sm"
         />
+        <div
+          v-if="!otaProgress.fallbackMode"
+          class="row justify-between text-caption q-mb-md"
+        >
+          <span :class="otaProgress.step === 1 ? 'step-active' : 'step-dim'"
+            >Preparing</span
+          >
+          <span :class="otaProgress.step === 2 ? 'step-active' : 'step-dim'"
+            >Downloading</span
+          >
+          <span :class="otaProgress.step === 3 ? 'step-active' : 'step-dim'"
+            >Verifying</span
+          >
+          <span :class="otaProgress.step === 4 ? 'step-active' : 'step-dim'"
+            >Rebooting</span
+          >
+        </div>
+        <div
+          class="text-body2 text-weight-medium"
+          :class="
+            otaProgress.fallbackMode
+              ? 'text-primary'
+              : otaProgress.step === 0
+                ? 'text-negative'
+                : otaProgress.step === 4
+                  ? 'text-positive'
+                  : 'text-primary'
+          "
+        >
+          {{ otaProgress.message || "Starting..." }}
+        </div>
       </q-card-section>
 
-      <q-card-section class="text-center">
-        <div>Reloading in {{ Math.floor(progress * 30) }} seconds...</div>
+      <q-card-section
+        v-if="otaProgress.step === 4"
+        class="text-center text-caption text-grey-6"
+      >
+        Page will reload in {{ otaProgress.reloadCountdown }}s...
+      </q-card-section>
+
+      <q-card-section
+        v-if="otaProgress.step === 0 && otaProgress.message && !otaProgress.fallbackMode"
+        class="text-center"
+      >
+        <q-btn flat label="Close" color="primary" @click="onDialogHide" />
       </q-card-section>
     </q-card>
   </q-dialog>
 </template>
 
 <script>
-import { ref, onMounted, onBeforeUnmount } from "vue";
 import { useDialogPluginComponent } from "quasar";
 
 export default {
   name: "FirmwareUpdateProgressDialog",
   emits: [...useDialogPluginComponent.emits],
 
-  setup() {
+  props: {
+    otaProgress: {
+      type: Object,
+      required: true,
+    },
+  },
+
+  setup(props) {
     const { dialogRef, onDialogHide } = useDialogPluginComponent();
-    const progress = ref(1); // Start at 100%
-    let interval = null;
-
-    onMounted(() => {
-      // Create a countdown that decreases progress over 30 seconds
-      interval = setInterval(() => {
-        progress.value -= 1 / 30;
-        if (progress.value <= 0) {
-          clearInterval(interval);
-          // Reload the page when countdown completes
-          location.reload(true);
-        }
-      }, 1000);
-    });
-
-    onBeforeUnmount(() => {
-      if (interval) {
-        clearInterval(interval);
-      }
-    });
 
     return {
       dialogRef,
       onDialogHide,
-      progress,
+      // pass the ref through so template auto-unwraps it
+      otaProgress: props.otaProgress,
     };
   },
 };
 </script>
 
 <style scoped>
-.full-width {
-  width: 100%;
+.step-active {
+  color: white;
+  font-weight: 600;
+}
+
+.step-dim {
+  color: rgba(255, 255, 255, 0.35);
 }
 </style>

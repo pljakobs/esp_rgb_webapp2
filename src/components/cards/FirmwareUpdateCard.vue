@@ -32,11 +32,12 @@
 </template>
 
 <script>
-import { ref, nextTick, createApp, h } from "vue";
+import { ref, nextTick, createApp, h, onUnmounted } from "vue";
 import { Dialog, Notify } from "quasar";
 import { configDataStore } from "src/stores/configDataStore";
 import { infoDataStore, normalizeInfoData } from "src/stores/infoDataStore";
 import { useControllersStore } from "src/stores/controllersStore";
+import useWebSocket from "src/services/websocket.js";
 import MyCard from "src/components/myCard.vue";
 import FirmwareSelectDialog from "src/components/Dialogs/firmwareSelectDialog.vue";
 import FirmwareUpdateProgressDialog from "src/components/Dialogs/firmwareUpdateProgressDialog.vue";
@@ -56,6 +57,64 @@ export default {
     const firmware = ref();
     const availableFirmware = ref([]);
     const updating = ref(false);
+
+    // OTA progress state driven by WebSocket
+    const otaProgress = ref({
+      step: 0,
+      message: "",
+      active: false,
+      reloadCountdown: 4,
+      fallbackMode: false,  // true when firmware doesn't send ota_status messages
+      timeFraction: 0,      // 0→1 over 20s in fallback mode
+    });
+    let reloadTimer = null;
+    let countdownTimer = null;
+    let fallbackDetectionTimer = null;
+    let fallbackProgressInterval = null;
+    let fallbackReloadTimer = null;
+
+    const ws = useWebSocket();
+    ws.onJson("ota_status", (params) => {
+      // Cancel fallback mode — this firmware sends structured WS messages
+      clearTimeout(fallbackDetectionTimer);
+      fallbackDetectionTimer = null;
+
+      const step = params?.status ?? 0;
+      const message = params?.message ?? "";
+      otaProgress.value.active = true;
+      otaProgress.value.step = step;
+      otaProgress.value.message = message;
+
+      if (step === 4) {
+        // Step 4: OTA successful, device is rebooting — reload after countdown
+        otaProgress.value.reloadCountdown = 4;
+        countdownTimer = setInterval(() => {
+          otaProgress.value.reloadCountdown -= 1;
+          if (otaProgress.value.reloadCountdown <= 0) {
+            clearInterval(countdownTimer);
+          }
+        }, 1000);
+        reloadTimer = setTimeout(() => {
+          clearInterval(countdownTimer);
+          // Cache-busting reload: append timestamp query param
+          const url = new URL(window.location.href);
+          url.searchParams.set("_t", Date.now());
+          window.location.replace(url.toString());
+        }, 4000);
+      } else if (step === 0) {
+        // Error — keep visible but don't auto-reload
+        clearTimeout(reloadTimer);
+        clearInterval(countdownTimer);
+      }
+    });
+
+    onUnmounted(() => {
+      clearTimeout(reloadTimer);
+      clearInterval(countdownTimer);
+      clearTimeout(fallbackDetectionTimer);
+      clearInterval(fallbackProgressInterval);
+      clearTimeout(fallbackReloadTimer);
+    });
 
     const cleanupMountedIcons = () => {
       document.querySelectorAll(".status-icon").forEach((container) => {
@@ -157,7 +216,9 @@ export default {
         if (data.firmware && Array.isArray(data.firmware)) {
           data.firmware.forEach((fw) => {
             // Only include firmware for the current SOC
-            if (fw.soc === infoData.data.device?.soc) {
+            if (
+              fw.soc?.toLowerCase() === infoData.data.device?.soc?.toLowerCase()
+            ) {
               // Ensure all required properties exist
               const firmwareOption = {
                 ...fw,
@@ -173,7 +234,10 @@ export default {
         if (data.history && Array.isArray(data.history)) {
           data.history.forEach((histItem) => {
             // Only include firmware for the current SOC
-            if (histItem.soc === infoData.data.device?.soc) {
+            if (
+              histItem.soc?.toLowerCase() ===
+              infoData.data.device?.soc?.toLowerCase()
+            ) {
               // Skip if this exact version is already in the options
               const isDuplicate = allFirmwareOptions.some(
                 (fw) =>
@@ -202,13 +266,17 @@ export default {
         availableFirmware.value.sort((a, b) => {
           // Put current build type first
           if (
-            a.type === infoData.data.app?.build_type &&
-            b.type !== infoData.data.app?.build_type
+            a.type?.toLowerCase() ===
+              infoData.data.app?.build_type?.toLowerCase() &&
+            b.type?.toLowerCase() !==
+              infoData.data.app?.build_type?.toLowerCase()
           )
             return -1;
           if (
-            a.type !== infoData.data.app?.build_type &&
-            b.type === infoData.data.app?.build_type
+            a.type?.toLowerCase() !==
+              infoData.data.app?.build_type?.toLowerCase() &&
+            b.type?.toLowerCase() ===
+              infoData.data.app?.build_type?.toLowerCase()
           )
             return 1;
 
@@ -339,10 +407,52 @@ export default {
 
         // Show the countdown dialog for current controller only
         if (controller.id === controllersStore.currentController.id) {
+          // Reset any previous OTA progress state
+          clearTimeout(fallbackDetectionTimer);
+          clearInterval(fallbackProgressInterval);
+          clearTimeout(fallbackReloadTimer);
+          otaProgress.value = {
+            step: 0,
+            message: "",
+            active: false,
+            reloadCountdown: 4,
+            fallbackMode: false,
+            timeFraction: 0,
+          };
+
           Dialog.create({
             component: FirmwareUpdateProgressDialog,
+            componentProps: { otaProgress },
             persistent: true,
           });
+
+          // If no ota_status WS message arrives within 3s the firmware is old and
+          // doesn't broadcast structured progress — switch to time-based fallback
+          fallbackDetectionTimer = setTimeout(() => {
+            fallbackDetectionTimer = null;
+            otaProgress.value.fallbackMode = true;
+            otaProgress.value.active = true;
+            otaProgress.value.message = "Updating firmware...";
+
+            const totalDuration = 20000;
+            const tickInterval = 100;
+            let elapsed = 0;
+
+            fallbackProgressInterval = setInterval(() => {
+              elapsed += tickInterval;
+              otaProgress.value.timeFraction = Math.min(elapsed / totalDuration, 1);
+              if (elapsed >= totalDuration) {
+                clearInterval(fallbackProgressInterval);
+              }
+            }, tickInterval);
+
+            fallbackReloadTimer = setTimeout(() => {
+              clearInterval(fallbackProgressInterval);
+              const url = new URL(window.location.href);
+              url.searchParams.set("_t", Date.now());
+              window.location.replace(url.toString());
+            }, totalDuration);
+          }, 3000);
         }
 
         // For batch updates, verify reboot by checking uptime
@@ -844,8 +954,8 @@ export default {
 
                 // Get current uptime for reboot verification
                 const uptime = infoData.data.runtime?.uptime;
-                const soc = infoData.data.device?.soc;
-                const build_type = infoData.data.app?.build_type;
+                const soc = infoData.data.device?.soc?.toLowerCase();
+                const build_type = infoData.data.app?.build_type?.toLowerCase();
                 const git_version = infoData.data.app?.git_version;
 
                 // Extract branch from version and show controller info
@@ -859,9 +969,9 @@ export default {
                 // Find matching firmware with branch consideration
                 const matchingFirmware = firmwareData.firmware.find(
                   (fw) =>
-                    fw.soc === soc &&
-                    fw.type === build_type &&
-                    (fw.branch || "stable") === controllerBranch,
+                    fw.soc?.toLowerCase() === soc &&
+                    fw.type?.toLowerCase() === build_type &&
+                    (fw.branch || "stable").toLowerCase() === controllerBranch,
                 );
 
                 if (matchingFirmware) {
@@ -909,21 +1019,23 @@ export default {
                 // 1. Same SOC and branch, any build type
                 let fallbackFirmware = firmwareData.firmware.find(
                   (fw) =>
-                    fw.soc === soc &&
-                    (fw.branch || "stable") === controllerBranch,
+                    fw.soc?.toLowerCase() === soc &&
+                    (fw.branch || "stable").toLowerCase() === controllerBranch,
                 );
 
                 // 2. Same SOC and build type, any branch
                 if (!fallbackFirmware) {
                   fallbackFirmware = firmwareData.firmware.find(
-                    (fw) => fw.soc === soc && fw.type === build_type,
+                    (fw) =>
+                      fw.soc?.toLowerCase() === soc &&
+                      fw.type?.toLowerCase() === build_type,
                   );
                 }
 
                 // 3. Same SOC, any branch, any build type (most generic fallback)
                 if (!fallbackFirmware) {
                   fallbackFirmware = firmwareData.firmware.find(
-                    (fw) => fw.soc === soc,
+                    (fw) => fw.soc?.toLowerCase() === soc,
                   );
                 }
 
@@ -1012,7 +1124,9 @@ export default {
                     );
 
                     if (infoResponse.ok) {
-                      controllerInfo = normalizeInfoData(await infoResponse.json());
+                      controllerInfo = normalizeInfoData(
+                        await infoResponse.json(),
+                      );
                     } else {
                       retryCount++;
                       updateStatus(
@@ -1061,8 +1175,9 @@ export default {
                 }
 
                 // Successfully got controller info, now process it
-                const soc = controllerInfo.device?.soc;
-                const build_type = controllerInfo.app?.build_type;
+                const soc = controllerInfo.device?.soc?.toLowerCase();
+                const build_type =
+                  controllerInfo.app?.build_type?.toLowerCase();
                 const git_version = controllerInfo.app?.git_version;
                 const uptime = controllerInfo.runtime?.uptime;
 
@@ -1077,9 +1192,9 @@ export default {
                 // Find matching firmware with branch consideration
                 const matchingFirmware = firmwareData.firmware.find(
                   (fw) =>
-                    fw.soc === soc &&
-                    fw.type === build_type &&
-                    (fw.branch || "stable") === controllerBranch,
+                    fw.soc?.toLowerCase() === soc &&
+                    fw.type?.toLowerCase() === build_type &&
+                    (fw.branch || "stable").toLowerCase() === controllerBranch,
                 );
 
                 if (!matchingFirmware) {
@@ -1087,21 +1202,24 @@ export default {
                   // 1. Same SOC and branch, any build type
                   let fallbackFirmware = firmwareData.firmware.find(
                     (fw) =>
-                      fw.soc === soc &&
-                      (fw.branch || "stable") === controllerBranch,
+                      fw.soc?.toLowerCase() === soc &&
+                      (fw.branch || "stable").toLowerCase() ===
+                        controllerBranch,
                   );
 
                   // 2. Same SOC and build type, any branch
                   if (!fallbackFirmware) {
                     fallbackFirmware = firmwareData.firmware.find(
-                      (fw) => fw.soc === soc && fw.type === build_type,
+                      (fw) =>
+                        fw.soc?.toLowerCase() === soc &&
+                        fw.type?.toLowerCase() === build_type,
                     );
                   }
 
                   // 3. Same SOC, any branch, any build type (most generic fallback)
                   if (!fallbackFirmware) {
                     fallbackFirmware = firmwareData.firmware.find(
-                      (fw) => fw.soc === soc,
+                      (fw) => fw.soc?.toLowerCase() === soc,
                     );
                   }
 
