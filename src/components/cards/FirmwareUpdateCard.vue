@@ -69,19 +69,21 @@ export default {
     });
     let reloadTimer = null;
     let countdownTimer = null;
-    let fallbackDetectionTimer = null;
     let fallbackProgressInterval = null;
     let fallbackReloadTimer = null;
 
     const ws = useWebSocket();
     ws.onJson("ota_status", (params) => {
-      // Cancel fallback mode — this firmware sends structured WS messages
-      clearTimeout(fallbackDetectionTimer);
-      fallbackDetectionTimer = null;
+      // Switch from time-based to WS-driven mode on first message
+      clearInterval(fallbackProgressInterval);
+      fallbackProgressInterval = null;
+      clearTimeout(fallbackReloadTimer);
+      fallbackReloadTimer = null;
 
       const step = params?.status ?? 0;
       const message = params?.message ?? "";
       otaProgress.value.active = true;
+      otaProgress.value.fallbackMode = false;
       otaProgress.value.step = step;
       otaProgress.value.message = message;
 
@@ -111,7 +113,6 @@ export default {
     onUnmounted(() => {
       clearTimeout(reloadTimer);
       clearInterval(countdownTimer);
-      clearTimeout(fallbackDetectionTimer);
       clearInterval(fallbackProgressInterval);
       clearTimeout(fallbackReloadTimer);
     });
@@ -408,51 +409,45 @@ export default {
         // Show the countdown dialog for current controller only
         if (controller.id === controllersStore.currentController.id) {
           // Reset any previous OTA progress state
-          clearTimeout(fallbackDetectionTimer);
           clearInterval(fallbackProgressInterval);
           clearTimeout(fallbackReloadTimer);
+
+          // Start immediately in time-based fallback mode.
+          // If the firmware sends ota_status WS messages the handler above will
+          // cancel these timers and switch to step-driven mode on the first message.
+          const totalDuration = 20000;
+          const tickInterval = 100;
+          let elapsed = 0;
+
           otaProgress.value = {
             step: 0,
-            message: "",
-            active: false,
+            message: "Updating firmware...",
+            active: true,
             reloadCountdown: 4,
-            fallbackMode: false,
+            fallbackMode: true,
             timeFraction: 0,
           };
+
+          fallbackProgressInterval = setInterval(() => {
+            elapsed += tickInterval;
+            otaProgress.value.timeFraction = Math.min(elapsed / totalDuration, 1);
+            if (elapsed >= totalDuration) {
+              clearInterval(fallbackProgressInterval);
+            }
+          }, tickInterval);
+
+          fallbackReloadTimer = setTimeout(() => {
+            clearInterval(fallbackProgressInterval);
+            const url = new URL(window.location.href);
+            url.searchParams.set("_t", Date.now());
+            window.location.replace(url.toString());
+          }, totalDuration);
 
           Dialog.create({
             component: FirmwareUpdateProgressDialog,
             componentProps: { otaProgress },
             persistent: true,
           });
-
-          // If no ota_status WS message arrives within 3s the firmware is old and
-          // doesn't broadcast structured progress — switch to time-based fallback
-          fallbackDetectionTimer = setTimeout(() => {
-            fallbackDetectionTimer = null;
-            otaProgress.value.fallbackMode = true;
-            otaProgress.value.active = true;
-            otaProgress.value.message = "Updating firmware...";
-
-            const totalDuration = 20000;
-            const tickInterval = 100;
-            let elapsed = 0;
-
-            fallbackProgressInterval = setInterval(() => {
-              elapsed += tickInterval;
-              otaProgress.value.timeFraction = Math.min(elapsed / totalDuration, 1);
-              if (elapsed >= totalDuration) {
-                clearInterval(fallbackProgressInterval);
-              }
-            }, tickInterval);
-
-            fallbackReloadTimer = setTimeout(() => {
-              clearInterval(fallbackProgressInterval);
-              const url = new URL(window.location.href);
-              url.searchParams.set("_t", Date.now());
-              window.location.replace(url.toString());
-            }, totalDuration);
-          }, 3000);
         }
 
         // For batch updates, verify reboot by checking uptime
