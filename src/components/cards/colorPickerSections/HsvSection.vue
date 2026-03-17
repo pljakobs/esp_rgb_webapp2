@@ -9,9 +9,13 @@
         class="scaled-color"
       />
     </q-card-section>
-    
+
     <!-- Added CT Slider Section -->
-    <q-card-section class="q-px-lg q-pt-md" style="max-width: 300px; margin: 0 auto;" v-if="showCtSlider">
+    <q-card-section
+      class="q-px-lg q-pt-md"
+      style="max-width: 300px; margin: 0 auto"
+      v-if="showCtSlider"
+    >
       <div class="text-caption text-grey-7 q-mb-xs">Color Temperature</div>
       <div class="row items-center no-wrap">
         <svgIcon name="thermostat" class="q-mr-sm text-grey-7" />
@@ -74,21 +78,21 @@ export default {
     const configData = configDataStore();
 
     const minCt = computed(() => {
-        // Defaults if parsing fails
-        try{
-           return configData.data.color.colortemp.ww || 2500;
-        } catch {
-            return 2500
-        }
-    })
+      // Defaults if parsing fails
+      try {
+        return configData.data.color.colortemp.ww || 2500;
+      } catch {
+        return 2500;
+      }
+    });
 
     const maxCt = computed(() => {
-        try{
-           return configData.data.color.colortemp.cw || 9000;
-        } catch {
-            return 9000
-        }
-    })
+      try {
+        return configData.data.color.colortemp.cw || 9000;
+      } catch {
+        return 9000;
+      }
+    });
 
     const showCtSlider = computed(() => {
       const defaultColorOptions = ["RGB", "RGBWW", "RGBCW", "RGBWWCW"];
@@ -96,11 +100,12 @@ export default {
         configData.data.general?.supported_color_models?.length > 0
           ? configData.data.general.supported_color_models
           : defaultColorOptions;
-      
+
       const colorModelIndex = configData.data.color.color_mode;
-      const currentMode = (colorModelIndex >= 0 && colorModelIndex < options.length)
-        ? options[colorModelIndex]
-        : options[0];
+      const currentMode =
+        colorModelIndex >= 0 && colorModelIndex < options.length
+          ? options[colorModelIndex]
+          : options[0];
 
       return currentMode === "RGBWW";
     });
@@ -121,10 +126,10 @@ export default {
             internalColor.value = rgbToHex(rgb);
           }
           if (newValue?.ct !== undefined) {
-             ct.value = newValue.ct;
+            ct.value = newValue.ct;
           }
         } catch (error) {
-           console.log("Error processing updates from props:", error);
+          console.log("Error processing updates from props:", error);
         }
 
         // Reset flag after DOM update

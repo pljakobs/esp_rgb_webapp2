@@ -64,8 +64,8 @@ export default {
       message: "",
       active: false,
       reloadCountdown: 4,
-      fallbackMode: false,  // true when firmware doesn't send ota_status messages
-      timeFraction: 0,      // 0→1 over 20s in fallback mode
+      fallbackMode: false, // true when firmware doesn't send ota_status messages
+      timeFraction: 0, // 0→1 over 20s in fallback mode
     });
     let reloadTimer = null;
     let countdownTimer = null;
@@ -439,7 +439,10 @@ export default {
 
           fallbackProgressInterval = setInterval(() => {
             elapsed += tickInterval;
-            otaProgress.value.timeFraction = Math.min(elapsed / totalDuration, 1);
+            otaProgress.value.timeFraction = Math.min(
+              elapsed / totalDuration,
+              1,
+            );
             if (elapsed >= totalDuration) {
               clearInterval(fallbackProgressInterval);
             }
@@ -492,8 +495,9 @@ export default {
 
         // For batch updates, verify reboot by checking uptime
         if (initialUptime !== null) {
-          // Wait 5 seconds before starting to poll (give the controller time to begin rebooting)
-          await new Promise((resolve) => setTimeout(resolve, 5000));
+          // Wait 30 seconds before polling — ESP8266 OTA download + flash takes ~30-60s,
+          // and polling during active flash writes burns TCP slots to no effect.
+          await new Promise((resolve) => setTimeout(resolve, 30000));
 
           // Start polling for reboot completion
           const verifyReboot = async () => {

@@ -7,7 +7,11 @@
 
       <q-card-section>
         <q-linear-progress
-          :value="otaProgress.fallbackMode ? otaProgress.timeFraction : otaProgress.step / 4"
+          :value="
+            otaProgress.fallbackMode
+              ? otaProgress.timeFraction
+              : otaProgress.step / 4
+          "
           :color="
             otaProgress.step === 0 && !otaProgress.fallbackMode
               ? 'negative'
@@ -60,7 +64,11 @@
       </q-card-section>
 
       <q-card-section
-        v-if="otaProgress.step === 0 && otaProgress.message && !otaProgress.fallbackMode"
+        v-if="
+          otaProgress.step === 0 &&
+          otaProgress.message &&
+          !otaProgress.fallbackMode
+        "
         class="text-center"
       >
         <q-btn flat label="Close" color="primary" @click="onDialogHide" />
