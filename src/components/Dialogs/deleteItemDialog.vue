@@ -32,35 +32,16 @@
 
       <!-- Progress mode with modal circular progress -->
       <template v-else>
-        <q-card-section class="text-center q-pa-lg">
-          <div class="text-h6 q-mb-md">Deleting {{ itemTypeCapitalized }}</div>
-          <q-circular-progress
-            v-if="progress.total === 0"
-            indeterminate
-            size="80px"
-            :thickness="0.15"
-            color="negative"
-            class="q-mb-md"
-          />
-          <q-circular-progress
-            v-else
-            :value="(progress.completed / progress.total) * 100"
-            size="80px"
-            :thickness="0.15"
-            color="negative"
-            track-color="grey-3"
-            class="q-mb-md"
-          />
-          <div v-if="progress.total === 0" class="text-subtitle2 q-mb-xs">
-            Preparing to delete...
-          </div>
-          <div v-else class="text-subtitle2 q-mb-xs">
-            {{ progress.completed }} / {{ progress.total }} controllers updated
-          </div>
-          <div class="text-caption text-grey-6">
-            Please wait while "{{ item.name }}" is being deleted...
-          </div>
-        </q-card-section>
+        <ControllerProgressDisplay
+          :title="'Deleting ' + itemTypeCapitalized"
+          :progress="progress"
+          color="negative"
+        >
+          <template #detail
+            >Please wait while "{{ item.name }}" is being
+            deleted...</template
+          >
+        </ControllerProgressDisplay>
       </template>
 
       <!-- Buttons - different based on mode -->

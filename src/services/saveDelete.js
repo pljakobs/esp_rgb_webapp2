@@ -1,5 +1,5 @@
 import { useControllersStore } from "src/stores/controllersStore";
-import { makeID } from "src/services/tools";
+import { makeID, createAbortTimeout } from "src/services/tools";
 
 /**
  * Generic function to save any item type (preset, group, scene)
@@ -55,9 +55,12 @@ export async function saveItem(
       }
 
       // Get existing data from controller
+      const readAbort = createAbortTimeout(5000);
       const existingDataResponse = await fetch(
         `http://${controller.ip_address}/data`,
+        { signal: readAbort.signal },
       );
+      readAbort.clear();
       const existingData = await existingDataResponse.json();
       const existingItem = existingData[pluralType].find(
         (i) => i.id === item.id,
@@ -74,13 +77,16 @@ export async function saveItem(
 
       // Only send if it's new or newer
       if (!existingItem || existingItem.ts < item.ts) {
+        const writeAbort = createAbortTimeout(5000);
         const response = await fetch(`http://${controller.ip_address}/data`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify(payload),
+          signal: writeAbort.signal,
         });
+        writeAbort.clear();
 
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
