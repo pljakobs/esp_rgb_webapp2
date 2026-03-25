@@ -297,11 +297,7 @@ export const useAppDataStore = defineStore("appData", {
       // Use standard Unix timestamp (milliseconds)
       preset.ts = Date.now();
 
-      // Store the favorite status and temporarily remove it from the preset
-      // so it doesn't get synchronized to other controllers
-      const isFavorite = preset.favorite;
       const presetToSync = { ...preset };
-      delete presetToSync.favorite;
 
       const existingPresetIndex = this.data.presets.findIndex(
         (p) => p.id === preset.id,
@@ -427,9 +423,6 @@ export const useAppDataStore = defineStore("appData", {
             progressCallback(completed, targetControllers.length);
           }
         }
-
-        // Restore the favorite status
-        preset.favorite = isFavorite;
 
         if (!this.abortSaveOperation) {
           if (existingPresetIndex !== -1) {
