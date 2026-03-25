@@ -27,25 +27,24 @@
         />
       </q-card-section>
 
-      <q-card-section v-if="isSaving || isRollingBack">
-        <q-linear-progress
-          :value="progressValue"
-          :color="isRollingBack ? 'negative' : 'primary'"
-          size="md"
-          :indeterminate="progress.total === 0"
-        />
-        <div class="text-center q-mt-sm">
-          <span v-if="!isRollingBack">
-            {{ progress.completed }} of {{ progress.total }} controllers updated
-          </span>
-          <span v-else>
-            {{
-              progress.message ||
-              `${progress.completed} of ${progress.total} controllers rolled back`
-            }}
-          </span>
-        </div>
-      </q-card-section>
+      <ControllerProgressDisplay
+        v-if="isSaving || isRollingBack"
+        :title="isRollingBack ? 'Rolling Back...' : 'Saving Preset'"
+        :progress="progress"
+        :color="isRollingBack ? 'negative' : 'primary'"
+      >
+        <template #status>
+          <span v-if="!isRollingBack && progress.total === 0">Preparing...</span>
+          <span v-else-if="!isRollingBack"
+            >{{ progress.completed }} of {{ progress.total }} controllers
+            updated</span
+          >
+          <span v-else>{{
+            progress.message ||
+            `${progress.completed} of ${progress.total} controllers rolled back`
+          }}</span>
+        </template>
+      </ControllerProgressDisplay>
       <q-card-section v-if="isAborting && !isRollingBack && progress.message">
         <div class="text-center q-pa-md">
           <svgIcon name="info" size="2rem" class="text-primary" />

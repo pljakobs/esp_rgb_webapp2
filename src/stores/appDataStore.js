@@ -468,14 +468,21 @@ export const useAppDataStore = defineStore("appData", {
 
           try {
             // Wrap each controller request in its own try/catch
+            const abort = createAbortTimeout(5000, () => {
+              console.warn(
+                `Timeout deleting preset from ${controller.ip_address} (5s)`,
+              );
+            });
             const response = await fetch(
               `http://${controller.ip_address}/data`,
               {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload),
+                signal: abort.signal,
               },
             );
+            abort.clear();
 
             if (!response.ok) {
               const errorText = await response.text();
@@ -1021,6 +1028,11 @@ export const useAppDataStore = defineStore("appData", {
           // Check if the controller already has this metadata
           let existingMetadata = null;
           try {
+            const readAbort = createAbortTimeout(5000, () => {
+              console.warn(
+                `Timeout reading metadata from ${controller.name || controller.hostname} (5s)`,
+              );
+            });
             const response = await fetch(
               `http://${controller.ip_address}/data`,
               {
@@ -1028,8 +1040,10 @@ export const useAppDataStore = defineStore("appData", {
                 headers: {
                   "Content-Type": "application/json",
                 },
+                signal: readAbort.signal,
               },
             );
+            readAbort.clear();
 
             if (response.ok) {
               const data = await response.json();
@@ -1074,6 +1088,11 @@ export const useAppDataStore = defineStore("appData", {
             );
 
             try {
+              const writeAbort = createAbortTimeout(5000, () => {
+                console.warn(
+                  `Timeout saving metadata to ${controller.name || controller.hostname} (5s)`,
+                );
+              });
               const response = await fetch(
                 `http://${controller.ip_address}/data`,
                 {
@@ -1082,8 +1101,10 @@ export const useAppDataStore = defineStore("appData", {
                     "Content-Type": "application/json",
                   },
                   body: JSON.stringify(payload),
+                  signal: writeAbort.signal,
                 },
               );
+              writeAbort.clear();
 
               if (!response.ok) {
                 console.error(

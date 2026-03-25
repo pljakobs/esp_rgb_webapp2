@@ -64,35 +64,11 @@
     position="standard"
   >
     <q-card class="progress-modal-card">
-      <q-card-section class="text-center q-pa-lg">
-        <div class="text-h6 q-mb-md">Saving Group</div>
-        <q-circular-progress
-          v-if="progress.total === 0"
-          indeterminate
-          size="80px"
-          :thickness="0.15"
-          color="primary"
-          class="q-mb-md"
-        />
-        <q-circular-progress
-          v-else
-          :value="(progress.completed / progress.total) * 100"
-          size="80px"
-          :thickness="0.15"
-          color="primary"
-          track-color="grey-3"
-          class="q-mb-md"
-        />
-        <div v-if="progress.total === 0" class="text-subtitle2 q-mb-xs">
-          Preparing to save...
-        </div>
-        <div v-else class="text-subtitle2 q-mb-xs">
-          {{ progress.completed }} / {{ progress.total }} controllers updated
-        </div>
-        <div class="text-caption text-grey-6">
-          Please wait while the group is being saved...
-        </div>
-      </q-card-section>
+      <ControllerProgressDisplay
+        title="Saving Group"
+        :progress="progress"
+        subtitle="Please wait while the group is being saved..."
+      />
     </q-card>
   </q-dialog>
 </template>

@@ -9,9 +9,9 @@ import useWebSocket from "src/services/websocket.js";
 
 const INIT_DELAYS = {
   controllers: 0,
-  websocket: 300,
-  storeStart: 500,
-  betweenStores: 100,
+  websocket: 0,
+  storeStart: 0,
+  betweenStores: 0,
   sync: 0,
 };
 
@@ -142,14 +142,14 @@ export default async function initializeStores(options = {}) {
       },
     ];
 
-    for (const step of storeSteps) {
-      if (isStale()) {
-        return;
-      }
+    if (isStale()) {
+      return;
+    }
 
-      const shouldFetch = force || storeCacheKeys[step.key] !== controllerKey;
-
-      if (shouldFetch) {
+    await Promise.all(
+      storeSteps.map(async (step) => {
+        const shouldFetch = force || storeCacheKeys[step.key] !== controllerKey;
+        if (!shouldFetch) return;
         try {
           await step.fetch();
           if (step.store.status === storeStatus.READY) {
@@ -158,14 +158,10 @@ export default async function initializeStores(options = {}) {
         } catch (error) {
           console.error(`Failed to initialize ${step.key} store:`, error);
         }
-      }
+      }),
+    );
 
-      if (!(await safeDelay(INIT_DELAYS.betweenStores))) {
-        return;
-      }
-    }
-
-    if (!(await safeDelay(INIT_DELAYS.sync))) {
+    if (isStale()) {
       return;
     }
 

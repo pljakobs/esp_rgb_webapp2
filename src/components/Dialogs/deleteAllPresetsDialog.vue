@@ -22,29 +22,22 @@
           <q-toolbar-title>Deleting All Presets...</q-toolbar-title>
         </q-toolbar>
 
-        <q-card-section>
-          <div class="text-center q-mb-md">
-            <p>Deleting all presets from all controllers</p>
-          </div>
-
-          <q-linear-progress
-            :value="progressValue"
-            color="negative"
-            size="md"
-            :indeterminate="currentStage === 'fetching'"
-          />
-          <div class="text-center q-mt-sm">
-            <div v-if="currentStage === 'fetching'">
-              Retrieving presets from controllers...
-            </div>
-            <div v-else-if="currentStage === 'deleting'">
-              {{ progress.completed }} of {{ progress.total }} presets deleted
-            </div>
-            <div v-else-if="currentStage === 'complete'">
-              Deletion complete!
-            </div>
-          </div>
-        </q-card-section>
+        <ControllerProgressDisplay
+          title="Deleting All Presets"
+          :progress="progress"
+          color="negative"
+        >
+          <template #status>
+            <span v-if="currentStage === 'fetching'"
+              >Retrieving presets from controllers...</span
+            >
+            <span v-else-if="currentStage === 'deleting'"
+              >{{ progress.completed }} of {{ progress.total }} presets
+              deleted</span
+            >
+            <span v-else-if="currentStage === 'complete'">Deletion complete!</span>
+          </template>
+        </ControllerProgressDisplay>
       </template>
 
       <!-- Buttons - different based on mode -->
@@ -74,6 +67,7 @@ import { ref, computed } from "vue";
 import { useDialogPluginComponent } from "quasar";
 import { useAppDataStore } from "src/stores/appDataStore";
 import { useControllersStore } from "src/stores/controllersStore";
+import { createAbortTimeout } from "src/services/tools";
 
 export default {
   name: "deleteAllPresetsDialog",
@@ -106,9 +100,16 @@ export default {
         const allControllerPresets = {};
         for (const controller of controllers.data) {
           try {
+            const readAbort = createAbortTimeout(5000, () => {
+              console.warn(
+                `Timeout fetching presets from ${controller.ip_address} (5s)`,
+              );
+            });
             const response = await fetch(
               `http://${controller.ip_address}/data`,
+              { signal: readAbort.signal },
             );
+            readAbort.clear();
             if (response.ok) {
               const data = await response.json();
               if (data.presets && Array.isArray(data.presets)) {
@@ -139,13 +140,18 @@ export default {
           for (const preset of allControllerPresets[ip]) {
             try {
               let payload = { [`presets[id=${preset.id}]`]: [] };
+              const writeAbort = createAbortTimeout(5000, () => {
+                console.warn(`Timeout deleting preset from ${ip} (5s)`);
+              });
               await fetch(`http://${ip}/data`, {
                 method: "POST",
                 headers: {
                   "Content-Type": "application/json",
                 },
                 body: JSON.stringify(payload),
+                signal: writeAbort.signal,
               });
+              writeAbort.clear();
 
               // Update progress
               progress.value.completed++;

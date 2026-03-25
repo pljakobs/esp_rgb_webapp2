@@ -113,7 +113,7 @@ export async function getModifyPost(ipAddress, modifyFn, timeoutMs = 8000) {
 
 function makeID() {
   const infoData = infoDataStore();
-  const controllerID = infoData.data.deviceid;
+  const controllerID = infoData.data?.device?.deviceid ?? infoData.data?.deviceid;
 
   const localID = getLocalID(8);
   return `${controllerID}-${localID}`;
