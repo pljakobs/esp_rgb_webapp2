@@ -297,11 +297,7 @@ export const useAppDataStore = defineStore("appData", {
       // Use standard Unix timestamp (milliseconds)
       preset.ts = Date.now();
 
-      // Store the favorite status and temporarily remove it from the preset
-      // so it doesn't get synchronized to other controllers
-      const isFavorite = preset.favorite;
       const presetToSync = { ...preset };
-      delete presetToSync.favorite;
 
       const existingPresetIndex = this.data.presets.findIndex(
         (p) => p.id === preset.id,
@@ -428,9 +424,6 @@ export const useAppDataStore = defineStore("appData", {
           }
         }
 
-        // Restore the favorite status
-        preset.favorite = isFavorite;
-
         if (!this.abortSaveOperation) {
           if (existingPresetIndex !== -1) {
             // Update the preset in the local store
@@ -449,7 +442,7 @@ export const useAppDataStore = defineStore("appData", {
 
     async deletePreset(preset, progressCallback) {
       const controllers = useControllersStore();
-      let payload = { [`presets[id="${preset.id}"]`]: [] };
+      let payload = { [`presets[id=${preset.id}]`]: [] };
 
       try {
         let completed = 0;
@@ -528,29 +521,26 @@ export const useAppDataStore = defineStore("appData", {
       );
 
       if (presetIndex !== -1) {
-        // Toggle the favorite status locally only
-        const updatedPreset = { ...this.data.presets[presetIndex] };
-        updatedPreset.favorite = !updatedPreset.favorite;
+        const newFavorite = !this.data.presets[presetIndex].favorite;
+        const payload = {
+          [`presets[id=${preset.id}]`]: { favorite: newFavorite },
+        };
 
-        const payload = { [`presets[id="${preset.id}"]`]: updatedPreset };
         const response = await fetch(
           `http://${controllers.currentController["ip_address"]}/data`,
           {
             method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload),
           },
         );
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
-        // Update in local store only
-        this.data.presets[presetIndex] = updatedPreset;
-        console.log(
-          `Set preset ${updatedPreset.name} favorite status to ${updatedPreset.favorite}`,
-        );
+        this.data.presets[presetIndex] = {
+          ...this.data.presets[presetIndex],
+          favorite: newFavorite,
+        };
       }
     },
 
