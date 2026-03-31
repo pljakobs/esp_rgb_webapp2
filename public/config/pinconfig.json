@@ -61,7 +61,7 @@
       "name": "NodeMC esp32c3 01M",
       "soc": "esp32c3",
       "model": "rgbww",
-      "clear_pin": 18,
+      "clear_pin": 0,
       "channels": [
         { "name": "red", "pin": "3" },
         { "name": "green", "pin": "4" },
