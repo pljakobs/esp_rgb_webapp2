@@ -1,5 +1,5 @@
 {
-  "version": 18,
+  "version": 19,
   "available_pins": [
     {
       "soc": "esp8266",
@@ -37,7 +37,7 @@
       "model": "rgbww",
       "clear_pin": 18,
       "channels": [
-        { "name": "red", "pin": ",0" },
+        { "name": "red", "pin": "0" },
         { "name": "green", "pin": "3" },
         { "name": "blue", "pin": "4" },
         { "name": "warmwhite", "pin": "5" },
