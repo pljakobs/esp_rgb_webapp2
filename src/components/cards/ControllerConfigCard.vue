@@ -49,7 +49,8 @@
       <!-- PWM Configuration Section (only for non-ESP8266) -->
       <div
         v-if="
-          infoData.data.soc && infoData.data.soc.toLowerCase() !== 'esp8266'
+          infoData.data.device.soc &&
+          infoData.data.device.soc.toLowerCase() !== 'esp8266'
         "
       >
         <q-separator class="q-my-lg" />
@@ -336,7 +337,7 @@ export default {
     const socSpecificConfigs = computed(() =>
       configData.data.hardware.pinconfigs.filter(
         (config) =>
-          config.soc.toLowerCase() === infoData.data.soc.toLowerCase(),
+          config.soc.toLowerCase() === infoData.data.device.soc.toLowerCase(),
       ),
     );
 
@@ -396,7 +397,8 @@ export default {
 
       // Only check PWM changes if PWM is supported
       const isPwmSupported =
-        infoData.data.soc && infoData.data.soc.toLowerCase() !== "esp8266";
+        infoData.data.device.soc &&
+        infoData.data.device.soc.toLowerCase() !== "esp8266";
       const pwmChanged =
         isPwmSupported &&
         (pwmSpeedMode.value !== originalValues.pwmSpeedMode ||
@@ -419,7 +421,10 @@ export default {
       const options = [{ label: "Low Speed", value: "low_speed" }];
 
       // Only add High Speed option for ESP32 (exactly)
-      if (infoData.data.soc && infoData.data.soc.toLowerCase() === "esp32") {
+      if (
+        infoData.data.device.soc &&
+        infoData.data.device.soc.toLowerCase() === "esp32"
+      ) {
         options.push({ label: "High Speed", value: "high_speed" });
       }
 
@@ -485,7 +490,8 @@ export default {
 
       // Prepare PWM configuration changes (only if supported)
       const isPwmSupported =
-        infoData.data.soc && infoData.data.soc.toLowerCase() !== "esp8266";
+        infoData.data.device.soc &&
+        infoData.data.device.soc.toLowerCase() !== "esp8266";
       if (isPwmSupported) {
         // Only add PWM updates if values have changed
         if (pwmSpeedMode.value !== originalValues.pwmSpeedMode) {
@@ -599,7 +605,10 @@ export default {
 
     // Merge local and remote, filter for SoC, avoid duplicates
     const compatiblePinConfigs = computed(() => {
-      const soc = infoData.data.soc?.toLowerCase() || "";
+      const soc =
+        infoData.data.device.soc?.toLowerCase() ||
+        infoData.data.soc?.toLowerCase() ||
+        "";
       const local = configData.data.hardware.pinconfigs || [];
       const remote = remotePinConfigs.value || [];
       // Merge, remote first if not in local
@@ -635,7 +644,7 @@ export default {
         showNotification(
           "warning",
           "warning",
-          `Selected pin configuration not compatible with ${infoData.data.soc}. Switching to a compatible configuration.`,
+          `Selected pin configuration not compatible with ${infoData.data.device.soc}. Switching to a compatible configuration.`,
           3000,
         );
       }
@@ -675,7 +684,8 @@ export default {
     const loadAvailablePins = () => {
       const socPins = configData.data.hardware.available_pins.find(
         (pinConfig) =>
-          pinConfig.soc.toLowerCase() === infoData.data.soc.toLowerCase(),
+          pinConfig.soc.toLowerCase() ===
+          infoData.data.device.soc.toLowerCase(),
       );
       if (socPins) {
         availablePins.value = socPins.pins.map((pin) => ({
@@ -698,7 +708,7 @@ export default {
         showNotification(
           "warning",
           "warning",
-          `No pin configuration found for ${infoData.data.soc}. Please add one for this architecture.`,
+          `No pin configuration found for ${infoData.data.device.soc}. Please add one for this architecture.`,
           4000,
         );
         showAddConfigDialog();
@@ -711,7 +721,7 @@ export default {
         componentProps: {
           mode: "add",
           availablePins: availablePins.value,
-          soc: infoData.data.soc,
+          soc: infoData.data.device.soc,
         },
       }).onOk((newConfig) => {
         configData.updateData("hardware.pinconfigs", [
@@ -758,7 +768,7 @@ export default {
           mode: "edit",
           existingConfig: currentConfig,
           availablePins: availablePins.value,
-          soc: infoData.data.soc,
+          soc: infoData.data.device.soc,
         },
       }).onOk((updatedConfig) => {
         const configs = configData.data.hardware.pinconfigs;
@@ -827,16 +837,16 @@ export default {
     });
 
     watch(
-      () => infoData.data.soc,
+      () => infoData.data.device.soc,
       () => {
-        if (infoData.data.soc) {
+        if (infoData.data.device.soc) {
           getPinConfigNames();
           getCurrentPinConfig();
           loadAvailablePins();
 
           // Reset speed mode to low_speed if current SoC doesn't support high speed
           if (
-            infoData.data.soc.toLowerCase() !== "esp32" &&
+            infoData.data.device.soc.toLowerCase() !== "esp32" &&
             pwmSpeedMode.value === "high_speed"
           ) {
             pwmSpeedMode.value = "low_speed";
