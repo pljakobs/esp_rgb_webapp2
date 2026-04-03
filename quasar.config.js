@@ -49,11 +49,11 @@ export default configure((/* ctx */) => {
       warnings: true,
       errors: true,
     },
-    boot: ["i18n", "registerSvgIcon.js"],
+    boot: ["i18n", "registerSvgIcon.js", "autosaveFeedback"],
     css: ["app.scss"],
     extras: [],
     build: {
-      cssMinify: 'esbuild',
+      cssMinify: "esbuild",
       target: {
         browser: ["es2020"],
         node: "node20",
