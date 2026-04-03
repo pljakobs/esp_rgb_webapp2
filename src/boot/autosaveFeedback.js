@@ -1,4 +1,4 @@
-import { defineBoot } from "quasar/wrappers";
+import { boot } from "quasar/wrappers";
 
 const FLASH_CLASS = "q-field--autosave-flash";
 const TRACKED_INPUT_TYPES = new Set([
@@ -81,7 +81,7 @@ function handleFocusOut(event) {
   flashSavedState(fieldElement);
 }
 
-export default defineBoot(() => {
+export default boot(() => {
   document.addEventListener("focusin", handleFocusIn, true);
   document.addEventListener("focusout", handleFocusOut, true);
 });
