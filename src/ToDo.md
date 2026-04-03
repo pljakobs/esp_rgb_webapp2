@@ -8,6 +8,6 @@
 - [x] the buttons for presets and scenes in the favorites card should be more elegant, more user friendly, more recognizable. They should invite the user to press them and ituitively show that this is a light setting. The button should show the name and the color / the five color swatch for raw presets. I am not sure that the scrolling list is ideal, maybe a tabbed control for all groups would be better (only for those that actually have favorite presets or scenes, of course )
 - [x] color temp slider should only be shown if the color model is RGBWW - not for any other color model
 - [x] the central interaction pages should generally be hanging from the top of the page and use 80% of the page hight
-- Question: is there a way to have a ui where the user can tear off the various cards and place them on the window? 
-- [x] firmware update dialog does not yet use the new infoDataStore format and therefore does not correctly select the build type
+- Question: is there a way to have a ui where the user can tear off the various cards and place them on the window?
+- [ ] firmware update dialog does not yet use the new infoDataStore format and therefore does not correctly select the build type
 - [ ] on wide viewports, show the system information card on the left and the other cards to its right in a two-column layout
