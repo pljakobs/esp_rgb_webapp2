@@ -63,6 +63,37 @@
       </div>
     </q-card-section>
     <q-card-section class="row justify-center no-padding">
+      <div class="row items-end q-col-gutter-sm q-mb-sm full-width q-px-sm">
+        <div class="col-12 col-md-3">
+          <q-select
+            v-model="downloadScope"
+            :options="downloadScopeOptions"
+            emit-value
+            map-options
+            label="Download Range"
+            @update:model-value="persistDownloadPreferences"
+          />
+        </div>
+        <div class="col-6 col-md-2" v-if="downloadScope === 'window'">
+          <q-input
+            v-model.number="downloadAmount"
+            type="number"
+            min="1"
+            label="Last"
+            @blur="persistDownloadPreferences"
+          />
+        </div>
+        <div class="col-6 col-md-3" v-if="downloadScope === 'window'">
+          <q-select
+            v-model="downloadUnit"
+            :options="downloadUnitOptions"
+            emit-value
+            map-options
+            label="Unit"
+            @update:model-value="persistDownloadPreferences"
+          />
+        </div>
+      </div>
       <q-btn
         flat
         :disable="!canLoadOlder || loading"
@@ -73,7 +104,8 @@
       />
       <q-btn
         @click="downloadLogFile"
-        :disable="displayLogs.length === 0"
+        :loading="downloadLoading"
+        :disable="downloadLoading || !currentControllerIp"
         label="Download Log"
         color="primary"
       />
@@ -107,7 +139,8 @@
           <q-btn
             flat
             label="Download"
-            :disable="displayLogs.length === 0"
+            :loading="downloadLoading"
+            :disable="downloadLoading || !currentControllerIp"
             class="q-ml-sm"
             @click="downloadLogFile"
           />
@@ -177,9 +210,20 @@ export default {
     const remoteLogs = ref([]);
     const nextBefore = ref(null);
     const loading = ref(false);
+    const downloadLoading = ref(false);
     const fullscreen = ref(false);
     const serviceDetected = ref(false);
     const statusMessage = ref("Idle");
+    const downloadScope = ref(
+      localStorage.getItem("lightinator-log-download-scope") || "all",
+    );
+    const downloadAmount = ref(
+      Number.parseInt(localStorage.getItem("lightinator-log-download-amount") || "24", 10) ||
+        24,
+    );
+    const downloadUnit = ref(
+      localStorage.getItem("lightinator-log-download-unit") || "hours",
+    );
     const logViewerEl = ref(null);
     const logViewerFullscreenEl = ref(null);
     const pollMs = 2000;
@@ -207,6 +251,16 @@ export default {
         (statusMessage.value.toLowerCase().includes("could not detect") ||
           statusMessage.value.toLowerCase().includes("error loading logs")),
     );
+
+    const downloadScopeOptions = [
+      { label: "All available", value: "all" },
+      { label: "Last time window", value: "window" },
+    ];
+    const downloadUnitOptions = [
+      { label: "Minutes", value: "minutes" },
+      { label: "Hours", value: "hours" },
+      { label: "Days", value: "days" },
+    ];
 
     const normalizeHost = (host) => String(host || "").trim();
     const normalizePort = (port) => {
@@ -240,14 +294,6 @@ export default {
       });
     };
 
-    const isPrivateIpv4 = (value) => {
-      if (!isIpv4Address(value)) {
-        return false;
-      }
-      const [a, b] = value.split(".").map((part) => Number.parseInt(part, 10));
-      return a === 10 || (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168);
-    };
-
     const autoConfigureControllerRsyslog = async ({ ip, udpPort }) => {
       if (!currentControllerIp.value) {
         return;
@@ -272,6 +318,24 @@ export default {
         "lightinator-log-service-port",
         String(collectorPort.value),
       );
+    };
+
+    const persistDownloadPreferences = () => {
+      const normalizedAmount = Number.parseInt(String(downloadAmount.value || ""), 10);
+      downloadAmount.value = Number.isFinite(normalizedAmount) && normalizedAmount > 0
+        ? normalizedAmount
+        : 24;
+
+      if (!["all", "window"].includes(downloadScope.value)) {
+        downloadScope.value = "all";
+      }
+      if (!["minutes", "hours", "days"].includes(downloadUnit.value)) {
+        downloadUnit.value = "hours";
+      }
+
+      localStorage.setItem("lightinator-log-download-scope", downloadScope.value);
+      localStorage.setItem("lightinator-log-download-amount", String(downloadAmount.value));
+      localStorage.setItem("lightinator-log-download-unit", downloadUnit.value);
     };
 
     const fetchJsonWithTimeout = async (url, timeoutMs = 3000) => {
@@ -378,19 +442,115 @@ export default {
       }
     };
 
-    const downloadLogFile = () => {
-      const logContent = displayLogs.value
-        .map((log) => log.raw || `${log.time} ${log.location} ${log.message}`)
-        .join("\n");
-      const blob = new Blob([logContent], { type: "text/plain" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "Lightinator_log.txt";
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+    const getDownloadWindowMs = () => {
+      if (downloadScope.value !== "window") {
+        return null;
+      }
+
+      const amount = Number.parseInt(String(downloadAmount.value || ""), 10);
+      if (!Number.isFinite(amount) || amount <= 0) {
+        return null;
+      }
+
+      const unitToMs = {
+        minutes: 60 * 1000,
+        hours: 60 * 60 * 1000,
+        days: 24 * 60 * 60 * 1000,
+      };
+
+      return amount * (unitToMs[downloadUnit.value] || unitToMs.hours);
+    };
+
+    const fetchAllLogsForDownload = async () => {
+      const items = [];
+      let before = 0;
+      const limit = 500;
+      const maxPages = 200;
+
+      for (let page = 0; page < maxPages; page += 1) {
+        const endpoint = `${serviceBaseUrl.value}/api/v1/logs?ip=${encodeURIComponent(
+          currentControllerIp.value,
+        )}&limit=${limit}&before=${before}`;
+        const payload = await fetchJsonWithTimeout(endpoint, 8000);
+        const pageItems = Array.isArray(payload.items) ? payload.items : [];
+        items.push(...pageItems);
+
+        if (payload.nextBefore === null || payload.nextBefore === undefined) {
+          break;
+        }
+        before = payload.nextBefore;
+      }
+
+      return items;
+    };
+
+    const downloadLogFile = async () => {
+      if (downloadLoading.value) {
+        return;
+      }
+
+      if (!currentControllerIp.value) {
+        statusMessage.value = "No controller selected";
+        return;
+      }
+
+      persistCollectorTarget();
+      persistDownloadPreferences();
+
+      if (!isIpv4Address(collectorHost.value)) {
+        statusMessage.value = "Please enter a valid collector IPv4 address.";
+        return;
+      }
+
+      const httpPort = normalizePort(collectorPort.value);
+      if (!httpPort) {
+        statusMessage.value = "Please enter a valid collector HTTP port.";
+        return;
+      }
+
+      downloadLoading.value = true;
+      try {
+        const allItems = await fetchAllLogsForDownload();
+        const windowMs = getDownloadWindowMs();
+        const cutoff = windowMs ? Date.now() - windowMs : null;
+
+        const filteredItems = cutoff
+          ? allItems.filter((item) => {
+              const ts = Date.parse(item.receivedAt || "");
+              return Number.isFinite(ts) && ts >= cutoff;
+            })
+          : allItems;
+
+        if (filteredItems.length === 0) {
+          statusMessage.value = "No logs found for selected download range.";
+          return;
+        }
+
+        const logContent = filteredItems
+          .map((item) => {
+            const timestamp = item.receivedAt || "";
+            const sourceIp = item.sourceIp || "";
+            const message = item.raw || item.message || "";
+            return `${timestamp} ${sourceIp} ${message}`.trim();
+          })
+          .join("\n");
+
+        const blob = new Blob([logContent], { type: "text/plain" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "Lightinator_log.txt";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        statusMessage.value = `Downloaded ${filteredItems.length} log entries.`;
+      } catch (error) {
+        statusMessage.value = `Error downloading logs: ${error.message}`;
+      } finally {
+        downloadLoading.value = false;
+      }
     };
 
     watch(currentControllerIp, () => {
@@ -419,6 +579,7 @@ export default {
 
     onMounted(() => {
       persistCollectorTarget();
+      persistDownloadPreferences();
       refreshLogs();
       startPolling();
     });
@@ -434,13 +595,20 @@ export default {
       displayLogs,
       canLoadOlder,
       loading,
+      downloadLoading,
       fullscreen,
       logViewerEl,
       logViewerFullscreenEl,
       showCollectorSetupHelp,
       statusMessage,
       statusClass,
+      downloadScope,
+      downloadAmount,
+      downloadUnit,
+      downloadScopeOptions,
+      downloadUnitOptions,
       persistCollectorTarget,
+      persistDownloadPreferences,
       refreshLogs,
       loadOlder,
       downloadLogFile,
