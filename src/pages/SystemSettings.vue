@@ -46,32 +46,27 @@ export default {
 
 <style scoped>
 .system-settings-layout {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
 }
 
 .info-column,
 .cards-column {
   width: 100%;
+  min-width: 0;
 }
 
-@media (min-width: 900px) {
+/* 2 x 360px columns + 16px gap */
+@media (min-width: 736px) {
   .system-settings-layout {
-    flex-direction: row;
+    grid-template-columns: minmax(360px, 1fr) minmax(360px, 1fr);
     align-items: flex-start;
-    gap: 16px;
   }
 
   .info-column {
-    flex: 0 0 340px;
     position: sticky;
     top: 0;
-  }
-
-  .cards-column {
-    flex: 1 1 0;
-    min-width: 0;
   }
 }
 </style>

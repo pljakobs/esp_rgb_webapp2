@@ -269,7 +269,7 @@
             class="fit row wrap justify-center items-start content-start no-gutter with-bottom-padding"
           >
             <div
-              class="col-xs-12 col-sm-6 col-md-7 col-lg-5 no-gutter"
+              :class="routerViewColumnClass"
               justify-center
             >
               <template v-if="!configData.data.general.current_pin_config_name">
@@ -360,6 +360,16 @@ export default defineComponent({
       const router = useRouter();
 
       const isSmallScreen = ref(window.innerWidth <= 1024);
+
+      const isSystemSettingsRoute = computed(
+        () => router.currentRoute.value.path === "/SystemSettings",
+      );
+
+      const routerViewColumnClass = computed(() => {
+        return isSystemSettingsRoute.value
+          ? "col-12 no-gutter"
+          : "col-xs-12 col-sm-6 col-md-7 col-lg-5 no-gutter";
+      });
 
       const updateIsSmallScreen = () => {
         isSmallScreen.value = window.innerWidth <= 1024;
@@ -746,6 +756,7 @@ export default defineComponent({
         buttonIconName,
         isDarkMode,
         toggleDarkMode,
+        routerViewColumnClass,
         getIconForController,
         getCustomControllerIcon,
         getCustomControllerIconReactive,
