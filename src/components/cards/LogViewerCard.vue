@@ -147,6 +147,7 @@
 <script>
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import { useControllersStore } from "src/stores/controllersStore";
+import { configDataStore } from "src/stores/configDataStore";
 import MyCard from "src/components/myCard.vue";
 
 export default {
@@ -156,6 +157,7 @@ export default {
   },
   setup() {
     const controllersStore = useControllersStore();
+    const configStore = configDataStore();
     const serviceBaseUrl = ref(
       localStorage.getItem("lightinator-log-service-url") ||
         "http://lightinator-logservice.local:4821",
@@ -196,6 +198,66 @@ export default {
     );
 
     const normalizeUrl = (url) => String(url || "").trim().replace(/\/$/, "");
+
+    const isIpv4Address = (value) => {
+      const parts = String(value || "").trim().split(".");
+      if (parts.length !== 4) {
+        return false;
+      }
+      return parts.every((part) => {
+        if (!/^\d+$/.test(part)) {
+          return false;
+        }
+        const num = Number.parseInt(part, 10);
+        return num >= 0 && num <= 255;
+      });
+    };
+
+    const isPrivateIpv4 = (value) => {
+      if (!isIpv4Address(value)) {
+        return false;
+      }
+      const [a, b] = value.split(".").map((part) => Number.parseInt(part, 10));
+      return a === 10 || (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168);
+    };
+
+    const resolveCollectorTarget = async (baseUrl) => {
+      const parsed = new URL(baseUrl);
+      const info = await fetchJsonWithTimeout(`${baseUrl}/api/v1/service-info`, 2000);
+      const udpPort = Number.parseInt(info?.udp?.port || "5514", 10) || 5514;
+
+      if (isIpv4Address(parsed.hostname)) {
+        return { ip: parsed.hostname, udpPort };
+      }
+
+      const ipv4List = Array.isArray(info?.network?.ipv4) ? info.network.ipv4 : [];
+      const preferredIp =
+        ipv4List.find((ip) => isPrivateIpv4(ip)) ||
+        ipv4List.find((ip) => isIpv4Address(ip));
+
+      if (preferredIp) {
+        return { ip: preferredIp, udpPort };
+      }
+
+      throw new Error(
+        "Detected log service but no collector IPv4 address was provided. Use a service URL with an IP address.",
+      );
+    };
+
+    const autoConfigureControllerRsyslog = async ({ ip, udpPort }) => {
+      if (!currentControllerIp.value) {
+        return;
+      }
+
+      await configStore.updateMultipleData(
+        {
+          "network.rsyslog.enabled": true,
+          "network.rsyslog.host": ip,
+          "network.rsyslog.port": udpPort,
+        },
+        true,
+      );
+    };
 
     const persistServiceBaseUrl = () => {
       serviceBaseUrl.value = normalizeUrl(serviceBaseUrl.value);
@@ -305,10 +367,14 @@ export default {
       for (const candidate of uniqueCandidates) {
         try {
           await fetchJsonWithTimeout(`${candidate}/health`, 1500);
+          const target = await resolveCollectorTarget(candidate);
           serviceBaseUrl.value = candidate;
           persistServiceBaseUrl();
           serviceDetected.value = true;
-          statusMessage.value = `Connected to log service at ${candidate}`;
+          await autoConfigureControllerRsyslog(target);
+          statusMessage.value = currentControllerIp.value
+            ? `Connected and configured controller rsyslog to ${target.ip}:${target.udpPort}`
+            : `Connected to log service at ${candidate}`;
           detecting.value = false;
           await refreshLogs();
           return;
