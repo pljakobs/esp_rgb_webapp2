@@ -9,4 +9,5 @@
 - [x] color temp slider should only be shown if the color model is RGBWW - not for any other color model
 - [x] the central interaction pages should generally be hanging from the top of the page and use 80% of the page hight
 - Question: is there a way to have a ui where the user can tear off the various cards and place them on the window? 
- 
+- [x] firmware update dialog does not yet use the new infoDataStore format and therefore does not correctly select the build type
+- [ ] on wide viewports, show the system information card on the left and the other cards to its right in a two-column layout
