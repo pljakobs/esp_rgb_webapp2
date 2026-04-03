@@ -28,15 +28,15 @@
               </tr>
               <tr>
                 <td class="label">Build type:</td>
-                <td>{{ currentInfo.build_type }}</td>
+                <td>{{ currentInfo.app?.build_type }}</td>
               </tr>
               <tr>
                 <td class="label">Version:</td>
-                <td>{{ currentInfo.git_version }}</td>
+                <td>{{ currentInfo.app?.git_version }}</td>
               </tr>
               <tr>
                 <td class="label">Webapp version:</td>
-                <td>{{ currentInfo.webapp_version }}</td>
+                <td>{{ currentInfo.app?.webapp_version }}</td>
               </tr>
             </tbody>
           </table>
@@ -182,7 +182,7 @@ export default {
 
     // Selection state - initialize with current values
     const selectedBranch = ref(props.currentInfo.branch || "stable");
-    const selectedType = ref(props.currentInfo.build_type || "release");
+    const selectedType = ref(props.currentInfo.app?.build_type || "release");
     const selectedVersionId = ref(null);
 
     // Color helper for branches - defined before it's used
