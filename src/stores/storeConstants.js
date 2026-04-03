@@ -1,8 +1,17 @@
+const localOverrideModules = import.meta.glob("../config/localOverrides.js", {
+  eager: true,
+});
+
+const localOverrides =
+  localOverrideModules["../config/localOverrides.js"]?.default ?? {};
+
+const localhostOverride = localOverrides.localhost ?? {};
+
 export const localhost = {
-  hostname: "localhost",
+  hostname: localhostOverride.hostname ?? "localhost",
   ip_address:
-    process.env.NODE_ENV === "development"
-      ? "192.168.29.31"
+    import.meta.env.DEV
+      ? localhostOverride.ip_address ?? "127.0.0.1"
       : window.location.hostname,
 };
 
