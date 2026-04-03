@@ -332,7 +332,18 @@ export class ApiService {
   }
 
   async getInfo(controller = null) {
-    return this.fetchApi("info?v=2", controller);
+    const v2Response = await this.fetchApi("info?v=2", controller);
+
+    // Transitional compatibility: prefer /info?v=2 but fall back to /info when
+    // older firmware does not support the versioned endpoint.
+    if (
+      v2Response?.error?.status === 404 ||
+      (!v2Response?.jsonData && v2Response?.error)
+    ) {
+      return this.fetchApi("info", controller);
+    }
+
+    return v2Response;
   }
 
   async getData(controller = null) {

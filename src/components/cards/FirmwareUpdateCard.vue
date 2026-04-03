@@ -212,6 +212,33 @@ export default {
       }
     };
 
+    const fetchControllerInfo = async (controller, timeout = 500) => {
+      const baseUrl = `http://${controller.ip_address}`;
+      const endpoints = ["info?v=2", "info"];
+
+      let lastError = null;
+      for (const endpoint of endpoints) {
+        try {
+          const response = await fetchWithTimeout(
+            `${baseUrl}/${endpoint}`,
+            {},
+            timeout,
+          );
+          if (response.ok) {
+            return normalizeInfoData(await response.json());
+          }
+          if (response.status === 404) {
+            continue;
+          }
+          lastError = new Error(`HTTP ${response.status} on ${endpoint}`);
+        } catch (error) {
+          lastError = error;
+        }
+      }
+
+      throw lastError || new Error("Unable to fetch controller info");
+    };
+
     const fetchFirmware = async () => {
       console.log("Fetching firmware from:", otaUrl.value);
       try {
@@ -510,15 +537,10 @@ export default {
               attempts++;
               try {
                 // Use fetchWithTimeout with a 500ms timeout
-                const response = await fetchWithTimeout(
-                  `http://${controller.ip_address}/info`,
-                  {},
-                  500, // 500ms timeout
-                );
+                const infoData = await fetchControllerInfo(controller, 500);
 
                 // If we get a response, check the uptime
-                if (response.ok) {
-                  const infoData = normalizeInfoData(await response.json());
+                if (infoData) {
                   newUptime = infoData.runtime?.uptime;
 
                   // If uptime is less than before, controller has successfully rebooted
@@ -1156,25 +1178,7 @@ export default {
                 while (!controllerInfo && retryCount < maxRetries) {
                   try {
                     // Use fetchWithTimeout with a 500ms timeout
-                    const infoResponse = await fetchWithTimeout(
-                      `http://${controller.ip_address}/info`,
-                      {},
-                      500, // 500ms timeout
-                    );
-
-                    if (infoResponse.ok) {
-                      controllerInfo = normalizeInfoData(
-                        await infoResponse.json(),
-                      );
-                    } else {
-                      retryCount++;
-                      updateStatus(
-                        controller,
-                        "checking",
-                        `Connection attempt ${retryCount}/${maxRetries} failed, retrying...`,
-                      );
-                      await new Promise((resolve) => setTimeout(resolve, 1000)); // Wait 1 second between retries
-                    }
+                    controllerInfo = await fetchControllerInfo(controller, 500);
                   } catch (error) {
                     retryCount++;
                     const errorMessage =
