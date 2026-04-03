@@ -2,12 +2,21 @@
   <MyCard icon="article" title="Log Viewer">
     <q-card-section>
       <div class="row items-end q-col-gutter-sm">
-        <div class="col-12 col-md-8">
+        <div class="col-12 col-md-6">
           <q-input
-            v-model="serviceBaseUrl"
-            label="Log Service URL"
-            hint="Example: http://192.168.x.x:4821"
-            @blur="persistServiceBaseUrl"
+            v-model="collectorHost"
+            label="Collector IPv4"
+            hint="Example: 192.168.29.100"
+            @blur="persistCollectorTarget"
+          />
+        </div>
+        <div class="col-12 col-md-2">
+          <q-input
+            v-model.number="collectorPort"
+            type="number"
+            label="Port"
+            hint="Default: 4821"
+            @blur="persistCollectorTarget"
           />
         </div>
         <div class="col-12 col-md-4 row q-gutter-sm">
@@ -16,13 +25,6 @@
             label="Refresh"
             :loading="loading"
             @click="refreshLogs"
-          />
-          <q-btn
-            flat
-            color="primary"
-            label="Detect"
-            :loading="detecting"
-            @click="detectService"
           />
         </div>
       </div>
@@ -35,7 +37,7 @@
       <q-banner v-if="showCollectorSetupHelp" class="q-mt-sm bg-grey-9 text-white">
         <div class="text-subtitle2 q-mb-xs">Local log service not found</div>
         <div class="text-caption q-mb-xs">
-          Start the collector on your Linux machine and then click Detect.
+          Start the collector on your Linux machine and enter its IPv4 and port above.
         </div>
         <div class="setup-command">
           git clone https://github.com/pljakobs/lightinator-log-service.git
@@ -158,20 +160,22 @@ export default {
   setup() {
     const controllersStore = useControllersStore();
     const configStore = configDataStore();
-    const defaultServiceUrl = () => {
-      const locationHost = window.location.hostname || "";
-      if (locationHost && locationHost !== "localhost" && locationHost !== "127.0.0.1") {
-        return `http://${locationHost}:4821`;
-      }
-      return "http://127.0.0.1:4821";
-    };
-    const serviceBaseUrl = ref(
-      localStorage.getItem("lightinator-log-service-url") || defaultServiceUrl(),
+    const defaultCollectorHost =
+      window.location.hostname &&
+      window.location.hostname !== "localhost" &&
+      window.location.hostname !== "127.0.0.1"
+        ? window.location.hostname
+        : "127.0.0.1";
+    const collectorHost = ref(
+      localStorage.getItem("lightinator-log-service-host") || defaultCollectorHost,
+    );
+    const collectorPort = ref(
+      Number.parseInt(localStorage.getItem("lightinator-log-service-port") || "4821", 10) ||
+        4821,
     );
     const remoteLogs = ref([]);
     const nextBefore = ref(null);
     const loading = ref(false);
-    const detecting = ref(false);
     const fullscreen = ref(false);
     const serviceDetected = ref(false);
     const statusMessage = ref("Idle");
@@ -203,7 +207,23 @@ export default {
           statusMessage.value.toLowerCase().includes("error loading logs")),
     );
 
-    const normalizeUrl = (url) => String(url || "").trim().replace(/\/$/, "");
+    const normalizeHost = (host) => String(host || "").trim();
+    const normalizePort = (port) => {
+      const parsed = Number.parseInt(String(port || ""), 10);
+      if (!Number.isFinite(parsed) || parsed < 1 || parsed > 65535) {
+        return null;
+      }
+      return parsed;
+    };
+
+    const serviceBaseUrl = computed(() => {
+      const host = normalizeHost(collectorHost.value);
+      const port = normalizePort(collectorPort.value);
+      if (!host || !port) {
+        return "";
+      }
+      return `http://${host}:${port}`;
+    });
 
     const isIpv4Address = (value) => {
       const parts = String(value || "").trim().split(".");
@@ -227,29 +247,6 @@ export default {
       return a === 10 || (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168);
     };
 
-    const resolveCollectorTarget = async (baseUrl) => {
-      const parsed = new URL(baseUrl);
-      const info = await fetchJsonWithTimeout(`${baseUrl}/api/v1/service-info`, 2000);
-      const udpPort = Number.parseInt(info?.udp?.port || "5514", 10) || 5514;
-
-      if (isIpv4Address(parsed.hostname)) {
-        return { ip: parsed.hostname, udpPort };
-      }
-
-      const ipv4List = Array.isArray(info?.network?.ipv4) ? info.network.ipv4 : [];
-      const preferredIp =
-        ipv4List.find((ip) => isPrivateIpv4(ip)) ||
-        ipv4List.find((ip) => isIpv4Address(ip));
-
-      if (preferredIp) {
-        return { ip: preferredIp, udpPort };
-      }
-
-      throw new Error(
-        "Detected log service but no collector IPv4 address was provided. Use a service URL with an IP address.",
-      );
-    };
-
     const autoConfigureControllerRsyslog = async ({ ip, udpPort }) => {
       if (!currentControllerIp.value) {
         return;
@@ -265,25 +262,15 @@ export default {
       );
     };
 
-    const persistServiceBaseUrl = () => {
-      serviceBaseUrl.value = normalizeUrl(serviceBaseUrl.value);
-      localStorage.setItem("lightinator-log-service-url", serviceBaseUrl.value);
-    };
-
-    const buildDetectionCandidates = () => {
-      const locationHost = window.location.hostname || "";
-      const saved = normalizeUrl(serviceBaseUrl.value);
-      const candidates = [saved];
-
-      if (locationHost) {
-        candidates.push(`http://${locationHost}:4821`);
-      }
-      candidates.push(window.location.origin);
-      candidates.push("http://127.0.0.1:4821");
-      candidates.push("http://localhost:4821");
-      candidates.push("http://lightinator-logservice.local:4821");
-
-      return [...new Set(candidates.filter(Boolean).map(normalizeUrl))];
+    const persistCollectorTarget = () => {
+      collectorHost.value = normalizeHost(collectorHost.value);
+      const port = normalizePort(collectorPort.value);
+      collectorPort.value = port || 4821;
+      localStorage.setItem("lightinator-log-service-host", collectorHost.value);
+      localStorage.setItem(
+        "lightinator-log-service-port",
+        String(collectorPort.value),
+      );
     };
 
     const fetchJsonWithTimeout = async (url, timeoutMs = 3000) => {
@@ -318,7 +305,7 @@ export default {
     };
 
     const refreshLogs = async () => {
-      if (loading.value || detecting.value) {
+      if (loading.value) {
         return;
       }
 
@@ -327,9 +314,22 @@ export default {
         return;
       }
 
+      persistCollectorTarget();
+      if (!isIpv4Address(collectorHost.value)) {
+        serviceDetected.value = false;
+        statusMessage.value = "Please enter a valid collector IPv4 address.";
+        return;
+      }
+
+      const httpPort = normalizePort(collectorPort.value);
+      if (!httpPort) {
+        serviceDetected.value = false;
+        statusMessage.value = "Please enter a valid collector HTTP port.";
+        return;
+      }
+
       loading.value = true;
       try {
-        persistServiceBaseUrl();
         const endpoint = `${serviceBaseUrl.value}/api/v1/logs?ip=${encodeURIComponent(
           currentControllerIp.value,
         )}&limit=200&before=0`;
@@ -337,8 +337,12 @@ export default {
         const previousLastRaw = remoteLogs.value.at(-1)?.raw;
         remoteLogs.value = (payload.items || []).map(mapRecord);
         nextBefore.value = payload.nextBefore;
+        await autoConfigureControllerRsyslog({
+          ip: collectorHost.value,
+          udpPort: 5514,
+        });
         serviceDetected.value = true;
-        statusMessage.value = `Connected. Loaded ${remoteLogs.value.length} log entries.`;
+        statusMessage.value = `Connected. Loaded ${remoteLogs.value.length} log entries. Controller rsyslog set to ${collectorHost.value}:5514.`;
         const hasNewTail = previousLastRaw !== remoteLogs.value.at(-1)?.raw;
         if (hasNewTail) {
           await scrollToBottom();
@@ -371,40 +375,6 @@ export default {
       } finally {
         loading.value = false;
       }
-    };
-
-    const detectService = async () => {
-      detecting.value = true;
-      statusMessage.value = "Detecting log service...";
-
-      let lastError = null;
-      for (const candidate of buildDetectionCandidates()) {
-        try {
-          await fetchJsonWithTimeout(`${candidate}/health`, 1500);
-          const target = await resolveCollectorTarget(candidate);
-          serviceBaseUrl.value = candidate;
-          persistServiceBaseUrl();
-          serviceDetected.value = true;
-          await autoConfigureControllerRsyslog(target);
-          statusMessage.value = currentControllerIp.value
-            ? `Connected and configured controller rsyslog to ${target.ip}:${target.udpPort}`
-            : `Connected to log service at ${candidate}`;
-          detecting.value = false;
-          await refreshLogs();
-          return;
-        } catch (error) {
-          lastError = error;
-          // Try next candidate.
-        }
-      }
-
-      serviceDetected.value = false;
-      const browserHost = window.location.hostname || "collector-ip";
-      const suggestion = `Try http://${browserHost}:4821 or your collector LAN IP.`;
-      statusMessage.value = lastError
-        ? `Error: could not detect log service (${lastError.message}). ${suggestion}`
-        : `Error: could not detect log service. ${suggestion}`;
-      detecting.value = false;
     };
 
     const downloadLogFile = () => {
@@ -447,7 +417,8 @@ export default {
     };
 
     onMounted(() => {
-      detectService();
+      persistCollectorTarget();
+      refreshLogs();
       startPolling();
     });
 
@@ -456,22 +427,21 @@ export default {
     });
 
     return {
-      serviceBaseUrl,
+      collectorHost,
+      collectorPort,
       currentControllerIp,
       displayLogs,
       canLoadOlder,
       loading,
-      detecting,
       fullscreen,
       logViewerEl,
       logViewerFullscreenEl,
       showCollectorSetupHelp,
       statusMessage,
       statusClass,
-      persistServiceBaseUrl,
+      persistCollectorTarget,
       refreshLogs,
       loadOlder,
-      detectService,
       downloadLogFile,
     };
   },
