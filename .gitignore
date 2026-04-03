@@ -30,6 +30,7 @@ yarn-error.log*
 # local .env files
 .env
 .local*
+src/config/localOverrides.js
 
 # python venv
 venv

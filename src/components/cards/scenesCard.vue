@@ -270,6 +270,7 @@ const { hsvToRgb } = colors;
 
 export default {
   name: "scenesCard",
+
   components: {
     MyCard,
   },

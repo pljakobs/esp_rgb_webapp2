@@ -107,7 +107,7 @@ export default {
           ? options[colorModelIndex]
           : options[0];
 
-      return currentMode === "RGBWW" || currentMode === "RGBWWCW" || currentMode === "RGBCW";
+      return currentMode === "RGBWW";
     });
 
     // Flag to prevent emitting during prop updates from websocket events

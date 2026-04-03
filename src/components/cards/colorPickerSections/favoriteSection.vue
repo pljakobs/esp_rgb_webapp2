@@ -1,121 +1,178 @@
 <template>
-  <q-scroll-area style="height: 100%; width: 100%">
-    <q-card-section class="q-pa-md">
-      <!-- Favorite Presets Section -->
-      <div v-if="favoritePresets.length > 0 || true">
-        <div class="section-title">Favorite Colors</div>
-        <div class="flex-container">
-          <!-- Virtual Preset: Off -->
-          <div class="color-swatch" @click="setOff()">
-            <div class="swatch" :style="{ backgroundColor: 'rgb(0,0,0)' }">
-              <svgIcon name="lightbulb-off" size="24px" class="q-mr-xs" />
-              <div class="swatch-name">Off</div>
+  <div class="favorite-section-root" :style="{ height: cardHeight || '100%' }">
+    <q-card-section class="q-pa-md favorite-card-section">
+      <div class="favorite-tabs-row q-mb-md">
+        <button
+          type="button"
+          class="tabs-nav-btn tabs-nav-prev"
+          aria-label="Scroll tabs left"
+          @click="scrollTabs(-220)"
+        >
+          <svgIcon name="arrow_drop_down" class="tabs-nav-icon rotate-left" />
+        </button>
+
+        <q-tabs
+          ref="tabsRef"
+          v-model="activeTab"
+          dense
+          inline-label
+          active-color="primary"
+          indicator-color="primary"
+          class="favorite-tabs"
+        >
+          <q-tab :id="tabDomId('quick')" name="quick" no-caps>
+            <div class="tab-label-content">
+              <svgIcon name="lightbulb_outlined" size="18px" />
+              <span>Quick</span>
             </div>
-          </div>
-          <!-- Virtual Preset: On -->
-          <div class="color-swatch" @click="setOn()">
-            <div
-              class="swatch"
-              :style="{ backgroundColor: 'rgb(127,127,127)' }"
-            >
-              <svgIcon name="lightbulb-on" size="24px" class="q-mr-xs" />
-              <div class="swatch-name">On</div>
-            </div>
-          </div>
-          <!-- Real favorites -->
-          <div
-            v-for="preset in favoritePresets"
-            :key="'preset-' + preset.name"
-            class="color-swatch"
-            @click="setColor(preset)"
+          </q-tab>
+          <q-tab
+            v-for="sceneGroup in sceneGroupEntries"
+            :key="sceneGroup.tabName"
+            :id="tabDomId(sceneGroup.tabName)"
+            :name="sceneGroup.tabName"
+            no-caps
           >
-            <div
-              v-if="preset.color.hsv"
-              class="swatch"
-              :style="{
-                backgroundColor: `rgb(${hsvToRgb(preset.color.hsv).r}, ${
-                  hsvToRgb(preset.color.hsv).g
-                }, ${hsvToRgb(preset.color.hsv).b})`,
-              }"
-            >
-              <div class="swatch-name">{{ preset.name }}</div>
+            <div class="tab-label-content">
+              <svgIcon name="scene" size="18px" />
+              <span>{{ sceneGroup.name }}</span>
             </div>
-            <div
-              v-else
-              class="swatch"
-              :style="{
-                backgroundColor: `rgb(140,127,127)`,
-              }"
-            >
-              <RawBadge :color="preset.color" class="raw-badge" />
-              <div class="swatch-name">{{ preset.name }}</div>
-            </div>
-          </div>
-        </div>
+          </q-tab>
+        </q-tabs>
+
+        <button
+          type="button"
+          class="tabs-nav-btn tabs-nav-next"
+          aria-label="Scroll tabs right"
+          @click="scrollTabs(220)"
+        >
+          <svgIcon name="arrow_drop_down" class="tabs-nav-icon rotate-right" />
+        </button>
       </div>
 
-      <!-- Separator if both presets and scenes exist -->
-      <q-separator
-        v-if="favoritePresets.length > 0 && favoriteSceneGroups.length > 0"
-        class="q-my-md"
-      />
-
-      <!-- Favorite Scenes Section -->
       <div
-        v-for="(sceneGroup, groupName) in favoriteSceneGroups"
-        :key="groupName"
-        class="scene-group"
+        v-touch-swipe.mouse.horizontal="onPanelsSwipe"
+        class="favorite-panels-touch"
       >
-        <div class="section-title">{{ groupName }}</div>
-        <div class="flex-container">
-          <div
-            v-for="scene in sceneGroup"
-            :key="'scene-' + scene.name"
-            class="color-swatch scene-swatch"
-            @click="activateScene(scene)"
-          >
-            <div class="swatch scene-swatch-bg">
-              <svgIcon :name="getSceneIcon(scene)" class="scene-icon" />
-              <div class="scene-colors">
-                <div
-                  v-for="(light, index) in getSceneLights(scene)"
-                  :key="index"
-                  class="scene-color-circle"
-                  :style="{
-                    backgroundColor: light.color,
-                    animationDelay: index * 0.15 + 's',
-                  }"
-                ></div>
+        <q-tab-panels
+          v-model="activeTab"
+          swipeable
+          animated
+          transition-prev="slide-right"
+          transition-next="slide-left"
+          keep-alive
+          class="favorite-panels"
+        >
+        <q-tab-panel name="quick" class="q-pa-none">
+          <div class="favorite-grid">
+            <q-btn
+              class="favorite-action-card power-off"
+              unelevated
+              no-caps
+              @click="setOff"
+            >
+              <div class="card-content">
+                <svgIcon name="lightbulb-off" size="22px" />
+                <div class="card-title">Off</div>
               </div>
-              <div class="swatch-name">{{ scene.name }}</div>
+            </q-btn>
+
+            <q-btn
+              class="favorite-action-card power-on"
+              unelevated
+              no-caps
+              @click="setOn"
+            >
+              <div class="card-content">
+                <svgIcon name="lightbulb-on" size="22px" />
+                <div class="card-title">On</div>
+              </div>
+            </q-btn>
+
+            <q-btn
+              v-for="preset in favoritePresets"
+              :key="`preset-${preset.id || preset.name}`"
+              class="favorite-action-card"
+              unelevated
+              no-caps
+              @click="setColor(preset)"
+            >
+              <div class="card-content">
+                <div v-if="preset.color?.hsv" class="preset-swatch">
+                  <div
+                    class="hsv-dot"
+                    :style="{ backgroundColor: presetHsvColor(preset) }"
+                  ></div>
+                </div>
+                <RawBadge v-else-if="preset.color?.raw" :color="preset.color" />
+                <svgIcon v-else name="palette_outlined" size="20px" />
+                <div class="card-title">{{ preset.name }}</div>
+              </div>
+            </q-btn>
+          </div>
+
+          <div
+            v-if="favoritePresets.length === 0 && sceneGroupEntries.length === 0"
+            class="no-favorites q-mt-md"
+          >
+            <svgIcon name="star_outlined" size="40px" class="q-mb-sm" />
+            <div class="text-subtitle2">No favorites set</div>
+            <div class="text-caption">
+              Mark colors or scenes as favorites to see them here.
             </div>
           </div>
-        </div>
-        <q-separator v-if="!isLastGroup(groupName)" class="q-my-md" />
-      </div>
+        </q-tab-panel>
 
-      <!-- Message when no favorites are set -->
-      <div
-        v-if="favoritePresets.length === 0 && favoriteSceneGroups.length === 0"
-        class="no-favorites"
-      >
-        <svgIcon name="star_outlined" size="48px" class="q-mb-sm" />
-        <div>No favorites set</div>
-        <div class="text-caption">
-          Mark colors or scenes as favorites to see them here
-        </div>
+        <q-tab-panel
+          v-for="sceneGroup in sceneGroupEntries"
+          :key="sceneGroup.tabName"
+          :name="sceneGroup.tabName"
+          class="q-pa-none"
+        >
+          <div class="favorite-grid">
+            <q-btn
+              v-for="scene in sceneGroup.scenes"
+              :key="`scene-${scene.id || scene.name}`"
+              class="favorite-action-card scene-card"
+              unelevated
+              no-caps
+              @click="activateScene(scene)"
+            >
+              <div class="card-content scene-content">
+                <div class="scene-header">
+                  <svgIcon :name="getSceneIcon(scene)" size="18px" />
+                  <div class="card-title">{{ scene.name }}</div>
+                </div>
+                <div class="scene-preview">
+                  <div
+                    v-for="(light, index) in getSceneLights(scene)"
+                    :key="`${scene.id || scene.name}-light-${index}`"
+                    class="scene-color-dot"
+                    :style="{ backgroundColor: light.color }"
+                  ></div>
+                  <div
+                    v-if="getSceneLights(scene).length === 0"
+                    class="text-caption text-grey-6"
+                  >
+                    No preview colors
+                  </div>
+                </div>
+              </div>
+            </q-btn>
+          </div>
+        </q-tab-panel>
+        </q-tab-panels>
       </div>
     </q-card-section>
-  </q-scroll-area>
+  </div>
 </template>
 
 <script>
-import { ref, computed } from "vue";
+import { computed, nextTick, onMounted, ref, watch } from "vue";
 import { colors } from "quasar";
 import { useAppDataStore } from "src/stores/appDataStore";
 import RawBadge from "src/components/RawBadge.vue";
 import { applyScene, getControllerInfo } from "src/services/tools.js";
-import { setMapStoreSuffix } from "pinia";
 import { useControllersStore } from "src/stores/controllersStore";
 
 const { hsvToRgb } = colors;
@@ -139,93 +196,216 @@ export default {
   setup(props, { emit }) {
     const presetData = useAppDataStore();
     const controllers = useControllersStore();
-
-    const cols = ref(3);
+    const activeTab = ref("quick");
+    const tabsRef = ref(null);
 
     const favoritePresets = computed(() =>
-      presetData.data.presets.filter((preset) => preset.favorite),
+      (presetData.data?.presets || []).filter((preset) => preset.favorite),
     );
 
-    // Get favorite scenes and organize them by group
-    const favoriteSceneGroups = computed(() => {
-      const favoriteScenes = presetData.data.scenes.filter(
+    const normalizeKey = (value) => String(value ?? "").trim();
+
+    const resolveSceneGroupMeta = (scene, groups) => {
+      const groupById = new Map(
+        groups.map((group) => [normalizeKey(group.id), group]),
+      );
+
+      const idCandidates = [scene.group_id, scene.groupId, scene.group?.id]
+        .map(normalizeKey)
+        .filter(Boolean);
+
+      for (const candidateId of idCandidates) {
+        const group = groupById.get(candidateId);
+        if (group?.name) {
+          return {
+            key: normalizeKey(group.id) || candidateId,
+            name: group.name,
+          };
+        }
+      }
+
+      const explicitName =
+        scene.group_name || scene.groupName || scene.group?.name || "";
+      if (explicitName) {
+        return {
+          key: normalizeKey(idCandidates[0] || explicitName),
+          name: explicitName,
+        };
+      }
+
+      const sceneControllerIds = new Set(
+        (scene.settings || [])
+          .map((setting) => normalizeKey(setting.controller_id))
+          .filter(Boolean),
+      );
+
+      if (sceneControllerIds.size > 0) {
+        const matchedGroup = groups.find((group) => {
+          const groupControllerIds = new Set(
+            (group.controller_ids || [])
+              .map((controllerId) => normalizeKey(controllerId))
+              .filter(Boolean),
+          );
+
+          if (groupControllerIds.size === 0) {
+            return false;
+          }
+
+          return Array.from(sceneControllerIds).every((controllerId) =>
+            groupControllerIds.has(controllerId),
+          );
+        });
+
+        if (matchedGroup?.name) {
+          return {
+            key: normalizeKey(matchedGroup.id) || matchedGroup.name,
+            name: matchedGroup.name,
+          };
+        }
+      }
+
+      return {
+        key: normalizeKey(idCandidates[0] || "ungrouped"),
+        name: "Ungrouped",
+      };
+    };
+
+    const sceneGroupEntries = computed(() => {
+      const favoriteScenes = (presetData.data?.scenes || []).filter(
         (scene) => scene.favorite,
       );
-      const groups = {};
-
-      // Get all available scene groups from the correct source
-      const sceneGroups = presetData.data.groups || [];
-
-      // Create a map of group_id to group name
-      const groupNameMap = {};
-      sceneGroups.forEach((group) => {
-        groupNameMap[group.id] = group.name;
-      });
+      const groups = presetData.data?.groups || [];
+      const groupedScenes = {};
 
       favoriteScenes.forEach((scene) => {
-        // Use group_id for grouping
-        const groupId = scene.group_id || "other";
+        const groupMeta = resolveSceneGroupMeta(scene, groups);
+        const bucketKey = groupMeta.key || groupMeta.name;
 
-        // Get the display name from the map, or use the ID if no name is found
-        const displayName = groupNameMap[groupId] || groupId;
-
-        if (!groups[displayName]) {
-          groups[displayName] = [];
+        if (!groupedScenes[bucketKey]) {
+          groupedScenes[bucketKey] = {
+            name: groupMeta.name,
+            scenes: [],
+          };
         }
-        groups[displayName].push(scene);
+
+        groupedScenes[bucketKey].scenes.push(scene);
       });
 
-      return groups;
+      return Object.entries(groupedScenes)
+        .filter(([, groupInfo]) => groupInfo.scenes.length > 0)
+        .map(([groupKey, groupInfo]) => ({
+          name: groupInfo.name,
+          scenes: groupInfo.scenes,
+          tabName: `group-${groupKey}`,
+        }));
     });
+
+    const orderedTabs = computed(() => [
+      "quick",
+      ...sceneGroupEntries.value.map((group) => group.tabName),
+    ]);
+
+    watch(sceneGroupEntries, (nextGroups) => {
+      const allowedTabs = ["quick", ...nextGroups.map((group) => group.tabName)];
+      if (!allowedTabs.includes(activeTab.value)) {
+        activeTab.value = "quick";
+      }
+      centerActiveTab();
+    });
+
+    const tabDomId = (tabName) =>
+      `favorite-tab-${String(tabName).replace(/[^a-zA-Z0-9_-]/g, "-")}`;
+
+    const centerActiveTab = async () => {
+      await nextTick();
+
+      const activeElement = document.getElementById(tabDomId(activeTab.value));
+      if (!activeElement || typeof activeElement.scrollIntoView !== "function") {
+        return;
+      }
+
+      activeElement.scrollIntoView({
+        behavior: "smooth",
+        inline: "center",
+        block: "nearest",
+      });
+    };
+
+    const getTabsScroller = () => {
+      const tabsElement = tabsRef.value?.$el;
+      if (!tabsElement) {
+        return null;
+      }
+
+      return tabsElement.querySelector(".q-tabs__content");
+    };
+
+    const scrollTabs = (delta) => {
+      const scroller = getTabsScroller();
+      if (!scroller || typeof scroller.scrollBy !== "function") {
+        return;
+      }
+
+      scroller.scrollBy({
+        left: delta,
+        behavior: "smooth",
+      });
+    };
+
+    const switchTabByOffset = (offset) => {
+      const tabs = orderedTabs.value;
+      const currentIndex = tabs.indexOf(activeTab.value);
+      if (currentIndex === -1) {
+        return;
+      }
+
+      const nextIndex = currentIndex + offset;
+      if (nextIndex < 0 || nextIndex >= tabs.length) {
+        return;
+      }
+
+      activeTab.value = tabs[nextIndex];
+    };
+
+    const onPanelsSwipe = ({ direction }) => {
+      if (direction === "left") {
+        switchTabByOffset(1);
+      } else if (direction === "right") {
+        switchTabByOffset(-1);
+      }
+    };
+
+    watch(activeTab, () => {
+      centerActiveTab();
+    });
+
+    onMounted(() => {
+      centerActiveTab();
+    });
+
+    const presetHsvColor = (preset) => {
+      const rgb = hsvToRgb(preset.color.hsv);
+      return `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`;
+    };
 
     const getSceneLights = (scene) => {
       const lights = [];
 
-      // Add console logging for debugging
-      console.log("Processing scene:", scene.name);
-
-      // Check if scene has steps (animations)
       if (scene.steps && scene.steps.length > 0) {
-        // Get colors from the first step
         const firstStep = scene.steps[0];
-        console.log("First step has colors:", !!firstStep.colors);
-
         if (firstStep.colors) {
-          // Convert each color to a display format
-          Object.entries(firstStep.colors).forEach(([key, value]) => {
-            console.log(`Processing color: ${key}`, value);
-
+          Object.values(firstStep.colors).forEach((value) => {
             if (value.hsv) {
               const rgb = hsvToRgb(value.hsv);
-              lights.push({
-                name: key,
-                color: `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`,
-              });
+              lights.push({ color: `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})` });
             } else if (value.raw) {
-              // For raw values, use a neutral color
-              lights.push({
-                name: key,
-                color: "#afafaf",
-              });
-            } else {
-              // Fallback if the color format is unknown
-              lights.push({
-                name: key,
-                color: "#ff00ff", // Bright magenta to easily spot issues
-              });
+              lights.push({ color: "#afafaf" });
             }
           });
         }
       }
 
-      console.log(`Found ${lights.length} lights for scene ${scene.name}`);
-      // Limit to 8 colors
       return lights.slice(0, 8);
-    };
-    // Helper to check if a group is the last one (to avoid extra dividers)
-    const isLastGroup = (groupName) => {
-      const groupNames = Object.keys(favoriteSceneGroups.value);
-      return groupName === groupNames[groupNames.length - 1];
     };
 
     const setColor = (preset) => {
@@ -234,101 +414,56 @@ export default {
 
     const activateScene = (scene) => {
       applyScene(scene);
-
       emit("activate-scene", scene);
     };
 
     const getSceneIcon = (scene) => {
-      // If the scene has settings, use the icon from the first controller
       if (scene.settings && scene.settings.length > 0) {
-        const firstSetting = scene.settings[0];
-        const controllerId = firstSetting.controller_id;
-
+        const controllerId = scene.settings[0].controller_id;
         if (controllerId) {
-          // Get controller info using the existing function from tools.js
           const controllerInfo = getControllerInfo(controllerId);
-
-          // Return the controller's icon or fall back to "scene"
           return controllerInfo.icon || "scene";
         }
       }
 
-      // Fallback to the default scene icon
       return "scene";
     };
 
-    async function setOn() {
-      try {
-        console.log("Setting light ON");
-        console.log(
-          "using controller:",
-          controllers.currentController.ip_address,
-        );
-        const response = await fetch(
-          `http://${controllers.currentController.ip_address}/on`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: "{}",
-          },
-        );
-
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const result = await response.json();
-        console.log("Command result:", result);
-        return result;
-      } catch (error) {
-        console.error("Error executing system command:", error);
-        throw error;
+    const sendPowerCommand = async (command) => {
+      const ip = controllers.currentController?.ip_address;
+      if (!ip) {
+        return;
       }
-    }
 
-    async function setOff() {
       try {
-        console.log("Setting light OFF");
-        console.log(
-          "using controller:",
-          controllers.currentController.ip_address,
-        );
-        const response = await fetch(
-          `http://${controllers.currentController.ip_address}/off`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: "{}",
+        await fetch(`http://${ip}/${command}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
           },
-        );
-
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const result = await response.json();
-        console.log("Command result:", result);
-        return result;
-      } catch (error) {
-        console.error("Error executing system command:", error);
-        throw error;
+          body: "{}",
+        });
+      } catch {
+        // Ignore command errors here to keep favorite interaction lightweight.
       }
-    }
+    };
+
+    const setOn = async () => sendPowerCommand("on");
+    const setOff = async () => sendPowerCommand("off");
 
     return {
+      activeTab,
+      tabsRef,
+      tabDomId,
+      scrollTabs,
+      onPanelsSwipe,
       favoritePresets,
-      favoriteSceneGroups,
-      cols,
+      sceneGroupEntries,
       setColor,
-      setOff,
       setOn,
+      setOff,
       activateScene,
-      isLastGroup,
-      hsvToRgb,
+      presetHsvColor,
       getSceneLights,
       getSceneIcon,
     };
@@ -337,143 +472,211 @@ export default {
 </script>
 
 <style scoped>
-.flex-container {
+.favorite-section-root {
+  width: 100%;
+  max-width: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.favorite-card-section {
+  min-height: 100%;
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
+}
+
+.favorite-tabs-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.favorite-tabs {
+  flex: 1;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.favorite-tabs :deep(.q-tabs__content) {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.favorite-tabs :deep(.q-tabs__arrow) {
+  display: none !important;
+}
+
+.tabs-nav-btn {
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: inherit;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.tabs-nav-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.rotate-left {
+  transform: rotate(90deg);
+}
+
+.rotate-right {
+  transform: rotate(-90deg);
+}
+
+.favorite-tabs :deep(.q-tab) {
+  border-radius: 8px;
+  min-height: 36px;
+}
+
+.favorite-tabs :deep(.q-tab--active) {
+  background: rgba(25, 118, 210, 0.12);
+  font-weight: 600;
+}
+
+.body--dark .favorite-tabs :deep(.q-tab--active) {
+  background: rgba(110, 168, 255, 0.2);
+}
+
+.tab-label-content {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.favorite-panels {
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  min-height: 100%;
+  background: transparent;
+}
+
+.favorite-panels-touch {
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  max-width: 100%;
+}
+
+.favorite-panels :deep(.q-panel) {
+  width: 100%;
+  max-width: 100%;
+  min-height: 100%;
+}
+
+.favorite-panels :deep(.q-tab-panel) {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: hidden;
+}
+
+.favorite-grid {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(136px, 100%), 1fr));
   gap: 10px;
 }
 
-.color-swatch {
-  cursor: pointer;
-  flex: 1 1 100%;
-  box-sizing: border-box;
+.favorite-action-card {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  min-height: 92px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 10px;
+  background: linear-gradient(180deg, #ffffff 0%, #f6f6f6 100%);
+  text-align: left;
+  padding: 10px;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
 }
 
-@media (min-width: 400px) {
-  .color-swatch {
-    flex: 1 1 calc(50% - 10px);
-  }
+.favorite-action-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.12);
 }
 
-.swatch {
-  position: relative;
+.favorite-action-card:active {
+  transform: translateY(0);
+}
+
+.power-off {
+  background: linear-gradient(180deg, #2d2d2d 0%, #121212 100%);
+  color: #f7f7f7;
+}
+
+.power-on {
+  background: linear-gradient(180deg, #f1f7ff 0%, #dae9ff 100%);
+}
+
+.card-content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  width: 100%;
+}
+
+.card-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1.2;
+  text-align: left;
+  word-break: break-word;
+}
+
+.preset-swatch {
   display: flex;
   align-items: center;
-  justify-content: center;
-  height: 100px;
-  border-radius: 8px;
-  color: white;
-  text-shadow: 1px 1px 2px black;
 }
 
-/* Update scene swatch styles */
-.scene-swatch-bg {
-  background-color: #f0eeed; /* Warm grey background instead of gradient */
-  position: relative;
-  overflow: hidden;
-}
-
-/* Add styles for scene color circles */
-.scene-color-circle {
-  width: 20px;
-  height: 20px;
+.hsv-dot {
+  width: 26px;
+  height: 26px;
   border-radius: 50%;
-  border: 2px solid rgba(255, 255, 255, 0.7); /* Stronger border */
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  margin: 2px;
-  display: inline-block; /* Ensure proper display */
-  opacity: 1; /* Start visible instead of using animation */
-  /* animation: fadeIn 0.5s ease forwards; */ /* Temporarily disable animation */
+  border: 1px solid rgba(0, 0, 0, 0.2);
 }
 
-.scene-colors {
+.scene-card {
+  background: linear-gradient(180deg, #fffdf8 0%, #f2efe7 100%);
+}
+
+.scene-content {
+  gap: 10px;
+}
+
+.scene-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.scene-preview {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  justify-content: center;
-  position: absolute;
-  top: 25px;
-  left: 10px;
-  right: 10px;
-  min-height: 30px; /* Ensure visibility even without content */
-  padding: 5px;
-  background-color: rgba(255, 255, 255, 0.1); /* Slightly highlight the area */
+  min-height: 22px;
 }
 
-/* Make the scene swatch background more distinct */
-.scene-swatch-bg {
-  background-color: #e5e0db; /* Slightly darker warm grey */
-  position: relative;
-  overflow: visible; /* Allow content to be visible if needed */
-  border: 1px solid #ccc; /* Add border to make more distinct */
-}
-
-.scene-icon {
-  position: absolute;
-  top: 5px;
-  right: 5px;
-  font-size: 10px; /* Reduced size by 50% */
-  opacity: 0.9;
-  color: #8e2de2;
-  background-color: rgba(255, 255, 255, 0.7); /* Add background for clarity */
-  padding: 4px;
-  border-radius: 4px;
-  z-index: 2; /* Ensure it's above other elements */
-}
-
-/* Update swatch name for scenes */
-.scene-swatch .swatch-name {
-  position: absolute;
-  bottom: 8px;
-  left: 0;
-  right: 0;
-  text-align: center;
-  font-weight: bold;
-  color: #333; /* Darker text color */
-  text-shadow: none;
-  background-color: rgba(255, 255, 255, 0.7);
-  padding: 2px 0;
-  border-radius: 0 0 8px 8px;
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: scale(0.8);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-/* Hover effects */
-.scene-swatch:hover .scene-color-circle {
-  transform: scale(1.05);
-  transition: transform 0.2s ease;
-}
-
-.scene-swatch:hover .scene-swatch-bg {
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
-  transition: box-shadow 0.2s ease;
-}
-
-/* Keep your existing styles below */
-.raw-badge {
-  position: absolute;
-  top: 35%;
-  left: 5%;
-}
-
-.swatch-name {
-  text-align: center;
-  font-weight: bold;
-}
-
-.section-title {
-  font-weight: bold;
-  margin-bottom: 10px;
-  font-size: 1.1rem;
+.scene-color-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.15);
 }
 
 .no-favorites {
@@ -481,12 +684,43 @@ export default {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 200px;
-  color: rgba(0, 0, 0, 0.5);
+
+@media (max-width: 600px) {
+  .favorite-card-section {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+
+  .favorite-tabs-row {
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+
+  .favorite-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+}
+  height: 180px;
   text-align: center;
+  color: rgba(0, 0, 0, 0.55);
 }
 
-.scene-group {
-  margin-bottom: 10px;
+.body--dark .favorite-action-card {
+  border-color: rgba(255, 255, 255, 0.15);
+  background: linear-gradient(180deg, #20242c 0%, #141920 100%);
+  color: #f2f4f8;
+}
+
+.body--dark .power-on {
+  background: linear-gradient(180deg, #2d3f5a 0%, #1c2c45 100%);
+}
+
+.body--dark .power-off {
+  background: linear-gradient(180deg, #1c1c1c 0%, #101010 100%);
+}
+
+.body--dark .scene-card {
+  background: linear-gradient(180deg, #2b2926 0%, #1f1d1a 100%);
 }
 </style>
