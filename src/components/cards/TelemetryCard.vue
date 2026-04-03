@@ -99,6 +99,7 @@
 <script>
 import { ref, computed } from "vue";
 import { configDataStore } from "src/stores/configDataStore";
+import { useConfigBinding } from "src/composables/useConfigDataBindings";
 import MyCard from "components/myCard.vue";
 import { telemetryDataColumns, telemetryDataRows } from "src/stores/telemetryData.js";
 
@@ -114,11 +115,45 @@ export default {
       { label: "Off", value: "OFF" },
     ];
 
-    const statsValue = ref(configData.data?.telemetry?.statsEnabled === "ON" ? "ON" : "OFF");
-    const logValue = ref(configData.data?.telemetry?.logEnabled === "ON" ? "ON" : "OFF");
-    const urlValue = ref(configData.data?.telemetry?.url || configData.data?.debug?.server || "");
-    const userValue = ref(configData.data?.telemetry?.user || configData.data?.network?.mqtt?.username || "");
-    const passwordValue = ref(configData.data?.telemetry?.password || configData.data?.network?.mqtt?.password || "");
+    const { model: statsValue, save: updateStats } = useConfigBinding(
+      configData,
+      "telemetry.statsEnabled",
+      {
+        fallback: configData.data?.telemetry?.statsEnabled === "ON" ? "ON" : "OFF",
+      },
+    );
+
+    const { model: logValue, save: updateLog } = useConfigBinding(
+      configData,
+      "telemetry.logEnabled",
+      {
+        fallback: configData.data?.telemetry?.logEnabled === "ON" ? "ON" : "OFF",
+      },
+    );
+
+    const { model: urlValue, save: updateUrl } = useConfigBinding(
+      configData,
+      "telemetry.url",
+      {
+        fallback: configData.data?.debug?.server || "",
+      },
+    );
+
+    const { model: userValue, save: updateUser } = useConfigBinding(
+      configData,
+      "telemetry.user",
+      {
+        fallback: configData.data?.network?.mqtt?.username || "",
+      },
+    );
+
+    const { model: passwordValue, save: updatePassword } = useConfigBinding(
+      configData,
+      "telemetry.password",
+      {
+        fallback: configData.data?.network?.mqtt?.password || "",
+      },
+    );
 
     const showDetails = ref(false);
 
@@ -126,26 +161,6 @@ export default {
 
     const toggleDetails = () => {
       showDetails.value = !showDetails.value;
-    };
-
-    const updateStats = (value) => {
-      configData.updateData("telemetry.statsEnabled", value);
-    };
-
-    const updateLog = (value) => {
-      configData.updateData("telemetry.logEnabled", value);
-    };
-
-    const updateUrl = () => {
-      configData.updateData("telemetry.url", urlValue.value);
-    };
-
-    const updateUser = () => {
-      configData.updateData("telemetry.user", userValue.value);
-    };
-
-    const updatePassword = () => {
-      configData.updateData("telemetry.password", passwordValue.value);
     };
 
     return {

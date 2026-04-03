@@ -180,6 +180,7 @@
 <script>
 import { ref } from "vue";
 import { configDataStore } from "src/stores/configDataStore";
+import { useConfigBinding } from "src/composables/useConfigDataBindings";
 import MyCard from "src/components/myCard.vue";
 
 export default {
@@ -190,104 +191,116 @@ export default {
     const configData = configDataStore();
     const isPwd = ref(true);
 
-    const mqttEnabled = ref(configData.data.network.mqtt.enabled);
-    const mqttServer = ref(configData.data.network.mqtt.server);
-    const mqttPort = ref(configData.data.network.mqtt.port);
-    const mqttTopicBase = ref(configData.data.network.mqtt.topic_base);
-    const mqttUsername = ref(configData.data.network.mqtt.username);
-    const mqttPassword = ref(configData.data.network.mqtt.password);
-
-    // Home Assistant settings
-    const haEnabled = ref(configData.data.network.mqtt.homeassistant.enable);
-    const haDiscoveryPrefix = ref(
-      configData.data.network.mqtt.homeassistant.discovery_prefix,
-    );
-    const haNodeId = ref(
-      configData.data.network.mqtt.homeassistant.node_id ||
-        configData.data.general.device_name,
+    const { model: mqttEnabled, save: updateMqttEnabled } = useConfigBinding(
+      configData,
+      "network.mqtt.enabled",
+      {
+        fallback: false,
+        persist: true,
+      },
     );
 
-    // Sync settings
-    const clockMasterEnabled = ref(configData.data.sync.clock_master_enabled);
-    const cmdMasterEnabled = ref(configData.data.sync.cmd_master_enabled);
-    const colorMasterEnabled = ref(configData.data.sync.color_master_enabled);
-    const clockSlaveEnabled = ref(configData.data.sync.clock_slave_enabled);
-    const cmdSlaveEnabled = ref(configData.data.sync.cmd_slave_enabled);
-    const colorSlaveEnabled = ref(configData.data.sync.color_slave_enabled);
+    const { model: mqttServer, save: updateMqttServer } = useConfigBinding(
+      configData,
+      "network.mqtt.server",
+      {
+        fallback: "",
+        persist: true,
+      },
+    );
 
-    const updateMqttEnabled = (value) => {
-      configData.updateData("network.mqtt.enabled", value, true);
-    };
+    const { model: mqttPort, save: updateMqttPort } = useConfigBinding(
+      configData,
+      "network.mqtt.port",
+      {
+        fallback: 1883,
+        persist: true,
+      },
+    );
 
-    const updateMqttServer = () => {
-      configData.updateData("network.mqtt.server", mqttServer.value, true);
-    };
+    const { model: mqttTopicBase, save: updateMqttTopicBase } =
+      useConfigBinding(configData, "network.mqtt.topic_base", {
+        fallback: "",
+        persist: true,
+      });
 
-    const updateMqttPort = () => {
-      configData.updateData("network.mqtt.port", mqttPort.value, true);
-    };
+    const { model: mqttUsername, save: updateMqttUsername } = useConfigBinding(
+      configData,
+      "network.mqtt.username",
+      {
+        fallback: "",
+        persist: true,
+      },
+    );
 
-    const updateMqttTopicBase = () => {
-      configData.updateData(
-        "network.mqtt.topic_base",
-        mqttTopicBase.value,
-        true,
-      );
-    };
+    const { model: mqttPassword, save: updateMqttPassword } = useConfigBinding(
+      configData,
+      "network.mqtt.password",
+      {
+        fallback: "",
+        persist: true,
+      },
+    );
 
-    const updateMqttUsername = () => {
-      configData.updateData("network.mqtt.username", mqttUsername.value, true);
-    };
+    const { model: haEnabled, save: updateHaEnabled } = useConfigBinding(
+      configData,
+      "network.mqtt.homeassistant.enable",
+      {
+        fallback: false,
+        persist: true,
+      },
+    );
 
-    const updateMqttPassword = () => {
-      configData.updateData("network.mqtt.password", mqttPassword.value, true);
-    };
+    const { model: haDiscoveryPrefix, save: updateHaDiscoveryPrefix } =
+      useConfigBinding(configData, "network.mqtt.homeassistant.discovery_prefix", {
+        fallback: "",
+        persist: true,
+      });
 
-    // Home Assistant update functions
-    const updateHaEnabled = (value) => {
-      configData.updateData("network.mqtt.homeassistant.enable", value, true);
-    };
+    const { model: haNodeId, save: updateHaNodeId } = useConfigBinding(
+      configData,
+      "network.mqtt.homeassistant.node_id",
+      {
+        fallback: configData.data?.general?.device_name || "",
+        persist: true,
+      },
+    );
 
-    const updateHaDiscoveryPrefix = () => {
-      configData.updateData(
-        "network.mqtt.homeassistant.discovery_prefix",
-        haDiscoveryPrefix.value,
-        true,
-      );
-    };
+    const { model: clockMasterEnabled, save: updateClockMasterEnabled } =
+      useConfigBinding(configData, "sync.clock_master_enabled", {
+        fallback: false,
+        persist: true,
+      });
 
-    const updateHaNodeId = () => {
-      configData.updateData(
-        "network.mqtt.homeassistant.node_id",
-        haNodeId.value,
-        true,
-      );
-    };
+    const { model: cmdMasterEnabled, save: updateCmdMasterEnabled } =
+      useConfigBinding(configData, "sync.cmd_master_enabled", {
+        fallback: false,
+        persist: true,
+      });
 
-    // Sync update functions
-    const updateClockMasterEnabled = (value) => {
-      configData.updateData("sync.clock_master_enabled", value, true);
-    };
+    const { model: colorMasterEnabled, save: updateColorMasterEnabled } =
+      useConfigBinding(configData, "sync.color_master_enabled", {
+        fallback: false,
+        persist: true,
+      });
 
-    const updateCmdMasterEnabled = (value) => {
-      configData.updateData("sync.cmd_master_enabled", value, true);
-    };
+    const { model: clockSlaveEnabled, save: updateClockSlaveEnabled } =
+      useConfigBinding(configData, "sync.clock_slave_enabled", {
+        fallback: false,
+        persist: true,
+      });
 
-    const updateColorMasterEnabled = (value) => {
-      configData.updateData("sync.color_master_enabled", value, true);
-    };
+    const { model: cmdSlaveEnabled, save: updateCmdSlaveEnabled } =
+      useConfigBinding(configData, "sync.cmd_slave_enabled", {
+        fallback: false,
+        persist: true,
+      });
 
-    const updateClockSlaveEnabled = (value) => {
-      configData.updateData("sync.clock_slave_enabled", value, true);
-    };
-
-    const updateCmdSlaveEnabled = (value) => {
-      configData.updateData("sync.cmd_slave_enabled", value, true);
-    };
-
-    const updateColorSlaveEnabled = (value) => {
-      configData.updateData("sync.color_slave_enabled", value, true);
-    };
+    const { model: colorSlaveEnabled, save: updateColorSlaveEnabled } =
+      useConfigBinding(configData, "sync.color_slave_enabled", {
+        fallback: false,
+        persist: true,
+      });
 
     return {
       configData,
