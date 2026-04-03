@@ -53,9 +53,10 @@ export default configure((/* ctx */) => {
     css: ["app.scss"],
     extras: [],
     build: {
+      cssMinify: 'esbuild',
       target: {
-        browser: ["es2019", "edge88", "firefox78", "chrome87", "safari13.1"],
-        node: "node18",
+        browser: ["es2020"],
+        node: "node20",
       },
       useFilenameHashes: false,
       vueRouterMode: "hash",
