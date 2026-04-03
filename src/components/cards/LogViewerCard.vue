@@ -6,7 +6,7 @@
           <q-input
             v-model="serviceBaseUrl"
             label="Log Service URL"
-            hint="Example: http://lightinator-logservice.local:4821"
+            hint="Example: http://192.168.x.x:4821"
             @blur="persistServiceBaseUrl"
           />
         </div>
@@ -158,9 +158,15 @@ export default {
   setup() {
     const controllersStore = useControllersStore();
     const configStore = configDataStore();
+    const defaultServiceUrl = () => {
+      const locationHost = window.location.hostname || "";
+      if (locationHost && locationHost !== "localhost" && locationHost !== "127.0.0.1") {
+        return `http://${locationHost}:4821`;
+      }
+      return "http://127.0.0.1:4821";
+    };
     const serviceBaseUrl = ref(
-      localStorage.getItem("lightinator-log-service-url") ||
-        "http://lightinator-logservice.local:4821",
+      localStorage.getItem("lightinator-log-service-url") || defaultServiceUrl(),
     );
     const remoteLogs = ref([]);
     const nextBefore = ref(null);
@@ -264,6 +270,22 @@ export default {
       localStorage.setItem("lightinator-log-service-url", serviceBaseUrl.value);
     };
 
+    const buildDetectionCandidates = () => {
+      const locationHost = window.location.hostname || "";
+      const saved = normalizeUrl(serviceBaseUrl.value);
+      const candidates = [saved];
+
+      if (locationHost) {
+        candidates.push(`http://${locationHost}:4821`);
+      }
+      candidates.push(window.location.origin);
+      candidates.push("http://127.0.0.1:4821");
+      candidates.push("http://localhost:4821");
+      candidates.push("http://lightinator-logservice.local:4821");
+
+      return [...new Set(candidates.filter(Boolean).map(normalizeUrl))];
+    };
+
     const fetchJsonWithTimeout = async (url, timeoutMs = 3000) => {
       const ctrl = new AbortController();
       const timeoutId = setTimeout(() => ctrl.abort(), timeoutMs);
@@ -355,16 +377,8 @@ export default {
       detecting.value = true;
       statusMessage.value = "Detecting log service...";
 
-      const candidates = [
-        normalizeUrl(serviceBaseUrl.value),
-        "http://lightinator-logservice.local:4821",
-        "http://localhost:4821",
-        "http://127.0.0.1:4821",
-      ];
-
-      const uniqueCandidates = [...new Set(candidates.filter(Boolean))];
-
-      for (const candidate of uniqueCandidates) {
+      let lastError = null;
+      for (const candidate of buildDetectionCandidates()) {
         try {
           await fetchJsonWithTimeout(`${candidate}/health`, 1500);
           const target = await resolveCollectorTarget(candidate);
@@ -378,13 +392,18 @@ export default {
           detecting.value = false;
           await refreshLogs();
           return;
-        } catch (_error) {
+        } catch (error) {
+          lastError = error;
           // Try next candidate.
         }
       }
 
       serviceDetected.value = false;
-      statusMessage.value = "Error: could not detect log service.";
+      const browserHost = window.location.hostname || "collector-ip";
+      const suggestion = `Try http://${browserHost}:4821 or your collector LAN IP.`;
+      statusMessage.value = lastError
+        ? `Error: could not detect log service (${lastError.message}). ${suggestion}`
+        : `Error: could not detect log service. ${suggestion}`;
       detecting.value = false;
     };
 
