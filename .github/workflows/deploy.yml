@@ -25,7 +25,7 @@ jobs:
           token: ${{ secrets.GH_PAT }}
 
       - name: Set up Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v4
         with:
           node-version: "24"
 
@@ -119,13 +119,11 @@ jobs:
           destination_dir: ${{ steps.get_branch.outputs.branch }}
 
       - name: Wait for GitHub Pages deployment
-        if: github.event_name == 'push'
         run: |
           echo "Waiting 30 seconds for GitHub Pages to deploy the artifacts..."
           sleep 30
 
       - name: Verify artifacts are accessible
-        if: github.event_name == 'push'
         run: |
           WEBAPP_BRANCH="${{ steps.get_branch.outputs.branch }}"
           echo "Verifying artifacts at https://pljakobs.github.io/esp_rgb_webapp2/${WEBAPP_BRANCH}/"
@@ -149,7 +147,6 @@ jobs:
           echo "All artifacts verified and accessible!"
 
       - name: Trigger firmware build
-        if: github.event_name == 'push'
         run: |
           # Map webapp branch names to firmware branch names if needed
           WEBAPP_BRANCH="${{ steps.get_branch.outputs.branch }}"
