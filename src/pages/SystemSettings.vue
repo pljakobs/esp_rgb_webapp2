@@ -1,12 +1,16 @@
 <template>
-  <div>
-    <InformationCard :collapsed="false" />
-    <FirmwareUpdateCard />
-    <HostnameCard />
-    <ControllerConfigCard />
-    <SaveRestoreConfig />
-    <DebugFunctionCard v-if="infoData.data?.app?.build_type === 'debug'" />
-    <LogViewerCard v-if="infoData.data?.app?.build_type === 'debug'" />
+  <div class="system-settings-layout">
+    <div class="info-column">
+      <InformationCard :collapsed="false" />
+    </div>
+    <div class="cards-column">
+      <FirmwareUpdateCard />
+      <HostnameCard />
+      <ControllerConfigCard />
+      <SaveRestoreConfig />
+      <DebugFunctionCard v-if="infoData.data?.app?.build_type === 'debug'" />
+      <LogViewerCard v-if="infoData.data?.app?.build_type === 'debug'" />
+    </div>
   </div>
 </template>
 
@@ -39,3 +43,35 @@ export default {
   },
 };
 </script>
+
+<style scoped>
+.system-settings-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.info-column,
+.cards-column {
+  width: 100%;
+}
+
+@media (min-width: 900px) {
+  .system-settings-layout {
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .info-column {
+    flex: 0 0 340px;
+    position: sticky;
+    top: 0;
+  }
+
+  .cards-column {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+}
+</style>
