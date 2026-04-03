@@ -54,7 +54,7 @@
       </q-btn-group>
     </q-card-section>
     <q-separator />
-    <q-card-section :style="{ height: cardHeight }">
+    <q-card-section class="color-picker-body" :style="{ height: cardHeight }">
       <q-carousel v-model="carouselPage" animated :style="{ height: '100%' }">
         <q-carousel-slide v-if="hasFavorites" name="favorites">
           <favoriteSection
@@ -388,5 +388,15 @@ export default {
 
 .w-100 {
   width: 100%;
+}
+
+@media (max-width: 600px) {
+  .color-picker-body {
+    padding: 0 !important;
+  }
+
+  .color-picker-body :deep(.q-carousel__slide) {
+    padding: 0 !important;
+  }
 }
 </style>

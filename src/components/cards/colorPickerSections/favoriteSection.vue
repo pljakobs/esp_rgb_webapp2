@@ -203,33 +203,100 @@ export default {
       (presetData.data?.presets || []).filter((preset) => preset.favorite),
     );
 
+    const normalizeKey = (value) => String(value ?? "").trim();
+
+    const resolveSceneGroupMeta = (scene, groups) => {
+      const groupById = new Map(
+        groups.map((group) => [normalizeKey(group.id), group]),
+      );
+
+      const idCandidates = [scene.group_id, scene.groupId, scene.group?.id]
+        .map(normalizeKey)
+        .filter(Boolean);
+
+      for (const candidateId of idCandidates) {
+        const group = groupById.get(candidateId);
+        if (group?.name) {
+          return {
+            key: normalizeKey(group.id) || candidateId,
+            name: group.name,
+          };
+        }
+      }
+
+      const explicitName =
+        scene.group_name || scene.groupName || scene.group?.name || "";
+      if (explicitName) {
+        return {
+          key: normalizeKey(idCandidates[0] || explicitName),
+          name: explicitName,
+        };
+      }
+
+      const sceneControllerIds = new Set(
+        (scene.settings || [])
+          .map((setting) => normalizeKey(setting.controller_id))
+          .filter(Boolean),
+      );
+
+      if (sceneControllerIds.size > 0) {
+        const matchedGroup = groups.find((group) => {
+          const groupControllerIds = new Set(
+            (group.controller_ids || [])
+              .map((controllerId) => normalizeKey(controllerId))
+              .filter(Boolean),
+          );
+
+          if (groupControllerIds.size === 0) {
+            return false;
+          }
+
+          return Array.from(sceneControllerIds).every((controllerId) =>
+            groupControllerIds.has(controllerId),
+          );
+        });
+
+        if (matchedGroup?.name) {
+          return {
+            key: normalizeKey(matchedGroup.id) || matchedGroup.name,
+            name: matchedGroup.name,
+          };
+        }
+      }
+
+      return {
+        key: normalizeKey(idCandidates[0] || "ungrouped"),
+        name: "Ungrouped",
+      };
+    };
+
     const sceneGroupEntries = computed(() => {
       const favoriteScenes = (presetData.data?.scenes || []).filter(
         (scene) => scene.favorite,
       );
-      const groups = {};
-      const groupMap = {};
-
-      (presetData.data?.groups || []).forEach((group) => {
-        groupMap[String(group.id)] = group.name;
-      });
+      const groups = presetData.data?.groups || [];
+      const groupedScenes = {};
 
       favoriteScenes.forEach((scene) => {
-        const groupId = scene.group_id || "other";
-        const groupKey = String(groupId);
-        const name = groupMap[groupKey] || groupKey;
-        if (!groups[name]) {
-          groups[name] = [];
+        const groupMeta = resolveSceneGroupMeta(scene, groups);
+        const bucketKey = groupMeta.key || groupMeta.name;
+
+        if (!groupedScenes[bucketKey]) {
+          groupedScenes[bucketKey] = {
+            name: groupMeta.name,
+            scenes: [],
+          };
         }
-        groups[name].push(scene);
+
+        groupedScenes[bucketKey].scenes.push(scene);
       });
 
-      return Object.entries(groups)
-        .filter(([, scenes]) => scenes.length > 0)
-        .map(([name, scenes]) => ({
-          name,
-          scenes,
-          tabName: `group-${name}`,
+      return Object.entries(groupedScenes)
+        .filter(([, groupInfo]) => groupInfo.scenes.length > 0)
+        .map(([groupKey, groupInfo]) => ({
+          name: groupInfo.name,
+          scenes: groupInfo.scenes,
+          tabName: `group-${groupKey}`,
         }));
     });
 
@@ -520,7 +587,7 @@ export default {
 .favorite-grid {
   width: 100%;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(150px, 100%), 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(136px, 100%), 1fr));
   gap: 10px;
 }
 
@@ -617,6 +684,23 @@ export default {
   flex-direction: column;
   align-items: center;
   justify-content: center;
+
+@media (max-width: 600px) {
+  .favorite-card-section {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+
+  .favorite-tabs-row {
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+
+  .favorite-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+}
   height: 180px;
   text-align: center;
   color: rgba(0, 0, 0, 0.55);
