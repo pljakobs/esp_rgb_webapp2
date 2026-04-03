@@ -36,8 +36,8 @@
 </template>
 
 <script>
-import { ref, watch } from "vue";
 import { configDataStore } from "src/stores/configDataStore";
+import { useConfigBinding } from "src/composables/useConfigDataBindings";
 import MyCard from "src/components/myCard.vue";
 
 export default {
@@ -48,33 +48,36 @@ export default {
   setup() {
     const configData = configDataStore();
 
-    const enabled = ref(configData.data?.network?.rsyslog?.enabled ?? false);
-    const host = ref(configData.data?.network?.rsyslog?.host ?? "");
-    const port = ref(configData.data?.network?.rsyslog?.port ?? 514);
-
-    watch(
-      () => configData.data?.network?.rsyslog,
-      (newValue) => {
-        enabled.value = newValue?.enabled ?? false;
-        host.value = newValue?.host ?? "";
-        port.value = newValue?.port ?? 514;
+    const { model: enabled, save: updateEnabled } = useConfigBinding(
+      configData,
+      "network.rsyslog.enabled",
+      {
+        fallback: false,
+        persist: true,
       },
-      { deep: true },
     );
 
-    const updateEnabled = (value) => {
-      configData.updateData("network.rsyslog.enabled", value, true);
-    };
+    const { model: host, save: updateHost } = useConfigBinding(
+      configData,
+      "network.rsyslog.host",
+      {
+        fallback: "",
+        persist: true,
+      },
+    );
 
-    const updateHost = () => {
-      configData.updateData("network.rsyslog.host", host.value, true);
-    };
-
-    const updatePort = () => {
-      const normalizedPort = Number.parseInt(port.value, 10);
-      port.value = Number.isFinite(normalizedPort) ? normalizedPort : 514;
-      configData.updateData("network.rsyslog.port", port.value, true);
-    };
+    const { model: port, save: updatePort } = useConfigBinding(
+      configData,
+      "network.rsyslog.port",
+      {
+        fallback: 514,
+        persist: true,
+        normalize: (value) => {
+          const normalizedPort = Number.parseInt(value, 10);
+          return Number.isFinite(normalizedPort) ? normalizedPort : 514;
+        },
+      },
+    );
 
     return {
       enabled,
