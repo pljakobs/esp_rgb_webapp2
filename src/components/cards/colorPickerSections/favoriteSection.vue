@@ -1,38 +1,69 @@
 <template>
-  <q-scroll-area :style="{ height: cardHeight, width: '100%' }">
+  <div class="favorite-section-root" :style="{ height: cardHeight || '100%' }">
     <q-card-section class="q-pa-md">
-      <q-tabs
-        v-model="activeTab"
-        dense
-        active-color="primary"
-        indicator-color="primary"
-        class="favorite-tabs q-mb-md"
-      >
-        <q-tab name="quick" no-caps>
-          <div class="tab-label-content">
-            <svgIcon name="lightbulb_outlined" size="18px" />
-            <span>Quick</span>
-          </div>
-        </q-tab>
-        <q-tab
-          v-for="sceneGroup in sceneGroupEntries"
-          :key="sceneGroup.tabName"
-          :name="sceneGroup.tabName"
-          no-caps
+      <div class="favorite-tabs-row q-mb-md">
+        <button
+          type="button"
+          class="tabs-nav-btn tabs-nav-prev"
+          aria-label="Scroll tabs left"
+          @click="scrollTabs(-220)"
         >
-          <div class="tab-label-content">
-            <svgIcon name="scene" size="18px" />
-            <span>{{ sceneGroup.name }}</span>
-          </div>
-        </q-tab>
-      </q-tabs>
+          <svgIcon name="arrow_drop_down" class="tabs-nav-icon rotate-left" />
+        </button>
 
-      <q-tab-panels
-        v-model="activeTab"
-        animated
-        keep-alive
-        class="favorite-panels"
+        <q-tabs
+          ref="tabsRef"
+          v-model="activeTab"
+          dense
+          inline-label
+          active-color="primary"
+          indicator-color="primary"
+          class="favorite-tabs"
+        >
+          <q-tab :id="tabDomId('quick')" name="quick" no-caps>
+            <div class="tab-label-content">
+              <svgIcon name="lightbulb_outlined" size="18px" />
+              <span>Quick</span>
+            </div>
+          </q-tab>
+          <q-tab
+            v-for="sceneGroup in sceneGroupEntries"
+            :key="sceneGroup.tabName"
+            :id="tabDomId(sceneGroup.tabName)"
+            :name="sceneGroup.tabName"
+            no-caps
+          >
+            <div class="tab-label-content">
+              <svgIcon name="scene" size="18px" />
+              <span>{{ sceneGroup.name }}</span>
+            </div>
+          </q-tab>
+        </q-tabs>
+
+        <button
+          type="button"
+          class="tabs-nav-btn tabs-nav-next"
+          aria-label="Scroll tabs right"
+          @click="scrollTabs(220)"
+        >
+          <svgIcon name="arrow_drop_down" class="tabs-nav-icon rotate-right" />
+        </button>
+      </div>
+
+      <div
+        class="favorite-panels-touch"
+        @touchstart.passive="onPanelsTouchStart"
+        @touchend.passive="onPanelsTouchEnd"
       >
+        <q-tab-panels
+          v-model="activeTab"
+          swipeable
+          animated
+          transition-prev="slide-right"
+          transition-next="slide-left"
+          keep-alive
+          class="favorite-panels"
+        >
         <q-tab-panel name="quick" class="q-pa-none">
           <div class="favorite-grid">
             <q-btn
@@ -131,13 +162,14 @@
             </q-btn>
           </div>
         </q-tab-panel>
-      </q-tab-panels>
+        </q-tab-panels>
+      </div>
     </q-card-section>
-  </q-scroll-area>
+  </div>
 </template>
 
 <script>
-import { computed, ref, watch } from "vue";
+import { computed, nextTick, onMounted, ref, watch } from "vue";
 import { colors } from "quasar";
 import { useAppDataStore } from "src/stores/appDataStore";
 import RawBadge from "src/components/RawBadge.vue";
@@ -166,6 +198,8 @@ export default {
     const presetData = useAppDataStore();
     const controllers = useControllersStore();
     const activeTab = ref("quick");
+    const tabsRef = ref(null);
+    const touchStartPoint = ref(null);
 
     const favoritePresets = computed(() =>
       (presetData.data?.presets || []).filter((preset) => preset.favorite),
@@ -200,11 +234,117 @@ export default {
         }));
     });
 
+    const orderedTabs = computed(() => [
+      "quick",
+      ...sceneGroupEntries.value.map((group) => group.tabName),
+    ]);
+
     watch(sceneGroupEntries, (nextGroups) => {
       const allowedTabs = ["quick", ...nextGroups.map((group) => group.tabName)];
       if (!allowedTabs.includes(activeTab.value)) {
         activeTab.value = "quick";
       }
+      centerActiveTab();
+    });
+
+    const tabDomId = (tabName) =>
+      `favorite-tab-${String(tabName).replace(/[^a-zA-Z0-9_-]/g, "-")}`;
+
+    const centerActiveTab = async () => {
+      await nextTick();
+
+      const activeElement = document.getElementById(tabDomId(activeTab.value));
+      if (!activeElement || typeof activeElement.scrollIntoView !== "function") {
+        return;
+      }
+
+      activeElement.scrollIntoView({
+        behavior: "smooth",
+        inline: "center",
+        block: "nearest",
+      });
+    };
+
+    const getTabsScroller = () => {
+      const tabsElement = tabsRef.value?.$el;
+      if (!tabsElement) {
+        return null;
+      }
+
+      return tabsElement.querySelector(".q-tabs__content");
+    };
+
+    const scrollTabs = (delta) => {
+      const scroller = getTabsScroller();
+      if (!scroller || typeof scroller.scrollBy !== "function") {
+        return;
+      }
+
+      scroller.scrollBy({
+        left: delta,
+        behavior: "smooth",
+      });
+    };
+
+    const switchTabByOffset = (offset) => {
+      const tabs = orderedTabs.value;
+      const currentIndex = tabs.indexOf(activeTab.value);
+      if (currentIndex === -1) {
+        return;
+      }
+
+      const nextIndex = currentIndex + offset;
+      if (nextIndex < 0 || nextIndex >= tabs.length) {
+        return;
+      }
+
+      activeTab.value = tabs[nextIndex];
+    };
+
+    const onPanelsTouchStart = (event) => {
+      const touch = event.touches?.[0];
+      if (!touch) {
+        touchStartPoint.value = null;
+        return;
+      }
+
+      touchStartPoint.value = {
+        x: touch.clientX,
+        y: touch.clientY,
+      };
+    };
+
+    const onPanelsTouchEnd = (event) => {
+      const start = touchStartPoint.value;
+      const touch = event.changedTouches?.[0];
+      touchStartPoint.value = null;
+
+      if (!start || !touch) {
+        return;
+      }
+
+      const deltaX = touch.clientX - start.x;
+      const deltaY = touch.clientY - start.y;
+      const horizontalThreshold = 45;
+      const verticalTolerance = 60;
+
+      if (Math.abs(deltaY) > verticalTolerance) {
+        return;
+      }
+
+      if (deltaX <= -horizontalThreshold) {
+        switchTabByOffset(1);
+      } else if (deltaX >= horizontalThreshold) {
+        switchTabByOffset(-1);
+      }
+    };
+
+    watch(activeTab, () => {
+      centerActiveTab();
+    });
+
+    onMounted(() => {
+      centerActiveTab();
     });
 
     const presetHsvColor = (preset) => {
@@ -277,6 +417,11 @@ export default {
 
     return {
       activeTab,
+      tabsRef,
+      tabDomId,
+      scrollTabs,
+      onPanelsTouchStart,
+      onPanelsTouchEnd,
       favoritePresets,
       sceneGroupEntries,
       setColor,
@@ -292,8 +437,75 @@ export default {
 </script>
 
 <style scoped>
+.favorite-section-root {
+  width: 100%;
+  max-width: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.favorite-tabs-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .favorite-tabs {
+  flex: 1;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
   border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.favorite-tabs :deep(.q-tabs__content) {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.favorite-tabs :deep(.q-tabs__arrow) {
+  display: none !important;
+}
+
+.tabs-nav-btn {
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: inherit;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.tabs-nav-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.rotate-left {
+  transform: rotate(90deg);
+}
+
+.rotate-right {
+  transform: rotate(-90deg);
+}
+
+.favorite-tabs :deep(.q-tab) {
+  border-radius: 8px;
+  min-height: 36px;
+}
+
+.favorite-tabs :deep(.q-tab--active) {
+  background: rgba(25, 118, 210, 0.12);
+  font-weight: 600;
+}
+
+.body--dark .favorite-tabs :deep(.q-tab--active) {
+  background: rgba(110, 168, 255, 0.2);
 }
 
 .tab-label-content {
@@ -303,16 +515,41 @@ export default {
 }
 
 .favorite-panels {
+  width: 100%;
+  max-width: 100%;
+  min-height: 100%;
   background: transparent;
 }
 
+.favorite-panels-touch {
+  width: 100%;
+  max-width: 100%;
+}
+
+.favorite-panels :deep(.q-panel) {
+  width: 100%;
+  max-width: 100%;
+  min-height: 100%;
+}
+
+.favorite-panels :deep(.q-tab-panel) {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: hidden;
+}
+
 .favorite-grid {
+  width: 100%;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(150px, 100%), 1fr));
   gap: 10px;
 }
 
 .favorite-action-card {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   min-height: 92px;
   border: 1px solid rgba(0, 0, 0, 0.12);
   border-radius: 10px;
