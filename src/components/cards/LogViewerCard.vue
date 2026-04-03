@@ -44,6 +44,7 @@
         </div>
         <div class="setup-command">cd lightinator-log-service</div>
         <div class="setup-command">./scripts/run-container.sh</div>
+        <div class="setup-command">hostname -I | awk '{print $1}'  # paste into Collector IPv4</div>
       </q-banner>
     </q-card-section>
 
