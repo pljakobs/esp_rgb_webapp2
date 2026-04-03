@@ -33,6 +33,17 @@ export function useConfigBinding(configData, path, options = {}) {
   );
 
   const save = (nextValue = model.value) => {
+    // When used as @blur="save", Vue passes a FocusEvent object.
+    // In that case persist the already-bound model value instead.
+    if (
+      nextValue &&
+      typeof nextValue === "object" &&
+      "target" in nextValue &&
+      typeof nextValue.preventDefault === "function"
+    ) {
+      nextValue = model.value;
+    }
+
     const normalizedValue = normalize ? normalize(nextValue) : nextValue;
     model.value = normalizedValue;
     configData.updateData(path, normalizedValue, persist);
