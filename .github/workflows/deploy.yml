@@ -19,7 +19,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
         with:
           ref: ${{ github.event.workflow_run.head_branch }}
           token: ${{ secrets.GH_PAT }}
@@ -75,13 +75,13 @@ jobs:
           echo "${VERSION}" > dist/spa/VERSION
 
       - name: Upload SPA files to GitHub
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v4
         with:
           name: spa-files
           path: dist/spa/
 
       - name: Upload fileList.h to GitHub
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v4
         with:
           name: fileList.h
           path: ./fileList.h

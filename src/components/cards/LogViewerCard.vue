@@ -65,7 +65,7 @@
     <q-card-section class="row justify-center no-padding">
       <div class="row items-end q-col-gutter-sm q-mb-sm full-width q-px-sm">
         <div class="col-12 col-md-3">
-          <q-select
+          <MySelect
             v-model="downloadScope"
             :options="downloadScopeOptions"
             emit-value
@@ -84,7 +84,7 @@
           />
         </div>
         <div class="col-6 col-md-3" v-if="downloadScope === 'window'">
-          <q-select
+          <MySelect
             v-model="downloadUnit"
             :options="downloadUnitOptions"
             emit-value
@@ -185,11 +185,13 @@ import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import { useControllersStore } from "src/stores/controllersStore";
 import { configDataStore } from "src/stores/configDataStore";
 import MyCard from "src/components/myCard.vue";
+import MySelect from "src/components/mySelect.vue";
 
 export default {
   name: "LogViewerCard",
   components: {
     MyCard,
+    MySelect,
   },
   setup() {
     const controllersStore = useControllersStore();
