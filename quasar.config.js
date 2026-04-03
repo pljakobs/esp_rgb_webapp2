@@ -56,7 +56,7 @@ export default configure((/* ctx */) => {
       cssMinify: 'esbuild',
       target: {
         browser: ["es2020"],
-        node: "node20",
+        node: "node24",
       },
       useFilenameHashes: false,
       vueRouterMode: "hash",
