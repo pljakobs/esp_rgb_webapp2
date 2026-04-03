@@ -3,6 +3,7 @@
     <ConnectionCard />
     <IpSettingsCard />
     <MqttSettingsCard />
+    <RsyslogSettingsCard />
     <TelemetryCard />
 
   </div>
@@ -12,6 +13,7 @@
 import ConnectionCard from "src/components/cards/ConnectionCard.vue";
 import IpSettingsCard from "src/components/cards/IpSettingsCard.vue";
 import MqttSettingsCard from "src/components/cards/MqttSettingsCard.vue";
+import RsyslogSettingsCard from "src/components/cards/RsyslogSettingsCard.vue";
 import TelemetryCard from "src/components/cards/TelemetryCard.vue";
 
 
@@ -20,6 +22,7 @@ export default {
     ConnectionCard,
     IpSettingsCard,
     MqttSettingsCard,
+    RsyslogSettingsCard,
     TelemetryCard,
   },
 };
