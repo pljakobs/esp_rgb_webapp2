@@ -1,6 +1,6 @@
 <template>
   <div class="favorite-section-root" :style="{ height: cardHeight || '100%' }">
-    <q-card-section class="q-pa-md">
+    <q-card-section class="q-pa-md favorite-card-section">
       <div class="favorite-tabs-row q-mb-md">
         <button
           type="button"
@@ -51,9 +51,8 @@
       </div>
 
       <div
+        v-touch-swipe.mouse.horizontal="onPanelsSwipe"
         class="favorite-panels-touch"
-        @touchstart.passive="onPanelsTouchStart"
-        @touchend.passive="onPanelsTouchEnd"
       >
         <q-tab-panels
           v-model="activeTab"
@@ -199,7 +198,6 @@ export default {
     const controllers = useControllersStore();
     const activeTab = ref("quick");
     const tabsRef = ref(null);
-    const touchStartPoint = ref(null);
 
     const favoritePresets = computed(() =>
       (presetData.data?.presets || []).filter((preset) => preset.favorite),
@@ -213,12 +211,13 @@ export default {
       const groupMap = {};
 
       (presetData.data?.groups || []).forEach((group) => {
-        groupMap[group.id] = group.name;
+        groupMap[String(group.id)] = group.name;
       });
 
       favoriteScenes.forEach((scene) => {
         const groupId = scene.group_id || "other";
-        const name = groupMap[groupId] || groupId;
+        const groupKey = String(groupId);
+        const name = groupMap[groupKey] || groupKey;
         if (!groups[name]) {
           groups[name] = [];
         }
@@ -301,40 +300,10 @@ export default {
       activeTab.value = tabs[nextIndex];
     };
 
-    const onPanelsTouchStart = (event) => {
-      const touch = event.touches?.[0];
-      if (!touch) {
-        touchStartPoint.value = null;
-        return;
-      }
-
-      touchStartPoint.value = {
-        x: touch.clientX,
-        y: touch.clientY,
-      };
-    };
-
-    const onPanelsTouchEnd = (event) => {
-      const start = touchStartPoint.value;
-      const touch = event.changedTouches?.[0];
-      touchStartPoint.value = null;
-
-      if (!start || !touch) {
-        return;
-      }
-
-      const deltaX = touch.clientX - start.x;
-      const deltaY = touch.clientY - start.y;
-      const horizontalThreshold = 45;
-      const verticalTolerance = 60;
-
-      if (Math.abs(deltaY) > verticalTolerance) {
-        return;
-      }
-
-      if (deltaX <= -horizontalThreshold) {
+    const onPanelsSwipe = ({ direction }) => {
+      if (direction === "left") {
         switchTabByOffset(1);
-      } else if (deltaX >= horizontalThreshold) {
+      } else if (direction === "right") {
         switchTabByOffset(-1);
       }
     };
@@ -420,8 +389,7 @@ export default {
       tabsRef,
       tabDomId,
       scrollTabs,
-      onPanelsTouchStart,
-      onPanelsTouchEnd,
+      onPanelsSwipe,
       favoritePresets,
       sceneGroupEntries,
       setColor,
@@ -442,6 +410,12 @@ export default {
   max-width: 100%;
   overflow-y: auto;
   overflow-x: hidden;
+}
+
+.favorite-card-section {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .favorite-tabs-row {
@@ -515,14 +489,18 @@ export default {
 }
 
 .favorite-panels {
+  flex: 1;
   width: 100%;
+  height: 100%;
   max-width: 100%;
   min-height: 100%;
   background: transparent;
 }
 
 .favorite-panels-touch {
+  flex: 1;
   width: 100%;
+  min-height: 0;
   max-width: 100%;
 }
 
