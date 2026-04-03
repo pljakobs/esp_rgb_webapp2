@@ -1,5 +1,7 @@
 <template>
-  <scenesCard :collapsed="false" />
+  <div class="interaction-page">
+    <scenesCard :collapsed="false" />
+  </div>
 </template>
 
 <script>
@@ -17,3 +19,17 @@ export default {
   },
 };
 </script>
+
+<style scoped>
+.interaction-page {
+  min-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+}
+
+.interaction-page :deep(.inset-scroll-area) {
+  height: 80vh;
+}
+</style>

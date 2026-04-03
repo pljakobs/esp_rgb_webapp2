@@ -1,6 +1,6 @@
 <template>
-  <div>
-    <ColorPicker />
+  <div class="interaction-page">
+    <ColorPicker card-height="80vh" />
     <q-dialog v-model="showDialog">
       <q-card
         class="shadow-4 col-auto fit q-gutter-md q-pa-md"
@@ -53,4 +53,12 @@ export default {
 };
 </script>
 
-<style scoped></style>
+<style scoped>
+.interaction-page {
+  min-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+}
+</style>
