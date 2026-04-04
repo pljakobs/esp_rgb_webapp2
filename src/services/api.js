@@ -152,7 +152,29 @@ export class ApiService {
     return chunks;
   }
 
-  _buildPayloadChunks(payload, maxPayloadBytes) {
+  _buildSparseDataUnits(payload) {
+    const units = [];
+
+    for (const [key, value] of Object.entries(payload || {})) {
+      if (Array.isArray(value)) {
+        for (const item of value) {
+          const id = item?.id;
+          if (id !== undefined && id !== null && id !== "") {
+            units.push({ [`${key}[id=${id}]`]: item });
+          } else {
+            // Fallback for entries without id: append semantics.
+            units.push({ [`${key}[]`]: [item] });
+          }
+        }
+      } else {
+        units.push({ [key]: value });
+      }
+    }
+
+    return units;
+  }
+
+  _buildPayloadChunks(payload, maxPayloadBytes, endpointPath = "") {
     if (
       !payload ||
       typeof payload !== "object" ||
@@ -162,20 +184,15 @@ export class ApiService {
       return [payload];
     }
 
-    const units = [];
-
-    for (const [key, value] of Object.entries(payload)) {
-      if (Array.isArray(value) && value.length > 1) {
-        const splitChunks = this._splitArrayValueBySize(
-          key,
-          value,
-          maxPayloadBytes,
-        );
-        units.push(...splitChunks);
-      } else {
-        units.push({ [key]: value });
-      }
-    }
+    const units =
+      endpointPath === "data"
+        ? this._buildSparseDataUnits(payload)
+        : Object.entries(payload).flatMap(([key, value]) => {
+            if (Array.isArray(value) && value.length > 1) {
+              return this._splitArrayValueBySize(key, value, maxPayloadBytes);
+            }
+            return [{ [key]: value }];
+          });
 
     const payloads = [];
     let current = {};
@@ -211,9 +228,11 @@ export class ApiService {
     retryCount,
     timeoutMs,
   ) {
+    const endpointPath = this._getEndpointPath(endpoint);
     const payloads = this._buildPayloadChunks(
       options.body,
       this._chunking.maxPayloadBytes,
+      endpointPath,
     );
 
     if (payloads.length <= 1) {
