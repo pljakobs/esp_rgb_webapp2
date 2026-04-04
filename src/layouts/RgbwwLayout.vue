@@ -268,10 +268,7 @@
             id="parent"
             class="fit row wrap justify-center items-start content-start no-gutter with-bottom-padding"
           >
-            <div
-              :class="routerViewColumnClass"
-              justify-center
-            >
+            <div :class="routerViewColumnClass" justify-center>
               <template v-if="!configData.data.general.current_pin_config_name">
                 <ControllerConfigCard />
               </template>

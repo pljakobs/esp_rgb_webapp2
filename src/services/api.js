@@ -1,5 +1,9 @@
 import { useControllersStore } from "../stores/controllersStore";
 import { retryDelay, requestTimeout } from "../stores/storeConstants";
+import {
+  validateConfigPayload,
+  validateDataPayload,
+} from "./schemaValidator";
 
 export class ApiService {
   constructor() {
@@ -123,6 +127,19 @@ export class ApiService {
   _isChunkableEndpoint(endpoint) {
     const path = this._getEndpointPath(endpoint);
     return path === "data" || path === "config";
+  }
+
+  _containsIntegrityCriticalData(payload) {
+    if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+      return false;
+    }
+
+    const groups = payload.groups;
+    const scenes = payload.scenes;
+    return (
+      (Array.isArray(groups) && groups.length > 0) ||
+      (Array.isArray(scenes) && scenes.length > 0)
+    );
   }
 
   _jsonSizeBytes(value) {
@@ -284,7 +301,41 @@ export class ApiService {
   }
 
   async _executeApi(endpoint, targetController, options, retryCount, timeoutMs) {
+    const endpointPath = this._getEndpointPath(endpoint);
     const method = (options?.method || "GET").toUpperCase();
+
+    if (method === "POST" && options?.body && typeof options.body === "object") {
+      if (endpointPath === "data") {
+        const validation = validateDataPayload(options.body);
+        if (!validation.valid) {
+          return {
+            jsonData: null,
+            error: {
+              message: "Payload does not match app-data.cfgdb schema",
+              schema: validation.schema,
+              errors: validation.errors,
+            },
+            status: null,
+          };
+        }
+      }
+
+      if (endpointPath === "config") {
+        const validation = validateConfigPayload(options.body);
+        if (!validation.valid) {
+          return {
+            jsonData: null,
+            error: {
+              message: "Payload does not match app-config.cfgdb schema",
+              schema: validation.schema,
+              errors: validation.errors,
+            },
+            status: null,
+          };
+        }
+      }
+    }
+
     const canChunk =
       method === "POST" &&
       this._isChunkableEndpoint(endpoint) &&
@@ -658,6 +709,17 @@ export class ApiService {
     return this.fetchApi("data", controller, {
       method: "POST",
       body: data,
+      ...requestOptions,
+    }, 0, timeout || requestTimeout);
+  }
+
+  async updateConfigOnController(ipAddress, data, options = {}) {
+    const controller = { ip_address: ipAddress };
+    const { timeout, ...requestOptions } = options;
+    const normalizedData = this.normalizeConfigPayload(data);
+    return this.fetchApi("config", controller, {
+      method: "POST",
+      body: normalizedData,
       ...requestOptions,
     }, 0, timeout || requestTimeout);
   }

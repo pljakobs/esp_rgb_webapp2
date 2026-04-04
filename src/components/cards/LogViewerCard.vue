@@ -42,22 +42,28 @@
       </div>
       <div class="text-caption" :class="statusClass">{{ statusMessage }}</div>
 
-      <q-banner v-if="showCollectorSetupHelp" class="q-mt-sm bg-grey-9 text-white">
+      <q-banner
+        v-if="showCollectorSetupHelp"
+        class="q-mt-sm bg-grey-9 text-white"
+      >
         <div class="text-subtitle2 q-mb-xs">Local log service not found</div>
         <div class="text-caption q-mb-xs">
-          Start the collector on your Linux machine and enter its IPv4 and port above.
+          Start the collector on your Linux machine and enter its IPv4 and port
+          above.
         </div>
         <div class="setup-command">
           git clone https://github.com/pljakobs/lightinator-log-service.git
         </div>
         <div class="setup-command">cd lightinator-log-service</div>
         <div class="setup-command">./scripts/run-container.sh</div>
-        <div class="setup-command">hostname -I | awk '{print $1}'  # paste into Collector IPv4</div>
+        <div class="setup-command">
+          hostname -I | awk '{print $1}' # paste into Collector IPv4
+        </div>
       </q-banner>
     </q-card-section>
 
     <q-card-section class="row justify-center no-padding">
-          <div ref="logViewerEl" class="log-viewer">
+      <div ref="logViewerEl" class="log-viewer">
         <div v-if="displayLogs.length === 0" class="empty-state">
           No logs available.
         </div>
@@ -131,12 +137,7 @@
         <q-card-section class="row items-center q-pb-sm">
           <div class="text-h6">Log Viewer</div>
           <q-space />
-          <q-btn
-            flat
-            label="Refresh"
-            :loading="loading"
-            @click="refreshLogs"
-          />
+          <q-btn flat label="Refresh" :loading="loading" @click="refreshLogs" />
           <q-toggle
             v-model="logSendingEnabled"
             label="Send Logs"
@@ -174,8 +175,13 @@
         <q-separator />
 
         <q-card-section class="fullscreen-body">
-          <div class="text-caption q-mb-sm" :class="statusClass">{{ statusMessage }}</div>
-          <div ref="logViewerFullscreenEl" class="log-viewer log-viewer-fullscreen">
+          <div class="text-caption q-mb-sm" :class="statusClass">
+            {{ statusMessage }}
+          </div>
+          <div
+            ref="logViewerFullscreenEl"
+            class="log-viewer log-viewer-fullscreen"
+          >
             <div v-if="displayLogs.length === 0" class="empty-state">
               No logs available.
             </div>
@@ -220,11 +226,14 @@ export default {
         ? window.location.hostname
         : "127.0.0.1";
     const collectorHost = ref(
-      localStorage.getItem("lightinator-log-service-host") || defaultCollectorHost,
+      localStorage.getItem("lightinator-log-service-host") ||
+        defaultCollectorHost,
     );
     const collectorPort = ref(
-      Number.parseInt(localStorage.getItem("lightinator-log-service-port") || "4821", 10) ||
-        4821,
+      Number.parseInt(
+        localStorage.getItem("lightinator-log-service-port") || "4821",
+        10,
+      ) || 4821,
     );
     const remoteLogs = ref([]);
     const nextBefore = ref(null);
@@ -240,8 +249,10 @@ export default {
       localStorage.getItem("lightinator-log-download-scope") || "all",
     );
     const downloadAmount = ref(
-      Number.parseInt(localStorage.getItem("lightinator-log-download-amount") || "24", 10) ||
-        24,
+      Number.parseInt(
+        localStorage.getItem("lightinator-log-download-amount") || "24",
+        10,
+      ) || 24,
     );
     const downloadUnit = ref(
       localStorage.getItem("lightinator-log-download-unit") || "hours",
@@ -303,7 +314,9 @@ export default {
     });
 
     const isIpv4Address = (value) => {
-      const parts = String(value || "").trim().split(".");
+      const parts = String(value || "")
+        .trim()
+        .split(".");
       if (parts.length !== 4) {
         return false;
       }
@@ -381,10 +394,14 @@ export default {
     };
 
     const persistDownloadPreferences = () => {
-      const normalizedAmount = Number.parseInt(String(downloadAmount.value || ""), 10);
-      downloadAmount.value = Number.isFinite(normalizedAmount) && normalizedAmount > 0
-        ? normalizedAmount
-        : 24;
+      const normalizedAmount = Number.parseInt(
+        String(downloadAmount.value || ""),
+        10,
+      );
+      downloadAmount.value =
+        Number.isFinite(normalizedAmount) && normalizedAmount > 0
+          ? normalizedAmount
+          : 24;
 
       if (!["all", "window"].includes(downloadScope.value)) {
         downloadScope.value = "all";
@@ -393,8 +410,14 @@ export default {
         downloadUnit.value = "hours";
       }
 
-      localStorage.setItem("lightinator-log-download-scope", downloadScope.value);
-      localStorage.setItem("lightinator-log-download-amount", String(downloadAmount.value));
+      localStorage.setItem(
+        "lightinator-log-download-scope",
+        downloadScope.value,
+      );
+      localStorage.setItem(
+        "lightinator-log-download-amount",
+        String(downloadAmount.value),
+      );
       localStorage.setItem("lightinator-log-download-unit", downloadUnit.value);
     };
 
@@ -472,7 +495,9 @@ export default {
         }
         serviceDetected.value = true;
         statusMessage.value = `Connected. Loaded ${remoteLogs.value.length} log entries.${
-          !wasConfigured ? ` Controller rsyslog set to ${collectorHost.value}:5514.` : ""
+          !wasConfigured
+            ? ` Controller rsyslog set to ${collectorHost.value}:5514.`
+            : ""
         }`;
         const hasNewTail = previousLastRaw !== remoteLogs.value.at(-1)?.raw;
         if (hasNewTail) {

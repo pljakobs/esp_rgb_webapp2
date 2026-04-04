@@ -5,7 +5,7 @@
       style="max-width: 600px; width: 100%"
     >
       <div class="text-center q-mb-lg">
-        <q-icon name="wifi_find" size="80px" color="primary" />
+        <svgIcon name="wifi_find" size="80px" color="primary" />
         <h4 class="q-my-md">Find Your Controller</h4>
         <p class="text-grey-7">
           Scanning your local network for ESP RGBWW controllers...
@@ -19,7 +19,7 @@
         rounded
       >
         <template v-slot:avatar>
-          <q-icon name="wifi_off" />
+          <svgIcon name="wifi_off" size="20px" />
         </template>
         No network connection. Please connect to WiFi and try again.
       </q-banner>
@@ -43,7 +43,9 @@
             class="controller-item"
           >
             <q-item-section avatar>
-              <q-avatar color="primary" text-color="white" icon="lightbulb" />
+              <q-avatar color="primary" text-color="white">
+                <svgIcon name="lightbulb_outlined" size="20px" color="white" />
+              </q-avatar>
             </q-item-section>
 
             <q-item-section>
@@ -57,7 +59,7 @@
             </q-item-section>
 
             <q-item-section side>
-              <q-icon name="chevron_right" />
+              <svgIcon name="chevron_right" size="20px" />
             </q-item-section>
           </q-item>
         </q-list>
@@ -68,7 +70,7 @@
         v-if="!scanning && controllers.length === 0 && scanCompleted"
         class="text-center q-mb-lg"
       >
-        <q-icon name="search_off" size="60px" color="grey-5" />
+        <svgIcon name="search_off" size="60px" color="grey-5" />
         <p class="text-grey-7 q-mt-md">No controllers found on your network.</p>
       </div>
 
@@ -78,20 +80,26 @@
           v-if="!scanning"
           color="primary"
           label="Scan Again"
-          icon="refresh"
           class="full-width"
           @click="startScan"
-        />
+        >
+          <template #prepend>
+            <svgIcon name="refresh" size="18px" />
+          </template>
+        </q-btn>
 
         <q-btn
           v-if="!scanning"
           flat
           color="primary"
           label="Manual Entry"
-          icon="edit"
           class="full-width"
           @click="showManualEntry = true"
-        />
+        >
+          <template #prepend>
+            <svgIcon name="edit" size="18px" />
+          </template>
+        </q-btn>
       </div>
 
       <!-- Manual Entry Dialog -->
@@ -138,9 +146,13 @@ import {
   verifyController,
 } from "src/services/controllerDiscovery";
 import { useControllersStore } from "src/stores/controllersStore";
+import svgIcon from "src/components/svgIcon.vue";
 
 export default {
   name: "ControllerDiscovery",
+  components: {
+    svgIcon,
+  },
   setup() {
     const router = useRouter();
     const $q = useQuasar();

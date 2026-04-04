@@ -9,10 +9,9 @@ const localhostOverride = localOverrides.localhost ?? {};
 
 export const localhost = {
   hostname: localhostOverride.hostname ?? "localhost",
-  ip_address:
-    import.meta.env.DEV
-      ? localhostOverride.ip_address ?? "127.0.0.1"
-      : window.location.hostname,
+  ip_address: import.meta.env.DEV
+    ? (localhostOverride.ip_address ?? "127.0.0.1")
+    : window.location.hostname,
 };
 
 export const storeStatus = {

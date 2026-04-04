@@ -433,6 +433,17 @@ export class SyncService {
     });
     consolidated.groups = Array.from(groupMap.values());
 
+    const validGroupIds = new Set(consolidated.groups.map((group) => group.id));
+    consolidated.scenes = consolidated.scenes.filter((scene) => {
+      if (scene.group_id && !validGroupIds.has(scene.group_id)) {
+        console.warn(
+          `Quarantining scene ${scene.id} with missing group_id=${scene.group_id}`,
+        );
+        return false;
+      }
+      return true;
+    });
+
     // Deduplicate controllers
     const controllerMap = new Map();
     allData.controllers.forEach((controller) => {
@@ -802,6 +813,18 @@ export class SyncService {
             controller: controller.hostname,
             type: "scenes",
             issue: sceneMismatch,
+          });
+        }
+
+        const groupIds = new Set((jsonData.groups || []).map((group) => group.id));
+        const orphanScene = (jsonData.scenes || []).find(
+          (scene) => scene?.group_id && !groupIds.has(scene.group_id),
+        );
+        if (orphanScene) {
+          inconsistencies.push({
+            controller: controller.hostname,
+            type: "scenes",
+            issue: `Orphan scene ${orphanScene.id} references missing group_id=${orphanScene.group_id}`,
           });
         }
 
