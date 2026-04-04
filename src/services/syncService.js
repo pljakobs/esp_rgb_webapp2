@@ -858,29 +858,50 @@ export class SyncService {
    * @returns {String|null} Description of mismatch, or null if arrays match
    */
   _compareArrays(expected, actual, keyField) {
-    if (expected.length !== actual.length) {
-      return `Count mismatch: expected ${expected.length}, got ${actual.length}`;
-    }
+    // For distributed convergence we only require that all expected items
+    // exist and are at least as new as the consolidated version. We ignore
+    // extra items because controllers may temporarily retain stale data.
+    const expectedMap = this._toNewestByIdMap(expected, keyField);
+    const actualMap = this._toNewestByIdMap(actual, keyField);
 
-    // Create maps for comparison
-    const expectedMap = new Map(expected.map((item) => [item[keyField], item]));
-    const actualMap = new Map(actual.map((item) => [item[keyField], item]));
-
-    // Check for missing items
-    for (const id of expectedMap.keys()) {
+    for (const [id, expectedItem] of expectedMap.entries()) {
       if (!actualMap.has(id)) {
         return `Missing item with ${keyField}=${id}`;
       }
-    }
 
-    // Check for extra items
-    for (const id of actualMap.keys()) {
-      if (!expectedMap.has(id)) {
-        return `Extra item with ${keyField}=${id}`;
+      const actualItem = actualMap.get(id);
+      const expectedTs = Number(expectedItem?.ts || 0);
+      const actualTs = Number(actualItem?.ts || 0);
+
+      if (Number.isFinite(expectedTs) && Number.isFinite(actualTs)) {
+        if (actualTs < expectedTs) {
+          return `Stale item ${keyField}=${id}: expected ts>=${expectedTs}, got ${actualTs}`;
+        }
       }
     }
 
-    return null; // Arrays match
+    return null;
+  }
+
+  _toNewestByIdMap(items, keyField) {
+    const map = new Map();
+    for (const item of items || []) {
+      const id = item?.[keyField];
+      if (!id) continue;
+
+      const existing = map.get(id);
+      if (!existing) {
+        map.set(id, item);
+        continue;
+      }
+
+      const existingTs = Number(existing?.ts || 0);
+      const currentTs = Number(item?.ts || 0);
+      if (!Number.isFinite(existingTs) || currentTs >= existingTs) {
+        map.set(id, item);
+      }
+    }
+    return map;
   }
 
   /**

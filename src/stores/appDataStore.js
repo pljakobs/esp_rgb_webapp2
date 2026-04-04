@@ -1434,7 +1434,7 @@ export const useAppDataStore = defineStore("appData", {
       for (let attempt = 0; attempt < SYNC_VERIFY_RETRIES; attempt++) {
         try {
           const verifyResponse = await fetchWithTimeout(
-            `http://${controller.ip_address}/data?cache_bust=${Date.now()}`,
+            `http://${controller.ip_address}/data`,
             {
               method: "GET",
               headers: {
