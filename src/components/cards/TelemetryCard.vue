@@ -109,49 +109,69 @@ export default {
   },
   setup() {
     const configData = configDataStore();
+    const coerceTelemetryEnabled = (value, fallback = false) => {
+      if (typeof value === "boolean") {
+        return value;
+      }
+      if (value === "ON") {
+        return true;
+      }
+      if (value === "OFF") {
+        return false;
+      }
+      return fallback;
+    };
 
     const telemetryOptions = [
-      { label: "On", value: "ON" },
-      { label: "Off", value: "OFF" },
+      { label: "On", value: true },
+      { label: "Off", value: false },
     ];
 
-    const { model: statsValue, save: updateStats } = useConfigBinding(
-      configData,
-      "telemetry.statsEnabled",
-      {
-        fallback: configData.data?.telemetry?.statsEnabled === "ON" ? "ON" : "OFF",
+    const statsValue = computed({
+      get: () =>
+        coerceTelemetryEnabled(configData.data?.network?.telemetry?.statsEnabled),
+      set: (value) => {
+        configData.updateData("network.telemetry.statsEnabled", Boolean(value));
       },
-    );
+    });
 
-    const { model: logValue, save: updateLog } = useConfigBinding(
-      configData,
-      "telemetry.logEnabled",
-      {
-        fallback: configData.data?.telemetry?.logEnabled === "ON" ? "ON" : "OFF",
+    const logValue = computed({
+      get: () =>
+        coerceTelemetryEnabled(configData.data?.network?.telemetry?.logEnabled),
+      set: (value) => {
+        configData.updateData("network.telemetry.logEnabled", Boolean(value));
       },
-    );
+    });
+
+    const updateStats = (value) => {
+      statsValue.value = value;
+    };
+
+    const updateLog = (value) => {
+      logValue.value = value;
+    };
 
     const { model: urlValue, save: updateUrl } = useConfigBinding(
       configData,
-      "telemetry.url",
+      "network.telemetry.url",
       {
-        fallback: configData.data?.debug?.server || "",
+        fallback: configData.data?.network?.telemetry?.url || "",
       },
     );
 
     const { model: userValue, save: updateUser } = useConfigBinding(
       configData,
-      "telemetry.user",
+      "network.telemetry.user",
       {
-        fallback: configData.data?.network?.mqtt?.username || "",
+        fallback: configData.data?.network?.telemetry?.user || "",
       },
     );
 
     const { model: passwordValue, save: updatePassword } = useConfigBinding(
       configData,
-      "telemetry.password",
+      "network.telemetry.password",
       {
-        fallback: configData.data?.network?.mqtt?.password || "",
+        fallback: configData.data?.network?.telemetry?.password || "",
       },
     );
 

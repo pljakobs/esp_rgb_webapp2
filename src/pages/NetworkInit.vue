@@ -485,23 +485,36 @@ export default {
     const step = ref(1);
     const connecting = ref(false);
     const countdown = ref(10);
+    const coerceTelemetryEnabled = (value, fallback = false) => {
+      if (typeof value === "boolean") {
+        return value;
+      }
+      if (value === "ON") {
+        return true;
+      }
+      if (value === "OFF") {
+        return false;
+      }
+      return fallback;
+    };
 
     // Hostname
     const hostname = ref(configData.data.general.device_name || "");
 
     // Telemetry Stats
     const statsEnabled = computed({
-      get: () => configData.data.telemetry?.statsEnabled === "ON",
+      get: () =>
+        coerceTelemetryEnabled(configData.data.network?.telemetry?.statsEnabled),
       set: (value) => {
-        configData.updateData("telemetry.statsEnabled", value ? "ON" : "OFF");
+        configData.updateData("network.telemetry.statsEnabled", Boolean(value));
       },
     });
 
     // Telemetry Logs
     const logEnabled = computed({
-      get: () => configData.data.telemetry?.logEnabled === "ON",
+      get: () => coerceTelemetryEnabled(configData.data.network?.telemetry?.logEnabled),
       set: (value) => {
-        configData.updateData("telemetry.logEnabled", value ? "ON" : "OFF");
+        configData.updateData("network.telemetry.logEnabled", Boolean(value));
       },
     });
 

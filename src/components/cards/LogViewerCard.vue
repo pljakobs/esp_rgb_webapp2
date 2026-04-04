@@ -215,6 +215,7 @@ export default {
     const downloadLoading = ref(false);
     const fullscreen = ref(false);
     const serviceDetected = ref(false);
+    const rsyslogConfigured = ref(false);
     const statusMessage = ref("Idle");
     const downloadScope = ref(
       localStorage.getItem("lightinator-log-download-scope") || "all",
@@ -404,12 +405,18 @@ export default {
         const previousLastRaw = remoteLogs.value.at(-1)?.raw;
         remoteLogs.value = (payload.items || []).map(mapRecord);
         nextBefore.value = payload.nextBefore;
-        await autoConfigureControllerRsyslog({
-          ip: collectorHost.value,
-          udpPort: 5514,
-        });
+        const wasConfigured = rsyslogConfigured.value;
+        if (!wasConfigured) {
+          await autoConfigureControllerRsyslog({
+            ip: collectorHost.value,
+            udpPort: 5514,
+          });
+          rsyslogConfigured.value = true;
+        }
         serviceDetected.value = true;
-        statusMessage.value = `Connected. Loaded ${remoteLogs.value.length} log entries. Controller rsyslog set to ${collectorHost.value}:5514.`;
+        statusMessage.value = `Connected. Loaded ${remoteLogs.value.length} log entries.${
+          !wasConfigured ? ` Controller rsyslog set to ${collectorHost.value}:5514.` : ""
+        }`;
         const hasNewTail = previousLastRaw !== remoteLogs.value.at(-1)?.raw;
         if (hasNewTail) {
           await scrollToBottom();
@@ -556,6 +563,7 @@ export default {
     };
 
     watch(currentControllerIp, () => {
+      rsyslogConfigured.value = false;
       refreshLogs();
     });
 
