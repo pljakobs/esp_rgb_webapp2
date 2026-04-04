@@ -4,6 +4,22 @@ import { useControllersStore } from "src/stores/controllersStore";
 import { safeStringify } from "src/stores/storeHelpers";
 import { apiService } from "src/services/api.js";
 
+function normalizeConfigPath(path) {
+  if (typeof path !== "string") {
+    return path;
+  }
+
+  if (path === "telemetry") {
+    return "network.telemetry";
+  }
+
+  if (path.startsWith("telemetry.")) {
+    return `network.${path}`;
+  }
+
+  return path;
+}
+
 export const configDataStore = defineStore("configDataStore", {
   state: () => ({
     status: storeStatus.LOADING,
@@ -36,6 +52,7 @@ export const configDataStore = defineStore("configDataStore", {
       }
     },
     async updateData(field, value, update = true) {
+      field = normalizeConfigPath(field);
       console.log(
         "updateConfigData called for field: ",
         field,
@@ -71,14 +88,19 @@ export const configDataStore = defineStore("configDataStore", {
       }
     },
     async updateMultipleData(updates, update = true) {
+      const normalizedUpdates = {};
+      Object.entries(updates).forEach(([field, value]) => {
+        normalizedUpdates[normalizeConfigPath(field)] = value;
+      });
+
       console.log(
         "updateMultipleData called with:",
-        Object.keys(updates).length,
+        Object.keys(normalizedUpdates).length,
         "updates",
       );
 
       // Apply all updates to local state
-      Object.entries(updates).forEach(([field, value]) => {
+      Object.entries(normalizedUpdates).forEach(([field, value]) => {
         const fieldParts = field.split(".");
         let currentObject = this.data;
         for (let i = 0; i < fieldParts.length - 1; i++) {
@@ -91,7 +113,7 @@ export const configDataStore = defineStore("configDataStore", {
         // Send all updates as a single API call
         const minimalUpdate = {};
 
-        Object.entries(updates).forEach(([field, value]) => {
+        Object.entries(normalizedUpdates).forEach(([field, value]) => {
           const fieldParts = field.split(".");
           let tempObject = minimalUpdate;
           let currentObject = this.data;

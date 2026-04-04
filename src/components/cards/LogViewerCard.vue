@@ -26,6 +26,14 @@
             :loading="loading"
             @click="refreshLogs"
           />
+          <q-toggle
+            v-model="logSendingEnabled"
+            label="Send Logs"
+            :disable="sendingToggleLoading || !currentControllerIp"
+            :true-value="true"
+            :false-value="false"
+            @update:model-value="updateLogSending"
+          />
         </div>
       </div>
 
@@ -129,6 +137,15 @@
             :loading="loading"
             @click="refreshLogs"
           />
+          <q-toggle
+            v-model="logSendingEnabled"
+            label="Send Logs"
+            :disable="sendingToggleLoading || !currentControllerIp"
+            :true-value="true"
+            :false-value="false"
+            class="q-ml-sm"
+            @update:model-value="updateLogSending"
+          />
           <q-btn
             flat
             :disable="!canLoadOlder || loading"
@@ -213,6 +230,8 @@ export default {
     const nextBefore = ref(null);
     const loading = ref(false);
     const downloadLoading = ref(false);
+    const sendingToggleLoading = ref(false);
+    const logSendingEnabled = ref(true);
     const fullscreen = ref(false);
     const serviceDetected = ref(false);
     const rsyslogConfigured = ref(false);
@@ -310,6 +329,44 @@ export default {
         },
         true,
       );
+    };
+
+    const updateLogSending = async (enabled) => {
+      if (sendingToggleLoading.value) {
+        return;
+      }
+
+      if (!currentControllerIp.value) {
+        logSendingEnabled.value = false;
+        statusMessage.value = "No controller selected";
+        return;
+      }
+
+      const previous = !enabled;
+      sendingToggleLoading.value = true;
+      try {
+        if (enabled) {
+          await autoConfigureControllerRsyslog({
+            ip: collectorHost.value,
+            udpPort: 5514,
+          });
+          statusMessage.value = `Controller log sending enabled (${collectorHost.value}:5514).`;
+        } else {
+          await configStore.updateMultipleData(
+            {
+              "network.rsyslog.enabled": false,
+            },
+            true,
+          );
+          statusMessage.value = "Controller log sending disabled.";
+        }
+        rsyslogConfigured.value = true;
+      } catch (error) {
+        logSendingEnabled.value = previous;
+        statusMessage.value = `Error updating log sending: ${error.message}`;
+      } finally {
+        sendingToggleLoading.value = false;
+      }
     };
 
     const persistCollectorTarget = () => {
@@ -564,8 +621,19 @@ export default {
 
     watch(currentControllerIp, () => {
       rsyslogConfigured.value = false;
+      logSendingEnabled.value = true;
       refreshLogs();
     });
+
+    watch(
+      () => configStore.data?.network?.rsyslog?.enabled,
+      (nextEnabled) => {
+        if (typeof nextEnabled === "boolean" && !sendingToggleLoading.value) {
+          logSendingEnabled.value = nextEnabled;
+        }
+      },
+      { immediate: true },
+    );
 
     watch(fullscreen, () => {
       scrollToBottom();
@@ -606,6 +674,8 @@ export default {
       canLoadOlder,
       loading,
       downloadLoading,
+      sendingToggleLoading,
+      logSendingEnabled,
       fullscreen,
       logViewerEl,
       logViewerFullscreenEl,
@@ -620,6 +690,7 @@ export default {
       persistCollectorTarget,
       persistDownloadPreferences,
       refreshLogs,
+      updateLogSending,
       loadOlder,
       downloadLogFile,
     };

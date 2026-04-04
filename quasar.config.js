@@ -58,6 +58,12 @@ export default configure((/* ctx */) => {
         browser: ["es2020"],
         node: "node24",
       },
+      extendViteConf(viteConf) {
+        viteConf.server ??= {};
+        viteConf.server.watch ??= {};
+        viteConf.server.watch.usePolling = true;
+        viteConf.server.watch.interval = 200;
+      },
       useFilenameHashes: false,
       vueRouterMode: "hash",
       rebuildCache: true,

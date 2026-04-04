@@ -114,10 +114,13 @@ export function validateScene(scene) {
     // Validate color
     if (validatedSetting.color) {
       if (validatedSetting.color.Preset) {
-        // Preset reference - just validate structure
+        // Normalize legacy wrapper to cfgdb oneOf Preset shape: { id: "..." }
         if (!validatedSetting.color.Preset.id || typeof validatedSetting.color.Preset.id !== 'string') {
           throw new Error('Preset reference must have string id');
         }
+        validatedSetting.color = { id: validatedSetting.color.Preset.id };
+      } else if (validatedSetting.color.id && typeof validatedSetting.color.id === 'string') {
+        validatedSetting.color = { id: validatedSetting.color.id };
       } else if (validatedSetting.color.hsv) {
         validatedSetting.color.hsv = validateHSV(validatedSetting.color.hsv);
       } else if (validatedSetting.color.raw) {
@@ -248,11 +251,6 @@ export function validateRaw(raw) {
  * @returns {Object} - Validated transition
  */
 export function validateTransition(transition) {
-  // Validate required field
-  if (!transition.cmd || typeof transition.cmd !== 'string') {
-    throw new Error('Transition must have a cmd');
-  }
-
   const validated = { ...transition };
 
   // Coerce numeric fields to integers
@@ -261,7 +259,17 @@ export function validateTransition(transition) {
       validated[key] = Math.floor(Number(validated[key]));
     }
   });
-  if (validated.q !== undefined && typeof validated.q !== 'string') {
+
+  // Normalize nullable strings from legacy payloads
+  if (validated.cmd === null || validated.cmd === undefined) {
+    validated.cmd = '';
+  } else if (typeof validated.cmd !== 'string') {
+    validated.cmd = String(validated.cmd);
+  }
+
+  if (validated.q === null || validated.q === undefined) {
+    validated.q = '';
+  } else if (typeof validated.q !== 'string') {
     validated.q = String(validated.q);
   }
 

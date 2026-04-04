@@ -409,15 +409,23 @@ export class SyncService {
         return;
       }
 
-      const existing = sceneMap.get(scene.id);
+      let validatedScene;
+      try {
+        validatedScene = validateScene(scene);
+      } catch (error) {
+        console.debug(`Filtering out invalid scene ${scene?.id}:`, error.message);
+        return;
+      }
+
+      const existing = sceneMap.get(validatedScene.id);
 
       if (!existing) {
         // First occurrence of this scene
-        sceneMap.set(scene.id, { ...scene });
+        sceneMap.set(validatedScene.id, { ...validatedScene });
       } else {
         // Merge with existing scene
-        const merged = this.mergeScenes(existing, scene);
-        sceneMap.set(scene.id, merged);
+        const merged = this.mergeScenes(existing, validatedScene);
+        sceneMap.set(validatedScene.id, merged);
       }
     });
     consolidated.scenes = Array.from(sceneMap.values());
@@ -425,11 +433,21 @@ export class SyncService {
     // Deduplicate groups
     const groupMap = new Map();
     allData.groups.forEach((group) => {
-      if (this.isValidItem(group, "group")) {
-        const existing = groupMap.get(group.id);
-        if (!existing || group.ts > existing.ts) {
-          groupMap.set(group.id, group);
-        }
+      if (!this.isValidItem(group, "group")) {
+        return;
+      }
+
+      let validatedGroup;
+      try {
+        validatedGroup = validateGroup(group);
+      } catch (error) {
+        console.debug(`Filtering out invalid group ${group?.id}:`, error.message);
+        return;
+      }
+
+      const existing = groupMap.get(validatedGroup.id);
+      if (!existing || validatedGroup.ts > existing.ts) {
+        groupMap.set(validatedGroup.id, validatedGroup);
       }
     });
     consolidated.groups = Array.from(groupMap.values());

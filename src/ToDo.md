@@ -1,13 +1,1 @@
-# Webapp Refactor TODO
-
-- [x] Avoid direct store mutation in UI components and route all changes through store update APIs (example: `HostnameCard` writes directly to `configData.data.general.device_name`).
-- [x] Replace repeated inline width and layout styles with shared utility classes or card-level CSS tokens.
-- [x] Refactor `NetworkInit` step indicator markup to be data-driven from a step definition array.
-- [x] Standardize import aliases (`src/...` vs `components/...`) and enforce with ESLint rule/config.
-- [x] Gate debug `console.*` calls behind an environment-aware logger and remove noisy production logs.
-- [x] the buttons for presets and scenes in the favorites card should be more elegant, more user friendly, more recognizable. They should invite the user to press them and ituitively show that this is a light setting. The button should show the name and the color / the five color swatch for raw presets. I am not sure that the scrolling list is ideal, maybe a tabbed control for all groups would be better (only for those that actually have favorite presets or scenes, of course )
-- [x] color temp slider should only be shown if the color model is RGBWW - not for any other color model
-- [x] the central interaction pages should generally be hanging from the top of the page and use 80% of the page hight
-- Question: is there a way to have a ui where the user can tear off the various cards and place them on the window?
-- [x] firmware update dialog does not yet use the new infoDataStore format and therefore does not correctly select the build type
-- [x] on wide viewports, show the system information card on the left and the other cards to its right in a two-column layout
+14 [ ] in the log viewer function: create a local bsd style udp rsync client - it should be able to recieve udp log as emitted by the udpRsyncLog class in the firmware - it should have a button that automatically configures the controller to send it's udp log to the javascript front end - it should display the log in the log viewer component and write it to local storage as well - in a perfect world, it would have a button that allows the user to directly open an issue in github.com/pljakobs/esp_rgbww_firmware with the log attached

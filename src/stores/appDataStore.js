@@ -14,15 +14,9 @@ import { syncService } from "src/services/syncService.js";
 const SYNC_LOCK_TIMEOUT_MS = 6000;
 const SYNC_VERIFY_RETRIES = 3;
 
-// TODO: BUG — ConfigDB selector values must NOT be quoted.
-// The firmware's WriteStream.cpp (line 238) uses a raw byte comparison:
-//   propValue.equals(value, valuelen)
-// So `[id="${x}"]` tries to match the stored value against `"x"` (with literal
-// double-quotes), which always fails → firmware returns HTTP 400 BadSelector.
-// All delete and update-existing operations below are silently broken.
-// Fix: change every  `collection[id="${x}"]`  →  `collection[id=${x}]`
-// Affected lines (as of last audit): 360, 442, 518, 593, 638, 871,
-//   1056, 2141, 2210, 2288, 2412, 2465.
+// NOTE: ConfigDB selector values must be unquoted, e.g. `collection[id=${x}]`.
+// Quoted selectors (`id="${x}"`) are treated as literal quote characters by
+// firmware parser and result in HTTP 400 BadSelector.
 const SYNC_VERIFY_DELAY_MS = 150;
 const MIN_REQUIRED_SYNC_LOCKS = 1;
 
@@ -363,7 +357,7 @@ export const useAppDataStore = defineStore("appData", {
 
           if (existingPreset) {
             // Update existing preset
-            payload = { [`presets[id="${preset.id}"]`]: presetToSync };
+            payload = { [`presets[id=${preset.id}]`]: presetToSync };
             console.log("updatePreset payload: ", JSON.stringify(payload));
           } else {
             // Add new preset
@@ -597,7 +591,7 @@ export const useAppDataStore = defineStore("appData", {
                   console.log(
                     `🔄 Updating existing group on ${controllerName}`,
                   );
-                  return { [`groups[id="${group.id}"]`]: group };
+                  return { [`groups[id=${group.id}]`]: group };
                 } else {
                   console.log(`➕ Adding new group to ${controllerName}`);
                   return { "groups[]": [group] };
@@ -642,7 +636,7 @@ export const useAppDataStore = defineStore("appData", {
 
     async deleteGroup(group, progressCallback) {
       const controllers = useControllersStore();
-      const payload = { [`groups[id="${group.id}"]`]: [] };
+      const payload = { [`groups[id=${group.id}]`]: [] };
 
       try {
         console.log(
@@ -875,7 +869,7 @@ export const useAppDataStore = defineStore("appData", {
 
     async deleteScene(scene, progressCallback) {
       const controllers = useControllersStore();
-      const payload = { [`scenes[id="${scene.id}"]`]: [] };
+      const payload = { [`scenes[id=${scene.id}]`]: [] };
 
       try {
         console.log(
@@ -1067,7 +1061,7 @@ export const useAppDataStore = defineStore("appData", {
             let payload;
             if (existingMetadata) {
               // Update existing metadata
-              payload = { [`controllers[id="${controllerId}"]`]: metadata };
+              payload = { [`controllers[id=${controllerId}]`]: metadata };
             } else {
               // Add new metadata
               payload = { controllers: [metadata] };
@@ -2159,7 +2153,7 @@ export const useAppDataStore = defineStore("appData", {
           // Individual preset updates
           for (const preset of update.presetsToUpdate) {
             try {
-              const payload = { [`presets[id="${preset.id}"]`]: preset };
+              const payload = { [`presets[id=${preset.id}]`]: preset };
               await robustRequest(payload, `updating preset ${preset.name}`);
               console.log(
                 `✅ Updated preset ${preset.name} on ${controllerName}`,
@@ -2205,7 +2199,7 @@ export const useAppDataStore = defineStore("appData", {
                     );
 
                     if (presetIndex !== -1) {
-                      payload = { [`presets[${presetIndex}"]`]: [] };
+                      payload = { [`presets[${presetIndex}]`]: [] };
                       description = `deleting invalid preset "${presetToDelete.name}" at index ${presetIndex}`;
                     } else {
                       console.log(
@@ -2228,7 +2222,7 @@ export const useAppDataStore = defineStore("appData", {
                     typeof presetToDelete === "object"
                       ? presetToDelete.id
                       : presetToDelete;
-                  payload = { [`presets[id="${presetId}"]`]: [] };
+                  payload = { [`presets[id=${presetId}]`]: [] };
                   description = `deleting orphaned preset ${presetId}`;
                 }
 
@@ -2284,7 +2278,7 @@ export const useAppDataStore = defineStore("appData", {
                     );
 
                     if (sceneIndex !== -1) {
-                      payload = { [`scenes[${sceneIndex}"]`]: [] };
+                      payload = { [`scenes[${sceneIndex}]`]: [] };
                       description = `deleting invalid scene "${sceneToDelete.name}" at index ${sceneIndex}`;
                     } else {
                       console.log(
@@ -2306,7 +2300,7 @@ export const useAppDataStore = defineStore("appData", {
                     typeof sceneToDelete === "object"
                       ? sceneToDelete.id
                       : sceneToDelete;
-                  payload = { [`scenes[id="${sceneId}"]`]: [] };
+                  payload = { [`scenes[id=${sceneId}]`]: [] };
                   description = `deleting orphaned scene ${sceneId}`;
                 }
 
@@ -2408,7 +2402,7 @@ export const useAppDataStore = defineStore("appData", {
                     );
 
                     if (groupIndex !== -1) {
-                      payload = { [`groups[${groupIndex}"]`]: [] };
+                      payload = { [`groups[${groupIndex}]`]: [] };
                       description = `deleting invalid group "${groupToDelete.name}" at index ${groupIndex}`;
                     } else {
                       console.log(
@@ -2430,7 +2424,7 @@ export const useAppDataStore = defineStore("appData", {
                     typeof groupToDelete === "object"
                       ? groupToDelete.id
                       : groupToDelete;
-                  payload = { [`groups[id="${groupId}"]`]: [] };
+                  payload = { [`groups[id=${groupId}]`]: [] };
                   description = `deleting orphaned group ${groupId}`;
                 }
 
@@ -2483,7 +2477,7 @@ export const useAppDataStore = defineStore("appData", {
           // Individual group updates
           for (const group of update.groupsToUpdate) {
             try {
-              const payload = { [`groups[id="${group.id}"]`]: group };
+              const payload = { [`groups[id=${group.id}]`]: group };
               await robustRequest(payload, `updating group ${group.name}`);
               console.log(
                 `✅ Updated group ${group.name} on ${controllerName}`,
