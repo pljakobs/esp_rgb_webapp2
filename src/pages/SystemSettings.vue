@@ -46,8 +46,8 @@ export default {
 
 <style scoped>
 .system-settings-layout {
-  display: grid;
-  grid-template-columns: 1fr;
+  display: flex;
+  flex-direction: column;
   gap: 16px;
 }
 
@@ -57,9 +57,14 @@ export default {
   min-width: 0;
 }
 
-/* 2 x 360px columns + 16px gap */
-@media (min-width: 736px) {
+.cards-column {
+  display: grid;
+  gap: 16px;
+}
+
+@media (min-width: 900px) {
   .system-settings-layout {
+    display: grid;
     grid-template-columns: minmax(360px, 1fr) minmax(360px, 1fr);
     align-items: flex-start;
   }
