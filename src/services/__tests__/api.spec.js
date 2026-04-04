@@ -170,6 +170,50 @@ describe('ApiService', () => {
         })
       );
     });
+
+    it('should split large /data POST payloads into throttled chunks', async () => {
+      apiService._chunking.maxPayloadBytes = 220;
+      apiService._chunking.interChunkDelayMs = 0;
+
+      const largePayload = {
+        scenes: Array.from({ length: 8 }, (_, i) => ({
+          id: `scene-${i}`,
+          name: `Scene ${i}`,
+          ts: Date.now() + i,
+          group_id: 'group-1'
+        })),
+        groups: [
+          {
+            id: 'group-1',
+            name: 'Group 1',
+            ts: Date.now(),
+            controller_ids: ['1']
+          }
+        ]
+      };
+
+      mockFetch.mockImplementation(async () => ({
+        status: 200,
+        json: async () => ({ success: true })
+      }));
+
+      const result = await apiService.fetchApi('data', null, {
+        method: 'POST',
+        body: largePayload
+      });
+
+      expect(mockFetch.mock.calls.length).toBeGreaterThan(1);
+
+      for (const call of mockFetch.mock.calls) {
+        const bodyString = call[1].body;
+        expect(typeof bodyString).toBe('string');
+        const bodyBytes = new TextEncoder().encode(bodyString).length;
+        expect(bodyBytes).toBeLessThanOrEqual(apiService._chunking.maxPayloadBytes);
+      }
+
+      expect(result.error).toBeNull();
+      expect(result.status).toBe(200);
+    });
   });
 
   describe('fetchApi - Timeout Handling', () => {

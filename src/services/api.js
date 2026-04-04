@@ -7,6 +7,12 @@ export class ApiService {
     // Track active requests per controller to prevent overwhelming them
     this._activeRequests = new Map(); // ip_address -> Set of active request promises
     this._requestQueue = new Map(); // ip_address -> Array of queued requests
+
+    // Keep payloads below a conservative MTU budget to reduce pressure on ESP8266.
+    this._chunking = {
+      maxPayloadBytes: 1200,
+      interChunkDelayMs: 75,
+    };
   }
 
   get controllersStore() {
@@ -99,7 +105,7 @@ export class ApiService {
     // Queue requests to prevent overwhelming individual controllers
     const controllerIp = targetController.ip_address;
     return this._queueRequest(controllerIp, () =>
-      this._executeFetchApi(
+      this._executeApi(
         endpoint,
         targetController,
         options,
@@ -108,6 +114,183 @@ export class ApiService {
       ),
     );
   }
+
+  _getEndpointPath(endpoint) {
+    if (!endpoint) return "";
+    return String(endpoint).split("?")[0];
+  }
+
+  _isChunkableEndpoint(endpoint) {
+    const path = this._getEndpointPath(endpoint);
+    return path === "data" || path === "config";
+  }
+
+  _jsonSizeBytes(value) {
+    return new TextEncoder().encode(JSON.stringify(value)).length;
+  }
+
+  _splitArrayValueBySize(key, arr, maxPayloadBytes) {
+    const chunks = [];
+    let current = [];
+
+    for (const item of arr) {
+      const candidate = [...current, item];
+      const candidatePayload = { [key]: candidate };
+
+      if (current.length > 0 && this._jsonSizeBytes(candidatePayload) > maxPayloadBytes) {
+        chunks.push({ [key]: current });
+        current = [item];
+      } else {
+        current = candidate;
+      }
+    }
+
+    if (current.length > 0) {
+      chunks.push({ [key]: current });
+    }
+
+    return chunks;
+  }
+
+  _buildPayloadChunks(payload, maxPayloadBytes) {
+    if (
+      !payload ||
+      typeof payload !== "object" ||
+      Array.isArray(payload) ||
+      this._jsonSizeBytes(payload) <= maxPayloadBytes
+    ) {
+      return [payload];
+    }
+
+    const units = [];
+
+    for (const [key, value] of Object.entries(payload)) {
+      if (Array.isArray(value) && value.length > 1) {
+        const splitChunks = this._splitArrayValueBySize(
+          key,
+          value,
+          maxPayloadBytes,
+        );
+        units.push(...splitChunks);
+      } else {
+        units.push({ [key]: value });
+      }
+    }
+
+    const payloads = [];
+    let current = {};
+
+    for (const unit of units) {
+      const candidate = { ...current, ...unit };
+      if (
+        Object.keys(current).length > 0 &&
+        this._jsonSizeBytes(candidate) > maxPayloadBytes
+      ) {
+        payloads.push(current);
+        current = { ...unit };
+      } else {
+        current = candidate;
+      }
+    }
+
+    if (Object.keys(current).length > 0) {
+      payloads.push(current);
+    }
+
+    return payloads;
+  }
+
+  _sleep(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  async _executeChunkedPost(
+    endpoint,
+    targetController,
+    options,
+    retryCount,
+    timeoutMs,
+  ) {
+    const payloads = this._buildPayloadChunks(
+      options.body,
+      this._chunking.maxPayloadBytes,
+    );
+
+    if (payloads.length <= 1) {
+      return this._executeFetchApi(
+        endpoint,
+        targetController,
+        options,
+        retryCount,
+        timeoutMs,
+      );
+    }
+
+    let lastResult = { jsonData: null, error: null, status: null };
+
+    for (let i = 0; i < payloads.length; i++) {
+      const chunkOptions = {
+        ...options,
+        body: payloads[i],
+      };
+
+      lastResult = await this._executeFetchApi(
+        endpoint,
+        targetController,
+        chunkOptions,
+        retryCount,
+        timeoutMs,
+      );
+
+      if (lastResult.error || (lastResult.status && lastResult.status >= 400)) {
+        return {
+          ...lastResult,
+          error: {
+            ...(lastResult.error || {}),
+            chunkIndex: i,
+            chunkCount: payloads.length,
+          },
+        };
+      }
+
+      if (i < payloads.length - 1 && this._chunking.interChunkDelayMs > 0) {
+        await this._sleep(this._chunking.interChunkDelayMs);
+      }
+    }
+
+    return {
+      ...lastResult,
+      jsonData: lastResult.jsonData || { success: true, chunks: payloads.length },
+    };
+  }
+
+  async _executeApi(endpoint, targetController, options, retryCount, timeoutMs) {
+    const method = (options?.method || "GET").toUpperCase();
+    const canChunk =
+      method === "POST" &&
+      this._isChunkableEndpoint(endpoint) &&
+      options?.body &&
+      typeof options.body === "object";
+
+    if (canChunk) {
+      return this._executeChunkedPost(
+        endpoint,
+        targetController,
+        options,
+        retryCount,
+        timeoutMs,
+      );
+    }
+
+    return this._executeFetchApi(
+      endpoint,
+      targetController,
+      options,
+      retryCount,
+      timeoutMs,
+    );
+  }
+
   /**
    * Backward-compatible config payload normalization.
    * Legacy clients may still send telemetry at top-level.
@@ -452,11 +635,12 @@ export class ApiService {
 
   async updateDataOnController(ipAddress, data, options = {}) {
     const controller = { ip_address: ipAddress };
+    const { timeout, ...requestOptions } = options;
     return this.fetchApi("data", controller, {
       method: "POST",
       body: data,
-      ...options,
-    });
+      ...requestOptions,
+    }, 0, timeout || requestTimeout);
   }
 
   async getColorFromController(ipAddress, options = {}) {
