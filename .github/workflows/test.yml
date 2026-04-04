@@ -31,6 +31,27 @@ jobs:
       - name: Run frontend unit tests
         run: npm test -- src/services/__tests__/api.spec.js src/stores/__tests__/appDataStore.spec.js src/services/__tests__/syncService.spec.js src/services/__tests__/schemaValidator.spec.js
 
+      - name: Verify schema lock integrity
+        run: |
+          LOCKED_SHA=$(jq -r .firmware_sha src/schemas/firmware/schemas.lock.json)
+          echo "Checking schemas against locked firmware SHA: $LOCKED_SHA"
+          MISMATCH=0
+          for f in app-data.cfgdb app-config.cfgdb defs.cfgdb; do
+            REMOTE=$(curl -fsSL "https://raw.githubusercontent.com/pljakobs/esp_rgbww_firmware/${LOCKED_SHA}/${f}")
+            LOCAL=$(cat "src/schemas/firmware/${f}")
+            if [ "$REMOTE" != "$LOCAL" ]; then
+              echo "❌ ${f} differs from locked firmware SHA ${LOCKED_SHA}"
+              MISMATCH=1
+            else
+              echo "✓ ${f} matches"
+            fi
+          done
+          if [ "$MISMATCH" = "1" ]; then
+            echo "Schema files are out of sync. Run scripts/sync-schemas.sh to update."
+            exit 1
+          fi
+          echo "✅ All schema files match locked SHA"
+
       - name: Test summary
         if: always()
         run: |

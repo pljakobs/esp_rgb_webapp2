@@ -118,83 +118,68 @@ jobs:
           keep_files: true
           destination_dir: ${{ steps.get_branch.outputs.branch }}
 
-      - name: Wait for GitHub Pages deployment
-        run: |
-          echo "Waiting 30 seconds for GitHub Pages to deploy the artifacts..."
-          sleep 30
-
-      - name: Verify artifacts are accessible
+      - name: Wait for GitHub Pages artifacts to be accessible
         run: |
           WEBAPP_BRANCH="${{ steps.get_branch.outputs.branch }}"
-          echo "Verifying artifacts at https://pljakobs.github.io/esp_rgb_webapp2/${WEBAPP_BRANCH}/"
+          BASE_URL="https://pljakobs.github.io/esp_rgb_webapp2/${WEBAPP_BRANCH}"
+          MAX_ATTEMPTS=10
+          DELAY=15
 
-          # Try to download spa-files.zip
-          if curl -f -L -o /tmp/test-spa.zip "https://pljakobs.github.io/esp_rgb_webapp2/${WEBAPP_BRANCH}/spa-files.zip"; then
-            echo "✓ spa-files.zip is accessible"
-          else
-            echo "✗ ERROR: spa-files.zip not yet available"
-            exit 1
-          fi
-
-          # Try to download fileList.h
-          if curl -f -L -o /tmp/test-filelist.h "https://pljakobs.github.io/esp_rgb_webapp2/${WEBAPP_BRANCH}/fileList.h"; then
-            echo "✓ fileList.h is accessible"
-          else
-            echo "✗ ERROR: fileList.h not yet available"
-            exit 1
-          fi
+          for file in fileList.h spa-files.zip; do
+            echo "Polling ${BASE_URL}/${file} ..."
+            for i in $(seq 1 $MAX_ATTEMPTS); do
+              HTTP=$(curl -s -o /dev/null -w "%{http_code}" -L "${BASE_URL}/${file}")
+              if [ "$HTTP" = "200" ]; then
+                echo "  ✓ ${file} accessible (attempt ${i})"
+                break
+              fi
+              echo "  attempt ${i}/${MAX_ATTEMPTS}: HTTP ${HTTP} — waiting ${DELAY}s"
+              if [ "$i" = "$MAX_ATTEMPTS" ]; then
+                echo "ERROR: ${file} not accessible after $((MAX_ATTEMPTS * DELAY))s"
+                exit 1
+              fi
+              sleep $DELAY
+            done
+          done
 
           echo "All artifacts verified and accessible!"
 
       - name: Trigger firmware build
+        # Requires secrets.GH_PAT with scopes: repo (or public_repo) + workflow
+        # on the pljakobs/esp_rgbww_firmware repository.
         run: |
-          # Map webapp branch names to firmware branch names if needed
           WEBAPP_BRANCH="${{ steps.get_branch.outputs.branch }}"
           case "$WEBAPP_BRANCH" in
-            "devel")
-              FIRMWARE_BRANCH="develop"
-              ;;
-            *)
-              FIRMWARE_BRANCH="$WEBAPP_BRANCH"
-              ;;
+            "devel") FIRMWARE_BRANCH="develop" ;;
+            *)       FIRMWARE_BRANCH="$WEBAPP_BRANCH" ;;
           esac
 
-          echo "Triggering firmware build for branch: $FIRMWARE_BRANCH (webapp: $WEBAPP_BRANCH)"
+          echo "Triggering firmware build: firmware=${FIRMWARE_BRANCH} webapp=${WEBAPP_BRANCH}"
 
-          # Build JSON payload
-          PAYLOAD=$(cat <<EOF
-          {
-            "event_type": "frontend-build-completed",
-            "client_payload": {
-              "branch": "$FIRMWARE_BRANCH",
-              "webapp_branch": "$WEBAPP_BRANCH",
-              "run_id": "${{ github.run_id }}"
-            }
-          }
-          EOF
-          )
-
-          echo "Payload:"
-          echo "$PAYLOAD"
-
-          # Use curl with verbose output
-          HTTP_CODE=$(curl -X POST \
+          HTTP_CODE=$(curl -sS -X POST \
             -H "Accept: application/vnd.github+json" \
             -H "Authorization: Bearer ${{ secrets.GH_PAT }}" \
             -H "X-GitHub-Api-Version: 2022-11-28" \
             -H "Content-Type: application/json" \
-            -w "%{http_code}" \
-            -o /tmp/response.txt \
+            -w "\n%{http_code}" \
+            -o /tmp/dispatch_response.json \
             https://api.github.com/repos/pljakobs/esp_rgbww_firmware/dispatches \
-            -d "$PAYLOAD")
+            -d "$(jq -nc \
+              --arg et frontend-build-completed \
+              --arg br "$FIRMWARE_BRANCH" \
+              --arg wb "$WEBAPP_BRANCH" \
+              --arg ri "${{ github.run_id }}" \
+              '{event_type:$et,client_payload:{branch:$br,webapp_branch:$wb,run_id:$ri}}')" \
+            | tail -1)
 
-          echo "HTTP Status: $HTTP_CODE"
-          echo "Response:"
-          cat /tmp/response.txt
+          echo "HTTP status: $HTTP_CODE"
+          if [ -s /tmp/dispatch_response.json ]; then
+            cat /tmp/dispatch_response.json
+          fi
 
           if [ "$HTTP_CODE" -ne "204" ]; then
-            echo "ERROR: Failed to trigger firmware build (HTTP $HTTP_CODE)"
+            echo "ERROR: dispatch failed (HTTP $HTTP_CODE). Verify GH_PAT has repo+workflow scope on esp_rgbww_firmware."
             exit 1
           fi
 
-          echo "Successfully triggered firmware build"
+          echo "✓ Firmware build triggered"

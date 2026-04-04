@@ -1,0 +1,7 @@
+{
+  "firmware_repo": "pljakobs/esp_rgbww_firmware",
+  "firmware_ref": "V5.0-647-develop",
+  "firmware_sha": "28f2a4dda1f85374fb936968eee17f23438669a9",
+  "synced_at": "2026-04-04",
+  "files": ["app-data.cfgdb", "app-config.cfgdb", "defs.cfgdb"]
+}
