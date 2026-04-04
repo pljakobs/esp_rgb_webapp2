@@ -1,10 +1,5 @@
 import { apiService } from "src/services/api.js";
 import { useControllersStore } from "src/stores/controllersStore.js";
-import {
-  validatePreset,
-  validateScene,
-  validateGroup,
-} from "src/services/schemaValidator.js";
 
 /**
  * Distributed Synchronization Service
@@ -409,23 +404,16 @@ export class SyncService {
         return;
       }
 
-      let validatedScene;
-      try {
-        validatedScene = validateScene(scene);
-      } catch (error) {
-        console.debug(`Filtering out invalid scene ${scene?.id}:`, error.message);
-        return;
-      }
-
-      const existing = sceneMap.get(validatedScene.id);
+      const normalizedScene = this.normalizeSceneForSync(scene);
+      const existing = sceneMap.get(normalizedScene.id);
 
       if (!existing) {
         // First occurrence of this scene
-        sceneMap.set(validatedScene.id, { ...validatedScene });
+        sceneMap.set(normalizedScene.id, { ...normalizedScene });
       } else {
         // Merge with existing scene
-        const merged = this.mergeScenes(existing, validatedScene);
-        sceneMap.set(validatedScene.id, merged);
+        const merged = this.mergeScenes(existing, normalizedScene);
+        sceneMap.set(normalizedScene.id, merged);
       }
     });
     consolidated.scenes = Array.from(sceneMap.values());
@@ -437,17 +425,10 @@ export class SyncService {
         return;
       }
 
-      let validatedGroup;
-      try {
-        validatedGroup = validateGroup(group);
-      } catch (error) {
-        console.debug(`Filtering out invalid group ${group?.id}:`, error.message);
-        return;
-      }
-
-      const existing = groupMap.get(validatedGroup.id);
-      if (!existing || validatedGroup.ts > existing.ts) {
-        groupMap.set(validatedGroup.id, validatedGroup);
+      const normalizedGroup = this.normalizeGroupForSync(group);
+      const existing = groupMap.get(normalizedGroup.id);
+      if (!existing || normalizedGroup.ts > existing.ts) {
+        groupMap.set(normalizedGroup.id, normalizedGroup);
       }
     });
     consolidated.groups = Array.from(groupMap.values());
@@ -517,6 +498,70 @@ export class SyncService {
     }
 
     return merged;
+  }
+
+  normalizeSceneForSync(scene) {
+    const normalized = { ...scene };
+
+    if (normalized.transition && typeof normalized.transition === "object") {
+      normalized.transition = this.normalizeTransitionForSync(
+        normalized.transition,
+      );
+    }
+
+    if (Array.isArray(normalized.settings)) {
+      normalized.settings = normalized.settings.map((setting) => {
+        if (!setting || typeof setting !== "object") {
+          return setting;
+        }
+
+        const normalizedSetting = { ...setting };
+        if (
+          normalizedSetting.transition &&
+          typeof normalizedSetting.transition === "object"
+        ) {
+          normalizedSetting.transition = this.normalizeTransitionForSync(
+            normalizedSetting.transition,
+          );
+        }
+
+        if (normalizedSetting.color && typeof normalizedSetting.color === "object") {
+          normalizedSetting.color = this.normalizeColorForSync(
+            normalizedSetting.color,
+          );
+        }
+
+        return normalizedSetting;
+      });
+    }
+
+    return normalized;
+  }
+
+  normalizeGroupForSync(group) {
+    const normalized = { ...group };
+    if (!Array.isArray(normalized.controller_ids)) {
+      normalized.controller_ids = [];
+    }
+    return normalized;
+  }
+
+  normalizeColorForSync(color) {
+    if (color.Preset && typeof color.Preset.id === "string") {
+      return { id: color.Preset.id };
+    }
+    return color;
+  }
+
+  normalizeTransitionForSync(transition) {
+    const normalized = { ...transition };
+    if (normalized.cmd === null || normalized.cmd === undefined) {
+      normalized.cmd = "";
+    }
+    if (normalized.q === null || normalized.q === undefined) {
+      normalized.q = "";
+    }
+    return normalized;
   }
 
   /**

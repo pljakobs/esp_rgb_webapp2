@@ -115,6 +115,22 @@ export default {
 
     const uploadConfig = async () => {
       try {
+        const parsedConfig = JSON.parse(fileContent.value);
+        if (
+          parsedConfig?.telemetry &&
+          typeof parsedConfig.telemetry === "object" &&
+          !Array.isArray(parsedConfig.telemetry)
+        ) {
+          parsedConfig.network = {
+            ...(parsedConfig.network || {}),
+            telemetry: {
+              ...((parsedConfig.network && parsedConfig.network.telemetry) || {}),
+              ...parsedConfig.telemetry,
+            },
+          };
+          delete parsedConfig.telemetry;
+        }
+
         const response = await fetch(
           `http://${controllers.currentController.ip_address}/config`,
           {
@@ -122,7 +138,7 @@ export default {
             headers: {
               "Content-Type": "application/json",
             },
-            body: fileContent.value,
+            body: JSON.stringify(parsedConfig),
           },
         );
         if (!response.ok) {

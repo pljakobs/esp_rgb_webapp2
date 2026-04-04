@@ -108,6 +108,33 @@ export class ApiService {
       ),
     );
   }
+  /**
+   * Backward-compatible config payload normalization.
+   * Legacy clients may still send telemetry at top-level.
+   */
+  normalizeConfigPayload(data) {
+    if (!data || typeof data !== "object" || Array.isArray(data)) {
+      return data;
+    }
+
+    const normalized = { ...data };
+    if (
+      normalized.telemetry &&
+      typeof normalized.telemetry === "object" &&
+      !Array.isArray(normalized.telemetry)
+    ) {
+      normalized.network = {
+        ...(normalized.network || {}),
+        telemetry: {
+          ...((normalized.network && normalized.network.telemetry) || {}),
+          ...normalized.telemetry,
+        },
+      };
+      delete normalized.telemetry;
+    }
+
+    return normalized;
+  }
 
   async _executeFetchApi(
     endpoint,
@@ -399,9 +426,10 @@ export class ApiService {
   }
 
   async postConfig(data, controller = null) {
+    const normalizedData = this.normalizeConfigPayload(data);
     return this.fetchApi("config", controller, {
       method: "POST",
-      body: data,
+      body: normalizedData,
     });
   }
 
