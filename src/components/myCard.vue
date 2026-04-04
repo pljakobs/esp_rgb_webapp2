@@ -1,5 +1,5 @@
 <template>
-  <q-card class="full-width full-height no-gutter">
+  <q-card class="full-width no-gutter">
     <q-card-section class="row items-center">
       <svgIcon :name="icon" />
       <div class="text-h6">{{ title }}</div>
@@ -11,10 +11,12 @@
         <svgIcon name="arrow_drop_down" />
       </div>
     </q-card-section>
-    <q-separator />
-    <q-card-section v-show="!isCollapsed">
-      <slot />
-    </q-card-section>
+    <template v-if="!isCollapsed">
+      <q-separator />
+      <q-card-section>
+        <slot />
+      </q-card-section>
+    </template>
   </q-card>
 </template>
 
