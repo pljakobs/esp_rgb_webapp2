@@ -43,7 +43,7 @@ jobs:
               echo "❌ ${f} differs from locked firmware SHA ${LOCKED_SHA}"
               echo "--- firmware/${LOCKED_SHA}/${f}"
               echo "+++ src/schemas/firmware/${f}"
-              diff <(echo "$REMOTE") <(echo "$LOCAL") || true
+              diff -U 5 <(echo "$REMOTE") <(echo "$LOCAL") || true
               MISMATCH=1
             else
               echo "✓ ${f} matches"
