@@ -41,6 +41,9 @@ jobs:
             LOCAL=$(cat "src/schemas/firmware/${f}")
             if [ "$REMOTE" != "$LOCAL" ]; then
               echo "❌ ${f} differs from locked firmware SHA ${LOCKED_SHA}"
+              echo "--- firmware/${LOCKED_SHA}/${f}"
+              echo "+++ src/schemas/firmware/${f}"
+              diff <(echo "$REMOTE") <(echo "$LOCAL") || true
               MISMATCH=1
             else
               echo "✓ ${f} matches"
