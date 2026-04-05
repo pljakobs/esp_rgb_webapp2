@@ -17,11 +17,7 @@ function getPathValue(source, path, fallback) {
 }
 
 export function useConfigBinding(configData, path, options = {}) {
-  const {
-    fallback = "",
-    persist = false,
-    normalize,
-  } = options;
+  const { fallback = "", persist = false, normalize } = options;
 
   const model = ref(getPathValue(configData.data, path, fallback));
 

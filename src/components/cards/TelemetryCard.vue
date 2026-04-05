@@ -3,8 +3,10 @@
     <q-card-section>
       <div class="d-flex q-gutter-md">
         <div>
-            Telemetry is enabled by default in debug builds and disabled by default in release builds.<br/>
-            But: once it has been enabled here, an update to a release build will not reset that.
+          Telemetry is enabled by default in debug builds and disabled by
+          default in release builds.<br />
+          But: once it has been enabled here, an update to a release build will
+          not reset that.
         </div>
         <div>
           <q-btn-toggle
@@ -17,35 +19,41 @@
         <div class="flex-grow-1">
           <div>
             When enabled, telemetry stats will be sent to the configured URL.
-            This data contains anonymized usage statistics to help improve the firmware.
+            This data contains anonymized usage statistics to help improve the
+            firmware.
           </div>
         </div>
       </div>
     </q-card-section>
     <q-card-section>
-    <q-btn
-      :label="detailsButtonLabel"
-      @click="toggleDetails"
-      flat
-      color="primary"
-    />
-    <div v-if="showDetails">
-      <div>
-        With this build, the following data is sent every 30s:
-        <q-scroll-area style="height: 300px;">
-          <q-table
-            :rows="telemetryDataRows"
-            :columns="telemetryDataColumns"
-            row-key="col1"
-            flat
-            bordered
-            wrap-cells
-            :hide-bottom="true"
-            :pagination="{ rowsPerPage: telemetryDataRows.length, page: 1, sortBy: null, descending: false }"
-          />
-        </q-scroll-area>
+      <q-btn
+        :label="detailsButtonLabel"
+        @click="toggleDetails"
+        flat
+        color="primary"
+      />
+      <div v-if="showDetails">
+        <div>
+          With this build, the following data is sent every 30s:
+          <q-scroll-area style="height: 300px">
+            <q-table
+              :rows="telemetryDataRows"
+              :columns="telemetryDataColumns"
+              row-key="col1"
+              flat
+              bordered
+              wrap-cells
+              :hide-bottom="true"
+              :pagination="{
+                rowsPerPage: telemetryDataRows.length,
+                page: 1,
+                sortBy: null,
+                descending: false,
+              }"
+            />
+          </q-scroll-area>
+        </div>
       </div>
-    </div>
     </q-card-section>
     <q-card-section>
       <div class="d-flex q-gutter-md">
@@ -60,19 +68,16 @@
         <div class="flex-grow-1">
           <div>
             When enabled, telemetry logs will be sent to the configured URL.
-            This data contains log information to help debug and improve the firmware.
+            This data contains log information to help debug and improve the
+            firmware.
           </div>
         </div>
       </div>
     </q-card-section>
-      <q-card-section>
+    <q-card-section>
       <div class="row q-gutter-md">
         <div class="col-12">
-          <q-input
-            v-model="urlValue"
-            label="Telemetry URL"
-            @blur="updateUrl"
-          />
+          <q-input v-model="urlValue" label="Telemetry URL" @blur="updateUrl" />
         </div>
       </div>
       <div class="row q-gutter-md">
@@ -101,7 +106,10 @@ import { ref, computed } from "vue";
 import { configDataStore } from "src/stores/configDataStore";
 import { useConfigBinding } from "src/composables/useConfigDataBindings";
 import MyCard from "components/myCard.vue";
-import { telemetryDataColumns, telemetryDataRows } from "src/stores/telemetryData.js";
+import {
+  telemetryDataColumns,
+  telemetryDataRows,
+} from "src/stores/telemetryData.js";
 
 export default {
   components: {
@@ -129,7 +137,9 @@ export default {
 
     const statsValue = computed({
       get: () =>
-        coerceTelemetryEnabled(configData.data?.network?.telemetry?.statsEnabled),
+        coerceTelemetryEnabled(
+          configData.data?.network?.telemetry?.statsEnabled,
+        ),
       set: (value) => {
         configData.updateData("network.telemetry.statsEnabled", Boolean(value));
       },
@@ -177,7 +187,9 @@ export default {
 
     const showDetails = ref(false);
 
-    const detailsButtonLabel = computed(() => showDetails.value ? 'Hide Details' : 'Show Details');
+    const detailsButtonLabel = computed(() =>
+      showDetails.value ? "Hide Details" : "Show Details",
+    );
 
     const toggleDetails = () => {
       showDetails.value = !showDetails.value;

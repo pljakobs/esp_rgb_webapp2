@@ -504,7 +504,9 @@ export default {
     // Telemetry Stats
     const statsEnabled = computed({
       get: () =>
-        coerceTelemetryEnabled(configData.data.network?.telemetry?.statsEnabled),
+        coerceTelemetryEnabled(
+          configData.data.network?.telemetry?.statsEnabled,
+        ),
       set: (value) => {
         configData.updateData("network.telemetry.statsEnabled", Boolean(value));
       },
@@ -512,7 +514,8 @@ export default {
 
     // Telemetry Logs
     const logEnabled = computed({
-      get: () => coerceTelemetryEnabled(configData.data.network?.telemetry?.logEnabled),
+      get: () =>
+        coerceTelemetryEnabled(configData.data.network?.telemetry?.logEnabled),
       set: (value) => {
         configData.updateData("network.telemetry.logEnabled", Boolean(value));
       },

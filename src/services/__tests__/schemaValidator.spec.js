@@ -3,6 +3,8 @@ import {
   validatePreset,
   validateScene,
   validateGroup,
+  validateDataPayload,
+  validateConfigPayload,
   validateHSV,
   validateRaw,
   validateTransition,
@@ -10,6 +12,73 @@ import {
 } from "../schemaValidator.js";
 
 describe("schemaValidator", () => {
+  describe("payload schema validation", () => {
+    it("accepts valid app-data payload", () => {
+      const payload = {
+        groups: [
+          {
+            id: "group-1",
+            name: "Group 1",
+            ts: Date.now(),
+            controller_ids: ["ctrl-1"],
+          },
+        ],
+        scenes: [
+          {
+            id: "scene-1",
+            name: "Scene 1",
+            group_id: "group-1",
+            ts: Date.now(),
+            settings: [
+              {
+                controller_id: "ctrl-1",
+                pos: 0,
+                color: { id: "preset-1" },
+              },
+            ],
+          },
+        ],
+      };
+
+      const result = validateDataPayload(payload);
+      expect(result.valid).toBe(true);
+      expect(result.errors).toEqual([]);
+    });
+
+    it("rejects invalid app-data payload", () => {
+      const payload = {
+        scenes: [
+          {
+            id: "scene-1",
+            group_id: "group-1",
+            ts: Date.now(),
+            settings: [],
+          },
+        ],
+      };
+
+      const result = validateDataPayload(payload);
+      expect(result.valid).toBe(false);
+      expect(result.schema).toBe("app-data.cfgdb");
+      expect(result.errors.length).toBeGreaterThan(0);
+    });
+
+    it("rejects invalid app-config payload types", () => {
+      const payload = {
+        network: {
+          telemetry: {
+            statsEnabled: "true",
+          },
+        },
+      };
+
+      const result = validateConfigPayload(payload);
+      expect(result.valid).toBe(false);
+      expect(result.schema).toBe("app-config.cfgdb");
+      expect(result.errors.length).toBeGreaterThan(0);
+    });
+  });
+
   describe("validateHSV", () => {
     it("should validate a correct HSV color", () => {
       const hsv = { h: 180, s: 50, v: 75, ct: 5000 };

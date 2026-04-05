@@ -1,0 +1,7 @@
+{
+  "firmware_repo": "pljakobs/esp_rgbww_firmware",
+  "firmware_ref": "crash-reporting",
+  "firmware_sha": "4222cda56f4d0a0525fe20ab627f405b5e6e6f5d",
+  "synced_at": "2026-04-05",
+  "files": ["app-data.cfgdb", "app-config.cfgdb", "defs.cfgdb"]
+}

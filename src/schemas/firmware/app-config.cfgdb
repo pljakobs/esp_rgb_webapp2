@@ -1,0 +1,549 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "store":true,
+  "properties": {
+    "general": {
+      "type": "object",
+      "store":true,
+      "properties": {
+          "is_initialized":{
+          "type":"boolean",
+          "default":false
+        },
+        "device_name": {
+          "type": "string",
+          "default":""
+        },
+        "buttons_debounce_ms": {
+          "type": "integer",
+          "default":50
+        },
+        "buttons_config": {
+          "type": "string"
+        },
+        "pin_config_url":{
+            "type":"string",
+            "default":"https://raw.githubusercontent.com/pljakobs/esp_rgb_webapp2/devel/public/config/pinconfig.json"
+        },
+        "supported_color_models":{
+            "type": "array",
+            "items":{
+                "type":"string"
+            },
+            "default":["RGB", "RGBWW", "RGBCW", "RGBWWCW"]
+        },
+        "current_pin_config_name":{
+          "type":"string",
+          "default":"mrpj"
+        },
+        "allow_web_icons":{
+          "type":"boolean",
+          "default":true
+        }
+      }
+    },
+    "ota":{
+      "type":"object",
+      "properties":{
+        "url":{
+          "type":"string",
+          "default":"http://lightinator.de/version.json"
+        }
+      }
+    },
+    "security": {
+      "type": "object",
+      "properties": {
+        "api_secured": {
+          "type": "boolean",
+          "default":false
+        },
+        "api_password": {
+          "type":"string"
+        }
+      }
+    },
+    "color": {
+      "type": "object",
+      "store":true,
+      "properties": {
+        "startup_color": {
+          "type": "string",
+          "default": "last"
+        },
+        "startup": {
+          "description":"modern startup color selection",
+          "type":"object",
+          "properties":{  
+            "mode":{
+              "type":"string",
+              "default":"LAST",
+              "ctype":"ColorStartupMode",
+              "enum":[ "LAST", "SET"]
+            },
+            "color":{
+              "type":"string"
+            }
+          }
+        },
+        "brightness": {
+          "type": "object",
+          "properties": {
+            "red": {
+              "type": "integer",
+              "default":100
+            },
+            "ww": {
+              "type": "integer",
+              "default":100
+            },
+            "green": {
+              "type": "integer",
+              "default":100
+            },
+            "blue": {
+              "type": "integer",
+              "default":100
+            },
+            "cw": {
+              "type": "integer",
+              "default":100
+            }
+          }
+        },
+        "colortemp": {
+          "type": "object",
+          "properties": {
+            "ww": {
+              "type": "integer",
+              "default":2700
+            },
+            "cw": {
+              "type": "integer",
+              "default":6000
+            }
+          }
+        },
+        "color_mode": {
+          "type": "integer",
+          "default":0,
+          "alias":[ "outputmode", "colormode"]
+        },
+        "hsv": {
+          "type": "object",
+          "properties": {
+            "red": {
+              "type": "integer",
+              "default":0
+            },
+            "magenta": {
+              "type": "integer",
+              "default":0
+            },
+            "green": {
+              "type": "integer",
+              "default":0
+            },
+            "blue": {
+              "type": "integer",
+              "default":0
+            },
+            "yellow": {
+              "type": "integer",
+              "default":0
+            },
+            "model": {
+              "type": "integer",
+              "default":0
+            },
+            "cyan": {
+              "type": "integer",
+              "default":0
+            }
+          }
+        },
+        "calibration":{
+          "type":"object",
+          "properties":{
+             "gamma": {
+              "type": "number",
+              "description": "System output gamma for correction calculation (e.g. 2.2)"
+            },
+            "ct_range": {
+                "type": "object",
+                "description": "Kelvin range normalization bounds",
+                "properties": {
+                    "min": { "type": "integer", "minimum": 1000, "default":1000 },
+                    "max": { "type": "integer", "maximum": 20000, "default": 20000 }
+                }
+            },
+            "hsv": {
+              "type": "array",
+              "description": "12 Parabolic coefficients for 30-degree Hue sectors (0, 30, ... 330)",
+              "minItems": 12,
+              "maxItems": 12,
+              "items": {
+                "$ref": "defs/$defs/parabola"
+              }
+            },
+            "ct": {
+              "description": "Parabolic coefficients for Color Temperature curve",
+              "$ref": "defs/$defs/parabola"
+            }
+          }
+        }
+      }
+    },
+    "sync": {
+      "type": "object",
+      "store":true,
+      "properties": {
+        "cmd_master_enabled": {
+          "type": "boolean",
+          "default":false
+        },
+        "color_slave_enabled": {
+          "type": "boolean",
+          "default": false
+        },
+        "color_slave_topic": {
+          "type": "string",
+          "default":"home/led1/command"
+        },
+        "clock_master_enabled": {
+          "type": "boolean",
+          "default":false
+        },
+        "color_master_interval_ms": {
+          "type": "integer",
+          "default":0
+        },
+        "clock_slave_enabled": {
+          "type": "boolean",
+          "default":false
+        },
+        "cmd_slave_enabled": {
+          "type": "boolean",
+          "default":false
+        },
+        "clock_master_interval": {
+          "type": "integer",
+          "default":30
+        },
+        "clock_slave_topic": {
+          "type": "string",
+          "default":"home/led1/clock"
+        },
+        "cmd_slave_topic": {
+          "type": "string",
+          "default":"home/led/command"
+        },
+        "color_master_enabled": {
+          "type": "boolean",
+          "default":false
+        }
+      }
+    },
+    "events": {
+      "type": "object",
+      "properties": {
+        "color_interval_ms": {
+          "type": "integer",
+          "default":500
+        },
+        "color_min_interval_ms": {
+          "type": "integer",
+          "default":500
+        },
+        "trans_fin_interval_ms": {
+          "type": "integer",
+          "default":1000,
+          "alias":"transfin_interval_ms"
+        },
+        "server_enabled": {
+          "type": "boolean",
+          "default":true
+        }
+      }
+    },
+    "network": {
+      "type": "object",
+      "store":true,
+      "properties": {
+        "mqtt": {
+          "type": "object",
+          "properties": {
+            "server": {
+              "type": "string",
+              "default":"mqtt.local"
+            },
+            "password": {
+              "type": "string",
+              "default":""
+            },
+            "port": {
+              "type": "integer",
+              "default":1883
+            },
+            "topic_base": {
+              "type": "string",
+              "default":"home/"
+            },
+            "enabled": {
+              "type": "boolean",
+              "default":false
+            },
+            "username": {
+              "type": "string",
+              "default":""
+            },
+            "homeassistant": {
+              "type":"object",
+              "properties":{
+                "enable": {
+                  "type": "boolean",
+                  "default": true
+                },
+                "discovery_prefix": {
+                  "type": "string",
+                  "default": "homeassistant"
+                },
+                "node_id": {
+                  "type": "string",
+                  "default": ""  
+                }
+              }
+            }
+          }
+        },
+        "ntp":{
+          "type":"object",
+          "properties":{
+            "enabled":{
+              "type":"boolean",
+              "default":false
+            },
+            "server":{
+              "type":"string",
+              "default":"pool.ntp.org"
+            },
+            "interval":{
+              "type":"integer",
+              "default":3600
+            }
+          }
+        },
+        "connection": {
+          "type": "object",
+          "properties": {
+            "netmask": {
+              "type": "string",
+              "default":"255.255.255.0"
+            },
+            "ip": {
+              "type": "string",
+              "default":"192.168.1.1"
+            },
+            "dhcp": {
+              "type": "boolean",
+              "default":true
+            },
+            "gateway": {
+              "type": "string",
+              "default":"192.168.1.255"
+            }
+          }
+        },
+        "ap": {
+          "type": "object",
+          "properties": {
+            "password": {
+              "type": "string",
+              "default":"configesp"
+            },
+            "secured": {
+              "type": "boolean",
+              "default":true
+            },
+            "ssid": {
+              "type": "string"
+            }
+          }
+        },
+        "mdns":{
+          "type":"object",
+          "properties":{
+            "enabled":{
+              "type":"boolean",
+              "default":true
+            },
+            "name":{
+              "type":"string"
+            }
+          }
+        },
+        "rsyslog":{
+          "type":"object",
+          "properties":{
+            "enabled":{
+              "type":"boolean",
+              "default": false
+            },
+            "host":{
+              "type":"string"
+            },
+            "port":{
+              "type":"integer",
+              "default":514
+            }
+          }
+        },
+        "telemetry": {
+          "type": "object",
+          "properties": {
+            "statsEnabled": {
+              "type":"boolean",
+              "@default":"False if SMING_RELEASE else True"
+            },
+            "logEnabled": {
+              "type":"boolean",
+              "default":false
+          },
+            "url": {
+              "type": "string",
+              "default":"lightinator.de:1883"
+            },
+            "user": {
+              "type": "string",
+              "default":"rgbww"
+            },
+            "password": {
+              "type": "string",
+              "default":"rgbwwdebug"
+            },
+            "numReboots": {
+              "type": "integer",
+              "default":0
+            }
+          }
+        }
+      }
+    },
+    "hardware": {
+      "type":"object",
+      "store":true,
+      "properties":{
+        "version":{
+          "type":"integer",
+          "default":0
+        },
+        "pwm":{
+          "type":"object",
+          "properties":{
+            "timer":{
+              "type":"object",
+              "properties":{
+                "speed_mode":{
+                  "type":"string",
+                  "default":"LOWSPEED",
+                  "ctype":"TimerSpeedMode",
+                  "enum":[ "LOWSPEED", "HIGHSPEED"]
+                },
+                "frequency":{
+                  "type":"integer",
+                  "default":1000
+                },
+                "resolution":{
+                  "type":"integer",
+                  "default":10, 
+                  "minimum":1,
+                  "maximum":14
+                },
+                "number":{
+                  "type":"integer",
+                  "default":0,
+                  "minimum":0,
+                  "maximum":3
+                }
+              }
+            },
+            "spreadSpectrum":{
+              "type":"object",
+              "properties":{
+                "mode":{
+                  "type":"string",
+                  "default":"ON",
+                  "ctype":"SpreadSpectrumMode",
+                  "enum":[ "ON", "OFF"]
+                },
+                "width":{
+                  "type":"integer",
+                  "default":15
+                },
+                "subsampling":{
+                  "type":"integer",
+                  "default":4
+                }
+              }
+            },
+            "phaseShift":{
+              "type":"object",
+              "properties":{
+                "mode":{ 
+                  "type":"string",
+                  "ctype":"PhaseShiftMode",
+                  "default":"ON",
+                  "enum":[ "ON", "OFF"]
+                }
+              }
+            }
+          }
+        },
+        "available_pins":{
+          "type":"array",
+          "items":{
+            "type":"object",
+            "properties" :{
+              "soc":{
+                "type":"string"
+              },
+              "pins":{
+                "type":"array",
+                "items":{
+                  "$ref":"defs/$defs/pin"
+                }
+              }
+            }
+          }
+        },
+        "pinconfigs":{
+          "type":"array",
+          "items":{
+            "type":"object",
+            "properties":{
+              "name": {
+                "type": "string"
+              },
+              "soc": {
+                "type": "string"
+              },
+              "model":{
+                "type":"string"
+              },
+              "clear_pin":{
+                "type":"integer"
+              },
+              "channels": {
+                "type":"array",
+                "items":{
+                  "$ref":"defs/$defs/channel"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

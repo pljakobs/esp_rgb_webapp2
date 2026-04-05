@@ -1,0 +1,122 @@
+name: Sync Firmware Schemas
+
+on:
+  repository_dispatch:
+    types: [firmware-schema-update]
+  workflow_dispatch:
+    inputs:
+      firmware_ref:
+        description: "Firmware tag or SHA to sync from"
+        required: true
+        default: "develop"
+      firmware_sha:
+        description: "Full SHA (leave blank to resolve from ref)"
+        required: false
+        default: ""
+
+jobs:
+  sync-schemas:
+    runs-on: ubuntu-latest
+    # Only auto-sync from develop → devel; testing/stable handled manually
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      github.event.client_payload.branch == 'develop'
+
+    steps:
+      - name: Checkout webapp
+        uses: actions/checkout@v4
+        with:
+          ref: devel
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Resolve firmware ref and SHA
+        id: fw
+        run: |
+          if [ "${{ github.event_name }}" == "repository_dispatch" ]; then
+            REF="${{ github.event.client_payload.firmware_ref }}"
+            SHA="${{ github.event.client_payload.firmware_sha }}"
+          else
+            REF="${{ inputs.firmware_ref }}"
+            SHA="${{ inputs.firmware_sha }}"
+          fi
+
+          # If SHA is empty, resolve it from the ref
+          if [ -z "$SHA" ]; then
+            SHA=$(curl -fsSL \
+              "https://api.github.com/repos/pljakobs/esp_rgbww_firmware/commits/${REF}" \
+              -H "Accept: application/vnd.github+json" \
+              | grep '"sha"' | head -1 | sed 's/.*"sha": *"\([^"]*\)".*/\1/')
+          fi
+
+          echo "ref=${REF}" >> $GITHUB_OUTPUT
+          echo "sha=${SHA}" >> $GITHUB_OUTPUT
+
+      - name: Fetch schema files
+        run: |
+          REF="${{ steps.fw.outputs.sha }}"
+          DEST="src/schemas/firmware"
+          for f in app-data.cfgdb app-config.cfgdb defs.cfgdb; do
+            echo "Fetching ${f} ..."
+            curl -fsSL \
+              "https://raw.githubusercontent.com/pljakobs/esp_rgbww_firmware/${REF}/${f}" \
+              -o "${DEST}/${f}"
+          done
+
+      - name: Update lock file
+        run: |
+          cat > src/schemas/firmware/schemas.lock.json <<EOF
+          {
+            "firmware_repo": "pljakobs/esp_rgbww_firmware",
+            "firmware_ref": "${{ steps.fw.outputs.ref }}",
+            "firmware_sha": "${{ steps.fw.outputs.sha }}",
+            "synced_at": "$(date -u +%Y-%m-%d)",
+            "files": ["app-data.cfgdb", "app-config.cfgdb", "defs.cfgdb"]
+          }
+          EOF
+
+      - name: Check for changes
+        id: diff
+        run: |
+          git diff --quiet src/schemas/firmware/ && echo "changed=false" >> $GITHUB_OUTPUT || echo "changed=true" >> $GITHUB_OUTPUT
+
+      - name: Set up Node.js
+        if: steps.diff.outputs.changed == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Install dependencies and run tests
+        if: steps.diff.outputs.changed == 'true'
+        run: |
+          npm install
+          npm test -- src/services/__tests__/schemaValidator.spec.js src/services/__tests__/api.spec.js
+
+      - name: Open Pull Request
+        if: steps.diff.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: "chore/firmware-schema-sync-${{ steps.fw.outputs.ref }}"
+          base: devel
+          commit-message: "chore: sync firmware schemas to ${{ steps.fw.outputs.ref }}"
+          title: "chore: sync firmware schemas to ${{ steps.fw.outputs.ref }}"
+          body: |
+            Automated schema sync triggered by firmware build.
+
+            **Firmware ref**: `${{ steps.fw.outputs.ref }}`
+            **Firmware SHA**: `${{ steps.fw.outputs.sha }}`
+
+            ### What changed
+            Review the diff in `src/schemas/firmware/` carefully.
+            Any schema additions or removals may require updates to:
+            - `src/services/schemaValidator.js` (validator logic)
+            - `src/services/__tests__/schemaValidator.spec.js` (tests)
+
+            Tests have been run on the updated schemas as part of this workflow.
+            If they failed, this PR was still opened so you can review the diff and fix manually.
+          labels: "firmware-sync,schemas"
+          draft: false
+
+      - name: No schema changes
+        if: steps.diff.outputs.changed == 'false'
+        run: echo "✅ Schemas are already in sync with ${{ steps.fw.outputs.ref }} — no PR needed."

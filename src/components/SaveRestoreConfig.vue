@@ -124,7 +124,8 @@ export default {
           parsedConfig.network = {
             ...(parsedConfig.network || {}),
             telemetry: {
-              ...((parsedConfig.network && parsedConfig.network.telemetry) || {}),
+              ...((parsedConfig.network && parsedConfig.network.telemetry) ||
+                {}),
               ...parsedConfig.telemetry,
             },
           };

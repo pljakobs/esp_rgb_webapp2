@@ -99,7 +99,7 @@ describe('ApiService', () => {
     });
 
     it('should make POST request with JSON body', async () => {
-      const requestBody = { presets: { id: 'test', name: 'Test Preset' } };
+      const requestBody = { scenes: [], groups: [] };
       const mockData = { status: 'ok' };
       mockFetch.mockResolvedValueOnce({
         status: 200,
@@ -213,6 +213,42 @@ describe('ApiService', () => {
 
       expect(result.error).toBeNull();
       expect(result.status).toBe(200);
+    });
+
+    it('should reject invalid /data payload before sending request', async () => {
+      const result = await apiService.updateDataOnController('192.168.1.100', {
+        scenes: [
+          {
+            id: 'scene-1',
+            // name missing -> invalid against app-data schema
+            ts: Date.now(),
+            group_id: 'group-1',
+            settings: [],
+          },
+        ],
+      });
+
+      expect(result.status).toBeNull();
+      expect(result.error).toBeTruthy();
+      expect(result.error.schema).toBe('app-data.cfgdb');
+      expect(result.error.message).toContain('app-data.cfgdb');
+      expect(mockFetch).not.toHaveBeenCalled();
+    });
+
+    it('should reject invalid /config payload before sending request', async () => {
+      const result = await apiService.updateConfigOnController('192.168.1.100', {
+        network: {
+          telemetry: {
+            statsEnabled: 'true', // must be boolean
+          },
+        },
+      });
+
+      expect(result.status).toBeNull();
+      expect(result.error).toBeTruthy();
+      expect(result.error.schema).toBe('app-config.cfgdb');
+      expect(result.error.message).toContain('app-config.cfgdb');
+      expect(mockFetch).not.toHaveBeenCalled();
     });
   });
 
