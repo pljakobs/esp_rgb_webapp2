@@ -66,6 +66,8 @@ export default {
       reloadCountdown: 4,
       fallbackMode: false, // true when firmware doesn't send ota_status messages
       timeFraction: 0, // 0→1 over 20s in fallback mode
+      statusHistory: [], // ordered list of status messages received
+      willReboot: false, // step 0 but device is rebooting (watchdog)
     });
     let reloadTimer = null;
     let countdownTimer = null;
@@ -120,6 +122,11 @@ export default {
       otaProgress.value.step = step;
       otaProgress.value.message = message;
 
+      // Append non-empty messages to the history log
+      if (message) {
+        otaProgress.value.statusHistory.push(message);
+      }
+
       if (step === 4) {
         // Step 4: OTA successful, device is rebooting — reload after countdown
         otaProgress.value.reloadCountdown = 4;
@@ -137,9 +144,26 @@ export default {
           window.location.replace(url.toString());
         }, 4000);
       } else if (step === 0) {
-        // Error — keep visible but don't auto-reload
         clearTimeout(reloadTimer);
         clearInterval(countdownTimer);
+        // If the firmware is rebooting after the failure (watchdog timeout),
+        // start an auto-reload so the UI recovers after the device comes back up
+        if (message.toLowerCase().includes("rebooting")) {
+          otaProgress.value.willReboot = true;
+          otaProgress.value.reloadCountdown = 12;
+          countdownTimer = setInterval(() => {
+            otaProgress.value.reloadCountdown -= 1;
+            if (otaProgress.value.reloadCountdown <= 0) {
+              clearInterval(countdownTimer);
+            }
+          }, 1000);
+          reloadTimer = setTimeout(() => {
+            clearInterval(countdownTimer);
+            const url = new URL(window.location.href);
+            url.searchParams.set("_t", Date.now());
+            window.location.replace(url.toString());
+          }, 12000);
+        }
       }
     });
 
@@ -462,6 +486,8 @@ export default {
             reloadCountdown: 4,
             fallbackMode: true,
             timeFraction: 0,
+            statusHistory: [],
+            willReboot: false,
           };
 
           fallbackProgressInterval = setInterval(() => {
