@@ -8,7 +8,7 @@ export default configure((/* ctx */) => {
       warnings: true,
       errors: true,
     },
-    boot: ['i18n', 'registerSvgIcon.js'],
+    boot: ['registerSvgIcon.js'],
     css: ['app.scss'],
     extras: [],
     build: {

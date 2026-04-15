@@ -32,33 +32,55 @@
       <div v-show="isExpanded">
         <q-card class="q-ma-sm">
           <q-card-section>
-            <!-- Draggable component for settings -->
-            <draggable
-              :list="settings"
-              handle=".drag-handle"
-              item-key="pos"
-              @end="onDragEnd"
-              ghost-class="ghost"
-              v-if="settings.length > 0"
-              class="q-mb-md"
-            >
-              <template #item="{ element: sceneSetting }">
-                <scene-setting-item
-                  :scene-setting="sceneSetting"
-                  :color-type-options="colorTypeOptions"
-                  :direction-options="directionOptions"
-                  :queue-options="queueOptions"
-                  @update-queue-settings="updateQueueSettings"
-                  @color-type-change="
-                    (type) => onColorTypeChange(type, sceneSetting)
-                  "
-                  @edit-selection="editCurrentSelection(sceneSetting)"
-                  @remove-setting="$emit('remove-setting', sceneSetting)"
-                />
-              </template>
-            </draggable>
+            <!-- Settings list with arrow buttons for reordering -->
+            <div v-if="settings.length > 0" class="q-mb-md">
+              <div
+                v-for="(sceneSetting, index) in settings"
+                :key="index"
+                class="row items-start q-mb-sm"
+              >
+                <!-- Reorder buttons -->
+                <div class="column items-center q-mr-sm" style="min-width: 32px">
+                  <q-btn
+                    v-if="index > 0"
+                    flat
+                    dense
+                    size="sm"
+                    icon="arrow_upward"
+                    @click="moveSettingUp(index)"
+                    class="q-pa-xs"
+                  />
+                  <div v-else style="width: 32px; height: 32px"></div>
+                  <q-btn
+                    v-if="index < settings.length - 1"
+                    flat
+                    dense
+                    size="sm"
+                    icon="arrow_downward"
+                    @click="moveSettingDown(index)"
+                    class="q-pa-xs"
+                  />
+                </div>
 
-            <!-- Add a button to add new setting - moved below the list -->
+                <!-- Setting item -->
+                <div class="flex-grow">
+                  <scene-setting-item
+                    :scene-setting="sceneSetting"
+                    :color-type-options="colorTypeOptions"
+                    :direction-options="directionOptions"
+                    :queue-options="queueOptions"
+                    @update-queue-settings="updateQueueSettings"
+                    @color-type-change="
+                      (type) => onColorTypeChange(type, sceneSetting)
+                    "
+                    @edit-selection="editCurrentSelection(sceneSetting)"
+                    @remove-setting="$emit('remove-setting', sceneSetting)"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <!-- Add a button to add new setting -->
             <q-btn
               color="primary"
               flat
@@ -79,7 +101,6 @@
 <script>
 import { ref, computed } from "vue";
 import { Dialog } from "quasar";
-import draggable from "vuedraggable";
 import { useAppDataStore } from "src/stores/appDataStore";
 import colorPickerDialog from "src/components/Dialogs/colorPickerDialog.vue";
 import ColorDisplayBadge from "src/components/ColorDisplayBadge.vue";
@@ -88,7 +109,6 @@ import SceneSettingItem from "./SceneSettingItem.vue";
 export default {
   name: "ControllerItem",
   components: {
-    draggable,
     ColorDisplayBadge,
     SceneSettingItem,
   },
@@ -161,11 +181,28 @@ export default {
       return "No Color";
     });
 
-    // On drag end - update positions and emit event
-    const onDragEnd = () => {
-      updatePositions();
-      emit("update-positions", props.settings);
-      emit("settings-updated");
+    // Move setting up in the list
+    const moveSettingUp = (index) => {
+      if (index > 0) {
+        const temp = props.settings[index];
+        props.settings[index] = props.settings[index - 1];
+        props.settings[index - 1] = temp;
+        updatePositions();
+        emit("update-positions", props.settings);
+        emit("settings-updated");
+      }
+    };
+
+    // Move setting down in the list
+    const moveSettingDown = (index) => {
+      if (index < props.settings.length - 1) {
+        const temp = props.settings[index];
+        props.settings[index] = props.settings[index + 1];
+        props.settings[index + 1] = temp;
+        updatePositions();
+        emit("update-positions", props.settings);
+        emit("settings-updated");
+      }
     };
 
     // Update positions after drag and drop reordering
@@ -383,10 +420,11 @@ export default {
     return {
       primarySetting,
       displayValue,
-      onDragEnd,
+      moveSettingUp,
+      moveSettingDown,
       updatePositions,
       addNewSetting,
-      updateQueueSettings, // Make sure this is returned!
+      updateQueueSettings,
       onColorTypeChange,
       editCurrentSelection,
     };
