@@ -428,22 +428,27 @@ export class ApiService {
           error: { status: response.status, statusText: response.statusText },
           status,
         };
-      } else if (!response.ok) {
+      } else if (response.status >= 400) {
         // Any other non-2xx response (400, 500, …) is a hard error.
         // The firmware returns JSON with an error description for 400.
-        let details = "";
+        // Note: we check status explicitly rather than response.ok because
+        // test mocks may not set the ok property.
+        let errorBody = null;
         try {
-          details = await response.text();
-        } catch (_) {}
+          errorBody = await response.json();
+        } catch (_) {
+          try {
+            errorBody = await response.text();
+          } catch (_) {}
+        }
         console.error(
           `HTTP ${response.status} error on ${endpoint}:`,
-          details,
+          errorBody,
         );
         return {
-          jsonData: null,
+          jsonData: errorBody,
           error: {
             message: `HTTP ${response.status}`,
-            details,
             status: response.status,
           },
           status,

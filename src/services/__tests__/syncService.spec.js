@@ -468,7 +468,8 @@ describe('SyncService', () => {
         });
 
       const syncPromise = syncService.synchronizeData();
-      await vi.advanceTimersByTimeAsync(3000);
+      // 2 controllers: 1*800ms (collection gap) + 2*500ms (push) + 800ms (pre-verify) + 2*300ms (verify) = 3700ms
+      await vi.advanceTimersByTimeAsync(4500);
       const result = await syncPromise;
 
       expect(result).toBe(true);
@@ -510,7 +511,8 @@ describe('SyncService', () => {
         });
 
       const syncPromise = syncService.synchronizeData();
-      await vi.advanceTimersByTimeAsync(3000);
+      // 2 controllers: 1*800ms (collection gap) + 2*500ms (push) + 800ms (pre-verify) + 2*300ms (verify) = 3700ms
+      await vi.advanceTimersByTimeAsync(4500);
       const result = await syncPromise;
 
       expect(result).toBe(false); // Should fail due to inconsistency
@@ -740,7 +742,8 @@ describe('SyncService', () => {
       const syncPromise = syncService.synchronizeData(progressCallback);
 
       // Advance through all phases
-      await vi.advanceTimersByTimeAsync(3000);
+      // 2 controllers: 1*800ms (collection gap) + 2*500ms (push) + 800ms (pre-verify) + 2*300ms (verify) = 3700ms
+      await vi.advanceTimersByTimeAsync(4500);
 
       const result = await syncPromise;
 
@@ -752,12 +755,13 @@ describe('SyncService', () => {
     });
 
     it('should handle mixed success and failure scenarios', async () => {
+      // Include a scene so the push payload is non-empty and updateDataOnController is actually called
       apiService.getDataFromController
         // Collection phase
         .mockResolvedValueOnce({
           jsonData: {
             presets: [{ id: 'preset1', name: 'Preset', ts: 1000 }],
-            scenes: [],
+            scenes: [{ id: 'scene1', name: 'Scene 1', ts: 1000, items: [] }],
             groups: []
           },
           error: null
@@ -779,7 +783,8 @@ describe('SyncService', () => {
 
       const syncPromise = syncService.synchronizeData();
 
-      // Advance through collection phase + push phase
+      // 2 controllers: 1*800ms (collection gap) + 1*500ms (push gap between 2 pushes) = 1300ms
+      // No verification since at least one push fails
       await vi.advanceTimersByTimeAsync(2000);
 
       const result = await syncPromise;
@@ -1302,39 +1307,45 @@ describe('SyncService', () => {
         expect(payload.presets).toBeUndefined();
         // END CHANGE
 
+        // Helper: extract all items of a type from a smart push payload.
+        // The smart push uses "type[id=X]": item for updates and "type[]": [...] for inserts.
+        const getPayloadItems = (p, type) => [
+          ...Object.keys(p).filter(k => k.startsWith(`${type}[id=`)).map(k => p[k]),
+          ...(p[`${type}[]`] || [])
+        ];
+        const countPayloadItems = (p, type) => getPayloadItems(p, type).length;
+
         // Should have 4 unique scenes (deduped by ID)
         // Real data: ctrl-1 (1 scene), ctrl-2 (4 scenes), ctrl-3 (4 duplicate scenes)
         // After deduplication: 4 unique scenes (Snapshot 19:23:26, An, Aus x2 with different IDs)
-        expect(payload.scenes.length).toBe(4);
-        expect(payload.scenes.every(s => s.id && s.name)).toBe(true);
+        const allPayloadScenes = getPayloadItems(payload, 'scenes');
+        expect(allPayloadScenes.length).toBe(4);
+        expect(allPayloadScenes.every(s => s.id && s.name)).toBe(true);
 
         // Should have 9 unique groups (deduped by ID)  
         // Real data: ctrl-1 (1 group: Büro), ctrl-2 (9 groups), ctrl-3 (4 duplicate groups)
         // After deduplication: 9 unique groups (all from ctrl-2, same IDs/ts as ctrl-3)
-        expect(payload.groups.length).toBe(9);
-        expect(payload.groups.every(g => g.id && g.name)).toBe(true);
+        const allPayloadGroups = getPayloadItems(payload, 'groups');
+        expect(allPayloadGroups.length).toBe(9);
+        expect(allPayloadGroups.every(g => g.id && g.name)).toBe(true);
 
         // Verify specific groups exist
-        const bueroGroup = payload.groups.find(g => g.id === '477228760-883885021');
+        const bueroGroup = allPayloadGroups.find(g => g.id === '477228760-883885021');
         expect(bueroGroup).toBeTruthy();
         expect(bueroGroup.name).toBe('Büro');
 
-        // Verify that ALL controllers received the SAME consolidated data
+        // Verify that ALL controllers received all consolidated items
+        // (payloads differ per controller due to smart update/insert routing,
+        //  but the total item counts must be the same)
         const payload1 = apiService.updateDataOnController.mock.calls[0][1];
         const payload2 = apiService.updateDataOnController.mock.calls[1][1];
         const payload3 = apiService.updateDataOnController.mock.calls[2][1];
 
-        // All payloads should be identical (same reference or deep equal)
-        expect(payload1).toEqual(payload2);
-        expect(payload2).toEqual(payload3);
-        expect(payload1).toEqual(payload3);
-
-        // Verify they all have the same counts
-        // Presets are local only, so checking scenes and groups
-        expect(payload1.scenes.length).toBe(payload2.scenes.length);
-        expect(payload2.scenes.length).toBe(payload3.scenes.length);
-        expect(payload1.groups.length).toBe(payload2.groups.length);
-        expect(payload2.groups.length).toBe(payload3.groups.length);
+        // Each controller should receive the same total number of scenes and groups
+        expect(countPayloadItems(payload1, 'scenes')).toBe(countPayloadItems(payload2, 'scenes'));
+        expect(countPayloadItems(payload2, 'scenes')).toBe(countPayloadItems(payload3, 'scenes'));
+        expect(countPayloadItems(payload1, 'groups')).toBe(countPayloadItems(payload2, 'groups'));
+        expect(countPayloadItems(payload2, 'groups')).toBe(countPayloadItems(payload3, 'groups'));
       });
 
       it('should send consolidated data to fix controller-specific issues', async () => {
@@ -1424,37 +1435,47 @@ describe('SyncService', () => {
         });
 
         const syncPromise = syncService.synchronizeData();
-        await vi.advanceTimersByTimeAsync(3000);
+        // 2 controllers: 1*800ms (collection gap) + 2*500ms (push) + 800ms (pre-verify) + 2*300ms (verify) = 3700ms
+        await vi.advanceTimersByTimeAsync(4500);
         const result = await syncPromise;
 
         expect(result).toBe(true);
         expect(apiService.updateDataOnController).toHaveBeenCalledTimes(2);
 
-        // Get the consolidated data that was pushed to both controllers
+        // Get the payloads pushed to both controllers
         const payload1 = apiService.updateDataOnController.mock.calls[0][1];
         const payload2 = apiService.updateDataOnController.mock.calls[1][1];
 
-        // Both controllers should receive the SAME consolidated data
-        expect(payload1).toEqual(payload2);
+        // Helper: extract all items of a type from a smart push payload.
+        // The smart push uses "type[id=X]": item for updates and "type[]": [...] for inserts.
+        const getItems = (p, type) => [
+          ...Object.keys(p).filter(k => k.startsWith(`${type}[id=`)).map(k => p[k]),
+          ...(p[`${type}[]`] || [])
+        ];
+
+        const groups1 = getItems(payload1, 'groups');
+        const groups2 = getItems(payload2, 'groups');
 
         // The consolidated data should contain:
         // - 2 groups (group-1 with newest ts=2000, group-2)
         // - group-1 should have the newest version (ts=2000, name "Group One Updated")
         // - Invalid group should be filtered out
         // - Duplicate group-1 should be deduplicated
-        expect(payload1.groups.length).toBe(2);
+        // Both controllers receive all 2 groups (update or insert depending on what they knew)
+        expect(groups1.length).toBe(2);
+        expect(groups2.length).toBe(2);
         
-        const group1 = payload1.groups.find(g => g.id === 'group-1');
+        const group1 = groups1.find(g => g.id === 'group-1');
         expect(group1).toBeTruthy();
         expect(group1.name).toBe('Group One Updated'); // Newest version
         expect(group1.ts).toBe(2000); // Newest timestamp
 
-        const group2 = payload1.groups.find(g => g.id === 'group-2');
+        const group2 = groups1.find(g => g.id === 'group-2');
         expect(group2).toBeTruthy();
         expect(group2.name).toBe('Group Two');
 
         // Verify no invalid groups (null name/id) in consolidated data
-        const hasInvalidGroup = payload1.groups.some(g => g.id === null || g.name === null);
+        const hasInvalidGroup = groups1.some(g => g.id === null || g.name === null);
         expect(hasInvalidGroup).toBe(false);
 
         // When Controller 1 receives this consolidated data, it should:

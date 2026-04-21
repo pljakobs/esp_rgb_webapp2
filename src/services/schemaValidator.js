@@ -260,9 +260,9 @@ export function validateTransition(transition) {
     }
   });
 
-  // Normalize nullable strings from legacy payloads
+  // cmd is required - a transition without a command is invalid
   if (validated.cmd === null || validated.cmd === undefined) {
-    validated.cmd = '';
+    throw new Error('Transition must have a cmd');
   } else if (typeof validated.cmd !== 'string') {
     validated.cmd = String(validated.cmd);
   }
