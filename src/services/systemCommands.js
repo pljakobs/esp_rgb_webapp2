@@ -5,6 +5,11 @@ const sysCmd = async (cmd, data) => {
   const controllers = useControllersStore();
   console.log(`Sending command: ${cmd}`);
   console.log("Additional body:", data);
+  if (!controllers.currentController) {
+    const err = new Error("sysCmd: no current controller selected");
+    console.error(err.message);
+    throw err;
+  }
   try {
     const response = await fetch(
       `http://${controllers.currentController.ip_address}/system`,

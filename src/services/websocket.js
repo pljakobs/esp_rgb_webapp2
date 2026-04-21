@@ -48,12 +48,7 @@ export default function useWebSocket() {
     function handleKeepAlive(message) {
       console.log("=> keep alive at time", (Date.now() - startTime) / 1000);
       console.log("==> websocket is: ", state.status);
-      const response = {
-        id: message.id,
-        method: "keep_alive",
-        params: {},
-      };
-      send(JSON.stringify(response));
+      send("keep_alive", { id: message.id });
       clearTimeout(lostConnectionTimeout);
       resetLostConnectionTimeout();
     }
@@ -80,7 +75,7 @@ export default function useWebSocket() {
         delay = 20000;
       }
 
-      if (state.url != null && state.status === wsStatus.CLOSED) {
+      if (state.url != null && state.status === wsStatus.FAILED) {
         setTimeout(() => {
           connect(state.url);
         }, delay);
@@ -104,9 +99,10 @@ export default function useWebSocket() {
       */
       if (key === "keep_alive") {
         handleKeepAlive(message);
-      }
-      if (state.callbacks[key]) {
+      } else if (state.callbacks[key]) {
         state.callbacks[key].forEach((callback) => callback(message.params));
+      } else {
+        console.log(`=> websocket message '${key}' has no subscriber, discarding`);
       }
     };
 
@@ -123,17 +119,17 @@ export default function useWebSocket() {
         state.status = wsStatus.FAILED;
       }
 
-      // Try to reconnect after 5 seconds
+      // Try to reconnect using progressive backoff
       if (state.url != null && state.status === wsStatus.FAILED) {
         console.log("=> websocket reconnecting");
-        setTimeout(connect, 5000);
+        reconnect();
       }
     };
   }
 
   function destroy() {
     console.log("=> websocket closing by destroy()");
-    if (state.socket.readyState === WebSocket.OPEN) {
+    if (state.socket && state.socket.readyState === WebSocket.OPEN) {
       //if socket was open, close
       state.socket.close();
     }

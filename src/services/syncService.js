@@ -192,21 +192,39 @@ export class SyncService {
   async releaseDistributedLocks(controllers, lockId) {
     console.log(`🔓 Releasing distributed locks for ${lockId}`);
 
+    const maxReleaseRetries = 2;
+
     for (const controller of controllers) {
       const lockData = {
         "sync-lock": { id: "", ts: 0 },
       };
 
-      await apiService
-        .updateDataOnController(controller.ip_address, lockData, {
-          timeout: 5000,
-        })
-        .catch((err) => {
+      let released = false;
+      for (let attempt = 0; attempt <= maxReleaseRetries; attempt++) {
+        const { error } = await apiService.updateDataOnController(
+          controller.ip_address,
+          lockData,
+          { timeout: 5000 },
+        );
+        if (!error) {
+          released = true;
+          break;
+        }
+        if (attempt < maxReleaseRetries) {
           console.warn(
-            `⚠️ Failed to release lock on ${controller.hostname}:`,
-            err,
+            `⚠️ Failed to release lock on ${controller.hostname}, retrying (${attempt + 1}/${maxReleaseRetries})...`,
+            error,
           );
-        });
+          await new Promise((resolve) => setTimeout(resolve, 1000));
+        }
+      }
+
+      if (!released) {
+        console.error(
+          `❌ Could not release lock on ${controller.hostname} after ${maxReleaseRetries + 1} attempts. ` +
+            `The lock will expire automatically after the stale timeout.`,
+        );
+      }
     }
   }
 
@@ -545,7 +563,10 @@ export class SyncService {
           );
         }
 
-        if (normalizedSetting.color && typeof normalizedSetting.color === "object") {
+        if (
+          normalizedSetting.color &&
+          typeof normalizedSetting.color === "object"
+        ) {
           normalizedSetting.color = this.normalizeColorForSync(
             normalizedSetting.color,
           );
@@ -792,10 +813,7 @@ export class SyncService {
         );
 
         if (error) {
-          console.error(
-            `❌ Failed to push to ${controller.hostname}:`,
-            error,
-          );
+          console.error(`❌ Failed to push to ${controller.hostname}:`, error);
           failureCount++;
         } else {
           console.log(`✅ Successfully pushed to ${controller.hostname}`);
@@ -833,9 +851,7 @@ export class SyncService {
         );
         if (verificationResult.inconsistencies?.length) {
           for (const inc of verificationResult.inconsistencies) {
-            console.error(
-              `  • ${inc.controller} [${inc.type}]: ${inc.issue}`,
-            );
+            console.error(`  • ${inc.controller} [${inc.type}]: ${inc.issue}`);
           }
         }
         return false;

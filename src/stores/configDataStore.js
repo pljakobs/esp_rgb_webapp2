@@ -64,7 +64,11 @@ export const configDataStore = defineStore("configDataStore", {
       const fieldParts = field.split(".");
       let currentObject = this.data;
       for (let i = 0; i < fieldParts.length - 1; i++) {
-        currentObject = currentObject[fieldParts[i]];
+        const key = fieldParts[i];
+        if (currentObject[key] == null) {
+          currentObject[key] = {};
+        }
+        currentObject = currentObject[key];
       }
 
       currentObject[fieldParts[fieldParts.length - 1]] = value;
@@ -75,9 +79,9 @@ export const configDataStore = defineStore("configDataStore", {
 
       for (let i = 0; i < fieldParts.length - 1; i++) {
         const key = fieldParts[i];
-        tempObject[key] = Array.isArray(currentObject[key]) ? [] : {};
+        tempObject[key] = Array.isArray(currentObject?.[key]) ? [] : {};
         tempObject = tempObject[key];
-        currentObject = currentObject[key];
+        currentObject = currentObject?.[key];
       }
 
       tempObject[fieldParts[fieldParts.length - 1]] = value;
@@ -104,7 +108,11 @@ export const configDataStore = defineStore("configDataStore", {
         const fieldParts = field.split(".");
         let currentObject = this.data;
         for (let i = 0; i < fieldParts.length - 1; i++) {
-          currentObject = currentObject[fieldParts[i]];
+          const key = fieldParts[i];
+          if (currentObject[key] == null) {
+            currentObject[key] = {};
+          }
+          currentObject = currentObject[key];
         }
         currentObject[fieldParts[fieldParts.length - 1]] = value;
       });
@@ -121,10 +129,10 @@ export const configDataStore = defineStore("configDataStore", {
           for (let i = 0; i < fieldParts.length - 1; i++) {
             const key = fieldParts[i];
             if (!tempObject[key]) {
-              tempObject[key] = Array.isArray(currentObject[key]) ? [] : {};
+              tempObject[key] = Array.isArray(currentObject?.[key]) ? [] : {};
             }
             tempObject = tempObject[key];
-            currentObject = currentObject[key];
+            currentObject = currentObject?.[key];
           }
           tempObject[fieldParts[fieldParts.length - 1]] = value;
         });

@@ -258,6 +258,11 @@ export const useAppDataStore = defineStore("appData", {
         );
 
         this._syncWatchStops = [stopControllersWatch, stopSelfWatch];
+        // NOTE: These watchers are intentionally kept alive for the full lifetime
+        // of the store. They monitor both stores becoming READY and trigger the
+        // one-time synchronization. Stopping them early would prevent re-sync
+        // if the store is re-initialized. If the store is ever explicitly torn
+        // down, call each fn in this._syncWatchStops to avoid watcher leaks.
         this.syncWatchInitialized = true;
       }
 
@@ -315,32 +320,23 @@ export const useAppDataStore = defineStore("appData", {
           // Check if the controller already has this preset
           let existingPreset = null;
           try {
-            const timeout = new AbortController();
-            const timeoutId = setTimeout(() => timeout.abort(), 5000); // 5 second timeout
+            const { jsonData: existingData, error: fetchError } =
+              await apiService.getDataFromController(controller.ip_address, {
+                timeout: 5000,
+              });
 
-            const existingDataResponse = await fetch(
-              `http://${controller.ip_address}/data`,
-              {
-                signal: timeout.signal,
-                headers: { Accept: "application/json" },
-              },
-            );
-
-            clearTimeout(timeoutId);
-
-            if (!existingDataResponse.ok) {
+            if (fetchError || !existingData) {
               console.warn(
                 `Cannot fetch existing data from ${controller.ip_address}, skipping...`,
               );
               completed++;
               if (progressCallback) {
-                progressCallback(completed, targetControllerss.length);
+                progressCallback(completed, targetControllers.length);
               }
               continue;
             }
 
-            const existingData = await existingDataResponse.json();
-            existingPreset = existingData.presets.find(
+            existingPreset = existingData.presets?.find(
               (p) => p.id === preset.id,
             );
           } catch (fetchError) {
@@ -350,7 +346,7 @@ export const useAppDataStore = defineStore("appData", {
             );
             completed++;
             if (progressCallback) {
-              progressCallback(completed, controllers.data.length);
+              progressCallback(completed, targetControllers.length);
             }
             continue;
           }
@@ -374,40 +370,23 @@ export const useAppDataStore = defineStore("appData", {
             console.log("preset payload: ", JSON.stringify(payload));
 
             try {
-              const saveTimeout = new AbortController();
-              const saveTimeoutId = setTimeout(
-                () => saveTimeout.abort(),
-                10000,
-              ); // 10 second timeout
+              const { error: saveError } =
+                await apiService.updateDataOnController(
+                  controller.ip_address,
+                  payload,
+                  { timeout: 10000 },
+                );
 
-              const response = await fetch(
-                `http://${controller.ip_address}/data`,
-                {
-                  method: "POST",
-                  headers: {
-                    "Content-Type": "application/json",
-                  },
-                  body: JSON.stringify(payload),
-                  signal: saveTimeout.signal,
-                },
-              );
-
-              clearTimeout(saveTimeoutId);
-
-              if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+              if (saveError) {
+                throw new Error(
+                  `Save failed: ${JSON.stringify(saveError)}`,
+                );
               }
             } catch (saveError) {
-              if (saveError.name === "AbortError") {
-                console.warn(
-                  `Timeout saving to ${controller.ip_address} (10s timeout exceeded)`,
-                );
-              } else {
-                console.warn(
-                  `Error saving to ${controller.ip_address}:`,
-                  saveError.message,
-                );
-              }
+              console.warn(
+                `Error saving to ${controller.ip_address}:`,
+                saveError.message,
+              );
               // Continue with next controller
             }
           }
@@ -510,6 +489,10 @@ export const useAppDataStore = defineStore("appData", {
     // Toggle favorite status (local only)
     async toggleFavorite(preset) {
       const controllers = useControllersStore();
+      if (!controllers.currentController) {
+        console.warn("toggleFavorite: no current controller selected");
+        return;
+      }
       const presetIndex = this.data.presets.findIndex(
         (p) => p.id === preset.id,
       );
@@ -520,16 +503,13 @@ export const useAppDataStore = defineStore("appData", {
           [`presets[id=${preset.id}]`]: { favorite: newFavorite },
         };
 
-        const response = await fetch(
-          `http://${controllers.currentController["ip_address"]}/data`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload),
-          },
+        const { error } = await apiService.updateDataOnController(
+          controllers.currentController.ip_address,
+          payload,
+          { timeout: 5000 },
         );
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+        if (error) {
+          throw new Error(`toggleFavorite failed: ${JSON.stringify(error)}`);
         }
         this.data.presets[presetIndex] = {
           ...this.data.presets[presetIndex],

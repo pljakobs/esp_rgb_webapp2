@@ -1,5 +1,5 @@
 import { useControllersStore } from "../stores/controllersStore";
-import { retryDelay, requestTimeout } from "../stores/storeConstants";
+import { retryDelay, requestTimeout, maxRetries } from "../stores/storeConstants";
 
 export class ApiService {
   constructor() {
@@ -64,6 +64,9 @@ export class ApiService {
     const { requestFn, resolve, reject } = queue.shift();
 
     const promise = requestFn();
+    if (!this._activeRequests.has(controllerIp)) {
+      this._activeRequests.set(controllerIp, new Set());
+    }
     this._activeRequests.get(controllerIp).add(promise);
 
     promise
@@ -137,7 +140,10 @@ export class ApiService {
       const candidate = [...current, item];
       const candidatePayload = { [key]: candidate };
 
-      if (current.length > 0 && this._jsonSizeBytes(candidatePayload) > maxPayloadBytes) {
+      if (
+        current.length > 0 &&
+        this._jsonSizeBytes(candidatePayload) > maxPayloadBytes
+      ) {
         chunks.push({ [key]: current });
         current = [item];
       } else {
@@ -297,11 +303,20 @@ export class ApiService {
 
     return {
       ...lastResult,
-      jsonData: lastResult.jsonData || { success: true, chunks: payloads.length },
+      jsonData: lastResult.jsonData || {
+        success: true,
+        chunks: payloads.length,
+      },
     };
   }
 
-  async _executeApi(endpoint, targetController, options, retryCount, timeoutMs) {
+  async _executeApi(
+    endpoint,
+    targetController,
+    options,
+    retryCount,
+    timeoutMs,
+  ) {
     const method = (options?.method || "GET").toUpperCase();
     const canChunk =
       method === "POST" &&
@@ -363,17 +378,17 @@ export class ApiService {
     retryCount,
     timeoutMs,
   ) {
-    const maxRetries = 10;
     let error = null;
     let jsonData = null;
     let status = null;
 
     const { method = "GET", body = null, headers = {} } = options;
 
+    const abortController = new AbortController();
+    const timeoutId = setTimeout(() => abortController.abort(), timeoutMs);
+
     try {
       console.log(endpoint, " start fetching data");
-      const abortController = new AbortController();
-      const timeoutId = setTimeout(() => abortController.abort(), timeoutMs);
 
       const requestOptions = {
         signal: abortController.signal,
@@ -458,6 +473,7 @@ export class ApiService {
       jsonData = await response.json();
       console.log(endpoint, " data fetched: ", JSON.stringify(jsonData));
     } catch (err) {
+      clearTimeout(timeoutId); // Clear timeout on error to prevent timer leak
       console.error("Error fetching data:", err);
 
       // Check if it's a timeout error
@@ -698,11 +714,17 @@ export class ApiService {
   async updateDataOnController(ipAddress, data, options = {}) {
     const controller = { ip_address: ipAddress };
     const { timeout, ...requestOptions } = options;
-    return this.fetchApi("data", controller, {
-      method: "POST",
-      body: data,
-      ...requestOptions,
-    }, 0, timeout || requestTimeout);
+    return this.fetchApi(
+      "data",
+      controller,
+      {
+        method: "POST",
+        body: data,
+        ...requestOptions,
+      },
+      0,
+      timeout || requestTimeout,
+    );
   }
 
   async getColorFromController(ipAddress, options = {}) {

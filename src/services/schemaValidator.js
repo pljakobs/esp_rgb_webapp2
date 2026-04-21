@@ -10,32 +10,32 @@
  * @throws {Error} - If validation fails
  */
 export function validatePreset(preset) {
-  if (!preset || typeof preset !== 'object') {
-    throw new Error('Preset must be an object');
+  if (!preset || typeof preset !== "object") {
+    throw new Error("Preset must be an object");
   }
 
   const validated = { ...preset };
 
   // Required fields
-  if (!validated.name || typeof validated.name !== 'string') {
-    throw new Error('Preset must have a string name');
+  if (!validated.name || typeof validated.name !== "string") {
+    throw new Error("Preset must have a string name");
   }
-  if (!validated.id || typeof validated.id !== 'string') {
-    throw new Error('Preset must have a string id');
+  if (!validated.id || typeof validated.id !== "string") {
+    throw new Error("Preset must have a string id");
   }
-  if (!validated.color || typeof validated.color !== 'object') {
-    throw new Error('Preset must have a color object');
+  if (!validated.color || typeof validated.color !== "object") {
+    throw new Error("Preset must have a color object");
   }
 
   // Coerce numeric fields to integers
   validated.ts = Math.floor(Number(validated.ts) || Date.now());
-  
+
   // Coerce boolean
   validated.favorite = Boolean(validated.favorite);
-  
+
   // Default icon
   if (!validated.icon) {
-    validated.icon = 'palette';
+    validated.icon = "palette";
   }
 
   // Validate color structure
@@ -44,7 +44,7 @@ export function validatePreset(preset) {
   } else if (validated.color.raw) {
     validated.color.raw = validateRaw(validated.color.raw);
   } else {
-    throw new Error('Preset color must have either hsv or raw properties');
+    throw new Error("Preset color must have either hsv or raw properties");
   }
 
   return validated;
@@ -57,32 +57,32 @@ export function validatePreset(preset) {
  * @throws {Error} - If validation fails
  */
 export function validateScene(scene) {
-  if (!scene || typeof scene !== 'object') {
-    throw new Error('Scene must be an object');
+  if (!scene || typeof scene !== "object") {
+    throw new Error("Scene must be an object");
   }
 
   const validated = { ...scene };
 
   // Required fields
-  if (!validated.name || typeof validated.name !== 'string') {
-    throw new Error('Scene must have a string name');
+  if (!validated.name || typeof validated.name !== "string") {
+    throw new Error("Scene must have a string name");
   }
-  if (!validated.id || typeof validated.id !== 'string') {
-    throw new Error('Scene must have a string id');
+  if (!validated.id || typeof validated.id !== "string") {
+    throw new Error("Scene must have a string id");
   }
-  if (!validated.group_id || typeof validated.group_id !== 'string') {
-    throw new Error('Scene must have a string group_id');
+  if (!validated.group_id || typeof validated.group_id !== "string") {
+    throw new Error("Scene must have a string group_id");
   }
 
   // Coerce numeric fields to integers
   validated.ts = Math.floor(Number(validated.ts) || Date.now());
-  
+
   // Coerce boolean
   validated.favorite = Boolean(validated.favorite);
-  
+
   // Default icon
   if (!validated.icon) {
-    validated.icon = 'scene';
+    validated.icon = "scene";
   }
 
   // Validate transition if present
@@ -92,15 +92,18 @@ export function validateScene(scene) {
 
   // Validate settings array
   if (!Array.isArray(validated.settings)) {
-    throw new Error('Scene must have a settings array');
+    throw new Error("Scene must have a settings array");
   }
 
-  validated.settings = validated.settings.map(setting => {
+  validated.settings = validated.settings.map((setting) => {
     const validatedSetting = { ...setting };
 
     // Controller ID must be string
-    if (!validatedSetting.controller_id || typeof validatedSetting.controller_id !== 'string') {
-      throw new Error('Scene setting must have a string controller_id');
+    if (
+      !validatedSetting.controller_id ||
+      typeof validatedSetting.controller_id !== "string"
+    ) {
+      throw new Error("Scene setting must have a string controller_id");
     }
 
     // Coerce pos to integer
@@ -108,18 +111,26 @@ export function validateScene(scene) {
 
     // Validate transition if present
     if (validatedSetting.transition) {
-      validatedSetting.transition = validateTransition(validatedSetting.transition);
+      validatedSetting.transition = validateTransition(
+        validatedSetting.transition,
+      );
     }
 
     // Validate color
     if (validatedSetting.color) {
       if (validatedSetting.color.Preset) {
         // Normalize legacy wrapper to cfgdb oneOf Preset shape: { id: "..." }
-        if (!validatedSetting.color.Preset.id || typeof validatedSetting.color.Preset.id !== 'string') {
-          throw new Error('Preset reference must have string id');
+        if (
+          !validatedSetting.color.Preset.id ||
+          typeof validatedSetting.color.Preset.id !== "string"
+        ) {
+          throw new Error("Preset reference must have string id");
         }
         validatedSetting.color = { id: validatedSetting.color.Preset.id };
-      } else if (validatedSetting.color.id && typeof validatedSetting.color.id === 'string') {
+      } else if (
+        validatedSetting.color.id &&
+        typeof validatedSetting.color.id === "string"
+      ) {
         validatedSetting.color = { id: validatedSetting.color.id };
       } else if (validatedSetting.color.hsv) {
         validatedSetting.color.hsv = validateHSV(validatedSetting.color.hsv);
@@ -141,32 +152,32 @@ export function validateScene(scene) {
  * @throws {Error} - If validation fails
  */
 export function validateGroup(group) {
-  if (!group || typeof group !== 'object') {
-    throw new Error('Group must be an object');
+  if (!group || typeof group !== "object") {
+    throw new Error("Group must be an object");
   }
 
   const validated = { ...group };
 
   // Required fields
-  if (!validated.name || typeof validated.name !== 'string') {
-    throw new Error('Group must have a string name');
+  if (!validated.name || typeof validated.name !== "string") {
+    throw new Error("Group must have a string name");
   }
-  if (!validated.id || typeof validated.id !== 'string') {
-    throw new Error('Group must have a string id');
+  if (!validated.id || typeof validated.id !== "string") {
+    throw new Error("Group must have a string id");
   }
   if (!Array.isArray(validated.controller_ids)) {
-    throw new Error('Group must have a controller_ids array');
+    throw new Error("Group must have a controller_ids array");
   }
 
   // Validate controller IDs are strings
-  validated.controller_ids = validated.controller_ids.map(id => String(id));
+  validated.controller_ids = validated.controller_ids.map((id) => String(id));
 
   // Coerce numeric fields to integers
   validated.ts = Math.floor(Number(validated.ts) || Date.now());
-  
+
   // Default icon
   if (!validated.icon) {
-    validated.icon = 'light_groups';
+    validated.icon = "light_groups";
   }
 
   return validated;
@@ -180,13 +191,13 @@ export function validateGroup(group) {
 export function validateHSV(hsv) {
   // Validate required fields
   if (hsv.h === undefined || hsv.h === null) {
-    throw new Error('HSV color must have h, s, and v');
+    throw new Error("HSV color must have h, s, and v");
   }
   if (hsv.s === undefined || hsv.s === null) {
-    throw new Error('HSV color must have h, s, and v');
+    throw new Error("HSV color must have h, s, and v");
   }
   if (hsv.v === undefined || hsv.v === null) {
-    throw new Error('HSV color must have h, s, and v');
+    throw new Error("HSV color must have h, s, and v");
   }
 
   const validated = {};
@@ -214,13 +225,13 @@ export function validateHSV(hsv) {
 export function validateRaw(raw) {
   // Validate required fields
   if (raw.r === undefined || raw.r === null) {
-    throw new Error('Raw color must have r, g, and b');
+    throw new Error("Raw color must have r, g, and b");
   }
   if (raw.g === undefined || raw.g === null) {
-    throw new Error('Raw color must have r, g, and b');
+    throw new Error("Raw color must have r, g, and b");
   }
   if (raw.b === undefined || raw.b === null) {
-    throw new Error('Raw color must have r, g, and b');
+    throw new Error("Raw color must have r, g, and b");
   }
 
   const validated = {};
@@ -228,17 +239,17 @@ export function validateRaw(raw) {
   // All values must be integers within range 0-1023
   validated.r = Math.floor(Number(raw.r));
   validated.r = Math.max(0, Math.min(1023, validated.r));
-  
+
   validated.g = Math.floor(Number(raw.g));
   validated.g = Math.max(0, Math.min(1023, validated.g));
-  
+
   validated.b = Math.floor(Number(raw.b));
   validated.b = Math.max(0, Math.min(1023, validated.b));
-  
+
   // Optional ww and cw default to 0
   validated.ww = raw.ww !== undefined ? Math.floor(Number(raw.ww)) : 0;
   validated.ww = Math.max(0, Math.min(1023, validated.ww));
-  
+
   validated.cw = raw.cw !== undefined ? Math.floor(Number(raw.cw)) : 0;
   validated.cw = Math.max(0, Math.min(1023, validated.cw));
 
@@ -254,7 +265,7 @@ export function validateTransition(transition) {
   const validated = { ...transition };
 
   // Coerce numeric fields to integers
-  ['d', 't', 's'].forEach(key => {
+  ["d", "t", "s"].forEach((key) => {
     if (validated[key] !== undefined) {
       validated[key] = Math.floor(Number(validated[key]));
     }
@@ -262,14 +273,14 @@ export function validateTransition(transition) {
 
   // cmd is required - a transition without a command is invalid
   if (validated.cmd === null || validated.cmd === undefined) {
-    throw new Error('Transition must have a cmd');
-  } else if (typeof validated.cmd !== 'string') {
+    throw new Error("Transition must have a cmd");
+  } else if (typeof validated.cmd !== "string") {
     validated.cmd = String(validated.cmd);
   }
 
   if (validated.q === null || validated.q === undefined) {
-    validated.q = '';
-  } else if (typeof validated.q !== 'string') {
+    validated.q = "";
+  } else if (typeof validated.q !== "string") {
     validated.q = String(validated.q);
   }
 
@@ -290,7 +301,7 @@ export function validateTransition(transition) {
 export function validateBatch(items, validator) {
   const results = {
     valid: [],
-    invalid: []
+    invalid: [],
   };
 
   items.forEach((item, index) => {
@@ -301,7 +312,7 @@ export function validateBatch(items, validator) {
       results.invalid.push({
         item,
         index,
-        error: error.message
+        error: error.message,
       });
     }
   });

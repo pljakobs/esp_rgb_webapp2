@@ -5,6 +5,7 @@ import { ApiService } from '../api.js';
 vi.mock('../../stores/storeConstants.js', () => ({
   requestTimeout: 10000,
   retryDelay: 1000,
+  maxRetries: 3,
   sync_phases: []
 }));
 
@@ -327,20 +328,20 @@ describe('ApiService', () => {
 
       const resultPromise = apiService.fetchApi('data');
 
-      // Fast-forward through all retry delays (10 retries)
-      for (let i = 0; i < 10; i++) {
+      // Fast-forward through all retry delays (maxRetries=3 retries from storeConstants)
+      for (let i = 0; i < 3; i++) {
         await vi.advanceTimersByTimeAsync(retryDelay * 2 ** i);
       }
       
       const result = await resultPromise;
 
-      expect(mockFetch).toHaveBeenCalledTimes(11); // Initial + 10 retries
+      expect(mockFetch).toHaveBeenCalledTimes(4); // Initial + 3 retries
       expect(result.error).toEqual(new Error('Network error'));
     });
 
     it('should handle JSON parse errors', async () => {
-      // Mock multiple retries - all fail with JSON parse error
-      for (let i = 0; i < 11; i++) {
+      // Mock multiple retries - all fail with JSON parse error (maxRetries=3 from storeConstants)
+      for (let i = 0; i < 4; i++) {
         mockFetch.mockResolvedValueOnce({
           status: 200,
           json: async () => {
@@ -352,7 +353,7 @@ describe('ApiService', () => {
       const resultPromise = apiService.fetchApi('data');
       
       // Fast-forward through all retry delays
-      for (let i = 0; i < 10; i++) {
+      for (let i = 0; i < 3; i++) {
         await vi.advanceTimersByTimeAsync(retryDelay * 2 ** i);
       }
       

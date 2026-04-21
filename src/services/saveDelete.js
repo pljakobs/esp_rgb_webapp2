@@ -61,15 +61,26 @@ export async function saveItem(
         { signal: readAbort.signal },
       );
       readAbort.clear();
+
+      if (!existingDataResponse.ok) {
+        console.warn(
+          `Cannot fetch existing data from ${controller.ip_address} (HTTP ${existingDataResponse.status}), skipping...`,
+        );
+        completed++;
+        if (progressCallback)
+          progressCallback(completed, controllers.data.length);
+        continue;
+      }
+
       const existingData = await existingDataResponse.json();
-      const existingItem = existingData[pluralType].find(
+      const existingItem = existingData[pluralType]?.find(
         (i) => i.id === item.id,
       );
 
       // Create appropriate payload
       if (existingItem) {
         // Update existing item
-        payload = { [`${pluralType}[id="${item.id}"]`]: itemToSync };
+        payload = { [`${pluralType}[id=${item.id}]`]: itemToSync };
       } else {
         // Add new item
         payload = { [`${pluralType}[]`]: [itemToSync] };

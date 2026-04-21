@@ -3,7 +3,7 @@ const localOverrideModules = import.meta.glob("../config/localOverrides.js", {
 });
 
 const localOverrides =
-  localOverrideModules["../config/localOverrides.js"]?.default ?? {};
+  Object.values(localOverrideModules)[0]?.default ?? {};
 
 const localhostOverride = localOverrides.localhost ?? {};
 
@@ -41,4 +41,4 @@ export const storeStatus = {
 
 export const maxRetries = 3; // Maximum number of retries
 export const retryDelay = 500; // Delay for the first retry in milliseconds
-export const requestTimeout = 2000;
+export const requestTimeout = 3000;

@@ -11,6 +11,8 @@ export const useControllersStore = defineStore("controllersStore", {
     currentController: null, // Will be set from /hosts response only
     homeController: null, // Will be set from /hosts response only
     http_response_status: null,
+    websocketSubscribed: false,
+    error: null,
   }),
 
   getters: {
@@ -231,7 +233,7 @@ export const useControllersStore = defineStore("controllersStore", {
 
           if (existingController) {
             // Update existing controller metadata
-            payload = { [`controllers[id="${metadata.id}"]`]: metadata };
+            payload = { [`controllers[id=${metadata.id}]`]: metadata };
             console.log(
               "DEBUG: Updating existing controller metadata with payload:",
               JSON.stringify(payload, null, 2),
