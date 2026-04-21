@@ -152,18 +152,36 @@ export class ApiService {
     return chunks;
   }
 
-  _buildSparseDataUnits(payload) {
+  _buildSparseDataUnits(payload, maxPayloadBytes = Infinity) {
     const units = [];
 
     for (const [key, value] of Object.entries(payload || {})) {
       if (Array.isArray(value)) {
-        for (const item of value) {
-          const id = item?.id;
-          if (id !== undefined && id !== null && id !== "") {
-            units.push({ [`${key}[id=${id}]`]: item });
-          } else {
-            // Fallback for entries without id: append semantics.
-            units.push({ [`${key}[]`]: [item] });
+        const isAppend = key.endsWith("[]");
+
+        if (value.length === 0) {
+          // Clear / empty-array operation — keep as-is.
+          units.push({ [key]: value });
+        } else if (isAppend) {
+          // Key already carries append semantics (e.g. "scenes[]").
+          // Split into size-limited batches to avoid oversized payloads;
+          // the firmware will append each batch in turn.
+          const batches = this._splitArrayValueBySize(
+            key,
+            value,
+            maxPayloadBytes,
+          );
+          units.push(...batches);
+        } else {
+          // Regular array key — convert each item to a sparse selector patch.
+          for (const item of value) {
+            const id = item?.id;
+            if (id !== undefined && id !== null && id !== "") {
+              units.push({ [`${key}[id=${id}]`]: item });
+            } else {
+              // Fallback for entries without id: append semantics.
+              units.push({ [`${key}[]`]: [item] });
+            }
           }
         }
       } else {
@@ -186,7 +204,7 @@ export class ApiService {
 
     const units =
       endpointPath === "data"
-        ? this._buildSparseDataUnits(payload)
+        ? this._buildSparseDataUnits(payload, maxPayloadBytes)
         : Object.entries(payload).flatMap(([key, value]) => {
             if (Array.isArray(value) && value.length > 1) {
               return this._splitArrayValueBySize(key, value, maxPayloadBytes);
@@ -408,6 +426,26 @@ export class ApiService {
         return {
           jsonData,
           error: { status: response.status, statusText: response.statusText },
+          status,
+        };
+      } else if (!response.ok) {
+        // Any other non-2xx response (400, 500, …) is a hard error.
+        // The firmware returns JSON with an error description for 400.
+        let details = "";
+        try {
+          details = await response.text();
+        } catch (_) {}
+        console.error(
+          `HTTP ${response.status} error on ${endpoint}:`,
+          details,
+        );
+        return {
+          jsonData: null,
+          error: {
+            message: `HTTP ${response.status}`,
+            details,
+            status: response.status,
+          },
           status,
         };
       }

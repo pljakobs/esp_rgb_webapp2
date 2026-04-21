@@ -297,6 +297,10 @@ export class SyncService {
         controllers: [],
       };
 
+      // Track which IDs already exist on each controller so the push phase
+      // can update existing items with [id=X] and only append truly new ones.
+      const controllerDataMap = new Map(); // controller.id → { sceneIds, groupIds }
+
       let completed = 0;
       const total = reachableControllers.length;
       // Delay between requests to avoid overwhelming controllers (rate limiting)
@@ -323,6 +327,20 @@ export class SyncService {
             }
           } else if (jsonData) {
             this.collectDataFromController(jsonData, allData);
+            // Record which IDs this controller already has so we can route
+            // updates vs. inserts precisely during the push phase.
+            controllerDataMap.set(controller.id, {
+              sceneIds: new Set(
+                (jsonData.scenes || [])
+                  .filter((s) => s.id)
+                  .map((s) => String(s.id)),
+              ),
+              groupIds: new Set(
+                (jsonData.groups || [])
+                  .filter((g) => g.id)
+                  .map((g) => String(g.id)),
+              ),
+            });
           }
 
           completed++;
@@ -356,10 +374,12 @@ export class SyncService {
       // Return consolidated data and both controller lists
       // - reachableControllers: used for collection (visible only)
       // - pushTargets: used for pushing (visible + current controller)
+      // - controllerDataMap: per-controller ID sets for smart push routing
       return {
         data: consolidated,
         controllers: reachableControllers,
         pushTargets: pushTargets,
+        controllerDataMap,
       };
     } catch (error) {
       console.error("❌ Error during data collection:", error);
@@ -651,6 +671,30 @@ export class SyncService {
     // - Removing invalid items (nil name/id)
 
     // Future optimization: calculate actual diffs and send only changes
+
+    // TODO: Stale-delete problem
+    // When a scene or group is deleted (via deleteScene / deleteGroup), the
+    // delete is broadcast to all currently-reachable controllers.  If one or
+    // more controllers are offline at that moment, they rejoin the swarm later
+    // still carrying the deleted item.  The current sync strategy is purely
+    // additive (newest-timestamp wins for updates, new items are appended), so
+    // the deleted item resurfaces and is pushed back to all controllers.
+    //
+    // Possible solution:
+    // Introduce a category-level timestamp (e.g. `scenes_ts`, `groups_ts`) that
+    // is bumped on every write *including deletes*.  During collection each
+    // controller reports its category timestamps; a controller whose
+    // `scenes_ts` is older than the authoritative value is known to be behind
+    // and must accept the authoritative list wholesale (clear + replace) rather
+    // than a merge.  This lets the sync distinguish "controller has extra items
+    // because it hasn't received the delete" from "controller has extra items
+    // because it created them locally while offline".
+    //
+    // The authoritative category timestamp can be stored in the cfgdb root
+    // object, e.g.  { scenes_ts: <unix-ms>, groups_ts: <unix-ms> }, and
+    // written by the firmware whenever an array is modified.  The webapp would
+    // need to read and compare these during getConsolidatedView and adjust the
+    // push strategy accordingly.
     return {
       presets: consolidated.presets,
       scenes: consolidated.scenes,
@@ -679,6 +723,7 @@ export class SyncService {
       data: consolidated,
       controllers: reachableControllers,
       pushTargets,
+      controllerDataMap,
     } = result;
 
     // Phase 2: Push consolidated data to all controllers (including current invisible controller)
@@ -691,22 +736,66 @@ export class SyncService {
 
     for (const controller of pushTargets) {
       try {
-        // Build data payload
-        const payload = {
-          // presets: consolidated.presets, // Presets are controller-local
-          scenes: consolidated.scenes,
-          groups: consolidated.groups,
+        // Determine which items already exist on this controller.
+        // If we never fetched from this controller (e.g. the invisible current
+        // controller), treat all items as new so they get appended.
+        const known = controllerDataMap.get(controller.id) ?? {
+          sceneIds: new Set(),
+          groupIds: new Set(),
         };
 
-        console.log(`📤 Pushing to ${controller.hostname}`);
-        const { jsonData, error } = await apiService.updateDataOnController(
+        // Build a single smart payload:
+        //  - items that exist on the controller  → "key[id=X]": item  (update)
+        //  - items that are new to the controller → "key[]": [items]  (append)
+        // The chunker in api.js will split this into ≤1200-byte HTTP requests.
+        const payload = {};
+
+        const newScenes = [];
+        for (const scene of consolidated.scenes) {
+          if (known.sceneIds.has(String(scene.id))) {
+            payload[`scenes[id=${scene.id}]`] = scene;
+          } else {
+            newScenes.push(scene);
+          }
+        }
+        if (newScenes.length > 0) payload["scenes[]"] = newScenes;
+
+        const newGroups = [];
+        for (const group of consolidated.groups) {
+          if (known.groupIds.has(String(group.id))) {
+            payload[`groups[id=${group.id}]`] = group;
+          } else {
+            newGroups.push(group);
+          }
+        }
+        if (newGroups.length > 0) payload["groups[]"] = newGroups;
+
+        if (Object.keys(payload).length === 0) {
+          console.log(`✅ ${controller.hostname}: nothing to push`);
+          successCount++;
+          continue;
+        }
+
+        const updateCount =
+          consolidated.scenes.length -
+          newScenes.length +
+          (consolidated.groups.length - newGroups.length);
+        const insertCount = newScenes.length + newGroups.length;
+        console.log(
+          `📤 Pushing to ${controller.hostname}: ${updateCount} update(s), ${insertCount} insert(s)`,
+        );
+
+        const { error } = await apiService.updateDataOnController(
           controller.ip_address,
           payload,
           { timeout: 8000 },
         );
 
         if (error) {
-          console.error(`❌ Failed to push to ${controller.hostname}:`, error);
+          console.error(
+            `❌ Failed to push to ${controller.hostname}:`,
+            error,
+          );
           failureCount++;
         } else {
           console.log(`✅ Successfully pushed to ${controller.hostname}`);
@@ -727,6 +816,9 @@ export class SyncService {
 
     // Phase 3: Verify all controllers agree (verify all push targets including current invisible controller)
     if (failureCount === 0) {
+      // Give controllers a moment to persist the newly written data before verifying.
+      await this.sleep(800);
+
       console.log(
         `🔍 Verifying data consistency across ${pushTargets.length} controllers...`,
       );
@@ -739,6 +831,13 @@ export class SyncService {
         console.error(
           `❌ Data inconsistency detected: ${verificationResult.message}`,
         );
+        if (verificationResult.inconsistencies?.length) {
+          for (const inc of verificationResult.inconsistencies) {
+            console.error(
+              `  • ${inc.controller} [${inc.type}]: ${inc.issue}`,
+            );
+          }
+        }
         return false;
       }
 

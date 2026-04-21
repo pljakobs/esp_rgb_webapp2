@@ -1940,6 +1940,34 @@ export const useAppDataStore = defineStore("appData", {
             }
           }
 
+          // Check for extra controller entries not in the master valid list
+          for (const [hostname] of controllerObjects[
+            controllerKey
+          ].controllers.entries()) {
+            if (!latestItems.controllers.has(hostname)) {
+              updates[controllerKey].controllersToDelete.push(hostname);
+              console.log(
+                `🗑️ Will DELETE extra controller metadata (hostname: ${hostname}) from ${controller.hostname} - not in master list`,
+              );
+            }
+          }
+
+          // Add invalid controller entries for deletion
+          if (controllerObjects[controllerKey].invalidControllers?.length > 0) {
+            for (const invalidController of controllerObjects[controllerKey]
+              .invalidControllers) {
+              updates[controllerKey].controllersToDelete.push({
+                type: "invalid",
+                id: invalidController.id,
+                hostname: invalidController.hostname,
+                ts: invalidController.ts,
+              });
+              console.log(
+                `🗑️ Will DELETE invalid controller entry (id: ${invalidController.id}, hostname: "${invalidController.hostname}") from ${controller.hostname}`,
+              );
+            }
+          }
+
           // Check for extra scenes on this controller that aren't in our master valid list
           for (const [sceneId] of controllerObjects[
             controllerKey
@@ -2014,7 +2042,8 @@ export const useAppDataStore = defineStore("appData", {
             updates[controllerKey].groupsToAdd.length +
             updates[controllerKey].groupsToUpdate.length +
             (updates[controllerKey].scenesToDelete?.length || 0) +
-            (updates[controllerKey].groupsToDelete?.length || 0);
+            (updates[controllerKey].groupsToDelete?.length || 0) +
+            (updates[controllerKey].controllersToDelete?.length || 0);
 
           console.log(
             `📊 Controller ${controller.hostname || controller.name}: ${totalOpsForController} operations planned`,
@@ -2037,9 +2066,10 @@ export const useAppDataStore = defineStore("appData", {
             update.groupsToUpdate.length +
             (update.presetsToDelete?.length || 0) +
             (update.scenesToDelete?.length || 0) +
-            (update.groupsToDelete?.length || 0);
+            (update.groupsToDelete?.length || 0) +
+            (update.controllersToDelete?.length || 0);
           console.log(
-            `  ${name}: ${totalOps} total operations (+${update.presetsToAdd.length}/${update.presetsToUpdate.length} presets, +${update.scenesToAdd.length}/${update.scenesToUpdate.length} scenes, +${update.groupsToAdd.length}/${update.groupsToUpdate.length} groups, -${update.presetsToDelete?.length || 0} presets, -${update.scenesToDelete?.length || 0} scenes, -${update.groupsToDelete?.length || 0} groups)`,
+            `  ${name}: ${totalOps} total operations (+${update.presetsToAdd.length}/${update.presetsToUpdate.length} presets, +${update.scenesToAdd.length}/${update.scenesToUpdate.length} scenes, +${update.groupsToAdd.length}/${update.groupsToUpdate.length} groups, -${update.presetsToDelete?.length || 0} presets, -${update.scenesToDelete?.length || 0} scenes, -${update.groupsToDelete?.length || 0} groups, -${update.controllersToDelete?.length || 0} controllers)`,
           );
         }
 
@@ -2060,7 +2090,8 @@ export const useAppDataStore = defineStore("appData", {
             (update.scenesToDelete ? update.scenesToDelete.length : 0) +
             update.groupsToAdd.length +
             update.groupsToUpdate.length +
-            (update.groupsToDelete ? update.groupsToDelete.length : 0)
+            (update.groupsToDelete ? update.groupsToDelete.length : 0) +
+            (update.controllersToDelete ? update.controllersToDelete.length : 0)
           );
         }, 0);
 
@@ -2493,6 +2524,57 @@ export const useAppDataStore = defineStore("appData", {
             }
             if (progressCallback) {
               progressCallback(completedUpdates, totalUpdates);
+            }
+          }
+
+          // Delete orphaned / invalid controller entries
+          if (update.controllersToDelete && update.controllersToDelete.length > 0) {
+            for (const controllerToDelete of update.controllersToDelete) {
+              try {
+                let payload;
+                let description;
+
+                if (
+                  typeof controllerToDelete === "object" &&
+                  controllerToDelete.type === "invalid"
+                ) {
+                  // Invalid entry — delete by id if present, otherwise skip
+                  if (controllerToDelete.id) {
+                    payload = { [`controllers[id=${controllerToDelete.id}]`]: [] };
+                    description = `deleting invalid controller entry (id: ${controllerToDelete.id})`;
+                  } else {
+                    console.log(
+                      `⚠️ Invalid controller entry has no id on ${controllerName}, skipping`,
+                    );
+                    completedUpdates++;
+                    continue;
+                  }
+                } else {
+                  // Extra entry — key is hostname string
+                  const hostname =
+                    typeof controllerToDelete === "object"
+                      ? controllerToDelete.hostname
+                      : controllerToDelete;
+                  payload = { [`controllers[hostname=${hostname}]`]: [] };
+                  description = `deleting orphaned controller metadata (hostname: ${hostname})`;
+                }
+
+                await robustRequest(payload, description);
+                console.log(
+                  `✅ Deleted controller entry from ${controllerName}: ${description}`,
+                );
+                completedUpdates++;
+              } catch (error) {
+                console.error(
+                  `❌ Failed to delete controller entry from ${controllerName}:`,
+                  error.message,
+                );
+                failedOperations++;
+                completedUpdates++;
+              }
+              if (progressCallback) {
+                progressCallback(completedUpdates, totalUpdates);
+              }
             }
           }
         }
