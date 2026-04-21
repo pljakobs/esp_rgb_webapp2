@@ -49,7 +49,7 @@ export default configure((/* ctx */) => {
       warnings: true,
       errors: true,
     },
-    boot: ["i18n", "registerSvgIcon.js", "autosaveFeedback"],
+    boot: ["registerSvgIcon.js", "autosaveFeedback"],
     css: ["app.scss"],
     extras: [],
     build: {
