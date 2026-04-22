@@ -27,7 +27,7 @@
   "devDependencies": {
     "@intlify/unplugin-vue-i18n": "^11.0.0",
     "@pinia/testing": "^1.0.3",
-    "@quasar/app-vite": "2.4.1",
+    "@quasar/app-vite": "2.6.0",
     "@vitejs/plugin-vue": "^6.0.3",
     "@vue/compiler-sfc": "^3.5.26",
     "@vue/devtools": "^8.0.1",
