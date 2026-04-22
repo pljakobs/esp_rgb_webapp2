@@ -3,24 +3,24 @@
     <q-card class="shadow-4 q-pa-md" style="min-width: 340px; max-width: 420px">
       <q-card-section>
         <div class="row items-center no-wrap q-gutter-sm">
-          <q-icon
-            v-if="!otaProgress.fallbackMode && otaProgress.step === 0 && otaProgress.message"
-            name="error"
-            color="negative"
-            size="28px"
-          />
-          <q-icon
-            v-else-if="!otaProgress.fallbackMode && otaProgress.step === 4"
-            name="check_circle"
-            color="positive"
-            size="28px"
-          />
-          <q-icon
-            v-else-if="!otaProgress.fallbackMode && otaProgress.step >= 1"
-            name="system_update"
-            color="primary"
-            size="28px"
-          />
+          <div
+            class="status-chip"
+            :class="
+              !otaProgress.fallbackMode && otaProgress.step === 0 && otaProgress.message
+                ? 'status-chip-negative'
+                : !otaProgress.fallbackMode && otaProgress.step === 4
+                  ? 'status-chip-positive'
+                  : 'status-chip-primary'
+            "
+          >
+            {{
+              !otaProgress.fallbackMode && otaProgress.step === 0 && otaProgress.message
+                ? 'ERR'
+                : !otaProgress.fallbackMode && otaProgress.step === 4
+                  ? 'OK'
+                  : 'OTA'
+            }}
+          </div>
           <div class="text-h6">
             <template v-if="otaProgress.fallbackMode">Updating Firmware...</template>
             <template v-else-if="otaProgress.step === 0 && otaProgress.message">Update Failed</template>
@@ -32,6 +32,7 @@
 
       <q-card-section>
         <q-linear-progress
+          :indeterminate="!otaProgress.fallbackMode && otaProgress.step === 2"
           :value="
             otaProgress.fallbackMode
               ? otaProgress.timeFraction
@@ -50,18 +51,26 @@
         />
         <div
           v-if="!otaProgress.fallbackMode"
-          class="row justify-between text-caption q-mb-md"
+          class="step-track q-mb-md"
         >
-          <span :class="otaProgress.step === 1 ? 'step-active' : 'step-dim'"
+          <span
+            class="step-label"
+            :class="otaProgress.step === 1 ? 'step-active' : 'step-dim'"
             >Preparing</span
           >
-          <span :class="otaProgress.step === 2 ? 'step-active' : 'step-dim'"
+          <span
+            class="step-label"
+            :class="otaProgress.step === 2 ? 'step-active' : 'step-dim'"
             >Downloading</span
           >
-          <span :class="otaProgress.step === 3 ? 'step-active' : 'step-dim'"
+          <span
+            class="step-label"
+            :class="otaProgress.step === 3 ? 'step-active' : 'step-dim'"
             >Verifying</span
           >
-          <span :class="otaProgress.step === 4 ? 'step-active' : 'step-dim'"
+          <span
+            class="step-label"
+            :class="otaProgress.step === 4 ? 'step-active' : 'step-dim'"
             >Rebooting</span
           >
         </div>
@@ -163,8 +172,47 @@ export default {
   font-weight: 600;
 }
 
+.status-chip {
+  min-width: 34px;
+  height: 26px;
+  padding: 0 8px;
+  border-radius: 13px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  color: white;
+}
+
+.status-chip-primary {
+  background: #1e88e5;
+}
+
+.status-chip-positive {
+  background: #21ba45;
+}
+
+.status-chip-negative {
+  background: #c10015;
+}
+
 .step-dim {
   color: rgba(255, 255, 255, 0.35);
+}
+
+.step-track {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.step-label {
+  display: block;
+  text-align: center;
+  font-size: 12px;
+  line-height: 1.2;
 }
 
 .ota-log {

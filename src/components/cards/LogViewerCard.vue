@@ -1,13 +1,13 @@
 <template>
-  <MyCard icon="article" title="Log Viewer">
+  <MyCard icon="article" title="Log Viewer" v-model:collapsed="cardCollapsed">
     <q-card-section>
       <div class="row items-end q-col-gutter-sm">
         <div class="col-12 col-md-6">
           <q-input
             v-model="collectorHost"
             label="Collector IPv4"
-            hint="Example: 192.168.29.100"
-            @blur="persistCollectorTarget"
+            hint="Managed by Rsyslog Settings"
+            disable
           />
         </div>
         <div class="col-12 col-md-2">
@@ -213,6 +213,7 @@ export default {
   setup() {
     const controllersStore = useControllersStore();
     const configStore = configDataStore();
+    const cardCollapsed = ref(true);
     const defaultCollectorHost =
       window.location.hostname &&
       window.location.hostname !== "localhost" &&
@@ -234,7 +235,6 @@ export default {
     const logSendingEnabled = ref(true);
     const fullscreen = ref(false);
     const serviceDetected = ref(false);
-    const rsyslogConfigured = ref(false);
     const statusMessage = ref("Idle");
     const downloadScope = ref(
       localStorage.getItem("lightinator-log-download-scope") || "all",
@@ -253,6 +253,12 @@ export default {
 
     const currentControllerIp = computed(
       () => controllersStore.currentController?.ip_address || "",
+    );
+    const configuredRsyslogEnabled = computed(
+      () => Boolean(configStore.data?.network?.rsyslog?.enabled),
+    );
+    const configuredRsyslogHost = computed(
+      () => normalizeHost(configStore.data?.network?.rsyslog?.host || ""),
     );
 
     const statusClass = computed(() => {
@@ -302,6 +308,24 @@ export default {
       return `http://${host}:${port}`;
     });
 
+    const canUseConfiguredHost = computed(() => {
+      if (!isIpv4Address(configuredRsyslogHost.value)) {
+        return false;
+      }
+      if (!currentControllerIp.value) {
+        return false;
+      }
+      return configuredRsyslogHost.value !== currentControllerIp.value;
+    });
+
+    const canPollLogs = computed(
+      () =>
+        !cardCollapsed.value &&
+        configuredRsyslogEnabled.value &&
+        Boolean(currentControllerIp.value) &&
+        canUseConfiguredHost.value,
+    );
+
     const isIpv4Address = (value) => {
       const parts = String(value || "").trim().split(".");
       if (parts.length !== 4) {
@@ -314,21 +338,6 @@ export default {
         const num = Number.parseInt(part, 10);
         return num >= 0 && num <= 255;
       });
-    };
-
-    const autoConfigureControllerRsyslog = async ({ ip, udpPort }) => {
-      if (!currentControllerIp.value) {
-        return;
-      }
-
-      await configStore.updateMultipleData(
-        {
-          "network.rsyslog.enabled": true,
-          "network.rsyslog.host": ip,
-          "network.rsyslog.port": udpPort,
-        },
-        true,
-      );
     };
 
     const updateLogSending = async (enabled) => {
@@ -346,11 +355,19 @@ export default {
       sendingToggleLoading.value = true;
       try {
         if (enabled) {
-          await autoConfigureControllerRsyslog({
-            ip: collectorHost.value,
-            udpPort: 5514,
-          });
-          statusMessage.value = `Controller log sending enabled (${collectorHost.value}:5514).`;
+          if (!isIpv4Address(configuredRsyslogHost.value)) {
+            throw new Error("Configure a valid rsyslog host in Rsyslog Settings first");
+          }
+          if (configuredRsyslogHost.value === currentControllerIp.value) {
+            throw new Error("Rsyslog host must not be the controller IP");
+          }
+          await configStore.updateMultipleData(
+            {
+              "network.rsyslog.enabled": true,
+            },
+            true,
+          );
+          statusMessage.value = `Controller log sending enabled (${configuredRsyslogHost.value}).`;
         } else {
           await configStore.updateMultipleData(
             {
@@ -360,7 +377,6 @@ export default {
           );
           statusMessage.value = "Controller log sending disabled.";
         }
-        rsyslogConfigured.value = true;
       } catch (error) {
         logSendingEnabled.value = previous;
         statusMessage.value = `Error updating log sending: ${error.message}`;
@@ -419,6 +435,11 @@ export default {
       raw: record.raw || record.message || "",
     });
 
+    const syncCollectorHostFromRsyslog = () => {
+      collectorHost.value = configuredRsyslogHost.value;
+      persistCollectorTarget();
+    };
+
     const scrollToBottom = async () => {
       await nextTick();
       if (fullscreen.value && logViewerFullscreenEl.value) {
@@ -439,12 +460,25 @@ export default {
         return;
       }
 
-      persistCollectorTarget();
-      if (!isIpv4Address(collectorHost.value)) {
+      if (!configuredRsyslogEnabled.value) {
         serviceDetected.value = false;
-        statusMessage.value = "Please enter a valid collector IPv4 address.";
+        statusMessage.value = "Rsyslog is disabled in Rsyslog Settings.";
         return;
       }
+
+      if (!isIpv4Address(configuredRsyslogHost.value)) {
+        serviceDetected.value = false;
+        statusMessage.value = "Please set a valid Rsyslog Host in Rsyslog Settings.";
+        return;
+      }
+
+      if (configuredRsyslogHost.value === currentControllerIp.value) {
+        serviceDetected.value = false;
+        statusMessage.value = "Rsyslog Host must not be the selected controller IP.";
+        return;
+      }
+
+      syncCollectorHostFromRsyslog();
 
       const httpPort = normalizePort(collectorPort.value);
       if (!httpPort) {
@@ -462,18 +496,8 @@ export default {
         const previousLastRaw = remoteLogs.value.at(-1)?.raw;
         remoteLogs.value = (payload.items || []).map(mapRecord);
         nextBefore.value = payload.nextBefore;
-        const wasConfigured = rsyslogConfigured.value;
-        if (!wasConfigured) {
-          await autoConfigureControllerRsyslog({
-            ip: collectorHost.value,
-            udpPort: 5514,
-          });
-          rsyslogConfigured.value = true;
-        }
         serviceDetected.value = true;
-        statusMessage.value = `Connected. Loaded ${remoteLogs.value.length} log entries.${
-          !wasConfigured ? ` Controller rsyslog set to ${collectorHost.value}:5514.` : ""
-        }`;
+        statusMessage.value = `Connected. Loaded ${remoteLogs.value.length} log entries.`;
         const hasNewTail = previousLastRaw !== remoteLogs.value.at(-1)?.raw;
         if (hasNewTail) {
           await scrollToBottom();
@@ -490,6 +514,13 @@ export default {
       if (!currentControllerIp.value || nextBefore.value === null) {
         return;
       }
+
+      if (!configuredRsyslogEnabled.value || !canUseConfiguredHost.value) {
+        statusMessage.value = "Enable rsyslog and configure a valid non-controller Rsyslog Host first.";
+        return;
+      }
+
+      syncCollectorHostFromRsyslog();
 
       loading.value = true;
       try {
@@ -560,13 +591,13 @@ export default {
         return;
       }
 
-      persistCollectorTarget();
-      persistDownloadPreferences();
-
-      if (!isIpv4Address(collectorHost.value)) {
-        statusMessage.value = "Please enter a valid collector IPv4 address.";
+      if (!configuredRsyslogEnabled.value || !canUseConfiguredHost.value) {
+        statusMessage.value = "Enable rsyslog and configure a valid non-controller Rsyslog Host first.";
         return;
       }
+
+      syncCollectorHostFromRsyslog();
+      persistDownloadPreferences();
 
       const httpPort = normalizePort(collectorPort.value);
       if (!httpPort) {
@@ -620,10 +651,37 @@ export default {
     };
 
     watch(currentControllerIp, () => {
-      rsyslogConfigured.value = false;
       logSendingEnabled.value = true;
-      refreshLogs();
+      if (canPollLogs.value && pollTimer) {
+        refreshLogs();
+      }
     });
+
+    watch(cardCollapsed, (isCollapsed) => {
+      if (isCollapsed) {
+        stopPolling();
+      } else {
+        if (canPollLogs.value) {
+          refreshLogs();
+          startPolling();
+        }
+      }
+    });
+
+    watch(
+      [configuredRsyslogEnabled, configuredRsyslogHost, currentControllerIp],
+      () => {
+        if (canPollLogs.value) {
+          syncCollectorHostFromRsyslog();
+          if (pollTimer) {
+            refreshLogs();
+          }
+        } else {
+          stopPolling();
+        }
+      },
+      { immediate: true },
+    );
 
     watch(
       () => configStore.data?.network?.rsyslog?.enabled,
@@ -640,11 +698,16 @@ export default {
     });
 
     const startPolling = () => {
+      if (!canPollLogs.value) {
+        return;
+      }
       if (pollTimer) {
         clearInterval(pollTimer);
       }
       pollTimer = setInterval(() => {
-        refreshLogs();
+        if (canPollLogs.value) {
+          refreshLogs();
+        }
       }, pollMs);
     };
 
@@ -658,8 +721,6 @@ export default {
     onMounted(() => {
       persistCollectorTarget();
       persistDownloadPreferences();
-      refreshLogs();
-      startPolling();
     });
 
     onUnmounted(() => {
@@ -669,6 +730,7 @@ export default {
     return {
       collectorHost,
       collectorPort,
+      cardCollapsed,
       currentControllerIp,
       displayLogs,
       canLoadOlder,

@@ -73,6 +73,7 @@ export default {
     let countdownTimer = null;
     let fallbackProgressInterval = null;
     let fallbackReloadTimer = null;
+    let otaProgressDialog = null;
 
     const ws = useWebSocket();
 
@@ -172,6 +173,10 @@ export default {
       clearInterval(countdownTimer);
       clearInterval(fallbackProgressInterval);
       clearTimeout(fallbackReloadTimer);
+      if (otaProgressDialog) {
+        otaProgressDialog.hide();
+        otaProgressDialog = null;
+      }
     });
 
     const cleanupMountedIcons = () => {
@@ -507,6 +512,17 @@ export default {
             url.searchParams.set("_t", Date.now());
             window.location.replace(url.toString());
           }, totalDuration);
+
+          // Open progress dialog immediately so users get instant feedback
+          // even if HTTP/WS startup takes a while.
+          if (otaProgressDialog) {
+            otaProgressDialog.hide();
+          }
+          otaProgressDialog = Dialog.create({
+            component: FirmwareUpdateProgressDialog,
+            componentProps: { otaProgress },
+            persistent: true,
+          });
         }
 
         const postResponse = await fetch(
@@ -525,25 +541,27 @@ export default {
           if (controller.id === controllersStore.currentController.id) {
             clearInterval(fallbackProgressInterval);
             clearTimeout(fallbackReloadTimer);
-            otaProgress.value.active = false;
+            otaProgress.value = {
+              ...otaProgress.value,
+              active: true,
+              fallbackMode: false,
+              step: 0,
+              message: `Update request failed (HTTP ${postResponse.status})`,
+              willReboot: false,
+            };
+            otaProgress.value.statusHistory.push(
+              `Update request failed (HTTP ${postResponse.status})`,
+            );
+          } else {
+            Dialog.create({
+              title: "Update failed",
+              message: `Update failed for ${controller.hostname}! status: ${postResponse.status}`,
+              color: "negative",
+              icon: "report_problem",
+              persistent: true,
+            });
           }
-          Dialog.create({
-            title: "Update failed",
-            message: `Update failed for ${controller.hostname}! status: ${postResponse.status}`,
-            color: "negative",
-            icon: "report_problem",
-            persistent: true,
-          });
           return { success: false };
-        }
-
-        // POST succeeded — open the dialog (timers + WS handler are already wired up)
-        if (controller.id === controllersStore.currentController.id) {
-          Dialog.create({
-            component: FirmwareUpdateProgressDialog,
-            componentProps: { otaProgress },
-            persistent: true,
-          });
         }
 
         // For batch updates, verify reboot by checking uptime
