@@ -66,7 +66,7 @@ function ensureSpriteLoaded({ forceReload = false } = {}) {
   }
 
   if (!spriteLoadPromise) {
-    const cacheMode = forceReload ? "reload" : "no-store";
+    const cacheMode = forceReload ? "reload" : "default";
     spriteLoadPromise = fetch(getSpriteUrl(forceReload), { cache: cacheMode })
       .then((response) => {
         if (!response.ok) {
@@ -102,6 +102,8 @@ function ensureSpriteLoaded({ forceReload = false } = {}) {
 
   return spriteLoadPromise;
 }
+
+export { ensureSpriteLoaded };
 
 export default {
   name: "svgIcon",
