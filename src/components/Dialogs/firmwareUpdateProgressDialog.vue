@@ -49,28 +49,25 @@
           rounded
           class="q-mb-sm"
         />
-        <div
-          v-if="!otaProgress.fallbackMode"
-          class="step-track q-mb-md"
-        >
+        <div class="step-track q-mb-md">
           <span
             class="step-label"
-            :class="otaProgress.step === 1 ? 'step-active' : 'step-dim'"
+            :class="displayStep === 1 ? 'step-active' : 'step-dim'"
             >Preparing</span
           >
           <span
             class="step-label"
-            :class="otaProgress.step === 2 ? 'step-active' : 'step-dim'"
+            :class="displayStep === 2 ? 'step-active' : 'step-dim'"
             >Downloading</span
           >
           <span
             class="step-label"
-            :class="otaProgress.step === 3 ? 'step-active' : 'step-dim'"
+            :class="displayStep === 3 ? 'step-active' : 'step-dim'"
             >Verifying</span
           >
           <span
             class="step-label"
-            :class="otaProgress.step === 4 ? 'step-active' : 'step-dim'"
+            :class="displayStep === 4 ? 'step-active' : 'step-dim'"
             >Rebooting</span
           >
         </div>
@@ -140,6 +137,7 @@
 </template>
 
 <script>
+import { computed } from "vue";
 import { useDialogPluginComponent } from "quasar";
 
 export default {
@@ -155,10 +153,28 @@ export default {
 
   setup(props) {
     const { dialogRef, onDialogHide } = useDialogPluginComponent();
+    const displayStep = computed(() => {
+      if (!props.otaProgress?.fallbackMode) {
+        return props.otaProgress?.step ?? 1;
+      }
+
+      const fraction = Number(props.otaProgress?.timeFraction || 0);
+      if (fraction < 0.2) {
+        return 1;
+      }
+      if (fraction < 0.75) {
+        return 2;
+      }
+      if (fraction < 0.92) {
+        return 3;
+      }
+      return 4;
+    });
 
     return {
       dialogRef,
       onDialogHide,
+      displayStep,
       // pass the ref through so template auto-unwraps it
       otaProgress: props.otaProgress,
     };
@@ -168,7 +184,7 @@ export default {
 
 <style scoped>
 .step-active {
-  color: white;
+  color: #1e88e5;
   font-weight: 600;
 }
 
@@ -199,7 +215,7 @@ export default {
 }
 
 .step-dim {
-  color: rgba(255, 255, 255, 0.35);
+  color: rgba(0, 0, 0, 0.45);
 }
 
 .step-track {

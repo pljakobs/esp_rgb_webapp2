@@ -32,7 +32,7 @@
 </template>
 
 <script>
-import { ref, nextTick, createApp, h, onUnmounted, watch } from "vue";
+import { reactive, ref, nextTick, createApp, h, onUnmounted, watch } from "vue";
 import { Dialog, Notify } from "quasar";
 import { configDataStore } from "src/stores/configDataStore";
 import { infoDataStore, normalizeInfoData } from "src/stores/infoDataStore";
@@ -73,7 +73,45 @@ export default {
     let countdownTimer = null;
     let fallbackProgressInterval = null;
     let fallbackReloadTimer = null;
+    let otaProgressWatchdogTimer = null;
     let otaProgressDialog = null;
+
+    const clearOtaProgressWatchdog = () => {
+      clearTimeout(otaProgressWatchdogTimer);
+      otaProgressWatchdogTimer = null;
+    };
+
+    const armOtaProgressWatchdog = () => {
+      clearOtaProgressWatchdog();
+      otaProgressWatchdogTimer = setTimeout(() => {
+        if (!otaProgress.value.active) {
+          return;
+        }
+        if (otaProgress.value.step >= 4 || otaProgress.value.step === 0) {
+          return;
+        }
+
+        otaProgress.value.fallbackMode = true;
+        otaProgress.value.message = "OTA in progress (waiting for status updates)...";
+
+        clearInterval(countdownTimer);
+        otaProgress.value.reloadCountdown = 20;
+        countdownTimer = setInterval(() => {
+          otaProgress.value.reloadCountdown -= 1;
+          if (otaProgress.value.reloadCountdown <= 0) {
+            clearInterval(countdownTimer);
+          }
+        }, 1000);
+
+        clearTimeout(reloadTimer);
+        reloadTimer = setTimeout(() => {
+          clearInterval(countdownTimer);
+          const url = new URL(window.location.href);
+          url.searchParams.set("_t", Date.now());
+          window.location.replace(url.toString());
+        }, 20000);
+      }, 30000);
+    };
 
     const ws = useWebSocket();
 
@@ -115,6 +153,7 @@ export default {
       fallbackProgressInterval = null;
       clearTimeout(fallbackReloadTimer);
       fallbackReloadTimer = null;
+      armOtaProgressWatchdog();
 
       const step = params?.status ?? 0;
       const message = params?.message ?? "";
@@ -129,6 +168,7 @@ export default {
       }
 
       if (step === 4) {
+        clearOtaProgressWatchdog();
         // Step 4: OTA successful, device is rebooting — reload after countdown
         otaProgress.value.reloadCountdown = 4;
         countdownTimer = setInterval(() => {
@@ -145,6 +185,7 @@ export default {
           window.location.replace(url.toString());
         }, 4000);
       } else if (step === 0) {
+        clearOtaProgressWatchdog();
         clearTimeout(reloadTimer);
         clearInterval(countdownTimer);
         // If the firmware is rebooting after the failure (watchdog timeout),
@@ -169,6 +210,7 @@ export default {
     });
 
     onUnmounted(() => {
+      clearOtaProgressWatchdog();
       clearTimeout(reloadTimer);
       clearInterval(countdownTimer);
       clearInterval(fallbackProgressInterval);
@@ -477,6 +519,7 @@ export default {
         // BEFORE sending the POST. The firmware can send ota_status WS messages
         // before the HTTP response arrives, so we must not reset state after fetch().
         if (controller.id === controllersStore.currentController.id) {
+          clearOtaProgressWatchdog();
           clearInterval(fallbackProgressInterval);
           clearTimeout(fallbackReloadTimer);
 
@@ -513,6 +556,8 @@ export default {
             window.location.replace(url.toString());
           }, totalDuration);
 
+          armOtaProgressWatchdog();
+
           // Open progress dialog immediately so users get instant feedback
           // even if HTTP/WS startup takes a while.
           if (otaProgressDialog) {
@@ -525,20 +570,47 @@ export default {
           });
         }
 
-        const postResponse = await fetch(
-          `http://${controller.ip_address}/update`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(selectedFirmware.files),
-          },
-        );
+        const maxSendRetries = 3;
+        const sendRetryDelaysMs = [1000, 2500, 5000];
+        let postResponse = null;
+        let lastSendError = null;
 
-        if (!postResponse.ok) {
+        for (let attempt = 1; attempt <= maxSendRetries; attempt += 1) {
+          try {
+            postResponse = await fetch(
+              `http://${controller.ip_address}/update`,
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify(selectedFirmware.files),
+              },
+            );
+
+            if (postResponse.ok) {
+              break;
+            }
+
+            lastSendError = new Error(`HTTP ${postResponse.status}`);
+          } catch (error) {
+            lastSendError = error;
+          }
+
+          if (attempt < maxSendRetries) {
+            const waitMs = sendRetryDelaysMs[attempt - 1] || 1000;
+            await new Promise((resolve) => setTimeout(resolve, waitMs));
+          }
+        }
+
+        if (!postResponse || !postResponse.ok) {
+          const failureMessage = postResponse
+            ? `Update request failed after ${maxSendRetries} attempts (HTTP ${postResponse.status})`
+            : `Update request failed after ${maxSendRetries} attempts (${lastSendError?.message || "network error"})`;
+
           // Cancel fallback timers — update never started
           if (controller.id === controllersStore.currentController.id) {
+            clearOtaProgressWatchdog();
             clearInterval(fallbackProgressInterval);
             clearTimeout(fallbackReloadTimer);
             otaProgress.value = {
@@ -546,16 +618,14 @@ export default {
               active: true,
               fallbackMode: false,
               step: 0,
-              message: `Update request failed (HTTP ${postResponse.status})`,
+              message: failureMessage,
               willReboot: false,
             };
-            otaProgress.value.statusHistory.push(
-              `Update request failed (HTTP ${postResponse.status})`,
-            );
+            otaProgress.value.statusHistory.push(failureMessage);
           } else {
             Dialog.create({
               title: "Update failed",
-              message: `Update failed for ${controller.hostname}! status: ${postResponse.status}`,
+              message: `${failureMessage} for ${controller.hostname}`,
               color: "negative",
               icon: "report_problem",
               persistent: true,
@@ -666,30 +736,96 @@ export default {
       if (updating.value) return;
       updating.value = true;
 
-      // Ping all controllers to determine reachability
-      const pingController = async (controller) => {
-        try {
-          const response = await fetch(`http://${controller.ip_address}/ping`, {
-            method: "GET",
-            timeout: 1000,
-          });
-          if (response.ok) {
-            const data = await response.json();
-            return data.ping === "pong";
+      const selectionState = reactive({
+        controllers: [],
+        loading: true,
+        loadingMessage: `Scanning controllers and building update list... (detected 0/${controllersStore.data.length})`,
+        summaryHtml: "",
+      });
+
+      const selectionDialog = Dialog.create({
+        component: ControllerSelectionDialog,
+        componentProps: {
+          scanState: selectionState,
+        },
+        persistent: true,
+      });
+
+      // Ping all controllers to determine reachability, with retry backoff.
+      const pingRetryDelaysMs = [1000, 2500, 5000];
+      const maxPingRetries = 3;
+      let scannedControllers = 0;
+      const totalControllers = controllersStore.data.length;
+      let detectedControllers = 0;
+
+      const pingControllerWithRetry = async (controller) => {
+        let lastError = null;
+
+        for (let attempt = 1; attempt <= maxPingRetries; attempt += 1) {
+          try {
+            const response = await fetchWithTimeout(
+              `http://${controller.ip_address}/ping`,
+              {
+                method: "GET",
+              },
+              1000,
+            );
+
+            if (response.ok) {
+              const data = await response.json();
+              if (data.ping === "pong") {
+                return { reachable: true, attempts: attempt };
+              }
+              lastError = new Error("Invalid ping payload");
+            } else {
+              lastError = new Error(`HTTP ${response.status}`);
+            }
+          } catch (error) {
+            lastError = error;
           }
-        } catch (e) {}
-        return false;
+
+          if (attempt < maxPingRetries) {
+            const waitMs = pingRetryDelaysMs[attempt - 1] || 1000;
+            selectionState.loading = true;
+            selectionState.loadingMessage = `Scanning controllers (${scannedControllers}/${totalControllers}) - detected ${detectedControllers}/${totalControllers} - retrying ${controller.hostname} in ${Math.round(waitMs / 1000)}s (attempt ${attempt + 1}/${maxPingRetries})...`;
+            await new Promise((resolve) => setTimeout(resolve, waitMs));
+          }
+        }
+
+        return {
+          reachable: false,
+          attempts: maxPingRetries,
+          error: lastError?.message || "ping failed",
+        };
       };
 
       const pingResults = await Promise.all(
         controllersStore.data.map(async (controller) => {
-          const reachable = await pingController(controller);
-          return { ...controller, reachable };
+          selectionState.loading = true;
+          selectionState.loadingMessage = `Scanning controllers (${scannedControllers}/${totalControllers}) - detected ${detectedControllers}/${totalControllers} - checking ${controller.hostname}...`;
+
+          const { reachable, attempts } = await pingControllerWithRetry(controller);
+          scannedControllers += 1;
+          if (reachable) {
+            detectedControllers += 1;
+          }
+
+          const temporarilyUnavailable = !reachable && attempts >= maxPingRetries;
+
+          selectionState.loading = true;
+          selectionState.loadingMessage = `Scanning controllers (${scannedControllers}/${totalControllers}) - detected ${detectedControllers}/${totalControllers}...`;
+
+          return { ...controller, reachable, temporarilyUnavailable };
         }),
       );
 
-      // Controllers to include: all reachable
-      const availableControllers = pingResults.filter((c) => c.reachable);
+      // Controllers to include in list: all known controllers.
+      // Reachability controls selectability.
+      const listControllers = pingResults.map((c) => ({
+        ...c,
+        selectable: Boolean(c.reachable),
+      }));
+      const availableControllers = listControllers.filter((c) => c.selectable);
       // Unreachable but flagged visible
       const unreachableVisible = pingResults.filter(
         (c) => c.visible && !c.reachable,
@@ -700,12 +836,18 @@ export default {
       );
       // Excluded: unreachable
       const excludedControllers = pingResults.filter((c) => !c.reachable);
+      const temporarilyUnavailableControllers = excludedControllers.filter(
+        (c) => c.temporarilyUnavailable,
+      );
 
       if (availableControllers.length === 0) {
+        selectionDialog.hide();
         Dialog.create({
           title: "No Controllers Reachable",
           message: `No controllers are reachable for update.<br><br>
             Total controllers: ${controllersStore.data.length}<br>
+            Detected (reachable): ${availableControllers.length}/${controllersStore.data.length}<br>
+            Temporarily unavailable (3 ping failures): ${temporarilyUnavailableControllers.length}<br>
             Visible (online): ${controllersStore.data.filter((c) => c.visible === true).length}<br>
             Current controller: ${controllersStore.currentController.hostname}`,
           html: true,
@@ -719,12 +861,14 @@ export default {
       const summaryNote = `
         <div class="q-mb-md">
           <b>Controller reachability summary:</b><br>
+          <div class="q-mb-sm">Detected (reachable): <b>${availableControllers.length}</b> of <b>${controllersStore.data.length}</b> known controllers.</div>
           <ul>
+            <li><b>${temporarilyUnavailableControllers.length}</b> controller(s) marked <i>temporarily unavailable</i> after 3 ping attempts.</li>
             <li><b>${unreachableVisible.length}</b> controller(s) flagged visible but unreachable.</li>
             <li><b>${reachableNotVisible.length}</b> controller(s) not flagged visible but reachable.</li>
             <li><b>${excludedControllers.length}</b> controller(s) excluded (unreachable):<br>
               <ul>
-                ${excludedControllers.map((c) => `<li>${c.hostname} (${c.ip_address})${c.visible ? " [visible]" : ""}</li>`).join("")}
+                ${excludedControllers.map((c) => `<li>${c.hostname} (${c.ip_address})${c.visible ? " [visible]" : ""}${c.temporarilyUnavailable ? " [temporarily unavailable]" : ""}</li>`).join("")}
               </ul>
             </li>
           </ul>
@@ -739,14 +883,12 @@ export default {
         </details>
       `;
 
-      Dialog.create({
-        component: ControllerSelectionDialog,
-        componentProps: {
-          controllers: availableControllers,
-        },
-        message: summaryDropdown,
-        html: true,
-      })
+      selectionState.controllers = listControllers;
+      selectionState.loading = false;
+      selectionState.loadingMessage = "";
+      selectionState.summaryHtml = summaryDropdown;
+
+      selectionDialog
         .onOk(async (selectedControllers) => {
           // selectedControllers contains the array of selected controller objects
           if (!selectedControllers || selectedControllers.length === 0) {
@@ -1218,6 +1360,7 @@ export default {
                 let controllerInfo = null;
                 let retryCount = 0;
                 const maxRetries = 3;
+                const infoRetryDelaysMs = [1000, 2500, 5000];
 
                 while (!controllerInfo && retryCount < maxRetries) {
                   try {
@@ -1240,7 +1383,13 @@ export default {
                       break;
                     }
 
-                    await new Promise((resolve) => setTimeout(resolve, 1000)); // Wait 1 second between retries
+                    const waitMs = infoRetryDelaysMs[retryCount - 1] || 1000;
+                    updateStatus(
+                      controller,
+                      "checking",
+                      `Attempt ${retryCount}/${maxRetries} failed: ${errorMessage}. Retrying in ${Math.round(waitMs / 1000)}s...`,
+                    );
+                    await new Promise((resolve) => setTimeout(resolve, waitMs));
                   }
                 }
 
