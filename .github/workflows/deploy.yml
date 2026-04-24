@@ -4,7 +4,7 @@ on:
   workflow_run:
     workflows: ["Frontend Tests"]
     types: [completed]
-    branches: [devel, testing, stable]
+    branches: [experimental, devel, testing, stable]
 
 permissions:
   contents: write

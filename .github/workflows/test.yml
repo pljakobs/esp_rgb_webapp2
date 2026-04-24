@@ -1,16 +1,18 @@
 name: Frontend Tests
 
 on:
-    push:
-        branches:
-            - devel
-            - testing
-            - stable
-    pull_request:
-        branches:
-            - devel
-            - testing
-            - stable
+  push:
+    branches:
+      - experimental
+      - devel
+      - testing
+      - stable
+  pull_request:
+    branches:
+      - experimental
+      - devel
+      - testing
+      - stable
 
 jobs:
     test:
