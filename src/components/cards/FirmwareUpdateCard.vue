@@ -394,6 +394,24 @@ export default {
         // Set available firmware to our combined and filtered list
         availableFirmware.value = allFirmwareOptions;
 
+        // Keep firmware comment for the currently running build available in shared info state.
+        const currentBranch = getBranchFromVersion(infoData.data.git_version);
+        const currentVersion = infoData.data.git_version;
+        const currentType = infoData.data.build_type;
+        const currentSoc = infoData.data.soc;
+        const currentFirmware = allFirmwareOptions.find(
+          (fw) =>
+            fw.soc === currentSoc &&
+            (fw.branch || "stable") === currentBranch &&
+            fw.type === currentType &&
+            (fw.fw_version || fw.version) === currentVersion,
+        );
+
+        if (infoData.data) {
+          infoData.data.firmware_comment =
+            currentFirmware?.comment || currentFirmware?.fw_comment || "";
+        }
+
         // Sort by version and put current build type first for better UX
         availableFirmware.value.sort((a, b) => {
           // Put current build type first
