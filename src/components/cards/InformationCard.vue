@@ -6,7 +6,7 @@
     <q-card-section v-else class="info-section">
       <template v-for="(value, key) in infoData.data" :key="key">
         <!-- Nested object → sub-section -->
-        <template v-if="isObject(value)">
+        <template v-if="isObject(value) && !isFirmwareCommentKey(key)">
           <div class="section-header">{{ formatKey(key) }}</div>
           <div class="section-body">
             <div
@@ -20,16 +20,22 @@
           </div>
         </template>
         <!-- Scalar → plain row -->
-        <div v-else class="info-row">
+        <div v-else-if="!isFirmwareCommentKey(key)" class="info-row">
           <span class="info-label">{{ formatKey(key) }}</span>
           <span class="info-value">{{ value }}</span>
         </div>
       </template>
+
+      <div v-if="firmwareComment" class="firmware-comment-container">
+        <div class="section-header">Firmware Comment</div>
+        <div class="firmware-comment-block">{{ firmwareComment }}</div>
+      </div>
     </q-card-section>
   </MyCard>
 </template>
 
 <script>
+import { computed } from "vue";
 import { infoDataStore } from "src/stores/infoDataStore";
 import MyCard from "src/components/myCard.vue";
 
@@ -37,6 +43,12 @@ export default {
   components: { MyCard },
   setup() {
     const infoData = infoDataStore();
+
+    const firmwareCommentKeys = [
+      "firmware_comment",
+      "fw_comment",
+      "comment",
+    ];
 
     function formatKey(key) {
       return String(key)
@@ -48,7 +60,30 @@ export default {
       return val !== null && typeof val === "object" && !Array.isArray(val);
     }
 
-    return { infoData, formatKey, isObject };
+    function isFirmwareCommentKey(key) {
+      return firmwareCommentKeys.includes(String(key));
+    }
+
+    const firmwareComment = computed(() => {
+      if (!infoData.data) return "";
+
+      for (const key of firmwareCommentKeys) {
+        const value = infoData.data[key];
+        if (typeof value === "string" && value.trim()) {
+          return value;
+        }
+      }
+
+      return "";
+    });
+
+    return {
+      infoData,
+      formatKey,
+      isObject,
+      isFirmwareCommentKey,
+      firmwareComment,
+    };
   },
 };
 </script>
@@ -89,5 +124,19 @@ export default {
 
 .section-body {
   padding-left: 12px;
+}
+
+.firmware-comment-container {
+  margin-top: 12px;
+}
+
+.firmware-comment-block {
+  margin-top: 6px;
+  padding: 8px;
+  border: 1px solid var(--table-border-color, rgba(0, 0, 0, 0.2));
+  border-radius: 6px;
+  white-space: pre-wrap;
+  max-height: 180px;
+  overflow-y: auto;
 }
 </style>

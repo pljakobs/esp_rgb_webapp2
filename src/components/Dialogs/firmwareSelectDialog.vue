@@ -117,6 +117,14 @@
                         formatDate(scope.opt.date)
                       }}</q-item-label>
                     </q-item-section>
+                    <q-item-section side v-if="getFirmwareComment(scope.opt.fw)">
+                      <q-icon name="info" size="16px" color="info" />
+                    </q-item-section>
+                    <q-tooltip v-if="getFirmwareComment(scope.opt.fw)">
+                      <div class="firmware-comment-tooltip">
+                        {{ getFirmwareComment(scope.opt.fw) }}
+                      </div>
+                    </q-tooltip>
                   </q-item>
                 </template>
               </mySelect>
@@ -135,6 +143,12 @@
             <div><strong>Type:</strong> {{ selectedFirmware.type }}</div>
             <div>
               <strong>Version:</strong> {{ selectedFirmware.fw_version }}
+            </div>
+            <div v-if="selectedFirmwareComment" class="q-mt-sm">
+              <strong>Comment:</strong>
+              <div class="firmware-comment-preview q-mt-xs">
+                {{ selectedFirmwareComment }}
+              </div>
             </div>
           </div>
         </div>
@@ -324,6 +338,15 @@ export default {
       return version ? version.fw : null;
     });
 
+    const getFirmwareComment = (firmware) => {
+      if (!firmware) return "";
+      return firmware.comment || firmware.fw_comment || firmware.firmware_comment || "";
+    };
+
+    const selectedFirmwareComment = computed(() =>
+      getFirmwareComment(selectedFirmware.value),
+    );
+
     // Format date helper
     const formatDate = (dateStr) => {
       if (!dateStr) return "";
@@ -491,8 +514,10 @@ export default {
       availableTypes,
       availableVersions,
       selectedFirmware,
+      selectedFirmwareComment,
       formatDate,
       getBranchColor,
+      getFirmwareComment,
       startUpdate,
       updateButtonLabel,
     };
@@ -542,6 +567,20 @@ export default {
   text-align: left;
   color: var(--field-value-color, var(--field-value-color-light));
   background-color: var(--table-item-bg, var(--table-item-bg-light)) !important;
+}
+
+.firmware-comment-tooltip {
+  max-width: 360px;
+  white-space: pre-wrap;
+}
+
+.firmware-comment-preview {
+  max-height: 120px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  border: 1px solid var(--table-border-color, rgba(0, 0, 0, 0.2));
+  border-radius: 4px;
+  padding: 6px;
 }
 
 /* Dark mode specific styles */
