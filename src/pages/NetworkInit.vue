@@ -464,6 +464,7 @@ import useWebSocket from "src/services/websocket";
 import { useControllersStore } from "src/stores/controllersStore.js";
 import { infoDataStore } from "src/stores/infoDataStore.js";
 import { configDataStore } from "src/stores/configDataStore";
+import { apiService } from "src/services/api";
 import { storeStatus } from "src/stores/storeConstants";
 import systemCommand from "src/services/systemCommands.js";
 import svgIcon from "src/components/svgIcon.vue";
@@ -715,17 +716,24 @@ export default {
     const fetchNetworks = async () => {
       try {
         if (controllers.currentController.ip_address) {
-          const response = await fetch(
-            `http://${controllers.currentController.ip_address}/networks`,
-            { method: "GET" },
+          const { jsonData, error } = await apiService.getNetworkData(
+            controllers.currentController,
           );
-          const responseJson = await response.json();
+
+          if (error || !jsonData) {
+            throw error || new Error("Could not fetch networks");
+          }
+
+          const responseJson = jsonData;
           responseJson.available.sort((a, b) => b.signal - a.signal);
           networks.value = responseJson["available"];
-          await fetch(
-            `http://${controllers.currentController.ip_address}/scan_networks`,
-            { method: "POST" },
+
+          const { error: scanError } = await apiService.scanNetworks(
+            controllers.currentController,
           );
+          if (scanError) {
+            throw scanError;
+          }
         }
       } catch (error) {
         console.error("Error fetching networks:", error);

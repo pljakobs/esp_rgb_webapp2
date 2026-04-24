@@ -1,5 +1,6 @@
 import { useControllersStore } from "src/stores/controllersStore";
 import initializeStores from "./initializeStores";
+import { apiService } from "./api";
 
 const sysCmd = async (cmd, data) => {
   const controllers = useControllersStore();
@@ -11,22 +12,18 @@ const sysCmd = async (cmd, data) => {
     throw err;
   }
   try {
-    const response = await fetch(
-      `http://${controllers.currentController.ip_address}/system`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ cmd, ...data }),
-      },
+    const { jsonData, error, status } = await apiService.systemCommand(
+      { cmd, ...data },
+      controllers.currentController,
     );
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+    if (error) {
+      throw new Error(
+        `System command failed${status ? ` (status: ${status})` : ""}: ${error.message || String(error)}`,
+      );
     }
 
-    const result = await response.json();
+    const result = jsonData;
     console.log("Command result:", result);
     return result;
   } catch (error) {

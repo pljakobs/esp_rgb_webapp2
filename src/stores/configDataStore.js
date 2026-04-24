@@ -40,6 +40,7 @@ export const configDataStore = defineStore("configDataStore", {
         if (error) {
           throw error;
         }
+
         console.log("config data fetched: ", JSON.stringify(jsonData));
         this.data = jsonData;
         this.status = storeStatus.READY;

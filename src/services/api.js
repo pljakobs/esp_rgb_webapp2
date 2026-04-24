@@ -1,5 +1,6 @@
 import { useControllersStore } from "../stores/controllersStore";
 import { retryDelay, requestTimeout, maxRetries } from "../stores/storeConstants";
+import useWebSocket, { wsStatus } from "./websocket.js";
 
 export class ApiService {
   constructor() {
@@ -243,6 +244,101 @@ export class ApiService {
 
   _sleep(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  _canUseWebSocketForController(controller = null) {
+    if (!controller) {
+      return true;
+    }
+
+    const current = this.controllersStore.currentController;
+    if (!current?.ip_address || !controller?.ip_address) {
+      return false;
+    }
+
+    return String(current.ip_address) === String(controller.ip_address);
+  }
+
+  async fetchJsonRpc(method, params = {}, controller = null, timeoutMs = 1500) {
+    if (!this._canUseWebSocketForController(controller)) {
+      return {
+        jsonData: null,
+        error: { message: "websocket controller mismatch" },
+        status: null,
+      };
+    }
+
+    const ws = useWebSocket();
+    if (ws.status?.value !== wsStatus.CONNECTED || typeof ws.request !== "function") {
+      return {
+        jsonData: null,
+        error: { message: "websocket not connected" },
+        status: null,
+      };
+    }
+
+    try {
+      const payload = await ws.request(method, params, timeoutMs);
+      const jsonData = payload?.message ?? payload;
+      if (!jsonData || typeof jsonData !== "object") {
+        return {
+          jsonData: null,
+          error: { message: "invalid websocket payload" },
+          status: null,
+        };
+      }
+
+      return { jsonData, error: null, status: null };
+    } catch (error) {
+      return { jsonData: null, error, status: null };
+    }
+  }
+
+  async _dispatchAction(
+    method,
+    params = {},
+    controller = null,
+    options = {},
+  ) {
+    const {
+      timeoutMs = 1200,
+      preferWebSocket = true,
+      allowHttpFallback = true,
+      httpEndpoint = method,
+      httpMethod = "POST",
+    } = options;
+
+    if (preferWebSocket) {
+      const wsResponse = await this.fetchJsonRpc(
+        method,
+        params,
+        controller,
+        timeoutMs,
+      );
+
+      if (!wsResponse.error && wsResponse.jsonData) {
+        return wsResponse;
+      }
+
+      if (!allowHttpFallback) {
+        return wsResponse;
+      }
+    }
+
+    if (!allowHttpFallback) {
+      return {
+        jsonData: null,
+        error: {
+          message: `No HTTP endpoint available for action '${method}'`,
+        },
+        status: null,
+      };
+    }
+
+    return this.fetchApi(httpEndpoint, controller, {
+      method: httpMethod,
+      body: params,
+    });
   }
 
   async _executeChunkedPost(
@@ -520,15 +616,25 @@ export class ApiService {
   }
 
   async getColorData(controller = null) {
+    const wsResponse = await this.fetchJsonRpc("color", {}, controller);
+    if (!wsResponse.error && wsResponse.jsonData) {
+      return wsResponse;
+    }
+
     return this.fetchApi("color", controller);
   }
 
   async getNetworkData(controller = null) {
+    const wsResponse = await this.fetchJsonRpc("networks", {}, controller);
+    if (!wsResponse.error && wsResponse.jsonData) {
+      return wsResponse;
+    }
+
     return this.fetchApi("networks", controller);
   }
 
   async getWifiData(controller = null) {
-    return this.fetchApi("networks", controller);
+    return this.getNetworkData(controller);
   }
 
   async getSystemData(controller = null) {
@@ -573,6 +679,11 @@ export class ApiService {
   }
 
   async getConfig(controller = null) {
+    const wsResponse = await this.fetchJsonRpc("config", {}, controller);
+    if (!wsResponse.error && wsResponse.jsonData) {
+      return wsResponse;
+    }
+
     return this.fetchApi("config", controller);
   }
 
@@ -596,7 +707,9 @@ export class ApiService {
 
   // Additional real endpoints from webserver.cpp
   async scanNetworks(controller = null) {
-    return this.fetchApi("scan_networks", controller, { method: "POST" });
+    return this._dispatchAction("scan_networks", {}, controller, {
+      httpEndpoint: "scan_networks",
+    });
   }
 
   async connect(data, controller = null) {
@@ -604,15 +717,78 @@ export class ApiService {
   }
 
   async systemCommand(data, controller = null) {
-    return this.fetchApi("system", controller, { method: "POST", body: data });
+    return this._dispatchAction("system", data, controller, {
+      httpEndpoint: "system",
+    });
   }
 
   async toggleOn(data, controller = null) {
-    return this.fetchApi("on", controller, { method: "POST", body: data });
+    return this.setOn(data, controller);
   }
 
   async toggleOff(data, controller = null) {
-    return this.fetchApi("off", controller, { method: "POST", body: data });
+    return this.setOff(data, controller);
+  }
+
+  async setColor(data, controller = null) {
+    return this._dispatchAction("color", data, controller, {
+      httpEndpoint: "color",
+    });
+  }
+
+  async stopAction(data = {}, controller = null) {
+    return this._dispatchAction("stop", data, controller, {
+      httpEndpoint: "stop",
+    });
+  }
+
+  async skipAction(data = {}, controller = null) {
+    return this._dispatchAction("skip", data, controller, {
+      httpEndpoint: "skip",
+    });
+  }
+
+  async pauseAction(data = {}, controller = null) {
+    return this._dispatchAction("pause", data, controller, {
+      httpEndpoint: "pause",
+    });
+  }
+
+  async continueAction(data = {}, controller = null) {
+    return this._dispatchAction("continue", data, controller, {
+      httpEndpoint: "continue",
+    });
+  }
+
+  async blinkAction(data = {}, controller = null) {
+    return this._dispatchAction("blink", data, controller, {
+      httpEndpoint: "blink",
+    });
+  }
+
+  async toggleAction(data = {}, controller = null) {
+    return this._dispatchAction("toggle", data, controller, {
+      httpEndpoint: "toggle",
+    });
+  }
+
+  async directAction(data = {}, controller = null) {
+    // There is no HTTP /direct endpoint; this action is JSON-RPC-only.
+    return this._dispatchAction("direct", data, controller, {
+      allowHttpFallback: false,
+    });
+  }
+
+  async setOn(data = {}, controller = null) {
+    return this._dispatchAction("on", data, controller, {
+      httpEndpoint: "on",
+    });
+  }
+
+  async setOff(data = {}, controller = null) {
+    return this._dispatchAction("off", data, controller, {
+      httpEndpoint: "off",
+    });
   }
 
   async getAllData(controller = null) {
@@ -656,10 +832,7 @@ export class ApiService {
   }
 
   async postColorData(data, controller = null) {
-    return this.fetchApi("color", controller, {
-      method: "POST",
-      body: data,
-    });
+    return this.setColor(data, controller);
   }
 
   async postNetworkData(data, controller = null) {
@@ -680,10 +853,7 @@ export class ApiService {
   }
 
   async postSystemData(data, controller = null) {
-    return this.fetchApi("system", controller, {
-      method: "POST",
-      body: data,
-    });
+    return this.systemCommand(data, controller);
   }
 
   async postConfig(data, controller = null) {
@@ -762,4 +932,14 @@ export const {
   postWifiData,
   postSystemData,
   postConfig,
+  setColor,
+  stopAction,
+  skipAction,
+  pauseAction,
+  continueAction,
+  blinkAction,
+  toggleAction,
+  directAction,
+  setOn,
+  setOff,
 } = apiService;

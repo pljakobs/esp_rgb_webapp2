@@ -1,6 +1,7 @@
 import { infoDataStore } from "src/stores/infoDataStore";
 import { useAppDataStore } from "src/stores/appDataStore";
 import { useControllersStore } from "src/stores/controllersStore";
+import { apiService } from "src/services/api";
 import { Notify } from "quasar";
 
 /**
@@ -439,18 +440,12 @@ async function applyScene(scene) {
       // Case 1: If there's only one item, send it directly without wrapping
       if (sequence.length === 1) {
         try {
-          const response = await fetch(`http://${ipAddress}/color`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(sequence[0]), // Send single item directly
+          const { error, status } = await apiService.setColor(sequence[0], {
+            ip_address: ipAddress,
           });
 
-          if (!response.ok) {
-            console.error(
-              `Error sending command to ${ipAddress}: ${response.status}`,
-            );
+          if (error) {
+            console.error(`Error sending command to ${ipAddress}:`, status || error);
           } else {
             console.log(`Command successfully sent to ${ipAddress}`);
           }
@@ -509,17 +504,15 @@ async function applyScene(scene) {
           }
 
           try {
-            const response = await fetch(`http://${ipAddress}/color`, {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({ cmds: chunk }),
-            });
+            const { error, status } = await apiService.setColor(
+              { cmds: chunk },
+              { ip_address: ipAddress },
+            );
 
-            if (!response.ok) {
+            if (error) {
               console.error(
-                `Error sending chunk ${i + 1}/${chunks.length} to ${ipAddress}: ${response.status}`,
+                `Error sending chunk ${i + 1}/${chunks.length} to ${ipAddress}:`,
+                status || error,
               );
               break; // Stop sending more chunks if one fails
             } else {
