@@ -32,13 +32,13 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.branch || github.event.workflow_run.head_branch }}
           token: ${{ secrets.GH_PAT }}
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: "24"
 
@@ -88,13 +88,13 @@ jobs:
           echo "${VERSION}" > dist/spa/VERSION
 
       - name: Upload SPA files to GitHub
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: spa-files
           path: dist/spa/
 
       - name: Upload fileList.h to GitHub
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: fileList.h
           path: ./fileList.h
@@ -122,14 +122,50 @@ jobs:
         run: |
           cp ./fileList.h gh-pages-content/
 
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v4
-        with:
-          personal_token: ${{ secrets.GH_PAT }}
-          publish_dir: ./gh-pages-content
-          publish_branch: gh-pages
-          keep_files: true
-          destination_dir: ${{ steps.get_branch.outputs.branch }}
+      - name: Publish branch artifacts to gh-pages
+        run: |
+          BRANCH="${{ steps.get_branch.outputs.branch }}"
+          PUBLISH_DIR="$RUNNER_TEMP/gh-pages-worktree"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          rm -rf "$PUBLISH_DIR"
+
+          if git ls-remote --exit-code --heads origin gh-pages >/dev/null 2>&1; then
+            git fetch origin gh-pages
+            git worktree add "$PUBLISH_DIR" origin/gh-pages
+          else
+            git worktree add --detach "$PUBLISH_DIR"
+            cd "$PUBLISH_DIR"
+            git checkout --orphan gh-pages
+            git rm -rf . >/dev/null 2>&1 || true
+            touch .nojekyll
+            git add .nojekyll
+            git commit -m "Initialize gh-pages"
+            git push origin gh-pages
+            cd "$GITHUB_WORKSPACE"
+            git worktree remove "$PUBLISH_DIR" --force
+            git fetch origin gh-pages
+            git worktree add "$PUBLISH_DIR" origin/gh-pages
+          fi
+
+          mkdir -p "$PUBLISH_DIR/$BRANCH"
+          find "$PUBLISH_DIR/$BRANCH" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
+          cp -a gh-pages-content/. "$PUBLISH_DIR/$BRANCH/"
+          touch "$PUBLISH_DIR/.nojekyll"
+
+          cd "$PUBLISH_DIR"
+          git add .
+          if git diff --cached --quiet; then
+            echo "No gh-pages changes to publish"
+          else
+            git commit -m "Deploy frontend artifacts for $BRANCH"
+            git push origin HEAD:gh-pages
+          fi
+
+          cd "$GITHUB_WORKSPACE"
+          git worktree remove "$PUBLISH_DIR" --force
 
       - name: Wait for GitHub Pages deployment
         run: |
