@@ -6,6 +6,19 @@ on:
     types: [completed]
     branches: [experimental, devel, testing, stable]
 
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to build'
+        required: true
+        default: 'devel'
+        type: choice
+        options:
+          - stable
+          - testing
+          - devel
+          - experimental
+
 permissions:
   contents: write
   pages: write
@@ -15,13 +28,13 @@ jobs:
   build:
     runs-on: ubuntu-latest
     # Only run if the triggering workflow succeeded
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.workflow_run.head_branch }}
+          ref: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.branch || github.event.workflow_run.head_branch }}
           token: ${{ secrets.GH_PAT }}
 
       - name: Set up Node.js
