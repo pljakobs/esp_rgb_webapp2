@@ -1,5 +1,9 @@
 <template>
-  <MyCard title="System Information" icon="info_outlined">
+  <MyCard
+    v-model:collapsed="cardCollapsed"
+    title="System Information"
+    icon="info_outlined"
+  >
     <q-card-section v-if="!infoData.data" class="text-caption text-grey">
       No data available.
     </q-card-section>
@@ -30,13 +34,69 @@
 </template>
 
 <script>
+import { onUnmounted, ref, watch } from "vue";
 import { infoDataStore } from "src/stores/infoDataStore";
 import MyCard from "src/components/myCard.vue";
 
 export default {
+  props: {
+    collapsed: {
+      type: Boolean,
+      default: true,
+    },
+  },
   components: { MyCard },
-  setup() {
+  setup(props) {
     const infoData = infoDataStore();
+    const cardCollapsed = ref(props.collapsed);
+    let refreshInterval = null;
+
+    async function refreshInfo() {
+      try {
+        await infoData.fetchData();
+      } catch (error) {
+        console.error("error refreshing system information:", error);
+      }
+    }
+
+    function stopRefreshLoop() {
+      if (refreshInterval) {
+        clearInterval(refreshInterval);
+        refreshInterval = null;
+      }
+    }
+
+    function startRefreshLoop() {
+      stopRefreshLoop();
+      refreshInfo();
+      refreshInterval = setInterval(() => {
+        refreshInfo();
+      }, 5000);
+    }
+
+    watch(
+      () => props.collapsed,
+      (collapsed) => {
+        cardCollapsed.value = collapsed;
+      },
+    );
+
+    watch(
+      cardCollapsed,
+      (collapsed) => {
+        if (collapsed) {
+          stopRefreshLoop();
+          return;
+        }
+
+        startRefreshLoop();
+      },
+      { immediate: true },
+    );
+
+    onUnmounted(() => {
+      stopRefreshLoop();
+    });
 
     function formatKey(key) {
       return String(key)
@@ -48,7 +108,7 @@ export default {
       return val !== null && typeof val === "object" && !Array.isArray(val);
     }
 
-    return { infoData, formatKey, isObject };
+    return { infoData, cardCollapsed, formatKey, isObject };
   },
 };
 </script>

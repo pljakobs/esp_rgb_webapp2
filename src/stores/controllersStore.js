@@ -1,6 +1,6 @@
 import { defineStore } from "pinia";
 import { localhost, storeStatus } from "./storeConstants";
-import useWebSocket from "src/services/websocket.js";
+import useWebSocket, { wsStatus } from "src/services/websocket.js";
 import { infoDataStore } from "src/stores/infoDataStore"; // Import infoDataStore
 import { apiService } from "src/services/api.js";
 
@@ -21,21 +21,54 @@ export const useControllersStore = defineStore("controllersStore", {
   },
 
   actions: {
+    async fetchHostsViaWebSocket(showAll = true, timeoutMs = 1200) {
+      const ws = useWebSocket();
+      if (ws.status?.value !== wsStatus.CONNECTED || typeof ws.request !== "function") {
+        return null;
+      }
+
+      try {
+        const params = await ws.request(
+          "hosts",
+          { all: showAll ? "1" : "0" },
+          timeoutMs,
+        );
+        const payload = params?.message ?? params;
+
+        if (Array.isArray(payload)) {
+          return { hosts: payload };
+        }
+        if (payload && Array.isArray(payload.hosts)) {
+          return payload;
+        }
+      } catch (error) {
+        console.warn("hosts websocket fetch failed, falling back to HTTP:", error?.message || error);
+      }
+
+      return null;
+    },
+
     async fetchData(retryCount = 0) {
       try {
         infoDataStore();
         console.log("controllers start fetching data");
         this.storeStatus = storeStatus.store.LOADING;
 
-        const { jsonData, error } = await apiService.getHosts(true);
-        if (error) {
-          this.storeStatus = storeStatus.store.ERROR;
-          this.error = error;
-          console.error("Error fetching controllers data:", error);
-          throw error;
+        let hostsResponse = await this.fetchHostsViaWebSocket(true);
+
+        if (!hostsResponse) {
+          const { jsonData, error } = await apiService.getHosts(true);
+          if (error) {
+            this.storeStatus = storeStatus.store.ERROR;
+            this.error = error;
+            console.error("Error fetching controllers data:", error);
+            throw error;
+          }
+          hostsResponse = jsonData;
         }
-        if (jsonData && Array.isArray(jsonData.hosts)) {
-          this.data = jsonData.hosts;
+
+        if (hostsResponse && Array.isArray(hostsResponse.hosts)) {
+          this.data = hostsResponse.hosts;
           // 1. If ip_address is numeric, match and update hostname, set controllers
           if (/^\d+\.\d+\.\d+\.\d+$/.test(localhost.ip_address)) {
             const match = this.data.find(

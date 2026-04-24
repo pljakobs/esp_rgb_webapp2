@@ -20,21 +20,33 @@ const startTime = Date.now();
 let lostConnectionTimeout = null;
 let reconnectTimeout = null;
 let reconnectAttempts = 0;
+let requestId = 1;
+const pendingRequests = new Map();
 //let manualClose = false;
 
 export default function useWebSocket() {
   function connect(url) {
-    state.url = url;
     if (url === null || url === undefined) {
       console.log("=> websocket url is null or undefined");
       return false;
-    } else if (state.status === wsStatus.CONNECTED) {
+    }
+
+    if (state.socket && state.url === url && state.socket.readyState === WebSocket.OPEN) {
       console.log("=> websocket is already connected");
       return state.socket;
-    } else if (state.status === wsStatus.CONNECTING) {
+    }
+
+    if (state.socket && state.url === url && state.socket.readyState === WebSocket.CONNECTING) {
       console.log("=> websocket is connecting");
       return false;
     }
+
+    if (state.socket && state.url && state.url !== url) {
+      console.log("=> websocket target changed, reconnecting from", state.url, "to", url);
+      destroy();
+    }
+
+    state.url = url;
 
     console.log("=> opening websocket for ", state.url);
     state.status = wsStatus.CONNECTING;
@@ -43,6 +55,7 @@ export default function useWebSocket() {
     state.socket.onopen = () => {
       console.log("=> websocket opened");
       state.status = wsStatus.CONNECTED;
+      reconnectAttempts = 0;
     };
 
     function handleKeepAlive(message) {
@@ -89,6 +102,13 @@ export default function useWebSocket() {
       state.data = message;
       const key = message.method;
       const id = message.id;
+
+      if (id !== undefined && pendingRequests.has(id)) {
+        const pending = pendingRequests.get(id);
+        pendingRequests.delete(id);
+        clearTimeout(pending.timeoutHandle);
+        pending.resolve(message.params ?? message.result ?? message);
+      }
       /*
       console.log(
         "=> websocket message",
@@ -107,11 +127,15 @@ export default function useWebSocket() {
     };
 
     state.socket.onerror = () => {
+      if (state.status !== wsStatus.DISCONNECTED) {
+        state.status = wsStatus.FAILED;
+      }
       reconnect();
     };
 
     state.socket.onclose = () => {
       console.log("=> websocket closing");
+      state.socket = null;
       if (state.status !== wsStatus.DISCONNECTED) {
         console.log(
           "=> websocket was not disconnected -> probably lost connection",
@@ -143,9 +167,28 @@ export default function useWebSocket() {
   }
 
   const send = (method, params) => {
-    if (state.status === wsStatus.CONNECTED) {
+    if (state.status === wsStatus.CONNECTED && state.socket?.readyState === WebSocket.OPEN) {
       state.socket.send(JSON.stringify({ jsonrpc: "2.0", method, params }));
     }
+  };
+
+  const request = (method, params = {}, timeoutMs = 1500) => {
+    if (state.status !== wsStatus.CONNECTED || state.socket?.readyState !== WebSocket.OPEN) {
+      return Promise.reject(new Error("websocket not connected"));
+    }
+
+    const id = requestId++;
+    const payload = { jsonrpc: "2.0", id, method, params };
+
+    return new Promise((resolve, reject) => {
+      const timeoutHandle = setTimeout(() => {
+        pendingRequests.delete(id);
+        reject(new Error(`websocket request timeout for method '${method}'`));
+      }, timeoutMs);
+
+      pendingRequests.set(id, { resolve, reject, timeoutHandle });
+      state.socket.send(JSON.stringify(payload));
+    });
   };
 
   const onJson = (key, callback) => {
@@ -159,6 +202,6 @@ export default function useWebSocket() {
 
   console.log("=> useWebsocket state: ", JSON.stringify(state));
   // Call connect to open the WebSocket
-  let currentSocket = { ...toRefs(state), send, connect, destroy, onJson };
+  let currentSocket = { ...toRefs(state), send, request, connect, destroy, onJson };
   return currentSocket;
 }

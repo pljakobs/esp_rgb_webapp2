@@ -1,6 +1,7 @@
 import { defineStore } from "pinia";
 import { storeStatus } from "src/stores/storeConstants";
 import { apiService } from "src/services/api.js";
+import useWebSocket, { wsStatus } from "src/services/websocket.js";
 
 /**
  * Normalize an /info response to the new nested structure.
@@ -47,15 +48,37 @@ export const infoDataStore = defineStore("infoDataStore", {
     http_response_status: null,
   }),
   actions: {
+    async fetchDataViaWebSocket(timeoutMs = 1200) {
+      const ws = useWebSocket();
+      if (ws.status?.value !== wsStatus.CONNECTED || typeof ws.request !== "function") {
+        return null;
+      }
+
+      try {
+        const params = await ws.request("info", { V: "2" }, timeoutMs);
+        const payload = params?.message ?? params;
+        return payload && typeof payload === "object" ? payload : null;
+      } catch (error) {
+        console.warn("info websocket fetch failed, falling back to HTTP:", error?.message || error);
+        return null;
+      }
+    },
+
     async fetchData() {
       this.status = storeStatus.LOADING;
       try {
-        const { jsonData, error } = await apiService.getInfo();
-        if (error) {
-          throw error;
+        let infoPayload = await this.fetchDataViaWebSocket();
+
+        if (!infoPayload) {
+          const { jsonData, error } = await apiService.getInfo();
+          if (error) {
+            throw error;
+          }
+          infoPayload = jsonData;
         }
-        console.log("info data fetched: ", JSON.stringify(jsonData));
-        this.data = normalizeInfoData(jsonData);
+
+        console.log("info data fetched: ", JSON.stringify(infoPayload));
+        this.data = normalizeInfoData(infoPayload);
         this.status = storeStatus.READY;
         return this.data;
       } catch (err) {
