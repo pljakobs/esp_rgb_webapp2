@@ -54,8 +54,9 @@ export default configure((/* ctx */) => {
     extras: [],
     build: {
       cssMinify: "esbuild",
+      minify: "esbuild",
       target: {
-        browser: ["es2020"],
+        browser: ["es2022"],
         node: "node24",
       },
       extendViteConf(viteConf) {
@@ -63,19 +64,25 @@ export default configure((/* ctx */) => {
         viteConf.server.watch ??= {};
         viteConf.server.watch.usePolling = true;
         viteConf.server.watch.interval = 200;
+        viteConf.build.polyfillDynamicImport = false;
+        viteConf.build.rollupOptions = {
+          output: {
+            // This forces all dependencies and code into index.js
+            manualChunks: undefined,
+          },
+        };
+        viteConf.build.modulePreload = { polyfill: false };
       },
-      useFilenameHashes: false,
+      // Static asset names allow browsers to reuse stale chunks after firmware/webapp
+      // updates, which can break ESM imports when minified export aliases change.
+      useFilenameHashes: true,
       vueRouterMode: "hash",
       rebuildCache: true,
-      minify: true,
-      polyfillModulePreload: true,
+      polyfillModulePreload: false,
       sourcemap: false,
       vitePlugins: [
         generateIconSpriteServePlugin,
         generateIconSpriteBuildPlugin,
-        {
-          include: path.resolve("./src/i18n/**"),
-        },
         visualizer({
           filename: "./dist/stats.html",
           template: "treemap", // or "sunburst", "network"
