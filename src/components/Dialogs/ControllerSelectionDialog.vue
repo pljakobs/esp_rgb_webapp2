@@ -132,14 +132,16 @@ export default {
       controllers.map((c) => ({
         label: `${c.hostname} (${c.ip_address})`,
         value: c,
-            disabled: c.selectable === false,
+        disabled: c.selectable === false,
       }));
 
-        const selectableControllers = computed(() =>
-          resolvedControllers.value.filter((c) => c.selectable !== false),
-        );
+    const selectableControllers = computed(() =>
+      resolvedControllers.value.filter((c) => c.selectable !== false),
+    );
 
-    const controllerOptions = ref(mapControllerOptions(resolvedControllers.value));
+    const controllerOptions = ref(
+      mapControllerOptions(resolvedControllers.value),
+    );
 
     // Initially select all controllers
     const selectedControllers = ref([...resolvedControllers.value]);

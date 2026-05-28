@@ -212,27 +212,31 @@ export default {
       try {
         const configStore = configDataStore();
         // Check if web icons are allowed (default to true if undefined for backward compatibility)
-        const allowWebIcons = configStore.data?.general?.allow_web_icons !== false;
+        const allowWebIcons =
+          configStore.data?.general?.allow_web_icons !== false;
 
         if (this.isWebUrl) {
           if (allowWebIcons) {
-             await this.fetchWebIcon();
+            await this.fetchWebIcon();
           } else {
-             // If web icons not allowed, fail immediately to trigger fallback
-             throw new Error("Web icons disabled by configuration");
+            // If web icons not allowed, fail immediately to trigger fallback
+            throw new Error("Web icons disabled by configuration");
           }
         } else {
           await this.fetchLocalIcon();
         }
       } catch (error) {
-        if (!this.isWebUrl || error.message !== "Web icons disabled by configuration") {
-             // Only log errors that aren't expected due to configuration
-             console.error(
-              `Primary icon failed (${this.isWebUrl ? "web" : "local"}):`,
-              error,
-            );
+        if (
+          !this.isWebUrl ||
+          error.message !== "Web icons disabled by configuration"
+        ) {
+          // Only log errors that aren't expected due to configuration
+          console.error(
+            `Primary icon failed (${this.isWebUrl ? "web" : "local"}):`,
+            error,
+          );
         }
-        
+
         this.hasError = true;
 
         // Try fallback local icon if primary failed

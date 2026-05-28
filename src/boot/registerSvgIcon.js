@@ -10,7 +10,10 @@ function scheduleSpritePrefetch() {
 
   const prefetch = () => {
     ensureSpriteLoaded().catch((error) => {
-      console.warn("svg sprite prefetch failed, will retry on first icon use", error);
+      console.warn(
+        "svg sprite prefetch failed, will retry on first icon use",
+        error,
+      );
     });
   };
 

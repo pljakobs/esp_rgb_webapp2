@@ -23,7 +23,10 @@ export const useControllersStore = defineStore("controllersStore", {
   actions: {
     async fetchHostsViaWebSocket(showAll = true, timeoutMs = 1200) {
       const ws = useWebSocket();
-      if (ws.status?.value !== wsStatus.CONNECTED || typeof ws.request !== "function") {
+      if (
+        ws.status?.value !== wsStatus.CONNECTED ||
+        typeof ws.request !== "function"
+      ) {
         return null;
       }
 
@@ -42,7 +45,10 @@ export const useControllersStore = defineStore("controllersStore", {
           return payload;
         }
       } catch (error) {
-        console.warn("hosts websocket fetch failed, falling back to HTTP:", error?.message || error);
+        console.warn(
+          "hosts websocket fetch failed, falling back to HTTP:",
+          error?.message || error,
+        );
       }
 
       return null;

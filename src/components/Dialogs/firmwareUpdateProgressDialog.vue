@@ -6,7 +6,9 @@
           <div
             class="status-chip"
             :class="
-              !otaProgress.fallbackMode && otaProgress.step === 0 && otaProgress.message
+              !otaProgress.fallbackMode &&
+              otaProgress.step === 0 &&
+              otaProgress.message
                 ? 'status-chip-negative'
                 : !otaProgress.fallbackMode && otaProgress.step === 4
                   ? 'status-chip-positive'
@@ -14,17 +16,25 @@
             "
           >
             {{
-              !otaProgress.fallbackMode && otaProgress.step === 0 && otaProgress.message
-                ? 'ERR'
+              !otaProgress.fallbackMode &&
+              otaProgress.step === 0 &&
+              otaProgress.message
+                ? "ERR"
                 : !otaProgress.fallbackMode && otaProgress.step === 4
-                  ? 'OK'
-                  : 'OTA'
+                  ? "OK"
+                  : "OTA"
             }}
           </div>
           <div class="text-h6">
-            <template v-if="otaProgress.fallbackMode">Updating Firmware...</template>
-            <template v-else-if="otaProgress.step === 0 && otaProgress.message">Update Failed</template>
-            <template v-else-if="otaProgress.step === 4">Update Successful</template>
+            <template v-if="otaProgress.fallbackMode"
+              >Updating Firmware...</template
+            >
+            <template v-else-if="otaProgress.step === 0 && otaProgress.message"
+              >Update Failed</template
+            >
+            <template v-else-if="otaProgress.step === 4"
+              >Update Successful</template
+            >
             <template v-else>Updating Firmware...</template>
           </div>
         </div>
@@ -89,7 +99,11 @@
 
       <!-- Status message history log -->
       <q-card-section
-        v-if="!otaProgress.fallbackMode && otaProgress.statusHistory && otaProgress.statusHistory.length > 1"
+        v-if="
+          !otaProgress.fallbackMode &&
+          otaProgress.statusHistory &&
+          otaProgress.statusHistory.length > 1
+        "
         class="q-pt-none"
       >
         <div class="text-caption text-grey-5 q-mb-xs">Status log</div>
@@ -117,7 +131,8 @@
         v-if="otaProgress.step === 0 && otaProgress.willReboot"
         class="text-center text-caption text-grey-6"
       >
-        Device is rebooting... Page will reload in {{ otaProgress.reloadCountdown }}s
+        Device is rebooting... Page will reload in
+        {{ otaProgress.reloadCountdown }}s
       </q-card-section>
 
       <!-- Error without reboot: show close button -->

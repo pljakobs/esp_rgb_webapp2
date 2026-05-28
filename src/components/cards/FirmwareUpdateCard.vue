@@ -92,7 +92,8 @@ export default {
         }
 
         otaProgress.value.fallbackMode = true;
-        otaProgress.value.message = "OTA in progress (waiting for status updates)...";
+        otaProgress.value.message =
+          "OTA in progress (waiting for status updates)...";
 
         clearInterval(countdownTimer);
         otaProgress.value.reloadCountdown = 20;
@@ -822,13 +823,15 @@ export default {
           selectionState.loading = true;
           selectionState.loadingMessage = `Scanning controllers (${scannedControllers}/${totalControllers}) - detected ${detectedControllers}/${totalControllers} - checking ${controller.hostname}...`;
 
-          const { reachable, attempts } = await pingControllerWithRetry(controller);
+          const { reachable, attempts } =
+            await pingControllerWithRetry(controller);
           scannedControllers += 1;
           if (reachable) {
             detectedControllers += 1;
           }
 
-          const temporarilyUnavailable = !reachable && attempts >= maxPingRetries;
+          const temporarilyUnavailable =
+            !reachable && attempts >= maxPingRetries;
 
           selectionState.loading = true;
           selectionState.loadingMessage = `Scanning controllers (${scannedControllers}/${totalControllers}) - detected ${detectedControllers}/${totalControllers}...`;

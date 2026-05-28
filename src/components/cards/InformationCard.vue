@@ -104,11 +104,7 @@ export default {
       stopRefreshLoop();
     });
 
-    const firmwareCommentKeys = [
-      "firmware_comment",
-      "fw_comment",
-      "comment",
-    ];
+    const firmwareCommentKeys = ["firmware_comment", "fw_comment", "comment"];
 
     function formatKey(key) {
       return String(key)

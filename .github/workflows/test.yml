@@ -31,7 +31,9 @@ jobs:
         run: npm install
 
       - name: Run frontend unit tests
-        run: npm test -- src/services/__tests__/api.spec.js src/stores/__tests__/appDataStore.spec.js src/services/__tests__/syncService.spec.js
+        run: npm test -- src/services/__tests__/api.spec.js
+          src/stores/__tests__/appDataStore.spec.js
+          src/services/__tests__/syncService.spec.js
 
       - name: Test summary
         if: always()

@@ -117,7 +117,10 @@
                         formatDate(scope.opt.date)
                       }}</q-item-label>
                     </q-item-section>
-                    <q-item-section side v-if="getFirmwareComment(scope.opt.fw)">
+                    <q-item-section
+                      side
+                      v-if="getFirmwareComment(scope.opt.fw)"
+                    >
                       <q-icon name="info" size="16px" color="info" />
                     </q-item-section>
                     <q-tooltip v-if="getFirmwareComment(scope.opt.fw)">
@@ -340,7 +343,12 @@ export default {
 
     const getFirmwareComment = (firmware) => {
       if (!firmware) return "";
-      return firmware.comment || firmware.fw_comment || firmware.firmware_comment || "";
+      return (
+        firmware.comment ||
+        firmware.fw_comment ||
+        firmware.firmware_comment ||
+        ""
+      );
     };
 
     const selectedFirmwareComment = computed(() =>

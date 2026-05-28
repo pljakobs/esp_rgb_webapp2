@@ -50,7 +50,10 @@ export const infoDataStore = defineStore("infoDataStore", {
   actions: {
     async fetchDataViaWebSocket(timeoutMs = 1200) {
       const ws = useWebSocket();
-      if (ws.status?.value !== wsStatus.CONNECTED || typeof ws.request !== "function") {
+      if (
+        ws.status?.value !== wsStatus.CONNECTED ||
+        typeof ws.request !== "function"
+      ) {
         return null;
       }
 
@@ -59,7 +62,10 @@ export const infoDataStore = defineStore("infoDataStore", {
         const payload = params?.message ?? params;
         return payload && typeof payload === "object" ? payload : null;
       } catch (error) {
-        console.warn("info websocket fetch failed, falling back to HTTP:", error?.message || error);
+        console.warn(
+          "info websocket fetch failed, falling back to HTTP:",
+          error?.message || error,
+        );
         return null;
       }
     },

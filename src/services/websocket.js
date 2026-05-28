@@ -31,18 +31,31 @@ export default function useWebSocket() {
       return false;
     }
 
-    if (state.socket && state.url === url && state.socket.readyState === WebSocket.OPEN) {
+    if (
+      state.socket &&
+      state.url === url &&
+      state.socket.readyState === WebSocket.OPEN
+    ) {
       console.log("=> websocket is already connected");
       return state.socket;
     }
 
-    if (state.socket && state.url === url && state.socket.readyState === WebSocket.CONNECTING) {
+    if (
+      state.socket &&
+      state.url === url &&
+      state.socket.readyState === WebSocket.CONNECTING
+    ) {
       console.log("=> websocket is connecting");
       return false;
     }
 
     if (state.socket && state.url && state.url !== url) {
-      console.log("=> websocket target changed, reconnecting from", state.url, "to", url);
+      console.log(
+        "=> websocket target changed, reconnecting from",
+        state.url,
+        "to",
+        url,
+      );
       destroy();
     }
 
@@ -122,7 +135,9 @@ export default function useWebSocket() {
       } else if (state.callbacks[key]) {
         state.callbacks[key].forEach((callback) => callback(message.params));
       } else {
-        console.log(`=> websocket message '${key}' has no subscriber, discarding`);
+        console.log(
+          `=> websocket message '${key}' has no subscriber, discarding`,
+        );
       }
     };
 
@@ -167,13 +182,19 @@ export default function useWebSocket() {
   }
 
   const send = (method, params) => {
-    if (state.status === wsStatus.CONNECTED && state.socket?.readyState === WebSocket.OPEN) {
+    if (
+      state.status === wsStatus.CONNECTED &&
+      state.socket?.readyState === WebSocket.OPEN
+    ) {
       state.socket.send(JSON.stringify({ jsonrpc: "2.0", method, params }));
     }
   };
 
   const request = (method, params = {}, timeoutMs = 1500) => {
-    if (state.status !== wsStatus.CONNECTED || state.socket?.readyState !== WebSocket.OPEN) {
+    if (
+      state.status !== wsStatus.CONNECTED ||
+      state.socket?.readyState !== WebSocket.OPEN
+    ) {
       return Promise.reject(new Error("websocket not connected"));
     }
 
@@ -202,6 +223,13 @@ export default function useWebSocket() {
 
   console.log("=> useWebsocket state: ", JSON.stringify(state));
   // Call connect to open the WebSocket
-  let currentSocket = { ...toRefs(state), send, request, connect, destroy, onJson };
+  let currentSocket = {
+    ...toRefs(state),
+    send,
+    request,
+    connect,
+    destroy,
+    onJson,
+  };
   return currentSocket;
 }
