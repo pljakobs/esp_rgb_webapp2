@@ -2,6 +2,32 @@
 <html>
   <head>
     <title><%= productName %></title>
+    <script>
+      window.onerror = function (msg, url, line) {
+        console.log("CRITICAL BOOT FAILURE: " + msg + "\nURL: " + url);
+        // You could even make a fetch call back to Sming to log the error to the Serial console
+        fetch("/system", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            cmd: "debug_log",
+            param: {
+              level: "3",
+              text:
+                "CRITICAL BOOT FAILURE: " +
+                msg +
+                "\nURL: " +
+                url +
+                "\nLINE: " +
+                line,
+            },
+          }),
+        });
+        return false;
+      };
+    </script>
 
     <meta charset="utf-8" />
     <meta name="description" content="<%= productDescription %>" />
