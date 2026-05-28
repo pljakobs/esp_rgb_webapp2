@@ -16,12 +16,12 @@ export function createAbortTimeout(timeoutMs, onTimeout) {
     if (onTimeout) onTimeout();
     controller.abort();
   }, timeoutMs);
-  
+
   return {
     controller,
     timeoutId,
     signal: controller.signal,
-    clear: () => clearTimeout(timeoutId)
+    clear: () => clearTimeout(timeoutId),
   };
 }
 
@@ -32,11 +32,15 @@ export function createAbortTimeout(timeoutMs, onTimeout) {
  * @param {Function} onProgress - Optional progress callback (completed, total)
  * @returns {Object} Results with successCount and failureCount
  */
-export async function broadcastToControllers(controllers, operation, onProgress) {
+export async function broadcastToControllers(
+  controllers,
+  operation,
+  onProgress,
+) {
   let successCount = 0;
   let failureCount = 0;
   const total = controllers.length;
-  
+
   for (const controller of controllers) {
     try {
       await operation(controller);
@@ -45,15 +49,15 @@ export async function broadcastToControllers(controllers, operation, onProgress)
       failureCount++;
       console.error(
         `❌ Error on ${controller.hostname || controller.name || controller.ip_address}:`,
-        error.message || error
+        error.message || error,
       );
     }
-    
+
     if (onProgress) {
       onProgress(successCount + failureCount, total);
     }
   }
-  
+
   return { successCount, failureCount };
 }
 
@@ -84,10 +88,10 @@ export async function getModifyPost(ipAddress, modifyFn, timeoutMs = 8000) {
     }
 
     const existingData = await getResponse.json();
-    
+
     // Modify data
     const payload = await modifyFn(existingData);
-    
+
     if (!payload) {
       // No changes needed
       return { skipped: true, existingData };
@@ -114,7 +118,8 @@ export async function getModifyPost(ipAddress, modifyFn, timeoutMs = 8000) {
 
 function makeID() {
   const infoData = infoDataStore();
-  const controllerID = infoData.data?.device?.deviceid ?? infoData.data?.deviceid;
+  const controllerID =
+    infoData.data?.device?.deviceid ?? infoData.data?.deviceid;
 
   const localID = getLocalID(8);
   return `${controllerID}-${localID}`;
@@ -312,7 +317,11 @@ async function applyScene(scene) {
       // Build the sequence array for this controller
       const sequence = [];
 
-      for (let settingIndex = 0; settingIndex < settings.length; settingIndex++) {
+      for (
+        let settingIndex = 0;
+        settingIndex < settings.length;
+        settingIndex++
+      ) {
         const setting = settings[settingIndex];
         // Parse the color information
         let colorObject = {};
@@ -445,7 +454,10 @@ async function applyScene(scene) {
           });
 
           if (error) {
-            console.error(`Error sending command to ${ipAddress}:`, status || error);
+            console.error(
+              `Error sending command to ${ipAddress}:`,
+              status || error,
+            );
           } else {
             console.log(`Command successfully sent to ${ipAddress}`);
           }
