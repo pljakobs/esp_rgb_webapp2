@@ -291,34 +291,36 @@ jobs:
           FILES_JSON_B64=$(echo "$FILES_JSON" | base64 -w 0)
           echo "files_json_b64=$FILES_JSON_B64" >> $GITHUB_OUTPUT
 
-      - name: Setup SSH
-        uses: webfactory/ssh-agent@v0.7.0
-        with:
-          ssh-private-key: ${{ secrets.DEPLOY_KEY }}
-
-      - name: Add server to known_hosts
-        run: ssh-keyscan lightinator.de >> ~/.ssh/known_hosts
-
       - name: Configure deploy variables
         run: |
           echo "deploy_user=github-deploy" >> $GITHUB_ENV
           echo "deploy_server=lightinator.de" >> $GITHUB_ENV
           echo "deploy_path=/home/github-deploy/nginx/html" >> $GITHUB_ENV
 
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.7.0
+        with:
+          ssh-private-key: ${{ secrets.DEPLOY_KEY }}
+
+      - name: Port knock
+        run: |
+          if [ -n "${{ secrets.DEPLOY_KNOCK_URL }}" ]; then
+            echo "Performing port knock..."
+            curl -s "${{ secrets.DEPLOY_KNOCK_URL }}" || echo "Knock failed, continuing anyway..."
+            sleep 2
+          fi
+
+      - name: Add server to known_hosts
+        run: ssh-keyscan lightinator.de >> ~/.ssh/known_hosts
+
       - name: Deploy webapp to lightinator.de
         run: |
           BRANCH="${{ needs.build.outputs.branch }}"
           VERSION="${{ needs.build.outputs.version }}"
 
-          # Port knock
-          if [ -n "${{ secrets.DEPLOY_KNOCK_URL }}" ]; then
-            echo "Performing port knock..."
-            curl -s "${{ secrets.DEPLOY_KNOCK_URL }}" || echo "Knock failed, continuing anyway..."
-          fi
-
           # Prepare staging area
-          mkdir -p staging/webapp/$BRANCH/$VERSION
-          cp -r dist/spa/. staging/webapp/$BRANCH/$VERSION/
+          mkdir -p staging/download/webui/$BRANCH/$VERSION
+          cp -r dist/spa/. staging/download/webui/$BRANCH/$VERSION/
           cp esp_firmware_repo/manage_version.py staging/
 
           # Create the remote orchestration script.
@@ -334,7 +336,7 @@ jobs:
           VERSION="${{ needs.build.outputs.version }}"
           FILES_JSON_B64="${{ steps.compute_md5.outputs.files_json_b64 }}"
           DEPLOY_SERVER="${{ env.deploy_server }}"
-          BASE_URL="http://${DEPLOY_SERVER}/webapp/${BRANCH}/${VERSION}"
+          BASE_URL="http://${DEPLOY_SERVER}/download/webui/${BRANCH}/${VERSION}"
 
           cd "$DEPLOY_PATH"
           chmod +x manage_version.py
@@ -344,19 +346,19 @@ jobs:
             --files-json-b64 "$FILES_JSON_B64"
 
           # Update latest pointer
-          mkdir -p "webapp/${BRANCH}/latest"
-          if [ -d "webapp/${BRANCH}/${VERSION}" ]; then
-            echo "$VERSION" > "webapp/${BRANCH}/latest/version.txt"
+          mkdir -p "download/webui/${BRANCH}/latest"
+          if [ -d "download/webui/${BRANCH}/${VERSION}" ]; then
+            echo "$VERSION" > "download/webui/${BRANCH}/latest/version.txt"
             printf '<html><head><meta http-equiv="refresh" content="0; URL=../%s/"></head></html>\n' \
-              "$VERSION" > "webapp/${BRANCH}/latest/index.html"
+              "$VERSION" > "download/webui/${BRANCH}/latest/index.html"
           else
-            echo "Warning: webapp/${BRANCH}/${VERSION} not found on remote"
+            echo "Warning: download/webui/${BRANCH}/${VERSION} not found on remote"
           fi
 
           echo "Fixing permissions..."
-          chown -R github-deploy:nginx webapp
-          find webapp -type d -exec chmod 755 {} \;
-          find webapp -type f -exec chmod 644 {} \;
+          chown -R github-deploy:nginx download/webui
+          find download/webui -type d -exec chmod 755 {} \;
+          find download/webui -type f -exec chmod 644 {} \;
           chmod +x manage_version.py
 
           rm remote_update_webapp.sh
