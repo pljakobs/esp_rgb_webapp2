@@ -29,7 +29,9 @@ jobs:
     runs-on: ubuntu-latest
     # Only run if the triggering workflow succeeded
     if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
-
+    outputs:
+      version: ${{ steps.create_version.outputs.version }}
+      branch: ${{ steps.get_branch.outputs.branch }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -247,3 +249,128 @@ jobs:
           fi
 
           echo "Successfully triggered firmware build"
+
+  publish:
+    runs-on: ubuntu-latest
+    needs: build
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+
+    steps:
+      - name: Checkout firmware repository (for manage_version.py)
+        uses: actions/checkout@v6
+        with:
+          repository: pljakobs/esp_rgbww_firmware
+          ref: experimental-externalUI
+          path: esp_firmware_repo
+          token: ${{ secrets.GH_PAT }}
+
+      - name: Download SPA files artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: spa-files
+          path: dist/spa
+
+      - name: Compute MD5 checksums for webapp files
+        id: compute_md5
+        run: |
+          echo "Computing MD5s for gzipped webapp files..."
+          FILES_JSON="["
+          first=true
+          while IFS= read -r -d '' file; do
+            rel_path="${file#dist/spa/}"
+            md5=$(md5sum "$file" | awk '{print $1}')
+            if [ "$first" = "true" ]; then
+              first=false
+            else
+              FILES_JSON+=","
+            fi
+            FILES_JSON+="{\"path\":\"${rel_path}\",\"md5\":\"${md5}\"}"
+          done < <(find dist/spa -type f -name "*.gz" -print0 | sort -z)
+          FILES_JSON+="]"
+          echo "Computed $(echo "$FILES_JSON" | python3 -c 'import sys,json; print(len(json.load(sys.stdin)))') files"
+          FILES_JSON_B64=$(echo "$FILES_JSON" | base64 -w 0)
+          echo "files_json_b64=$FILES_JSON_B64" >> $GITHUB_OUTPUT
+
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.7.0
+        with:
+          ssh-private-key: ${{ secrets.DEPLOY_KEY }}
+
+      - name: Add server to known_hosts
+        run: ssh-keyscan lightinator.de >> ~/.ssh/known_hosts
+
+      - name: Configure deploy variables
+        run: |
+          echo "deploy_user=github-deploy" >> $GITHUB_ENV
+          echo "deploy_server=lightinator.de" >> $GITHUB_ENV
+          echo "deploy_path=/home/github-deploy/nginx/html" >> $GITHUB_ENV
+
+      - name: Deploy webapp to lightinator.de
+        run: |
+          BRANCH="${{ needs.build.outputs.branch }}"
+          VERSION="${{ needs.build.outputs.version }}"
+
+          # Port knock
+          if [ -n "${{ secrets.DEPLOY_KNOCK_URL }}" ]; then
+            echo "Performing port knock..."
+            curl -s "${{ secrets.DEPLOY_KNOCK_URL }}" || echo "Knock failed, continuing anyway..."
+          fi
+
+          # Prepare staging area
+          mkdir -p staging/webapp/$BRANCH/$VERSION
+          cp -r dist/spa/. staging/webapp/$BRANCH/$VERSION/
+          cp esp_firmware_repo/manage_version.py staging/
+
+          # Create the remote orchestration script.
+          # ${{ }} expressions are expanded by GitHub Actions before the shell runs;
+          # single-quoted 'REMOTE_EOF' prevents local bash from expanding $VAR references
+          # that are meant to be set at the top of the remote script.
+          cat > staging/remote_update_webapp.sh << 'REMOTE_EOF'
+          #!/bin/bash
+          set -e
+
+          DEPLOY_PATH="${{ env.deploy_path }}"
+          BRANCH="${{ needs.build.outputs.branch }}"
+          VERSION="${{ needs.build.outputs.version }}"
+          FILES_JSON_B64="${{ steps.compute_md5.outputs.files_json_b64 }}"
+          DEPLOY_SERVER="${{ env.deploy_server }}"
+          BASE_URL="http://${DEPLOY_SERVER}/webapp/${BRANCH}/${VERSION}"
+
+          cd "$DEPLOY_PATH"
+          chmod +x manage_version.py
+
+          echo "Updating version.json with webapp entry for ${BRANCH} ${VERSION}..."
+          python3 manage_version.py version.json add-webapp "$BRANCH" "$VERSION" "$BASE_URL" \
+            --files-json-b64 "$FILES_JSON_B64"
+
+          # Update latest pointer
+          mkdir -p "webapp/${BRANCH}/latest"
+          if [ -d "webapp/${BRANCH}/${VERSION}" ]; then
+            echo "$VERSION" > "webapp/${BRANCH}/latest/version.txt"
+            printf '<html><head><meta http-equiv="refresh" content="0; URL=../%s/"></head></html>\n' \
+              "$VERSION" > "webapp/${BRANCH}/latest/index.html"
+          else
+            echo "Warning: webapp/${BRANCH}/${VERSION} not found on remote"
+          fi
+
+          echo "Fixing permissions..."
+          chown -R github-deploy:nginx webapp
+          find webapp -type d -exec chmod 755 {} \;
+          find webapp -type f -exec chmod 644 {} \;
+          chmod +x manage_version.py
+
+          rm remote_update_webapp.sh
+          REMOTE_EOF
+
+          chmod +x staging/remote_update_webapp.sh
+
+          echo "Syncing webapp files to ${{ env.deploy_server }}..."
+          rsync -rlvz --chmod=Du=rwx,Dgo=rx,Fu=rw,Fgo=r \
+            -e "ssh -o StrictHostKeyChecking=no" \
+            staging/ ${{ env.deploy_user }}@${{ env.deploy_server }}:${{ env.deploy_path }}/
+
+          echo "Running remote update script..."
+          ssh -o StrictHostKeyChecking=no ${{ env.deploy_user }}@${{ env.deploy_server }} \
+            "bash ${{ env.deploy_path }}/remote_update_webapp.sh"
+
+
