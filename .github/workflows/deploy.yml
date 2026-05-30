@@ -324,7 +324,7 @@ jobs:
           cp esp_firmware_repo/manage_version.py staging/
 
           # Create the remote orchestration script.
-          # ${{ }} expressions are expanded by GitHub Actions before the shell runs;
+          # GitHub Actions expressions are expanded before the shell runs;
           # single-quoted 'REMOTE_EOF' prevents local bash from expanding $VAR references
           # that are meant to be set at the top of the remote script.
           cat > staging/remote_update_webapp.sh << 'REMOTE_EOF'
