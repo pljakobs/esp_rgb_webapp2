@@ -4,7 +4,7 @@ on:
   workflow_run:
     workflows: ["Frontend Tests"]
     types: [completed]
-    branches: [experimental, devel, testing, stable]
+    branches: [experimental, experimental-externalUI, devel, testing, stable]
 
   workflow_dispatch:
     inputs:
@@ -18,6 +18,7 @@ on:
           - testing
           - devel
           - experimental
+          - experimental-externalUI
 
 permissions:
   contents: write
