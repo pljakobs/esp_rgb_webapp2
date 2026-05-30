@@ -340,6 +340,8 @@ jobs:
           BASE_URL="http://${DEPLOY_SERVER}/download/webui/${BRANCH}/${VERSION}"
 
           cd "$DEPLOY_PATH"
+          mkdir -p "download/webui/${BRANCH}/${VERSION}"
+          mkdir -p "download/webui/${BRANCH}/latest"
           chmod +x manage_version.py
 
           echo "Updating version.json with webapp entry for ${BRANCH} ${VERSION}..."
