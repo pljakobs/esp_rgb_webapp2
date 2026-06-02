@@ -255,6 +255,10 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    env:
+      deploy_user: github-deploy
+      deploy_server: lightinator.de
+      deploy_path: /home/github-deploy/nginx/html
 
     steps:
       - name: Checkout firmware repository (for manage_version.py)
@@ -270,6 +274,20 @@ jobs:
         with:
           name: spa-files
           path: dist/spa
+
+      - name: Validate downloaded SPA artifact
+        run: |
+          if [ ! -d dist/spa ]; then
+            echo "ERROR: dist/spa directory not found after artifact download"
+            exit 1
+          fi
+
+          FILE_COUNT=$(find dist/spa -type f | wc -l)
+          echo "Downloaded SPA file count: $FILE_COUNT"
+          if [ "$FILE_COUNT" -eq 0 ]; then
+            echo "ERROR: No SPA files downloaded"
+            exit 1
+          fi
 
       - name: Compute MD5 checksums for webapp files
         id: compute_md5
@@ -291,12 +309,6 @@ jobs:
           echo "Computed $(echo "$FILES_JSON" | python3 -c 'import sys,json; print(len(json.load(sys.stdin)))') files"
           FILES_JSON_B64=$(echo "$FILES_JSON" | base64 -w 0)
           echo "files_json_b64=$FILES_JSON_B64" >> $GITHUB_OUTPUT
-
-      - name: Configure deploy variables
-        run: |
-          echo "deploy_user=github-deploy" >> $GITHUB_ENV
-          echo "deploy_server=lightinator.de" >> $GITHUB_ENV
-          echo "deploy_path=/home/github-deploy/nginx/html" >> $GITHUB_ENV
 
       - name: Setup SSH
         uses: webfactory/ssh-agent@v0.7.0
@@ -324,6 +336,13 @@ jobs:
           cp -r dist/spa/. staging/download/webui/$BRANCH/$VERSION/
           cp esp_firmware_repo/manage_version.py staging/
 
+          LOCAL_WEBAPP_FILE_COUNT=$(find staging/download/webui/$BRANCH/$VERSION -type f | wc -l)
+          echo "Staged webapp file count for deployment: $LOCAL_WEBAPP_FILE_COUNT"
+          if [ "$LOCAL_WEBAPP_FILE_COUNT" -eq 0 ]; then
+            echo "ERROR: Staging area has no webapp files"
+            exit 1
+          fi
+
           # Create the remote orchestration script.
           # GitHub Actions expressions are expanded before the shell runs;
           # single-quoted 'REMOTE_EOF' prevents local bash from expanding $VAR references
@@ -337,7 +356,21 @@ jobs:
           VERSION="${{ needs.build.outputs.version }}"
           FILES_JSON_B64="${{ steps.compute_md5.outputs.files_json_b64 }}"
           DEPLOY_SERVER="${{ env.deploy_server }}"
-          BASE_URL="http://${DEPLOY_SERVER}/download/webui/${BRANCH}/${VERSION}"
+
+          case "$BRANCH" in
+            stable|testing)
+              WEBAPP_TYPE="release"
+              ;;
+            *)
+              WEBAPP_TYPE="debug"
+              ;;
+          esac
+
+          if [[ "$VERSION" =~ ^[Vv]?([0-9]+)\.([0-9]+) ]]; then
+            MIN_FIRMWARE="${BASH_REMATCH[1]}.${BASH_REMATCH[2]}.0"
+          else
+            MIN_FIRMWARE="0.0.0"
+          fi
 
           cd "$DEPLOY_PATH"
           mkdir -p "download/webui/${BRANCH}/${VERSION}"
@@ -345,7 +378,9 @@ jobs:
           chmod +x manage_version.py
 
           echo "Updating version.json with webapp entry for ${BRANCH} ${VERSION}..."
-          python3 manage_version.py version.json add-webapp "$BRANCH" "$VERSION" "$BASE_URL" \
+          python3 manage_version.py version.json add-webapp "$BRANCH" "$VERSION" \
+            --type "$WEBAPP_TYPE" \
+            --min-firmware "$MIN_FIRMWARE" \
             --files-json-b64 "$FILES_JSON_B64"
 
           # Update latest pointer
@@ -377,5 +412,14 @@ jobs:
           echo "Running remote update script..."
           ssh -o StrictHostKeyChecking=no ${{ env.deploy_user }}@${{ env.deploy_server }} \
             "bash ${{ env.deploy_path }}/remote_update_webapp.sh"
+
+          echo "Verifying remote deployment contents..."
+          REMOTE_WEBAPP_FILE_COUNT=$(ssh -o StrictHostKeyChecking=no ${{ env.deploy_user }}@${{ env.deploy_server }} \
+            "find ${{ env.deploy_path }}/download/webui/$BRANCH/$VERSION -type f | wc -l")
+          echo "Remote webapp file count: $REMOTE_WEBAPP_FILE_COUNT"
+          if [ -z "$REMOTE_WEBAPP_FILE_COUNT" ] || [ "$REMOTE_WEBAPP_FILE_COUNT" -eq 0 ]; then
+            echo "ERROR: No webapp files found on remote after deployment"
+            exit 1
+          fi
 
 
