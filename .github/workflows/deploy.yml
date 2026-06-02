@@ -311,9 +311,32 @@ jobs:
           echo "files_json_b64=$FILES_JSON_B64" >> $GITHUB_OUTPUT
 
       - name: Setup SSH
-        uses: webfactory/ssh-agent@v0.7.0
-        with:
-          ssh-private-key: ${{ secrets.DEPLOY_KEY }}
+        run: |
+          set -euo pipefail
+          install -m 700 -d ~/.ssh
+
+          if [ -z "${{ secrets.DEPLOY_KEY }}" ]; then
+            echo "ERROR: DEPLOY_KEY secret is empty"
+            exit 1
+          fi
+
+          # First try raw multiline secret.
+          printf '%s' "${{ secrets.DEPLOY_KEY }}" | tr -d '\r' > ~/.ssh/deploy_key
+
+          # If key header is missing, secret may contain escaped newlines (\n).
+          if ! grep -q "BEGIN .* PRIVATE KEY" ~/.ssh/deploy_key; then
+            printf '%b' "${{ secrets.DEPLOY_KEY }}" | tr -d '\r' > ~/.ssh/deploy_key
+          fi
+
+          chmod 600 ~/.ssh/deploy_key
+
+          if ! ssh-keygen -y -f ~/.ssh/deploy_key >/dev/null 2>&1; then
+            echo "ERROR: DEPLOY_KEY is not a valid OpenSSH private key"
+            exit 1
+          fi
+
+          eval "$(ssh-agent -s)"
+          ssh-add ~/.ssh/deploy_key
 
       - name: Port knock
         run: |
