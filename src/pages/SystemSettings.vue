@@ -5,6 +5,7 @@
     </div>
     <div class="cards-column">
       <FirmwareUpdateCard />
+      <WebappUpdateCard />
       <HostnameCard />
       <ControllerConfigCard />
       <SaveRestoreConfig />
@@ -18,6 +19,7 @@
 import { infoDataStore } from "src/stores/infoDataStore";
 import InformationCard from "src/components/cards/InformationCard.vue";
 import FirmwareUpdateCard from "src/components/cards/FirmwareUpdateCard.vue";
+import WebappUpdateCard from "src/components/cards/WebappUpdateCard.vue";
 import LogViewerCard from "src/components/cards/LogViewerCard.vue";
 import ControllerConfigCard from "src/components/cards/ControllerConfigCard.vue";
 import SaveRestoreConfig from "src/components/SaveRestoreConfig.vue";
@@ -28,6 +30,7 @@ export default {
   components: {
     InformationCard,
     FirmwareUpdateCard,
+    WebappUpdateCard,
     ControllerConfigCard,
     DebugFunctionCard,
     SaveRestoreConfig,
