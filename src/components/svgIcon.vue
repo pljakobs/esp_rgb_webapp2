@@ -48,6 +48,25 @@ function normalizeIconName(name) {
   return normalized.replace(/[^a-z0-9_-]/gi, "_");
 }
 
+/**
+ * Fetch the icon sprite, retrying transparently on 429 (low-heap rejection from
+ * the ESP8266 firmware).  The firmware sends a Retry-After header; we honour it
+ * so all pending icon lookups simply wait rather than failing immediately.
+ *
+ * @param {string} url
+ * @param {RequestInit} fetchOptions
+ * @param {number} retriesLeft   – maximum remaining attempts (default 4)
+ */
+async function fetchSpriteWithRetry(url, fetchOptions, retriesLeft = 4) {
+  const response = await fetch(url, fetchOptions);
+  if (response.status === 429 && retriesLeft > 0) {
+    const retryAfter = parseInt(response.headers.get("Retry-After") || "10", 10);
+    await new Promise((resolve) => setTimeout(resolve, retryAfter * 1000));
+    return fetchSpriteWithRetry(getSpriteUrl(true), { cache: "reload" }, retriesLeft - 1);
+  }
+  return response;
+}
+
 function ensureSpriteLoaded({ forceReload = false } = {}) {
   if (typeof window === "undefined") {
     return Promise.resolve();
@@ -67,7 +86,7 @@ function ensureSpriteLoaded({ forceReload = false } = {}) {
 
   if (!spriteLoadPromise) {
     const cacheMode = forceReload ? "reload" : "default";
-    spriteLoadPromise = fetch(getSpriteUrl(forceReload), { cache: cacheMode })
+    spriteLoadPromise = fetchSpriteWithRetry(getSpriteUrl(forceReload), { cache: cacheMode })
       .then((response) => {
         if (!response.ok) {
           throw new Error(`Failed to load sprite: ${response.status}`);

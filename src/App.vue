@@ -51,7 +51,7 @@ export default defineComponent({
 
           // Attempt to go fullscreen after a user interaction (required by browsers)
           const handleUserInteraction = () => {
-            if ($q.fullscreen.isCapable) {
+            if ($q.fullscreen?.isCapable) {
               $q.fullscreen.toggle();
               console.log("Toggling fullscreen mode");
             } else {
