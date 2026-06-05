@@ -73,24 +73,49 @@ export default {
     async function checkWebapp() {
       checking.value = true;
       statusMessage.value = "Checking for webapp update…";
-      try {
-        const controller = controllersStore.currentController;
-        const baseUrl = `http://${controller.ip_address}`;
-        const response = await fetch(`${baseUrl}/webapp_check`, {
-          method: "POST",
-        });
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}`);
+
+      const MAX_RETRIES = 4;
+      let attempt = 0;
+
+      while (attempt <= MAX_RETRIES) {
+        try {
+          const controller = controllersStore.currentController;
+          const baseUrl = `http://${controller.ip_address}`;
+          const response = await fetch(`${baseUrl}/webapp_check`, {
+            method: "POST",
+          });
+
+          if (response.status === 429) {
+            // Firmware is low on heap — honour Retry-After header
+            const retryAfter = parseInt(response.headers.get("Retry-After") ?? "5", 10);
+            attempt++;
+            if (attempt > MAX_RETRIES) {
+              throw new Error(`Device busy (429), gave up after ${MAX_RETRIES} retries`);
+            }
+            statusMessage.value = `Device busy, retrying in ${retryAfter}s… (${attempt}/${MAX_RETRIES})`;
+            await new Promise((r) => setTimeout(r, retryAfter * 1000));
+            continue;
+          }
+
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+          }
+
+          const data = await response.json();
+          // Show initial status from response; further updates arrive via WS
+          statusMessage.value = data.status ?? "Check started";
+          checking.value = false;
+          return;
+        } catch (err) {
+          statusMessage.value = `Error: ${err.message}`;
+          Notify.create({ type: "negative", message: `Webapp check failed: ${err.message}` });
+          checking.value = false;
+          return;
         }
-        const data = await response.json();
-        // Show initial status from response; further updates arrive via WS
-        statusMessage.value = data.status ?? "Check started";
-      } catch (err) {
-        statusMessage.value = `Error: ${err.message}`;
-        Notify.create({ type: "negative", message: `Webapp check failed: ${err.message}` });
-      } finally {
-        checking.value = false;
       }
+
+      // Exceeded retries without throwing (shouldn't happen, but be safe)
+      checking.value = false;
     }
 
     // Listen for webapp OTA status pushed over WebSocket
