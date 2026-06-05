@@ -4,7 +4,7 @@ on:
   workflow_run:
     workflows: ["Frontend Tests"]
     types: [completed]
-    branches: [experimental, devel, testing, stable]
+    branches: [experimental, experimental-externalUI, devel, testing, stable]
 
   workflow_dispatch:
     inputs:
@@ -18,6 +18,7 @@ on:
           - testing
           - devel
           - experimental
+          - experimental-externalUI
 
 permissions:
   contents: write
@@ -29,7 +30,9 @@ jobs:
     runs-on: ubuntu-latest
     # Only run if the triggering workflow succeeded
     if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
-
+    outputs:
+      version: ${{ steps.create_version.outputs.version }}
+      branch: ${{ steps.get_branch.outputs.branch }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -247,3 +250,182 @@ jobs:
           fi
 
           echo "Successfully triggered firmware build"
+
+  publish:
+    runs-on: ubuntu-latest
+    needs: build
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    env:
+      deploy_user: github-deploy
+      deploy_server: lightinator.de
+      deploy_path: /home/github-deploy/nginx/html
+
+    steps:
+      - name: Checkout firmware repository (for manage_version.py)
+        uses: actions/checkout@v6
+        with:
+          repository: pljakobs/esp_rgbww_firmware
+          ref: experimental-externalUI
+          path: esp_firmware_repo
+          token: ${{ secrets.GH_PAT }}
+
+      - name: Download SPA files artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: spa-files
+          path: dist/spa
+
+      - name: Validate downloaded SPA artifact
+        run: |
+          if [ ! -d dist/spa ]; then
+            echo "ERROR: dist/spa directory not found after artifact download"
+            exit 1
+          fi
+
+          FILE_COUNT=$(find dist/spa -type f | wc -l)
+          echo "Downloaded SPA file count: $FILE_COUNT"
+          if [ "$FILE_COUNT" -eq 0 ]; then
+            echo "ERROR: No SPA files downloaded"
+            exit 1
+          fi
+
+      - name: Compute MD5 checksums for webapp files
+        id: compute_md5
+        run: |
+          echo "Computing MD5s for gzipped webapp files..."
+          FILES_JSON="["
+          first=true
+          while IFS= read -r -d '' file; do
+            rel_path="${file#dist/spa/}"
+            md5=$(md5sum "$file" | awk '{print $1}')
+            if [ "$first" = "true" ]; then
+              first=false
+            else
+              FILES_JSON+=","
+            fi
+            FILES_JSON+="{\"path\":\"${rel_path}\",\"md5\":\"${md5}\"}"
+          done < <(find dist/spa -type f -name "*.gz" -print0 | sort -z)
+          FILES_JSON+="]"
+          echo "Computed $(echo "$FILES_JSON" | python3 -c 'import sys,json; print(len(json.load(sys.stdin)))') files"
+          FILES_JSON_B64=$(echo "$FILES_JSON" | base64 -w 0)
+          echo "files_json_b64=$FILES_JSON_B64" >> $GITHUB_OUTPUT
+
+      - name: Setup SSH and deploy
+        uses: webfactory/ssh-agent@v0.7.0
+        with:
+          ssh-private-key: ${{ secrets.DEPLOY_KEY }}
+
+      - name: Configure variables
+        run: |
+          echo "deploy_user=github-deploy" >> $GITHUB_ENV
+          echo "deploy_server=lightinator.de" >> $GITHUB_ENV
+          echo "deploy_path=/home/github-deploy/nginx/html" >> $GITHUB_ENV
+
+      - name: Port knock
+        run: |
+          if [ -n "${{ secrets.DEPLOY_KNOCK_URL }}" ]; then
+            echo "Performing port knock..."
+            curl -s "${{ secrets.DEPLOY_KNOCK_URL }}" || echo "Knock failed, continuing anyway..."
+            sleep 2
+          fi
+
+      - name: Add server to known_hosts
+        run: ssh-keyscan lightinator.de >> ~/.ssh/known_hosts
+
+      - name: Deploy webapp to lightinator.de
+        run: |
+          BRANCH="${{ needs.build.outputs.branch }}"
+          VERSION="${{ needs.build.outputs.version }}"
+
+          # Prepare staging area
+          mkdir -p staging/download/webui/$BRANCH/$VERSION
+          cp -r dist/spa/. staging/download/webui/$BRANCH/$VERSION/
+          cp esp_firmware_repo/manage_version.py staging/
+
+          LOCAL_WEBAPP_FILE_COUNT=$(find staging/download/webui/$BRANCH/$VERSION -type f | wc -l)
+          echo "Staged webapp file count for deployment: $LOCAL_WEBAPP_FILE_COUNT"
+          if [ "$LOCAL_WEBAPP_FILE_COUNT" -eq 0 ]; then
+            echo "ERROR: Staging area has no webapp files"
+            exit 1
+          fi
+
+          # Create the remote orchestration script.
+          # GitHub Actions expressions are expanded before the shell runs;
+          # single-quoted 'REMOTE_EOF' prevents local bash from expanding $VAR references
+          # that are meant to be set at the top of the remote script.
+          cat > staging/remote_update_webapp.sh << 'REMOTE_EOF'
+          #!/bin/bash
+          set -e
+
+          DEPLOY_PATH="${{ env.deploy_path }}"
+          BRANCH="${{ needs.build.outputs.branch }}"
+          VERSION="${{ needs.build.outputs.version }}"
+          FILES_JSON_B64="${{ steps.compute_md5.outputs.files_json_b64 }}"
+          DEPLOY_SERVER="${{ env.deploy_server }}"
+
+          case "$BRANCH" in
+            stable|testing)
+              WEBAPP_TYPE="release"
+              ;;
+            *)
+              WEBAPP_TYPE="debug"
+              ;;
+          esac
+
+          if [[ "$VERSION" =~ ^[Vv]?([0-9]+)\.([0-9]+) ]]; then
+            MIN_FIRMWARE="${BASH_REMATCH[1]}.${BASH_REMATCH[2]}.0"
+          else
+            MIN_FIRMWARE="0.0.0"
+          fi
+
+          cd "$DEPLOY_PATH"
+          mkdir -p "download/webui/${BRANCH}/${VERSION}"
+          mkdir -p "download/webui/${BRANCH}/latest"
+          chmod +x manage_version.py
+
+          echo "Updating version.json with webapp entry for ${BRANCH} ${VERSION}..."
+          python3 manage_version.py version.json add-webapp "$BRANCH" "$VERSION" \
+            --type "$WEBAPP_TYPE" \
+            --min-firmware "$MIN_FIRMWARE" \
+            --files-json-b64 "$FILES_JSON_B64"
+
+          # Update latest pointer
+          mkdir -p "download/webui/${BRANCH}/latest"
+          if [ -d "download/webui/${BRANCH}/${VERSION}" ]; then
+            echo "$VERSION" > "download/webui/${BRANCH}/latest/version.txt"
+            printf '<html><head><meta http-equiv="refresh" content="0; URL=../%s/"></head></html>\n' \
+              "$VERSION" > "download/webui/${BRANCH}/latest/index.html"
+          else
+            echo "Warning: download/webui/${BRANCH}/${VERSION} not found on remote"
+          fi
+
+          echo "Fixing permissions..."
+          chown -R github-deploy:nginx download/webui
+          find download/webui -type d -exec chmod 755 {} \;
+          find download/webui -type f -exec chmod 644 {} \;
+          chmod +x manage_version.py
+
+          rm remote_update_webapp.sh
+          REMOTE_EOF
+
+          chmod +x staging/remote_update_webapp.sh
+
+          echo "Syncing webapp files to ${{ env.deploy_server }}..."
+          rsync -rlvz --chmod=Du=rwx,Dgo=rx,Fu=rw,Fgo=r \
+            -e "ssh -o StrictHostKeyChecking=no" \
+            staging/ ${{ env.deploy_user }}@${{ env.deploy_server }}:${{ env.deploy_path }}/
+
+          echo "Running remote update script..."
+          ssh -o StrictHostKeyChecking=no ${{ env.deploy_user }}@${{ env.deploy_server }} \
+            "bash ${{ env.deploy_path }}/remote_update_webapp.sh"
+
+          echo "Verifying remote deployment contents..."
+          REMOTE_WEBAPP_FILE_COUNT=$(ssh -o StrictHostKeyChecking=no ${{ env.deploy_user }}@${{ env.deploy_server }} \
+            "find ${{ env.deploy_path }}/download/webui/$BRANCH/$VERSION -type f | wc -l")
+          echo "Remote webapp file count: $REMOTE_WEBAPP_FILE_COUNT"
+          if [ -z "$REMOTE_WEBAPP_FILE_COUNT" ] || [ "$REMOTE_WEBAPP_FILE_COUNT" -eq 0 ]; then
+            echo "ERROR: No webapp files found on remote after deployment"
+            exit 1
+          fi
+
+
