@@ -3,9 +3,14 @@
     <q-card-section>
       <q-toggle
         v-model="webappEnabled"
-        label="Enable automatic webapp updates"
+        label="Auto-update webapp"
         @update:model-value="onToggleEnabled"
       />
+      <div class="text-caption text-grey q-mt-xs">
+        When enabled, checks for a new webapp on every WiFi connect.
+        Disable to only update on manual request.
+        A missing webapp is always fetched regardless of this setting.
+      </div>
     </q-card-section>
 
     <q-card-section v-if="statusMessage" class="q-pt-none">
