@@ -8,27 +8,31 @@
       No data available.
     </q-card-section>
     <q-card-section v-else class="info-section">
-      <template v-for="(value, key) in infoData.data" :key="key">
-        <!-- Nested object → sub-section -->
-        <template v-if="isObject(value) && !isFirmwareCommentKey(key)">
-          <div class="section-header">{{ formatKey(key) }}</div>
-          <div class="section-body">
-            <div
-              v-for="(subVal, subKey) in value"
-              :key="subKey"
-              class="info-row"
-            >
-              <span class="info-label">{{ formatKey(subKey) }}</span>
-              <span class="info-value">{{ subVal }}</span>
+      <div class="info-rows">
+        <template v-for="(value, key) in infoData.data" :key="key">
+          <!-- Nested object → sub-section (spans both columns) -->
+          <template v-if="isObject(value) && !isFirmwareCommentKey(key)">
+            <div class="section-header" style="grid-column: 1 / -1">{{ formatKey(key) }}</div>
+            <div class="section-body" style="grid-column: 1 / -1">
+              <div class="info-rows">
+                <div
+                  v-for="(subVal, subKey) in value"
+                  :key="subKey"
+                  class="info-row"
+                >
+                  <span class="info-label">{{ formatKey(subKey) }}</span>
+                  <span class="info-value">{{ subVal }}</span>
+                </div>
+              </div>
             </div>
+          </template>
+          <!-- Scalar → plain row -->
+          <div v-else-if="!isFirmwareCommentKey(key)" class="info-row">
+            <span class="info-label">{{ formatKey(key) }}</span>
+            <span class="info-value">{{ value }}</span>
           </div>
         </template>
-        <!-- Scalar → plain row -->
-        <div v-else-if="!isFirmwareCommentKey(key)" class="info-row">
-          <span class="info-label">{{ formatKey(key) }}</span>
-          <span class="info-value">{{ value }}</span>
-        </div>
-      </template>
+      </div>
 
       <div v-if="firmwareComment" class="firmware-comment-container">
         <div class="section-header">Firmware Comment</div>
@@ -150,22 +154,27 @@ export default {
   padding: 8px 5%;
 }
 
+.info-rows {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  column-gap: 12px;
+}
+
 .info-row {
-  display: flex;
-  align-items: baseline;
-  padding: 2px 0;
+  display: contents;
 }
 
 .info-label {
-  min-width: 160px;
   font-weight: 500;
   color: var(--field-label-color, inherit);
-  flex-shrink: 0;
+  padding: 2px 0;
+  white-space: nowrap;
 }
 
 .info-value {
   color: var(--field-value-color, inherit);
   word-break: break-all;
+  padding: 2px 0;
 }
 
 .section-header {
