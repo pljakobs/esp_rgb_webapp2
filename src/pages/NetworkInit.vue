@@ -69,24 +69,8 @@
             </div>
             <div class="step-label">Telemetry</div>
           </div>
-          <!-- Step 5: WiFi Connection -->
-          <div
-            class="step-indicator"
-            :class="{ active: step === 5, completed: step > 5 }"
-            @click="step > 5 ? (step = 5) : null"
-          >
-            <div class="step-icon">
-              <svgIcon name="wifi_outlined" />
-              <svgIcon
-                v-if="step > 5"
-                name="check_outlined"
-                class="step-check-overlay"
-              />
-            </div>
-            <div class="step-label">WiFi</div>
-          </div>
-          <!-- Step 6: Completion -->
-          <div class="step-indicator" :class="{ active: step === 6 }">
+          <!-- Step 5: Completion -->
+          <div class="step-indicator" :class="{ active: step === 5 }">
             <div class="step-icon">
               <svgIcon name="check_outlined" />
             </div>
@@ -273,156 +257,45 @@
         </div>
       </div>
 
-      <!-- Step 5: WiFi Configuration -->
-      <div v-if="step === 5" class="q-pa-md">
-        <div class="text-h6 q-mb-md">Connect to WiFi Network</div>
-        <div class="text-subtitle2 q-mb-lg">
-          Select your WiFi network from the list or enter details manually
-        </div>
-        <mySelect
-          v-model="selectedNetwork"
-          filled
-          :options="networks"
-          label="Select a network"
-          option-label="ssid"
-          option-value="ssid"
-          class="q-mb-md"
-        >
-          <template #option="props">
-            <q-item v-bind="props.itemProps">
-              <q-item-section>
-                {{ props.opt.ssid }}
-              </q-item-section>
-              <q-item-section avatar>
-                <svgIcon
-                  :name="getSignalIcon(props.opt.signal, props.opt.encryption)"
-                />
-              </q-item-section>
-            </q-item>
-          </template>
-        </mySelect>
-        <q-input
-          v-model="selectedNetwork.ssid"
-          filled
-          label="Network Name (SSID)"
-          :disable="false"
-          class="q-mb-md"
-          @blur="trimNetworkName"
-        />
-        <q-input
-          v-model="password"
-          :type="isPwd ? 'password' : 'text'"
-          filled
-          label="Password"
-          class="q-mb-md"
-          :class="{ shake: wifiData.message === 'Wrong password' }"
-          @blur="trimPassword"
-        >
-          <template #append>
-            <svgIcon
-              :name="
-                isPwd ? 'visibility_off_outlined' : 'visibility-outlined-24'
-              "
-              class="cursor-pointer"
-              @click="isPwd = !isPwd"
-            />
-          </template>
-        </q-input>
-        <div
-          v-if="wifiData.message === 'Wrong password'"
-          class="text-negative q-my-md"
-        >
-          Password authentication failed, please try again.
-        </div>
-        <div
-          v-if="wifiData.message === 'AP not found.'"
-          class="text-negative q-my-md"
-        >
-          Access point {{ wifiData.ssid }} could not be found, please try again.
-        </div>
-      </div>
 
-      <!-- Step 6: Completion/Status -->
-      <div v-if="step === 6" class="q-pa-md">
+
+      <!-- Step 5: Completion -->
+      <div v-if="step === 5" class="q-pa-md">
         <div class="text-h6 q-mb-md">Setup Complete</div>
-        <div v-if="connecting" class="q-my-lg text-center">
+        <q-list bordered separator class="q-mb-lg">
+          <q-item>
+            <q-item-section>
+              <q-item-label caption>Hostname</q-item-label>
+              <q-item-label>{{ hostname }}</q-item-label>
+            </q-item-section>
+          </q-item>
+          <q-item v-if="currentPinConfigName">
+            <q-item-section>
+              <q-item-label caption>Pin Configuration</q-item-label>
+              <q-item-label>{{ currentPinConfigName }}</q-item-label>
+            </q-item-section>
+          </q-item>
+          <q-item>
+            <q-item-section>
+              <q-item-label caption>Color Model</q-item-label>
+              <q-item-label>{{ colorModel }}</q-item-label>
+            </q-item-section>
+          </q-item>
+        </q-list>
+        <div v-if="needsRestart" class="text-center q-mt-lg">
           <q-spinner color="primary" size="3em" />
-          <div class="q-mt-md">
-            {{ wifiData.message || "Connecting to network..." }}
-          </div>
+          <div class="q-mt-md">Configuration saved. Device is restarting...</div>
+          <div class="q-mt-sm text-grey-7">Reconnecting in {{ countdown }} seconds</div>
         </div>
-        <div v-else-if="wifiData.connected" class="q-my-lg">
+        <div v-else class="text-center q-mt-lg">
           <svgIcon
             name="check_outlined_outlined_circle"
             color="positive"
             size="3em"
             class="q-mb-md block"
           />
-          <div class="text-h6 text-positive q-mb-md">
-            Connection Successful!
-          </div>
-          <q-list bordered separator>
-            <q-item>
-              <q-item-section>
-                <q-item-label caption>Hostname</q-item-label>
-                <q-item-label>{{ hostname }}</q-item-label>
-              </q-item-section>
-            </q-item>
-            <q-item>
-              <q-item-section>
-                <q-item-label caption>Network</q-item-label>
-                <q-item-label>{{ wifiData.ssid }}</q-item-label>
-              </q-item-section>
-            </q-item>
-            <q-item
-              clickable
-              tag="a"
-              :href="'http://' + wifiData.ip"
-              target="_blank"
-              rel="noopener"
-            >
-              <q-item-section>
-                <q-item-label caption>IP Address</q-item-label>
-                <q-item-label
-                  class="text-primary text-underline cursor-pointer"
-                  >{{ wifiData.ip }}</q-item-label
-                >
-              </q-item-section>
-              <q-item-section avatar>
-                <svgIcon name="open_in_new" />
-              </q-item-section>
-            </q-item>
-            <q-item>
-              <q-item-section>
-                <q-item-label caption>Gateway</q-item-label>
-                <q-item-label>{{ wifiData.gateway }}</q-item-label>
-              </q-item-section>
-            </q-item>
-          </q-list>
-          <div class="text-center q-mt-lg">
-            <p>Your device will restart in {{ countdown }} seconds</p>
-            <q-btn
-              color="primary"
-              label="Restart Now"
-              @click="restartController"
-            />
-          </div>
-        </div>
-        <div v-else class="q-my-lg">
-          <svgIcon
-            name="error"
-            color="negative"
-            size="3em"
-            class="q-mb-md block"
-          />
-          <div class="text-h6 text-negative q-mb-md">Connection Failed</div>
-          <p>{{ wifiData.message || "Unable to connect to the network" }}</p>
-          <q-btn
-            color="primary"
-            label="Try Again"
-            @click="step = 4"
-            class="q-mt-md"
-          />
+          <div class="text-h6 text-positive q-mb-md">Configuration saved!</div>
+          <q-btn color="primary" label="Go to Dashboard" @click="router.push('/')" />
         </div>
       </div>
 
@@ -430,7 +303,7 @@
       <q-separator />
       <div class="row justify-between q-pa-md">
         <q-btn
-          v-if="step > 1 && step < 6"
+          v-if="step > 1 && step < 5"
           outline
           color="primary"
           label="Back"
@@ -438,18 +311,17 @@
         />
         <div v-else></div>
         <q-btn
-          v-if="step < 5"
+          v-if="step < 4"
           color="primary"
           label="Next"
           @click="goToNextStep"
           :disable="!canProceed"
         />
         <q-btn
-          v-else-if="step === 5"
+          v-else-if="step === 4"
           color="primary"
-          label="Connect"
+          label="Finish"
           @click="finalizeSetup"
-          :disable="!canConnectToWifi"
           :loading="connecting"
         />
         <div v-else></div>
@@ -460,13 +332,10 @@
 
 <script>
 import { ref, computed, onMounted, watch } from "vue";
-import useWebSocket from "src/services/websocket";
+import { useRouter } from "vue-router";
 import { useControllersStore } from "src/stores/controllersStore.js";
 import { infoDataStore } from "src/stores/infoDataStore.js";
 import { configDataStore } from "src/stores/configDataStore";
-import { apiService } from "src/services/api";
-import { storeStatus } from "src/stores/storeConstants";
-import systemCommand from "src/services/systemCommands.js";
 import svgIcon from "src/components/svgIcon.vue";
 import ColorSlider from "src/components/ColorSlider.vue";
 import {
@@ -481,7 +350,7 @@ export default {
     const controllers = useControllersStore();
     const infoData = infoDataStore();
     const configData = configDataStore();
-    const ws = useWebSocket();
+    const router = useRouter();
 
     const step = ref(1);
     const connecting = ref(false);
@@ -603,39 +472,17 @@ export default {
       colorModel.value = newColorModel;
     };
 
-    // WiFi
-    const selectedNetwork = ref({ ssid: "", signal: 0, encryption: "" });
-    const networks = ref([]);
-    const password = ref("");
-    const isPwd = ref(true);
-
-    // Status
-    const wifiData = ref({
-      connected: false,
-      message: "",
-      ssid: null,
-      dhcp: null,
-      ip: null,
-      netmask: null,
-      gateway: null,
-      mac: null,
-    });
-    const log = ref([]);
+    // Track original values to detect restartable changes
+    const originalPinConfigName = ref(
+      configData.data.general.current_pin_config_name || "",
+    );
+    const needsRestart = ref(false);
+    const setupDone = ref(false);
 
     // Input trimming helpers
     const trimHostname = () => {
       if (hostname.value) {
         hostname.value = hostname.value.trim();
-      }
-    };
-    const trimNetworkName = () => {
-      if (selectedNetwork.value.ssid) {
-        selectedNetwork.value.ssid = selectedNetwork.value.ssid.trim();
-      }
-    };
-    const trimPassword = () => {
-      if (password.value) {
-        password.value = password.value.trim();
       }
     };
 
@@ -652,13 +499,6 @@ export default {
         return true; // Telemetry step can always proceed
       }
       return true;
-    });
-    const canConnectToWifi = computed(() => {
-      return (
-        selectedNetwork.value &&
-        selectedNetwork.value.ssid &&
-        selectedNetwork.value.ssid.trim() !== ""
-      );
     });
 
     // Step navigation
@@ -689,132 +529,48 @@ export default {
       if (config) currentPinConfig.value = config;
     };
 
-    // WiFi helpers
-    const getSignalIcon = (signalStrength, encryption) => {
-      switch (encryption) {
-        case "WPA":
-        case "WPA2_PSK":
-        case "WPA_WPA2_PSK":
-          if (signalStrength >= -50)
-            return "network_wifi_locked_FILL0_wght400_GRAD0_opsz24";
-          if (signalStrength >= -65)
-            return "network_wifi_3_bar_locked_FILL0_wght400_GRAD0_opsz24";
-          if (signalStrength >= -75)
-            return "network_wifi_2_bar_locked_FILL0_wght400_GRAD0_opsz24";
-          if (signalStrength >= -90)
-            return "network_wifi_1_bar_locked_FILL0_wght400_GRAD0_opsz24";
-          return "signal_wifi_statusbar_null_FILL0_wght400_GRAD0_opsz24";
-        default:
-          if (signalStrength >= -50)
-            return "network_wifi_FILL0_wght400_GRAD0_opsz24";
-          if (signalStrength >= -65)
-            return "network_wifi_3_bar_FILL0_wght400_GRAD0_opsz24";
-          if (signalStrength >= -75)
-            return "network_wifi_2_bar_FILL0_wght400_GRAD0_opsz24";
-          if (signalStrength >= -90)
-            return "network_wifi_1_bar_FILL0_wght400_GRAD0_opsz24";
-          return "signal_wifi_statusbar_null_FILL0_wght400_GRAD0_opsz24";
-      }
-    };
-    const fetchNetworks = async () => {
-      try {
-        if (controllers.currentController.ip_address) {
-          const { jsonData, error } = await apiService.getNetworkData(
-            controllers.currentController,
-          );
+    // WiFi signal icon helper kept for backward compat but no longer used in template
+    const getSignalIcon = () => null;
 
-          if (error || !jsonData) {
-            throw error || new Error("Could not fetch networks");
-          }
-
-          const responseJson = jsonData;
-          responseJson.available.sort((a, b) => b.signal - a.signal);
-          networks.value = responseJson["available"];
-
-          const { error: scanError } = await apiService.scanNetworks(
-            controllers.currentController,
-          );
-          if (scanError) {
-            throw scanError;
-          }
-        }
-      } catch (error) {
-        console.error("Error fetching networks:", error);
-      }
-    };
-
-    // Finalize setup: WiFi, then config, then color model
+    // Save all wizard config and transition to completion step
     const finalizeSetup = async () => {
       connecting.value = true;
       try {
-        // 1. Connect to WiFi
-        const response = await fetch(
-          `http://${controllers.currentController.ip_address}/connect`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              ssid: selectedNetwork.value.ssid,
-              password: password.value,
-            }),
-          },
-        );
-        if (response.ok) {
-          wifiData.value.message = "Connecting to network...";
-          log.value.push("Connecting to network");
-          step.value = 6;
-        } else {
-          wifiData.value.message = "Failed to initiate connection";
-          log.value.push("Failed to initiate connection");
-          connecting.value = false;
-          // Stay on WiFi step
-          step.value = 5;
-          return;
+        // Save hostname
+        await configData.updateData("general.device_name", hostname.value, true);
+
+        // Save pin config if one is selected
+        if (currentPinConfigName.value && currentPinConfig.value.channels) {
+          await configData.updateData(
+            "general.current_pin_config_name",
+            currentPinConfigName.value,
+            true,
+          );
+          await configData.updateData(
+            "general.channels",
+            currentPinConfig.value.channels,
+            true,
+          );
         }
 
-        // 2. Wait for WiFi connection (poll or use websocket)
-        let connected = false;
-        for (let i = 0; i < 20; i++) {
-          await new Promise((resolve) => setTimeout(resolve, 500));
-          if (wifiData.value.connected) {
-            connected = true;
-            break;
-          }
-        }
+        // Save color model
+        const modelIndex = colorOptions.value.indexOf(colorModel.value);
+        await configData.updateData("color.outputmode", modelIndex, true);
 
-        // 3. Send config data (hostname & pin config) after WiFi is up
-        if (connected) {
-          configData.updateData("general.device_name", hostname.value);
-          // Only update pin config if one is selected
-          if (currentPinConfigName.value && currentPinConfig.value.channels) {
-            configData.updateData(
-              "general.current_pin_config_name",
-              currentPinConfigName.value,
-            );
-            configData.updateData(
-              "general.channels",
-              currentPinConfig.value.channels,
-            );
-          }
-          // Send color model here
-          const modelIndex = colorOptions.value.indexOf(colorModel.value);
-          configData.updateData("color.outputmode", modelIndex);
-          // The telemetry setting is already updated by the component
-        } else {
-          // WiFi never connected, go back to WiFi step
-          wifiData.value.message =
-            "Unable to connect to the network. Please try again.";
-          step.value = 5;
-          connecting.value = false;
-          return;
+        // Pin config change triggers firmware restart automatically
+        needsRestart.value =
+          originalPinConfigName.value !== currentPinConfigName.value;
+
+        setupDone.value = true;
+        step.value = 5;
+
+        if (needsRestart.value) {
+          startCountdown();
         }
       } catch (error) {
-        wifiData.value.message = `Connection error: ${error.message}`;
-        step.value = 5;
+        console.error("Setup error:", error);
       } finally {
-        setTimeout(() => {
-          connecting.value = false;
-        }, 3000);
+        connecting.value = false;
       }
     };
 
@@ -838,43 +594,30 @@ export default {
     };
 
     const restartController = () => {
-      systemCommand.restartController();
+      import("src/services/systemCommands.js").then((m) =>
+        m.default.restartController(),
+      );
     };
 
-    // Countdown and redirect after reboot
+    // Countdown then poll for reconnect (firmware restart triggered by pin config change)
     const startCountdown = () => {
-      countdown.value = 10;
+      countdown.value = 15;
       const timer = setInterval(() => {
         countdown.value--;
         if (countdown.value <= 0) {
           clearInterval(timer);
-          restartController();
-          if (wifiData.value.ip) {
-            pollNewIpAndRedirect(wifiData.value.ip);
+          const currentIp = controllers.currentController?.ip_address;
+          if (currentIp) {
+            pollNewIpAndRedirect(currentIp);
+          } else {
+            window.location.href = "/";
           }
         }
       }, 1000);
     };
 
-    // Websocket for wifi status
-    const registerWebSocketCallback = () => {
-      ws.onJson("wifi_status", (params) => {
-        wifiData.value.connected = params.station.connected;
-        wifiData.value.ssid = params.station.ssid;
-        wifiData.value.dhcp = params.station.dhcp;
-        wifiData.value.ip = params.station.ip;
-        wifiData.value.netmask = params.station.netmask;
-        wifiData.value.gateway = params.station.gateway;
-        wifiData.value.mac = params.station.mac;
-        wifiData.value.message = params.message;
-        if (wifiData.value.connected && step.value === 6) startCountdown();
-      });
-    };
-
     // Initial setup
     onMounted(() => {
-      fetchNetworks();
-      registerWebSocketCallback();
       getPinConfigNames();
       // Color model options
       colorOptions.value =
@@ -887,17 +630,6 @@ export default {
       } else {
         colorModel.value = colorOptions.value[0];
       }
-      // WiFi status
-      if (infoData.storeStatus === storeStatus.LOADED) {
-        wifiData.value.connected = infoData.data.connection.connected;
-        wifiData.value.ssid = infoData.data.connection.ssid;
-        wifiData.value.ip = infoData.data.connection.ip;
-        wifiData.value.netmask = infoData.data.connection.netmask;
-        wifiData.value.gateway = infoData.data.connection.gateway;
-        if (wifiData.value.connected && wifiData.value.ssid) {
-          selectedNetwork.value.ssid = wifiData.value.ssid;
-        }
-      }
     });
 
     watch(
@@ -906,16 +638,8 @@ export default {
         if (infoData.data.device?.soc) getPinConfigNames();
       },
     );
-    watch(
-      () => wifiData.value.ssid,
-      (newSsid) => {
-        if (wifiData.value.connected && newSsid) {
-          selectedNetwork.value.ssid = newSsid;
-        }
-      },
-    );
 
-    // Watchers for automatic whitespace trimming
+    // Trim hostname whitespace automatically
     watch(
       () => hostname.value,
       () => {
@@ -924,27 +648,9 @@ export default {
         }
       },
     );
-    watch(
-      () => selectedNetwork.value.ssid,
-      () => {
-        if (
-          selectedNetwork.value.ssid &&
-          selectedNetwork.value.ssid !== selectedNetwork.value.ssid.trim()
-        ) {
-          selectedNetwork.value.ssid = selectedNetwork.value.ssid.trim();
-        }
-      },
-    );
-    watch(
-      () => password.value,
-      () => {
-        if (password.value && password.value !== password.value.trim()) {
-          password.value = password.value.trim();
-        }
-      },
-    );
 
     return {
+      router,
       step,
       connecting,
       countdown,
@@ -954,19 +660,11 @@ export default {
       currentPinConfig,
       socSpecificConfigs,
       infoData,
-      selectedNetwork,
-      networks,
-      password,
-      isPwd,
-      wifiData,
-      log,
       canProceed,
-      canConnectToWifi,
       goToNextStep,
       getPinConfigNames,
       handlePinConfigChange,
       finalizeSetup,
-      restartController,
       getSignalIcon,
       colorModel,
       colorOptions,
@@ -975,9 +673,6 @@ export default {
       updateColorSlider,
       emitColorModel,
       trimHostname,
-      trimNetworkName,
-      // Return updated properties
-      trimPassword,
       statsEnabled,
       logEnabled,
       showDetails,
@@ -986,6 +681,8 @@ export default {
       telemetryDataColumns,
       telemetryDataRows,
       isDebug,
+      needsRestart,
+      setupDone,
     };
   },
 };

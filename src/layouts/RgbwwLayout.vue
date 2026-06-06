@@ -454,6 +454,17 @@ export default defineComponent({
           return;
         }
 
+        // First-run: hostname not set — redirect to setup wizard
+        if (
+          router.currentRoute.value.path !== "/networkinit" &&
+          configData.data?.general &&
+          configData.data.general.device_name === ""
+        ) {
+          console.log("first-run: hostname not set, redirecting to /networkinit");
+          router.push("/networkinit");
+          return;
+        }
+
         console.log(
           "connected:",
           infoData.data.connection.connected ? "true" : "false",
@@ -496,6 +507,13 @@ export default defineComponent({
       // the controllers dropdown list *in* the left drawer.
       watch(
         () => infoData.status === storeStatus.READY,
+        () => {
+          checkControllerConfigured();
+        },
+      );
+
+      watch(
+        () => configData.status === storeStatus.READY,
         () => {
           checkControllerConfigured();
         },
