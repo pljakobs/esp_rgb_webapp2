@@ -33,7 +33,7 @@
                 <div class="heap-sparkline-label">Free Heap (30 min)</div>
                 <svg
                   class="heap-sparkline"
-                  viewBox="0 0 200 60"
+                  viewBox="0 0 400 120"
                   preserveAspectRatio="none"
                   xmlns="http://www.w3.org/2000/svg"
                 >
@@ -97,8 +97,8 @@ import MyCard from "src/components/myCard.vue";
 
 // 30 min @ 5 s poll interval = 360 samples max
 const MAX_HEAP_SAMPLES = 360;
-const SPARKLINE_W = 200;
-const SPARKLINE_H = 60;
+const SPARKLINE_W = 400;
+const SPARKLINE_H = 120;
 const SPARKLINE_PAD = 4; // px padding inside viewBox
 
 export default {
@@ -340,7 +340,7 @@ export default {
 /* Sparkline panel */
 .heap-sparkline-wrap {
   flex: 0 0 auto;
-  width: 120px;
+  width: 240px;
   display: flex;
   flex-direction: column;
   align-items: stretch;
@@ -358,7 +358,7 @@ export default {
 
 .heap-sparkline {
   width: 100%;
-  height: 60px;
+  height: 120px;
   overflow: visible;
 }
 
