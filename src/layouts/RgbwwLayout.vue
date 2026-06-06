@@ -368,7 +368,7 @@ export default defineComponent({
       const routerViewColumnClass = computed(() => {
         return isSystemSettingsRoute.value
           ? "col-12 no-gutter"
-          : "col-xs-12 col-sm-6 col-md-7 col-lg-5 no-gutter";
+          : "col-xs-12 col-sm-6 col-md-7 col-lg-5 no-gutter card-column-gutter";
       });
 
       const updateIsSmallScreen = () => {
@@ -802,6 +802,13 @@ export default defineComponent({
 .no-gutter {
   padding-left: 0 !important;
   padding-right: 0 !important;
+}
+/* On sm+ the card column sits next to the drawer — give it the same
+   left gap as the inter-column spacing (overrides no-gutter left side) */
+@media (min-width: 600px) {
+  .card-column-gutter {
+    padding-left: 8px !important;
+  }
 }
 .with-bottom-padding {
   padding-bottom: 60px; /* Adjust this value to ensure enough space for the buttonIconName */
