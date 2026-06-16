@@ -28,7 +28,7 @@ jobs:
           node-version: "24"
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci --legacy-peer-deps
 
       - name: Run frontend unit tests
         run: npm test -- src/services/__tests__/api.spec.js
