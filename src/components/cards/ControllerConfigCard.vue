@@ -356,7 +356,7 @@ export default {
 
     // Store original values for all settings
     const originalValues = {
-      pinConfigName: configData.data.general.current_pin_config_name,
+      pinConfigName: configData.data?.general?.current_pin_config_name,
       // PWM values with safe defaults - using correct schema property names
       pwmSpeedMode:
         configData.data.hardware?.pwm?.timer?.speed_mode || "low_speed",

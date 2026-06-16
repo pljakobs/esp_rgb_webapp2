@@ -14,11 +14,16 @@ export const useColorDataStore = defineStore("colorDataStore", {
     http_response_status: null,
     change_by: "load",
     websocketSubscribed: false,
+    isInitialLoad: true,
   }),
   actions: {
     async fetchData() {
       console.log("colorDataStore before fetch:", this);
-      this.status = storeStatus.LOADING;
+      // Only set LOADING on initial fetch; preserve status during polling updates
+      if (this.isInitialLoad) {
+        this.status = storeStatus.LOADING;
+      }
+
       try {
         const { jsonData, error } = await apiService.getColorData();
         if (error) {
@@ -27,6 +32,7 @@ export const useColorDataStore = defineStore("colorDataStore", {
         console.log("color data fetched: ", jsonData);
         this.data = jsonData;
         this.status = storeStatus.READY;
+        this.isInitialLoad = false;
         console.log("colorDataStore after fetch:", this);
       } catch (err) {
         this.status = storeStatus.ERROR;

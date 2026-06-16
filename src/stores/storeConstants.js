@@ -2,17 +2,15 @@ const localOverrideModules = import.meta.glob("../config/localOverrides.js", {
   eager: true,
 });
 
-const localOverrides =
-  Object.values(localOverrideModules)[0]?.default ?? {};
+const localOverrides = Object.values(localOverrideModules)[0]?.default ?? {};
 
 const localhostOverride = localOverrides.localhost ?? {};
 
 export const localhost = {
   hostname: localhostOverride.hostname ?? "localhost",
-  ip_address:
-    import.meta.env.DEV
-      ? localhostOverride.ip_address ?? "127.0.0.1"
-      : window.location.hostname,
+  ip_address: import.meta.env.DEV
+    ? (localhostOverride.ip_address ?? "127.0.0.1")
+    : window.location.hostname,
 };
 
 export const storeStatus = {
@@ -41,4 +39,4 @@ export const storeStatus = {
 
 export const maxRetries = 3; // Maximum number of retries
 export const retryDelay = 500; // Delay for the first retry in milliseconds
-export const requestTimeout = 3000;
+export const requestTimeout = 6000;

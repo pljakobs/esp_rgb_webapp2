@@ -12,9 +12,25 @@ import useWebSocket, { wsStatus } from "src/services/websocket.js";
  */
 export function normalizeInfoData(raw) {
   if (!raw) return raw;
-  // Already new nested structure
-  if (raw.device !== undefined) return raw;
+
+  // Determine the schema version (default to version 1 if property is absent)
+  const schemaVersion = raw.version !== undefined ? Number(raw.version) : 1;
+
+  // Case 1: Native nested structure (Version 2)
+  if (schemaVersion >= 2) {
+    console.debug(
+      `normalizeInfoData: detected schema version ${schemaVersion} (nested structure)`,
+    );
+    if (raw.runtime && raw.runtime.event_num_clients === undefined) {
+      // Alias the v2 debug field to the legacy location for layout components
+      raw.runtime.event_num_clients = raw.debug?.eventserver_clients ?? 0;
+    }
+    return raw;
+  }
   // Legacy flat structure — remap to nested
+  console.debug(
+    "normalizeInfoData: detected legacy schema (flat structure), normalizing to nested format",
+  );
   return {
     device: {
       deviceid: raw.deviceid,
@@ -71,7 +87,12 @@ export const infoDataStore = defineStore("infoDataStore", {
     },
 
     async fetchData() {
-      this.status = storeStatus.LOADING;
+      // Only set LOADING on initial fetch; preserve status during polling updates
+      const isInitialLoad = this.data === null;
+      if (isInitialLoad) {
+        this.status = storeStatus.LOADING;
+      }
+
       try {
         let infoPayload = await this.fetchDataViaWebSocket();
 

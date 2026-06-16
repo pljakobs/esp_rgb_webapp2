@@ -1,4 +1,4 @@
-import { watch } from 'vue';
+import { watch } from "vue";
 import { configDataStore } from "src/stores/configDataStore";
 import { useColorDataStore } from "src/stores/colorDataStore";
 import { useAppDataStore } from "src/stores/appDataStore";
@@ -40,7 +40,8 @@ export default async function initializeStores(options = {}) {
 
   // Watch for changes to currentController and (re)connect websocket
   watch(
-    () => controllers.currentController && controllers.currentController.ip_address,
+    () =>
+      controllers.currentController && controllers.currentController.ip_address,
     (ip, prevIp) => {
       if (ip && ip !== prevIp) {
         const wsUrl = `ws://${ip}/ws`;
@@ -49,13 +50,13 @@ export default async function initializeStores(options = {}) {
         }
       }
     },
-    { immediate: true }
+    { immediate: true },
   );
 
   if (!controllers.currentController) {
     controllers.currentController = localhost;
     console.warn("store uninitialized: setting localhost as currentController");
-    return;
+    //return;
   }
 
   activeInitToken += 1;

@@ -39,8 +39,8 @@ export default configure((/* ctx */) => {
     name: "generate-icon-sprite-build",
     apply: "build",
     closeBundle() {
-      runGzipSpa();
       runIconGeneration();
+      runGzipSpa();
     },
   };
 
@@ -59,33 +59,52 @@ export default configure((/* ctx */) => {
         browser: ["es2022"],
         node: "node24",
       },
+
       extendViteConf(viteConf) {
+        // Fix path resolution using Node compile-time directory context
+        viteConf.resolve ??= {};
+        viteConf.resolve.alias = {
+          ...viteConf.resolve.alias,
+          src: path.resolve(__dirname, "./src"),
+          pages: path.resolve(__dirname, "./src/pages"),
+          components: path.resolve(__dirname, "./src/components"),
+          stores: path.resolve(__dirname, "./src/stores"),
+          layouts: path.resolve(__dirname, "./src/layouts"),
+        };
+
+        // Suppress browser runtime references to Node global process objects
+        viteConf.define ??= {};
+        viteConf.define = {
+          ...viteConf.define,
+          "process.env": {},
+          "process.cwd": () => "/",
+        };
+
         viteConf.server ??= {};
         viteConf.server.watch ??= {};
         viteConf.server.watch.usePolling = true;
         viteConf.server.watch.interval = 200;
-        viteConf.build.polyfillDynamicImport = false;
+
+        // Dynamic imports configuration for chunked loading
+        viteConf.build.polyfillDynamicImport = true;
         viteConf.build.rollupOptions = {
           output: {
-            // This forces all dependencies and code into index.js
-            manualChunks: undefined,
+            // Chunk splitting is active to separate pages and vendor libraries
           },
         };
-        viteConf.build.modulePreload = { polyfill: false };
+        viteConf.build.modulePreload = { polyfill: true };
       },
-      // Static asset names allow browsers to reuse stale chunks after firmware/webapp
-      // updates, which can break ESM imports when minified export aliases change.
       useFilenameHashes: true,
       vueRouterMode: "hash",
       rebuildCache: true,
-      polyfillModulePreload: false,
+      polyfillModulePreload: true,
       sourcemap: false,
       vitePlugins: [
         generateIconSpriteServePlugin,
         generateIconSpriteBuildPlugin,
         visualizer({
           filename: "./dist/stats.html",
-          template: "treemap", // or "sunburst", "network"
+          template: "treemap",
         }),
       ],
     },

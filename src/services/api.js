@@ -1,5 +1,9 @@
 import { useControllersStore } from "../stores/controllersStore";
-import { retryDelay, requestTimeout, maxRetries } from "../stores/storeConstants";
+import {
+  retryDelay,
+  requestTimeout,
+  maxRetries,
+} from "../stores/storeConstants";
 import useWebSocket, { wsStatus } from "./websocket.js";
 
 export class ApiService {
@@ -269,7 +273,10 @@ export class ApiService {
     }
 
     const ws = useWebSocket();
-    if (ws.status?.value !== wsStatus.CONNECTED || typeof ws.request !== "function") {
+    if (
+      ws.status?.value !== wsStatus.CONNECTED ||
+      typeof ws.request !== "function"
+    ) {
       return {
         jsonData: null,
         error: { message: "websocket not connected" },
@@ -294,12 +301,7 @@ export class ApiService {
     }
   }
 
-  async _dispatchAction(
-    method,
-    params = {},
-    controller = null,
-    options = {},
-  ) {
+  async _dispatchAction(method, params = {}, controller = null, options = {}) {
     const {
       timeoutMs = 1200,
       preferWebSocket = true,
@@ -679,10 +681,11 @@ export class ApiService {
   }
 
   async getConfig(controller = null) {
-    const wsResponse = await this.fetchJsonRpc("config", {}, controller);
-    if (!wsResponse.error && wsResponse.jsonData) {
-      return wsResponse;
-    }
+    // jsonRpc is not implemented for Config
+    // const wsResponse = await this.fetchJsonRpc("config", {}, controller);
+    //   if (!wsResponse.error && wsResponse.jsonData) {
+    //     return wsResponse;
+    //   }
 
     return this.fetchApi("config", controller);
   }
@@ -811,6 +814,7 @@ export class ApiService {
   }
 
   async getData(controller = null) {
+    // Data is currently not implemented as websocket rpc
     return this.fetchApi("data", controller);
   }
 

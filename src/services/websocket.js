@@ -221,7 +221,6 @@ export default function useWebSocket() {
     state.callbacks[key].push(callback);
   };
 
-  console.log("=> useWebsocket state: ", JSON.stringify(state));
   // Call connect to open the WebSocket
   let currentSocket = {
     ...toRefs(state),

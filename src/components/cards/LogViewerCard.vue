@@ -679,6 +679,27 @@ export default {
       }
     };
 
+    const startPolling = () => {
+      if (!canPollLogs.value) {
+        return;
+      }
+      if (pollTimer) {
+        clearInterval(pollTimer);
+      }
+      pollTimer = setInterval(() => {
+        if (canPollLogs.value) {
+          refreshLogs();
+        }
+      }, pollMs);
+    };
+
+    const stopPolling = () => {
+      if (pollTimer) {
+        clearInterval(pollTimer);
+        pollTimer = null;
+      }
+    };
+
     watch(currentControllerIp, () => {
       logSendingEnabled.value = true;
       if (canPollLogs.value && pollTimer) {
@@ -726,27 +747,6 @@ export default {
       scrollToBottom();
     });
 
-    const startPolling = () => {
-      if (!canPollLogs.value) {
-        return;
-      }
-      if (pollTimer) {
-        clearInterval(pollTimer);
-      }
-      pollTimer = setInterval(() => {
-        if (canPollLogs.value) {
-          refreshLogs();
-        }
-      }, pollMs);
-    };
-
-    const stopPolling = () => {
-      if (pollTimer) {
-        clearInterval(pollTimer);
-        pollTimer = null;
-      }
-    };
-
     onMounted(() => {
       persistCollectorTarget();
       persistDownloadPreferences();
@@ -773,6 +773,9 @@ export default {
       showCollectorSetupHelp,
       statusMessage,
       statusClass,
+      stopPolling,
+      startPolling,
+
       downloadScope,
       downloadAmount,
       downloadUnit,

@@ -268,11 +268,10 @@
             id="parent"
             class="fit row wrap justify-center items-start content-start no-gutter with-bottom-padding"
           >
-            <div
-              :class="routerViewColumnClass"
-              justify-center
-            >
-              <template v-if="!configData.data.general.current_pin_config_name">
+            <div :class="routerViewColumnClass" justify-center>
+              <template
+                v-if="!configData.data?.general?.current_pin_config_name"
+              >
                 <ControllerConfigCard />
               </template>
               <template v-else>
@@ -345,6 +344,7 @@ export default defineComponent({
       const isSelectOpen = ref(false);
 
       const showInitialLoader = computed(() => {
+        // Only show loader on initial load (no data yet), not during polling updates
         const infoLoading =
           infoData.status === storeStatus.LOADING && !infoData.data;
         const configLoading =
@@ -460,7 +460,9 @@ export default defineComponent({
           configData.data?.general &&
           configData.data.general.device_name === ""
         ) {
-          console.log("first-run: hostname not set, redirecting to /networkinit");
+          console.log(
+            "first-run: hostname not set, redirecting to /networkinit",
+          );
           router.push("/networkinit");
           return;
         }
@@ -475,16 +477,12 @@ export default defineComponent({
           !infoData.data.connection.connected &&
           infoData.data.connection.ssid === ""
         ) {
-          // the controller has no configured ssid and is not connected to a wifi network
-          // we are therefore talking to a controller in AP mode, trigger the controller config
-          // section
           console.log("new controller, redirecting to /networkinit");
           router.push("/networkinit");
         } else if (
           infoData.data.connection.connected &&
-          configData.data.general &&
-          (!configData.data.general.current_pin_config_name ||
-            configData.data.general.current_pin_config_name === "")
+          configData.status === storeStatus.READY && // Guard status first
+          !configData.data?.general?.current_pin_config_name // Safe navigation path
         ) {
           // Network is configured, but no pin config is active
           console.log(
