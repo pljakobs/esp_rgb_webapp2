@@ -30,15 +30,6 @@ const SPRITE_URL = "icons/iconsSprite.svg";
 const SPRITE_ELEMENT_ID = "svg-icon-sprite";
 let spriteLoadPromise = null;
 
-function getSpriteUrl(forceReload = false) {
-  if (!forceReload) {
-    return SPRITE_URL;
-  }
-
-  const separator = SPRITE_URL.includes("?") ? "&" : "?";
-  return `${SPRITE_URL}${separator}cb=${Date.now()}`;
-}
-
 function normalizeIconName(name) {
   // Replace slashes with underscores to match sprite ID convention
   let normalized = name.replace(/\//g, "_");
@@ -62,7 +53,7 @@ async function fetchSpriteWithRetry(url, fetchOptions, retriesLeft = 4) {
   if (response.status === 429 && retriesLeft > 0) {
     const retryAfter = parseInt(response.headers.get("Retry-After") || "10", 10);
     await new Promise((resolve) => setTimeout(resolve, retryAfter * 1000));
-    return fetchSpriteWithRetry(getSpriteUrl(true), { cache: "reload" }, retriesLeft - 1);
+    return fetchSpriteWithRetry(SPRITE_URL, { cache: "reload" }, retriesLeft - 1);
   }
   return response;
 }
@@ -86,7 +77,7 @@ function ensureSpriteLoaded({ forceReload = false } = {}) {
 
   if (!spriteLoadPromise) {
     const cacheMode = forceReload ? "reload" : "default";
-    spriteLoadPromise = fetchSpriteWithRetry(getSpriteUrl(forceReload), { cache: cacheMode })
+    spriteLoadPromise = fetchSpriteWithRetry(SPRITE_URL, { cache: cacheMode })
       .then((response) => {
         if (!response.ok) {
           throw new Error(`Failed to load sprite: ${response.status}`);
