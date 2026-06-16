@@ -76,8 +76,8 @@ export default configure((/* ctx */) => {
         viteConf.define ??= {};
         viteConf.define = {
           ...viteConf.define,
-          "process.env": {},
-          "process.cwd": () => "/",
+          "process.env": "{}",
+          "process.cwd": '"/"',
         };
 
         viteConf.server ??= {};
@@ -92,6 +92,7 @@ export default configure((/* ctx */) => {
             // Chunk splitting is active to separate pages and vendor libraries
           },
         };
+        viteConf.build.cssMinify = "esbuild";
         viteConf.build.modulePreload = { polyfill: true };
       },
       useFilenameHashes: true,
