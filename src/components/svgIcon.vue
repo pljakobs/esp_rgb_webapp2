@@ -29,6 +29,31 @@ import { configDataStore } from "src/stores/configDataStore";
 const SPRITE_URL = "icons/iconsSprite.svg";
 const SPRITE_ELEMENT_ID = "svg-icon-sprite";
 let spriteLoadPromise = null;
+let spriteRetryAllowedAt = 0;
+let spriteRetryWaitPromise = null;
+
+function createRetryError(retryAfterMs) {
+  const error = new Error("Failed to load sprite: 429");
+  error.retryAfterMs = retryAfterMs;
+  return error;
+}
+
+function waitForSpriteRetryWindow() {
+  const delayMs = spriteRetryAllowedAt - Date.now();
+  if (delayMs <= 0) {
+    return Promise.resolve();
+  }
+
+  if (!spriteRetryWaitPromise) {
+    spriteRetryWaitPromise = new Promise((resolve) => {
+      window.setTimeout(resolve, delayMs);
+    }).finally(() => {
+      spriteRetryWaitPromise = null;
+    });
+  }
+
+  return spriteRetryWaitPromise;
+}
 
 function normalizeIconName(name) {
   // Replace slashes with underscores to match sprite ID convention
@@ -55,6 +80,12 @@ async function fetchSpriteWithRetry(url, fetchOptions, retriesLeft = 4) {
     await new Promise((resolve) => setTimeout(resolve, retryAfter * 1000));
     return fetchSpriteWithRetry(SPRITE_URL, { cache: "reload" }, retriesLeft - 1);
   }
+
+  if (response.status === 429) {
+    const retryAfter = parseInt(response.headers.get("Retry-After") || "10", 10);
+    throw createRetryError(retryAfter * 1000);
+  }
+
   return response;
 }
 
@@ -77,7 +108,8 @@ function ensureSpriteLoaded({ forceReload = false } = {}) {
 
   if (!spriteLoadPromise) {
     const cacheMode = forceReload ? "reload" : "default";
-    spriteLoadPromise = fetchSpriteWithRetry(SPRITE_URL, { cache: cacheMode })
+    spriteLoadPromise = waitForSpriteRetryWindow()
+      .then(() => fetchSpriteWithRetry(SPRITE_URL, { cache: cacheMode }))
       .then((response) => {
         if (!response.ok) {
           throw new Error(`Failed to load sprite: ${response.status}`);
@@ -104,6 +136,9 @@ function ensureSpriteLoaded({ forceReload = false } = {}) {
         document.body.prepend(svgElement);
       })
       .catch((error) => {
+        if (error.retryAfterMs) {
+          spriteRetryAllowedAt = Date.now() + error.retryAfterMs;
+        }
         // Allow future attempts to retry from scratch after any fetch failure.
         spriteLoadPromise = null;
         throw error;

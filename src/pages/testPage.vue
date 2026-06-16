@@ -18,9 +18,6 @@
       </q-card-section>
     </q-card>
 
-    <div class="q-mt-lg">
-      <IconTestCard />
-    </div>
   </q-page>
 </template>
 
@@ -30,12 +27,8 @@ import { Dark } from "quasar";
 import { infoDataStore } from "src/stores/infoDataStore";
 import groupsCard from "src/components/cards/groupsCard.vue";
 import { makeID } from "src/services/tools.js";
-import IconTestCard from "src/components/cards/IconTestCard.vue";
 
 export default {
-  components: {
-    IconTestCard,
-  },
   setup() {
     const infoData = infoDataStore();
     const isDarkMode = ref(Dark.isActive);
