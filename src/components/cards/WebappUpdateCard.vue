@@ -1,15 +1,13 @@
 <template>
-  <MyCard title="Webapp update" icon="web_outlined">
+  <MyCard :title="$t('cards.webappUpdate.title')" icon="web_outlined">
     <q-card-section>
       <q-toggle
         v-model="webappEnabled"
-        label="Auto-update webapp"
+        :label="$t('cards.webappUpdate.autoUpdate')"
         @update:model-value="onToggleEnabled"
       />
       <div class="text-caption text-grey q-mt-xs">
-        When enabled, checks for a new webapp on every WiFi connect.
-        Disable to only update on manual request.
-        A missing webapp is always fetched regardless of this setting.
+        {{ $t('cards.webappUpdate.description') }}
       </div>
     </q-card-section>
 
@@ -39,7 +37,7 @@
           {{ otaCurrentFile }}
         </span>
         <span v-if="otaTotalFiles > 0">
-          {{ otaDoneFiles }} / {{ otaTotalFiles }} files
+          {{ $t('cards.webappUpdate.filesProgress', { done: otaDoneFiles, total: otaTotalFiles }) }}
         </span>
       </div>
     </q-card-section>
@@ -50,7 +48,7 @@
 
     <q-card-actions align="left">
       <q-btn
-        label="Check webapp"
+        :label="$t('cards.webappUpdate.checkWebapp')"
         color="primary"
         class="q-mt-xs"
         :loading="checking"
@@ -63,6 +61,7 @@
 
 <script>
 import { ref, computed, onMounted, onUnmounted } from "vue";
+import { useI18n } from "vue-i18n";
 import { Notify } from "quasar";
 import { configDataStore } from "src/stores/configDataStore";
 import { useControllersStore } from "src/stores/controllersStore";
@@ -72,6 +71,7 @@ import MyCard from "src/components/myCard.vue";
 export default {
   components: { MyCard },
   setup() {
+    const { t } = useI18n();
     const configData = configDataStore();
     const controllersStore = useControllersStore();
 
@@ -93,10 +93,10 @@ export default {
       otaTotalFiles.value > 0 ? otaDoneFiles.value / otaTotalFiles.value : 0,
     );
     const stateLabel = computed(() => ({
-      idle: "Idle",
-      querying_api: "Checking for update…",
-      downloading: "Downloading…",
-      activating: "Activating…",
+      idle: t("cards.webappUpdate.states.idle"),
+      querying_api: t("cards.webappUpdate.states.queryingApi"),
+      downloading: t("cards.webappUpdate.states.downloading"),
+      activating: t("cards.webappUpdate.states.activating"),
     }[otaState.value] ?? otaState.value));
     const stateBadgeColor = computed(() => ({
       idle: "grey",
@@ -120,7 +120,7 @@ export default {
       } catch (err) {
         Notify.create({
           type: "negative",
-          message: `Failed to save webapp enabled setting: ${err.message}`,
+          message: t("cards.webappUpdate.errors.saveEnabled", { error: err.message }),
         });
         // revert optimistic update
         webappEnabled.value = !val;
@@ -129,7 +129,7 @@ export default {
 
     async function checkWebapp() {
       checking.value = true;
-      statusMessage.value = "Checking for webapp update…";
+      statusMessage.value = t("cards.webappUpdate.checking");
 
       const MAX_RETRIES = 4;
       let attempt = 0;
@@ -147,9 +147,13 @@ export default {
             const retryAfter = parseInt(response.headers.get("Retry-After") ?? "5", 10);
             attempt++;
             if (attempt > MAX_RETRIES) {
-              throw new Error(`Device busy (429), gave up after ${MAX_RETRIES} retries`);
+              throw new Error(t("cards.webappUpdate.errors.deviceBusyMaxRetries", { retries: MAX_RETRIES }));
             }
-            statusMessage.value = `Device busy, retrying in ${retryAfter}s… (${attempt}/${MAX_RETRIES})`;
+            statusMessage.value = t("cards.webappUpdate.retryingBusy", {
+              seconds: retryAfter,
+              attempt,
+              maxRetries: MAX_RETRIES,
+            });
             await new Promise((r) => setTimeout(r, retryAfter * 1000));
             continue;
           }
@@ -160,12 +164,12 @@ export default {
 
           const data = await response.json();
           // Show initial status from response; further updates arrive via WS
-          statusMessage.value = data.status ?? "Check started";
+          statusMessage.value = data.status ?? t("cards.webappUpdate.checkStarted");
           checking.value = false;
           return;
         } catch (err) {
-          statusMessage.value = `Error: ${err.message}`;
-          Notify.create({ type: "negative", message: `Webapp check failed: ${err.message}` });
+          statusMessage.value = t("cards.webappUpdate.errorPrefix", { error: err.message });
+          Notify.create({ type: "negative", message: t("cards.webappUpdate.errors.checkFailed", { error: err.message }) });
           checking.value = false;
           return;
         }
@@ -191,9 +195,11 @@ export default {
         const lastStatus = params.last_status ?? "";
         const ver = params.version ?? "";
         if (lastStatus === "no_update") {
-          statusMessage.value = `Already up to date${ver ? " (" + ver + ")" : ""}`;
+          statusMessage.value = t("cards.webappUpdate.alreadyUpToDate", {
+            version: ver ? ` (${ver})` : "",
+          });
         } else if (lastStatus === "updated") {
-          statusMessage.value = `Updated to ${ver}`;
+          statusMessage.value = t("cards.webappUpdate.updatedTo", { version: ver });
         } else if (lastStatus) {
           statusMessage.value = lastStatus;
         }

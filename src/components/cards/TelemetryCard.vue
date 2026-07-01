@@ -1,23 +1,22 @@
 <template>
-  <MyCard icon="telemetry" title="Telemetry">
+  <MyCard icon="telemetry" :title="$t('cards.telemetry.title')">
     <q-card-section>
       <div class="d-flex q-gutter-md">
         <div>
-            Telemetry is enabled by default in debug builds and disabled by default in release builds.<br/>
-            But: once it has been enabled here, an update to a release build will not reset that.
+            {{ $t('cards.telemetry.statsIntro') }}<br/>
+            {{ $t('cards.telemetry.statsStickyNote') }}
         </div>
         <div>
           <q-btn-toggle
             v-model="statsValue"
             :options="telemetryOptions"
-            label="Telemetry Stats"
+            :label="$t('cards.telemetry.statsLabel')"
             @update:model-value="updateStats"
           />
         </div>
         <div class="flex-grow-1">
           <div>
-            When enabled, telemetry stats will be sent to the configured URL.
-            This data contains anonymized usage statistics to help improve the firmware.
+            {{ $t('cards.telemetry.statsDescription') }}
           </div>
         </div>
       </div>
@@ -31,7 +30,7 @@
     />
     <div v-if="showDetails">
       <div>
-        With this build, the following data is sent every 30s:
+        {{ $t('cards.telemetry.dataNote') }}
         <q-scroll-area style="height: 300px;">
           <q-table
             :rows="telemetryDataRows"
@@ -53,14 +52,13 @@
           <q-btn-toggle
             v-model="logValue"
             :options="telemetryOptions"
-            label="Telemetry Log"
+            :label="$t('cards.telemetry.logLabel')"
             @update:model-value="updateLog"
           />
         </div>
         <div class="flex-grow-1">
           <div>
-            When enabled, telemetry logs will be sent to the configured URL.
-            This data contains log information to help debug and improve the firmware.
+            {{ $t('cards.telemetry.logDescription') }}
           </div>
         </div>
       </div>
@@ -70,7 +68,7 @@
         <div class="col-12">
           <q-input
             v-model="urlValue"
-            label="Telemetry URL"
+            :label="$t('cards.telemetry.url')"
             @blur="updateUrl"
           />
         </div>
@@ -79,14 +77,14 @@
         <div class="col-6">
           <q-input
             v-model="userValue"
-            label="Telemetry User"
+            :label="$t('cards.telemetry.user')"
             @blur="updateUser"
           />
         </div>
         <div class="col-6">
           <q-input
             v-model="passwordValue"
-            label="Telemetry Password"
+            :label="$t('cards.telemetry.password')"
             type="password"
             @blur="updatePassword"
           />
@@ -98,16 +96,22 @@
 
 <script>
 import { ref, computed } from "vue";
+import { useI18n } from "vue-i18n";
 import { configDataStore } from "src/stores/configDataStore";
 import { useConfigBinding } from "src/composables/useConfigDataBindings";
 import MyCard from "components/myCard.vue";
-import { telemetryDataColumns, telemetryDataRows } from "src/stores/telemetryData.js";
+import { getTelemetryData } from "src/stores/telemetryData.js";
 
 export default {
   components: {
     MyCard,
   },
   setup() {
+    const { t } = useI18n();
+    const telemetryDataColumns = computed(
+      () => getTelemetryData(t).telemetryDataColumns,
+    );
+    const telemetryDataRows = computed(() => getTelemetryData(t).telemetryDataRows);
     const configData = configDataStore();
     const coerceTelemetryEnabled = (value, fallback = false) => {
       if (typeof value === "boolean") {
@@ -123,8 +127,8 @@ export default {
     };
 
     const telemetryOptions = [
-      { label: "On", value: true },
-      { label: "Off", value: false },
+      { label: t("common.yes"), value: true },
+      { label: t("common.no"), value: false },
     ];
 
     const statsValue = computed({
@@ -177,7 +181,9 @@ export default {
 
     const showDetails = ref(false);
 
-    const detailsButtonLabel = computed(() => showDetails.value ? 'Hide Details' : 'Show Details');
+    const detailsButtonLabel = computed(() =>
+      showDetails.value ? t("cards.telemetry.hideDetails") : t("cards.telemetry.showDetails"),
+    );
 
     const toggleDetails = () => {
       showDetails.value = !showDetails.value;

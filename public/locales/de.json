@@ -1,0 +1,368 @@
+{
+  "common": {
+    "cancel": "Abbrechen",
+    "save": "Speichern",
+    "back": "Zurück",
+    "next": "Weiter",
+    "finish": "Fertig",
+    "yes": "Ja",
+    "no": "Nein",
+    "apply": "Anwenden",
+    "delete": "Löschen",
+    "edit": "Bearbeiten",
+    "add": "Hinzufügen",
+    "close": "Schließen",
+    "connect": "Verbinden",
+    "language": "Sprache",
+    "goHome": "Zur Startseite",
+    "darkMode": "Dunkelmodus",
+    "showDetails": "Details anzeigen",
+    "hideDetails": "Details ausblenden"
+  },
+  "layout": {
+    "loading": "lade von",
+    "configuration": "Konfiguration:",
+    "information": "Information:",
+    "colors": "Farben:",
+    "presetsAndScenes": "Presets und Szenen:",
+    "synching": "synchronisiere",
+    "lightinator": "Lightinator 5",
+    "selectController": "Controller auswählen",
+    "wsTooltip": "zeigt den Status der WebSocket-Verbindung zum ausgewählten Controller"
+  },
+  "nav": {
+    "mainMenu": "Hauptmenü",
+    "color": "Farbe",
+    "colorCaption": "Aktuelle Ausgabefarbe einstellen",
+    "groupsAndScenes": "Gruppen und Szenen",
+    "groupsAndScenesCaption": "Gruppen von Controllern und Szenen konfigurieren",
+    "colorSettings": "Farbeinstellungen",
+    "colorSettingsCaption": "Farbmodell und Übergangsmodus konfigurieren",
+    "networkSettings": "Netzwerkeinstellungen",
+    "networkSettingsCaption": "Netzwerk, MQTT und Telemetrie konfigurieren",
+    "systemSettings": "Systemeinstellungen",
+    "systemSettingsCaption": "Pins, Hostname und Symbol konfigurieren, Firmware aktualisieren, Einstellungen sichern und wiederherstellen",
+    "networkInit": "Netzwerk-Initialisierung",
+    "networkInitCaption": "Mit einem WLAN verbinden oder trennen",
+    "test": "Test",
+    "testCaption": "Entwickler-Spielplatz"
+  },
+  "discovery": {
+    "title": "Finde deinen Controller",
+    "subtitle": "Durchsuche dein lokales Netzwerk nach ESP RGBWW Controllern...",
+    "noNetwork": "Keine Netzwerkverbindung. Bitte mit WLAN verbinden und erneut versuchen.",
+    "scanning": "{count} Controller gefunden...",
+    "availableControllers": "Verfügbare Controller:",
+    "firmware": "Firmware: {version}",
+    "noControllersFound": "Keine Controller im Netzwerk gefunden.",
+    "scanAgain": "Erneut suchen",
+    "manualEntry": "Manuelle Eingabe",
+    "enterControllerIp": "Controller-IP eingeben",
+    "ipAddress": "IP-Adresse",
+    "ipPlaceholder": "192.168.1.100"
+  },
+  "setup": {
+    "deviceSetup": "Geräteeinrichtung",
+    "steps": {
+      "hostname": "Hostname",
+      "pinConfig": "Pin-Konfiguration",
+      "colorModel": "Farbmodell",
+      "telemetry": "Telemetrie",
+      "complete": "Abgeschlossen"
+    },
+    "hostnameStep": {
+      "title": "Geräte-Hostname festlegen",
+      "subtitle": "Wähle einen eindeutigen Namen für dieses Gerät im Netzwerk",
+      "label": "Hostname",
+      "required": "Hostname ist erforderlich",
+      "hint": "Der Hostname wird verwendet, um auf das Gerät im lokalen Netzwerk zuzugreifen"
+    },
+    "pinConfigStep": {
+      "title": "Geräte-Pins konfigurieren",
+      "subtitle": "Wähle eine Pin-Konfiguration für dein {soc}-Gerät",
+      "noConfigTitle": "Keine Standard-Pin-Konfiguration verfügbar",
+      "noConfigBody": "Keine vorkonfigurierten Pin-Layouts für dein {soc}-Gerät verfügbar. Du kannst mit der Einrichtung fortfahren und die Pins später in der Hauptoberfläche manuell konfigurieren.",
+      "noConfigCaption": "Die Pin-Konfiguration kann nach Abschluss der Ersteinrichtung gesetzt werden.",
+      "pinConfigLabel": "Pin-Konfiguration",
+      "selectedConfigDetails": "Details der ausgewählten Konfiguration:",
+      "pin": "Pin {number}"
+    },
+    "colorModelStep": {
+      "title": "Farbmodell konfigurieren",
+      "subtitle": "Farbmodell auswählen und Farbkanäle anpassen",
+      "colorModelLabel": "Farbmodell"
+    },
+    "telemetryStep": {
+      "title": "Telemetrie",
+      "statsTitle": "Anonyme Statistik",
+      "statsBody": "Anonyme Statistik an den Entwickler senden? Das hilft, die Firmware zu verbessern.",
+      "logTitle": "Remote-Logging",
+      "logBody": "Debug-Logs an den konfigurierten Telemetrie-Server senden?",
+      "changeNote": "Diese Einstellungen kannst du jederzeit unter Netzwerkeinstellungen > Telemetrie ändern.",
+      "dataNote": "Mit diesem Build werden alle 30s folgende Daten gesendet:",
+      "showDetails": "Details anzeigen",
+      "hideDetails": "Details ausblenden"
+    },
+    "completeStep": {
+      "title": "Einrichtung abgeschlossen",
+      "hostname": "Hostname",
+      "pinConfiguration": "Pin-Konfiguration",
+      "colorModel": "Farbmodell",
+      "restarting": "Konfiguration gespeichert. Gerät startet neu...",
+      "reconnecting": "Verbinde erneut in {seconds} Sekunden",
+      "saved": "Konfiguration gespeichert!",
+      "goToDashboard": "Zum Dashboard"
+    }
+  },
+  "color": {
+    "saveAs": "Als {model}-Preset speichern",
+    "presetName": "Preset-Name",
+    "favorites": "Favoriten",
+    "presets": "Presets"
+  },
+  "colorSliders": {
+    "red": "Rot",
+    "green": "Grün",
+    "blue": "Blau",
+    "warmWhite": "Warmweiß",
+    "coldWhite": "Kaltweiß"
+  },
+  "cards": {
+    "connection": {
+      "title": "Verbindung",
+      "ssid": "SSID:",
+      "macAddress": "MAC-Adresse:",
+      "dhcp": "DHCP:",
+      "ipAddress": "IP-Adresse:",
+      "ipNetmask": "IP-Netzmaske:",
+      "ipGateway": "IP-Gateway:"
+    },
+    "ipSettings": {
+      "title": "IP-Einstellungen",
+      "description": "IP-Einstellungen erfordern einen Neustart. Bei Änderungen startet der Controller automatisch neu.",
+      "useDhcp": "DHCP verwenden",
+      "ipAddress": "IP-Adresse",
+      "ipNetmask": "IP-Netzmaske",
+      "ipGateway": "IP-Gateway",
+      "gatewayRangeError": "Gateway liegt nicht im konfigurierten Netzwerkbereich",
+      "applyAndRestart": "Anwenden und neu starten"
+    },
+    "mqtt": {
+      "title": "MQTT-Einstellungen",
+      "description": "MQTT-Einstellungen erfordern einen Neustart. Bei Änderungen startet der Controller automatisch neu.",
+      "enableMqtt": "MQTT aktivieren",
+      "serverConfig": "MQTT-Serverkonfiguration",
+      "server": "MQTT-Server",
+      "port": "Port",
+      "topic": "Topic",
+      "username": "MQTT-Benutzername",
+      "password": "MQTT-Passwort",
+      "passwordHint": "Passwort mit Umschalter",
+      "haIntegration": "Home-Assistant-Integration",
+      "enableHa": "Home-Assistant-Integration aktivieren",
+      "discoveryPrefix": "Discovery-Präfix",
+      "discoveryPrefixHint": "MQTT-Discovery-Topic-Präfix",
+      "nodeId": "Node-ID",
+      "nodeIdHint": "Eindeutige Kennung für dieses Gerät (standardmäßig Controller-Name)",
+      "sync": "Synchronisierung",
+      "primary": "Primär",
+      "secondary": "Sekundär",
+      "clock": "Uhr",
+      "cmd": "CMD",
+      "color": "Farbe"
+    },
+    "telemetry": {
+      "title": "Telemetrie",
+      "statsLabel": "Telemetrie-Statistik",
+      "statsIntro": "Telemetrie ist in Debug-Builds standardmäßig aktiviert und in Release-Builds standardmäßig deaktiviert.",
+      "statsStickyNote": "Aber: wurde sie hier einmal aktiviert, setzt ein Update auf Release diesen Wert nicht zuruck.",
+      "statsDescription": "Wenn aktiviert, werden Telemetrie-Statistiken an die konfigurierte URL gesendet. Diese Daten enthalten anonymisierte Nutzungsstatistiken zur Verbesserung der Firmware.",
+      "logLabel": "Telemetrie-Log",
+      "logDescription": "Wenn aktiviert, werden Telemetrie-Logs an die konfigurierte URL gesendet. Diese Daten enthalten Log-Informationen für Debugging und Verbesserungen der Firmware.",
+      "url": "Telemetrie-URL",
+      "user": "Telemetrie-Benutzer",
+      "password": "Telemetrie-Passwort",
+      "showDetails": "Details anzeigen",
+      "hideDetails": "Details ausblenden",
+      "dataNote": "Mit diesem Build werden alle 30s folgende Daten gesendet:"
+    },
+    "rsyslog": {
+      "title": "Rsyslog-Einstellungen",
+      "description": "UDP-Rsyslog-Weiterleitung für Gerätelogs konfigurieren. Änderungen gelten nach einem Neustart.",
+      "enable": "Rsyslog aktivieren",
+      "target": "Ziel",
+      "host": "Rsyslog-Host",
+      "port": "Port",
+      "autoConfigNote": "Auto-Konfiguration wird im Log Viewer verwaltet. Bei Bedarf hier manuell anpassen."
+    },
+    "controllerConfig": {
+      "title": "Controller-Konfiguration",
+      "pinConfig": "Pin-Konfiguration",
+      "pinConfigLabel": "Pin-Konfiguration",
+      "editConfig": "Aktuelle Konfiguration bearbeiten",
+      "addConfig": "Neue Konfiguration hinzufügen",
+      "pwmConfig": "PWM-Konfiguration",
+      "timerSettings": "Timer-Einstellungen",
+      "speedMode": "Geschwindigkeitsmodus",
+      "timerNumber": "Timer-Nummer",
+      "frequency": "Frequenz (Hz)",
+      "resolutionBits": "Auflösungs-Bits",
+      "spreadSpectrum": "Spread-Spectrum-Einstellungen",
+      "spreadSpectrumMode": "Spread-Spectrum-Modus",
+      "width": "Breite (%)",
+      "subsampling": "Subsampling",
+      "phaseShift": "Phasenverschiebungs-Einstellungen",
+      "phaseShiftMode": "Phasenverschiebungsmodus",
+      "resetChanges": "Alle Änderungen zurücksetzen"
+    },
+    "colorModel": {
+      "title": "Farbe",
+      "colorModel": "Farbmodell"
+    },
+    "firmwareUpdate": {
+      "title": "Firmware-Update",
+      "otaUrl": "OTA-URL",
+      "otaUrlHint": "URL zum Firmware-Update-Server",
+      "checkFirmware": "Firmware prüfen",
+      "updateAll": "Alle aktualisieren",
+      "reachabilityTitle": "Zusammenfassung der Controller-Erreichbarkeit:",
+      "detected": "Erkannt (erreichbar): {available} von {total} bekannten Controllern.",
+      "temporarilyUnavailable": "{count} Controller nach 3 Ping-Versuchen als vorübergehend nicht verfügbar markiert.",
+      "unreachableVisible": "{count} Controller als sichtbar markiert, aber nicht erreichbar.",
+      "reachableNotVisible": "{count} Controller nicht als sichtbar markiert, aber erreichbar.",
+      "excluded": "{count} Controller ausgeschlossen (nicht erreichbar):",
+      "updating": "Aktualisiere {count} Controller",
+      "success": "Erfolg",
+      "failed": "Fehlgeschlagen",
+      "skipped": "Übersprungen",
+      "progress": "Fortschritt",
+      "controllerStatus": "Controller-Status",
+      "waiting": "Warten",
+      "complete": "Update abgeschlossen!"
+    },
+    "scenes": {
+      "title": "Szenen",
+      "takeSnapshot": "Szenen-Snapshot aufnehmen",
+      "editScene": "Szene bearbeiten",
+      "deleteScene": "Szene loschen",
+      "editGroup": "Gruppe bearbeiten",
+      "deleteGroup": "Gruppe loschen",
+      "noScenes": "Keine Szenen verfügbar",
+      "addGroup": "Gruppe hinzufügen",
+      "addScene": "Szene hinzufügen",
+      "sync": "Synchronisieren",
+      "downloadLog": "Log herunterladen"
+    },
+    "groups": {
+      "title": "Gruppen",
+      "processing": "Verarbeite...",
+      "editGroup": "Gruppe bearbeiten",
+      "deleteGroup": "Gruppe löschen",
+      "addGroup": "Gruppe hinzufügen"
+    },
+    "hostname": {
+      "title": "Hostname und Symbol",
+      "hostname": "Hostname",
+      "allowWebIcons": "Web-Symbole erlauben (Google Fonts)",
+      "allowWebIconsTooltip": "Wenn aktiviert, können Symbole aus Google Fonts gewählt werden, dabei können jedoch Daten an Google gesendet werden (IP-Adresse, Browser, Referrer usw.).",
+      "controllerIcon": "Controller-Symbol",
+      "changeIcon": "Symbol ändern",
+      "enableWebIconsTooltip": "Aktiviere 'Web-Symbole erlauben', um Google Fonts zu durchsuchen",
+      "browseMaterialIcons": "Material Design Icons durchsuchen"
+    },
+    "information": {
+      "title": "Information"
+    },
+    "whiteBalance": {
+      "title": "Weißabgleich",
+      "selectColorTemperature": "Farbtemperatur auswählen",
+      "warmWhite": "Warmweiß",
+      "coldWhite": "Kaltweiß"
+    },
+    "transitionMode": {
+      "title": "Übergangsmodus",
+      "modeLabel": "Übergangsmodus",
+      "options": {
+        "normal": "Normal",
+        "spektrum": "Spektrum",
+        "rainbow": "Regenbogen"
+      },
+      "gains": {
+        "red": "Rot",
+        "yellow": "Gelb",
+        "green": "Grün",
+        "cyan": "Cyan",
+        "blue": "Blau",
+        "magenta": "Magenta"
+      }
+    },
+    "webappUpdate": {
+      "title": "Webapp-Update",
+      "autoUpdate": "Webapp automatisch aktualisieren",
+      "description": "Wenn aktiviert, wird bei jeder WLAN-Verbindung nach einer neuen Webapp gesucht. Deaktivieren, um nur manuell zu aktualisieren. Eine fehlende Webapp wird immer geladen.",
+      "checkWebapp": "Webapp prüfen",
+      "checking": "Prüfe auf Webapp-Update...",
+      "checkStarted": "Prüfung gestartet",
+      "filesProgress": "{done} / {total} Dateien",
+      "retryingBusy": "Gerät beschäftigt, erneuter Versuch in {seconds}s... ({attempt}/{maxRetries})",
+      "alreadyUpToDate": "Bereits aktuell{version}",
+      "updatedTo": "Aktualisiert auf {version}",
+      "errorPrefix": "Fehler: {error}",
+      "states": {
+        "idle": "Leerlauf",
+        "queryingApi": "Suche nach Update...",
+        "downloading": "Lade herunter...",
+        "activating": "Aktiviere..."
+      },
+      "errors": {
+        "saveEnabled": "Speichern der Webapp-Einstellung fehlgeschlagen: {error}",
+        "deviceBusyMaxRetries": "Gerät beschäftigt (429), nach {retries} Versuchen abgebrochen",
+        "checkFailed": "Webapp-Prüfung fehlgeschlagen: {error}"
+      }
+    },
+    "logViewer": {
+      "title": "Log Viewer"
+    },
+    "debugFunctions": {
+      "title": "Debug-Funktionen"
+    }
+  },
+  "telemetryTable": {
+    "columns": {
+      "field": "Feld",
+      "description": "Beschreibung",
+      "when": "Wann"
+    },
+    "when": {
+      "always": "immer",
+      "afterUnexpectedReboot": "nach unerwartetem Neustart",
+      "afterExceptionReboot": "nach Ausnahme-Neustart"
+    },
+    "fields": {
+      "id": "Chip-ID dieses Controllers",
+      "time": "aktuelle Unix-Zeit (wenn NTP konfiguriert ist)",
+      "uptime": "aktuelle Laufzeit in Sekunden",
+      "ip": "aktuelle IP-Adresse",
+      "freeHeap": "aktueller freier Heap in Byte",
+      "minimumfreeHeapRuntime": "niedrigster freier Heap seit dem Start",
+      "minimumfreeHeap10min": "niedrigster freier Heap im aktuellen 10-Minuten-Fenster",
+      "heapLowErrUptime": "Anzahl Low-Heap-Guard-Treffer seit dem Start",
+      "heapLowErr10min": "Anzahl Low-Heap-Guard-Treffer im aktuellen 10-Minuten-Fenster",
+      "firmware": "aktuell laufende Firmware-Version",
+      "build": "Firmware-Build-Typ",
+      "soc": "System-on-Chip-Typ",
+      "neighbours": "Anzahl sichtbarer Nachbargeräte",
+      "mdnsReceived": "Anzahl empfangener mDNS-Pakete",
+      "mdnsReplies": "Anzahl beantworteter mDNS-Pakete",
+      "rebootNumber": "persistenter Neustart-Zähler",
+      "rebootReason": "Reset-Grundcode",
+      "rebootExccause": "Exception-Cause-Register",
+      "rebootEpc": "Program-Counter-Snapshot beim Neustart",
+      "rebootExcvaddr": "Fehleradresse bei Ausnahme",
+      "rebootDepc": "Exception-Return-Program-Counter"
+    }
+  },
+  "errors": {
+    "notFound": "Ups. Hier gibt es nichts..."
+  }
+}

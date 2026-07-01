@@ -1,5 +1,5 @@
 <template>
-  <MyCard title="Controller config" icon="memory_outlined">
+  <MyCard :title="$t('cards.controllerConfig.title')" icon="memory_outlined">
     <q-card-section>
       <div class="text-caption q-mb-md text-orange">
         Controller configuration changes require a restart to take effect. Make

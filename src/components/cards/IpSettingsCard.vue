@@ -1,14 +1,11 @@
 <template>
-  <MyCard icon="settings_outlined" title="IP Settings">
+  <MyCard icon="settings_outlined" :title="$t('cards.ipSettings.title')">
     <q-card-section>
-      <div>
-        IP settings require a restart to take effect. If changed, controller
-        will restart automatically.
-      </div>
+      <div>{{ $t('cards.ipSettings.description') }}</div>
       <div class="text-h7">
         <q-toggle
           v-model="dhcp"
-          label="use dhcp"
+          :label="$t('cards.ipSettings.useDhcp')"
           left-label
           @update:model-value="updateDhcp"
         />
@@ -17,28 +14,28 @@
     <q-card-section v-if="!dhcp">
       <div class="row">
         <div class="col-4">
-          <q-input v-model="ip" label="IP Address" @blur="validateGateway" />
+          <q-input v-model="ip" :label="$t('cards.ipSettings.ipAddress')" @blur="validateGateway" />
         </div>
         <div class="col-4">
           <q-input
             v-model="netmask"
-            label="IP Netmask"
+            :label="$t('cards.ipSettings.ipNetmask')"
             @blur="validateGateway"
           />
         </div>
         <div class="col-4">
           <q-input
             v-model="gateway"
-            label="IP Gateway"
+            :label="$t('cards.ipSettings.ipGateway')"
             @blur="validateGateway"
           />
         </div>
       </div>
       <div v-if="gatewayError" class="text-negative">
-        Gateway is not in the configured network range
+        {{ $t('cards.ipSettings.gatewayRangeError') }}
       </div>
       <q-btn
-        label="Apply and Restart"
+        :label="$t('cards.ipSettings.applyAndRestart')"
         color="primary"
         class="q-mt-md"
         @click="applyAndRestart"

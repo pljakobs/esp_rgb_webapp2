@@ -7,15 +7,15 @@
         style="max-width: 400px; max-height: 300px"
       >
         <q-card-section>
-          <div class="text-h6">Save as {{ presetColorModel }} preset</div>
+          <div class="text-h6">{{ $t('color.saveAs', { model: presetColorModel }) }}</div>
         </q-card-section>
         <q-card-section>
-          <q-input v-model="presetName" label="Preset name" />
+          <q-input v-model="presetName" :label="$t('color.presetName')" />
         </q-card-section>
         <q-card-actions align="right">
-          <q-btn flat label="Cancel" @click="showDialog = false" />
+          <q-btn flat :label="$t('common.cancel')" @click="showDialog = false" />
           <q-btn
-            label="Save"
+            :label="$t('common.save')"
             @click="() => savePreset(presetName, presetColorModel)"
           />
         </q-card-actions>
@@ -26,6 +26,7 @@
 
 <script>
 import { ref } from "vue";
+import { useI18n } from "vue-i18n";
 import ColorPicker from "src/components/cards/ColorPickerCard.vue";
 
 export default {
@@ -33,6 +34,7 @@ export default {
     ColorPicker,
   },
   setup() {
+    const { t } = useI18n();
     const showDialog = ref(false);
     const presetName = ref("");
     const presetColorModel = ref("");

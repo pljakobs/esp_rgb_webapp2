@@ -1,5 +1,5 @@
 <template>
-  <MyCard title="Debuging Functions" icon="systemsecurityupdate_outlined">
+  <MyCard :title="$t('cards.debugFunctions.title')" icon="systemsecurityupdate_outlined">
     <q-card-section>
       <q-btn-group>
         <q-btn

@@ -1,0 +1,368 @@
+{
+  "common": {
+    "cancel": "Cancel",
+    "save": "Save",
+    "back": "Back",
+    "next": "Next",
+    "finish": "Finish",
+    "yes": "Yes",
+    "no": "No",
+    "apply": "Apply",
+    "delete": "Delete",
+    "edit": "Edit",
+    "add": "Add",
+    "close": "Close",
+    "connect": "Connect",
+    "language": "Language",
+    "goHome": "Go Home",
+    "darkMode": "Dark Mode",
+    "showDetails": "Show Details",
+    "hideDetails": "Hide Details"
+  },
+  "layout": {
+    "loading": "loading from",
+    "configuration": "Configuration:",
+    "information": "Information:",
+    "colors": "Colors:",
+    "presetsAndScenes": "Presets and Scenes:",
+    "synching": "synching",
+    "lightinator": "Lightinator 5",
+    "selectController": "Select a controller",
+    "wsTooltip": "shows the status of the Websocket connection to the selected controller"
+  },
+  "nav": {
+    "mainMenu": "main menu",
+    "color": "Color",
+    "colorCaption": "Set the current output color",
+    "groupsAndScenes": "Groups and Scenes",
+    "groupsAndScenesCaption": "configure groups of controllers and scenes",
+    "colorSettings": "Color settings",
+    "colorSettingsCaption": "configure the color model and transition mode",
+    "networkSettings": "Network settings",
+    "networkSettingsCaption": "Configure the network, mqtt and telemetry",
+    "systemSettings": "System settings",
+    "systemSettingsCaption": "configure pins, hostname and icon, upgrade firmware, backup and restore settings",
+    "networkInit": "Network init",
+    "networkInitCaption": "join or leave a wifi network",
+    "test": "test",
+    "testCaption": "developer's playground"
+  },
+  "discovery": {
+    "title": "Find Your Controller",
+    "subtitle": "Scanning your local network for ESP RGBWW controllers...",
+    "noNetwork": "No network connection. Please connect to WiFi and try again.",
+    "scanning": "Found {count} controller(s)...",
+    "availableControllers": "Available Controllers:",
+    "firmware": "Firmware: {version}",
+    "noControllersFound": "No controllers found on your network.",
+    "scanAgain": "Scan Again",
+    "manualEntry": "Manual Entry",
+    "enterControllerIp": "Enter Controller IP",
+    "ipAddress": "IP Address",
+    "ipPlaceholder": "192.168.1.100"
+  },
+  "setup": {
+    "deviceSetup": "Device Setup",
+    "steps": {
+      "hostname": "Hostname",
+      "pinConfig": "Pin Config",
+      "colorModel": "Color Model",
+      "telemetry": "Telemetry",
+      "complete": "Complete"
+    },
+    "hostnameStep": {
+      "title": "Set Device Hostname",
+      "subtitle": "Choose a unique name to identify this device on your network",
+      "label": "Hostname",
+      "required": "Hostname is required",
+      "hint": "The hostname will be used to access the device on your local network"
+    },
+    "pinConfigStep": {
+      "title": "Configure Device Pins",
+      "subtitle": "Select a pin configuration for your {soc} device",
+      "noConfigTitle": "No Default Pin Configuration Available",
+      "noConfigBody": "No pre-configured pin layouts are available for your {soc} device. You can continue with the setup and configure the pins manually in the main interface later.",
+      "noConfigCaption": "Pin configuration can be set up after completing the initial setup process.",
+      "pinConfigLabel": "Pin Configuration",
+      "selectedConfigDetails": "Selected Configuration Details:",
+      "pin": "Pin {number}"
+    },
+    "colorModelStep": {
+      "title": "Configure Color Model",
+      "subtitle": "Select the color model and adjust color channels",
+      "colorModelLabel": "Color Model"
+    },
+    "telemetryStep": {
+      "title": "Telemetry",
+      "statsTitle": "Anonymous Statistics",
+      "statsBody": "Allow anonymous statistics to be sent to the developer? This helps improving the firmware.",
+      "logTitle": "Remote Logging",
+      "logBody": "Enable sending debug logs to the configured telemetry server?",
+      "changeNote": "You can change these settings at any time under Network Settings > Telemetry.",
+      "dataNote": "With this build, the following data is sent every 30s:",
+      "showDetails": "Show Details",
+      "hideDetails": "Hide Details"
+    },
+    "completeStep": {
+      "title": "Setup Complete",
+      "hostname": "Hostname",
+      "pinConfiguration": "Pin Configuration",
+      "colorModel": "Color Model",
+      "restarting": "Configuration saved. Device is restarting...",
+      "reconnecting": "Reconnecting in {seconds} seconds",
+      "saved": "Configuration saved!",
+      "goToDashboard": "Go to Dashboard"
+    }
+  },
+  "color": {
+    "saveAs": "Save as {model} preset",
+    "presetName": "Preset name",
+    "favorites": "Favorites",
+    "presets": "Presets"
+  },
+  "colorSliders": {
+    "red": "Red",
+    "green": "Green",
+    "blue": "Blue",
+    "warmWhite": "Warm White",
+    "coldWhite": "Cold White"
+  },
+  "cards": {
+    "connection": {
+      "title": "Connection",
+      "ssid": "SSID:",
+      "macAddress": "MAC-Address:",
+      "dhcp": "DHCP:",
+      "ipAddress": "IP-Address:",
+      "ipNetmask": "IP Netmask:",
+      "ipGateway": "IP Gateway:"
+    },
+    "ipSettings": {
+      "title": "IP Settings",
+      "description": "IP settings require a restart to take effect. If changed, controller will restart automatically.",
+      "useDhcp": "use dhcp",
+      "ipAddress": "IP Address",
+      "ipNetmask": "IP Netmask",
+      "ipGateway": "IP Gateway",
+      "gatewayRangeError": "Gateway is not in the configured network range",
+      "applyAndRestart": "Apply and Restart"
+    },
+    "mqtt": {
+      "title": "MQTT Settings",
+      "description": "MQTT settings require a restart to take effect. If changed, controller will restart automatically.",
+      "enableMqtt": "enable MQTT",
+      "serverConfig": "MQTT Server Configuration",
+      "server": "MQTT Server",
+      "port": "Port",
+      "topic": "Topic",
+      "username": "MQTT Username",
+      "password": "MQTT Password",
+      "passwordHint": "Password with toggle",
+      "haIntegration": "Home Assistant Integration",
+      "enableHa": "Enable Home Assistant Integration",
+      "discoveryPrefix": "Discovery Prefix",
+      "discoveryPrefixHint": "MQTT discovery topic prefix",
+      "nodeId": "Node ID",
+      "nodeIdHint": "Unique identifier for this device (defaults to controller name)",
+      "sync": "Synchronization",
+      "primary": "Primary",
+      "secondary": "Secondary",
+      "clock": "Clock",
+      "cmd": "CMD",
+      "color": "Color"
+    },
+    "telemetry": {
+      "title": "Telemetry",
+      "statsLabel": "Telemetry Stats",
+      "statsIntro": "Telemetry is enabled by default in debug builds and disabled by default in release builds.",
+      "statsStickyNote": "But: once it has been enabled here, an update to a release build will not reset that.",
+      "statsDescription": "When enabled, telemetry stats will be sent to the configured URL. This data contains anonymized usage statistics to help improve the firmware.",
+      "logLabel": "Telemetry Log",
+      "logDescription": "When enabled, telemetry logs will be sent to the configured URL. This data contains log information to help debug and improve the firmware.",
+      "url": "Telemetry URL",
+      "user": "Telemetry User",
+      "password": "Telemetry Password",
+      "showDetails": "Show Details",
+      "hideDetails": "Hide Details",
+      "dataNote": "With this build, the following data is sent every 30s:"
+    },
+    "rsyslog": {
+      "title": "Rsyslog Settings",
+      "description": "Configure UDP rsyslog forwarding for device logs. Changes apply after restart.",
+      "enable": "enable rsyslog",
+      "target": "Target",
+      "host": "Rsyslog Host",
+      "port": "Port",
+      "autoConfigNote": "Auto-config is handled in Log Viewer. Edit manually here if needed."
+    },
+    "controllerConfig": {
+      "title": "Controller config",
+      "pinConfig": "Pin Configuration",
+      "pinConfigLabel": "Pin configuration",
+      "editConfig": "Edit current configuration",
+      "addConfig": "Add new configuration",
+      "pwmConfig": "PWM Configuration",
+      "timerSettings": "Timer Settings",
+      "speedMode": "Speed Mode",
+      "timerNumber": "Timer Number",
+      "frequency": "Frequency (Hz)",
+      "resolutionBits": "Resolution Bits",
+      "spreadSpectrum": "Spread Spectrum Settings",
+      "spreadSpectrumMode": "Spread Spectrum Mode",
+      "width": "Width (%)",
+      "subsampling": "Subsampling",
+      "phaseShift": "Phase Shift Settings",
+      "phaseShiftMode": "Phase Shift Mode",
+      "resetChanges": "Reset All Changes"
+    },
+    "colorModel": {
+      "title": "Color",
+      "colorModel": "Color Model"
+    },
+    "firmwareUpdate": {
+      "title": "Firmware update",
+      "otaUrl": "OTA URL",
+      "otaUrlHint": "URL to the firmware update server",
+      "checkFirmware": "Check firmware",
+      "updateAll": "Update All",
+      "reachabilityTitle": "Controller reachability summary:",
+      "detected": "Detected (reachable): {available} of {total} known controllers.",
+      "temporarilyUnavailable": "{count} controller(s) marked temporarily unavailable after 3 ping attempts.",
+      "unreachableVisible": "{count} controller(s) flagged visible but unreachable.",
+      "reachableNotVisible": "{count} controller(s) not flagged visible but reachable.",
+      "excluded": "{count} controller(s) excluded (unreachable):",
+      "updating": "Updating {count} controllers",
+      "success": "Success",
+      "failed": "Failed",
+      "skipped": "Skipped",
+      "progress": "Progress",
+      "controllerStatus": "Controller Status",
+      "waiting": "Waiting",
+      "complete": "Update process complete!"
+    },
+    "scenes": {
+      "title": "Scenes",
+      "takeSnapshot": "Take Scene Snapshot",
+      "editScene": "Edit scene",
+      "deleteScene": "Delete scene",
+      "editGroup": "Edit group",
+      "deleteGroup": "Delete group",
+      "noScenes": "No scenes available",
+      "addGroup": "Add Group",
+      "addScene": "Add Scene",
+      "sync": "Sync",
+      "downloadLog": "Download Log"
+    },
+    "groups": {
+      "title": "Groups",
+      "processing": "Processing...",
+      "editGroup": "Edit group",
+      "deleteGroup": "Delete group",
+      "addGroup": "Add Group"
+    },
+    "hostname": {
+      "title": "Hostname and Icon",
+      "hostname": "Hostname",
+      "allowWebIcons": "Allow Web Icons (Google Fonts)",
+      "allowWebIconsTooltip": "When enabled, you can select icons from the Google Fonts library, but there is a risk of sending data to Google (IP address, browser, referrer etc).",
+      "controllerIcon": "Controller Icon",
+      "changeIcon": "Change Icon",
+      "enableWebIconsTooltip": "Enable 'Allow Web Icons' to browse Google Fonts",
+      "browseMaterialIcons": "Browse Material Design Icons"
+    },
+    "information": {
+      "title": "Information"
+    },
+    "whiteBalance": {
+      "title": "White Balance",
+      "selectColorTemperature": "Select color temperature",
+      "warmWhite": "Warm white",
+      "coldWhite": "Cold white"
+    },
+    "transitionMode": {
+      "title": "Transition Mode",
+      "modeLabel": "Transition Mode",
+      "options": {
+        "normal": "Normal",
+        "spektrum": "Spektrum",
+        "rainbow": "Rainbow"
+      },
+      "gains": {
+        "red": "Red",
+        "yellow": "Yellow",
+        "green": "Green",
+        "cyan": "Cyan",
+        "blue": "Blue",
+        "magenta": "Magenta"
+      }
+    },
+    "webappUpdate": {
+      "title": "Webapp Update",
+      "autoUpdate": "Auto-update webapp",
+      "description": "When enabled, checks for a new webapp on every WiFi connect. Disable to only update on manual request. A missing webapp is always fetched regardless of this setting.",
+      "checkWebapp": "Check webapp",
+      "checking": "Checking for webapp update...",
+      "checkStarted": "Check started",
+      "filesProgress": "{done} / {total} files",
+      "retryingBusy": "Device busy, retrying in {seconds}s... ({attempt}/{maxRetries})",
+      "alreadyUpToDate": "Already up to date{version}",
+      "updatedTo": "Updated to {version}",
+      "errorPrefix": "Error: {error}",
+      "states": {
+        "idle": "Idle",
+        "queryingApi": "Checking for update...",
+        "downloading": "Downloading...",
+        "activating": "Activating..."
+      },
+      "errors": {
+        "saveEnabled": "Failed to save webapp enabled setting: {error}",
+        "deviceBusyMaxRetries": "Device busy (429), gave up after {retries} retries",
+        "checkFailed": "Webapp check failed: {error}"
+      }
+    },
+    "logViewer": {
+      "title": "Log Viewer"
+    },
+    "debugFunctions": {
+      "title": "Debugging Functions"
+    }
+  },
+  "telemetryTable": {
+    "columns": {
+      "field": "Field",
+      "description": "Description",
+      "when": "When"
+    },
+    "when": {
+      "always": "always",
+      "afterUnexpectedReboot": "after unexpected reboot",
+      "afterExceptionReboot": "after exception reboot"
+    },
+    "fields": {
+      "id": "chip ID of this controller",
+      "time": "current Unix time (if NTP is configured)",
+      "uptime": "current uptime in seconds",
+      "ip": "current IP address",
+      "freeHeap": "current free heap in bytes",
+      "minimumfreeHeapRuntime": "lowest free heap since boot",
+      "minimumfreeHeap10min": "lowest free heap in the current 10 minute window",
+      "heapLowErrUptime": "number of low-heap guard hits since boot",
+      "heapLowErr10min": "number of low-heap guard hits in the current 10 minute window",
+      "firmware": "currently running firmware version",
+      "build": "firmware build type",
+      "soc": "system-on-chip type",
+      "neighbours": "number of visible neighbouring devices",
+      "mdnsReceived": "number of mDNS packets received",
+      "mdnsReplies": "number of mDNS packets replied to",
+      "rebootNumber": "persistent reboot counter",
+      "rebootReason": "reset reason code",
+      "rebootExccause": "exception cause register",
+      "rebootEpc": "program counter snapshot at reboot",
+      "rebootExcvaddr": "faulting address at exception",
+      "rebootDepc": "exception return program counter"
+    }
+  },
+  "errors": {
+    "notFound": "Oops. Nothing here..."
+  }
+}
