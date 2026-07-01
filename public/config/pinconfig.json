@@ -1,5 +1,5 @@
 {
-  "version": 20,
+  "version": 21,
   "available_pins": [
     {
       "soc": "esp8266",
@@ -9,7 +9,7 @@
       "soc": "esp32",
       "pins": [
         0, 1, 2, 4, 5, 13, 14, 15, 16, 17, 18, 19, 21, 22, 23, 25, 26, 27, 32,
-        33
+        33, 34
       ]
     },
     {
@@ -70,5 +70,27 @@
         { "name": "coldwhite", "pin": "12" }
       ]
     }
-  ]
+    {
+      "name": "QuinLED An-Penta-Deca",
+      "soc": "esp32",
+      "model": "rgbww",
+      "clear_pin": "",
+      "channels": [
+        { "name": "LED1", "pin": "27" },
+        { "name": "LED2", "pin": "26" },
+        { "name": "LED3", "pin": "25" },
+        { "name": "LED4", "pin": "23" },
+        { "name": "LED5", "pin": "22" },
+        { "name": "LED6", "pin": "21" },
+        { "name": "LED7", "pin": "19" },
+        { "name": "LED8", "pin": "18" },
+        { "name": "LED9", "pin": "17" },
+        { "name": "LED10", "pin": "14" },
+        { "name": "LED11", "pin": "13" },
+        { "name": "LED12", "pin": "12" },
+        { "name": "LED13", "pin": "15" },
+        { "name": "LED14", "pin": "14" },
+        { "name": "LED15", "pin": "2" }
+
+    }
 }
