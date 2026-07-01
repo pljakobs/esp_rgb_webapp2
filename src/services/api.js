@@ -12,12 +12,34 @@ export class ApiService {
     // Track active requests per controller to prevent overwhelming them
     this._activeRequests = new Map(); // ip_address -> Set of active request promises
     this._requestQueue = new Map(); // ip_address -> Array of queued requests
+    this._infoEndpointPreference = new Map(); // controllerKey -> "v2" | "legacy"
 
     // Keep payloads below a conservative MTU budget to reduce pressure on ESP8266.
     this._chunking = {
       maxPayloadBytes: 1200,
       interChunkDelayMs: 75,
     };
+  }
+
+  _getControllerKey(controller = null) {
+    const targetController = controller || this.controllersStore.currentController;
+    if (!targetController) {
+      return "__default__";
+    }
+    return String(
+      targetController.ip_address || targetController.hostname || "__default__",
+    );
+  }
+
+  _setInfoEndpointPreference(controller = null, preference) {
+    if (preference !== "v2" && preference !== "legacy") {
+      return;
+    }
+    this._infoEndpointPreference.set(this._getControllerKey(controller), preference);
+  }
+
+  _getInfoEndpointPreference(controller = null) {
+    return this._infoEndpointPreference.get(this._getControllerKey(controller));
   }
 
   get controllersStore() {
@@ -641,7 +663,7 @@ export class ApiService {
 
   async getSystemData(controller = null) {
     // /system is POST-only for commands, use /info for system information
-    return this.fetchApi("info?v=2", controller);
+    return this.getInfo(controller);
   }
 
   async getAnimationData(controller = null) {
@@ -799,7 +821,18 @@ export class ApiService {
   }
 
   async getInfo(controller = null) {
+    const preference = this._getInfoEndpointPreference(controller);
+
+    if (preference === "legacy") {
+      return this.fetchApi("info", controller);
+    }
+
     const v2Response = await this.fetchApi("info?v=2", controller);
+
+    if (v2Response?.jsonData && !v2Response?.error) {
+      this._setInfoEndpointPreference(controller, "v2");
+      return v2Response;
+    }
 
     // Transitional compatibility: prefer /info?v=2 but fall back to /info when
     // older firmware does not support the versioned endpoint.
@@ -807,7 +840,11 @@ export class ApiService {
       v2Response?.error?.status === 404 ||
       (!v2Response?.jsonData && v2Response?.error)
     ) {
-      return this.fetchApi("info", controller);
+      const legacyResponse = await this.fetchApi("info", controller);
+      if (legacyResponse?.jsonData && !legacyResponse?.error) {
+        this._setInfoEndpointPreference(controller, "legacy");
+      }
+      return legacyResponse;
     }
 
     return v2Response;

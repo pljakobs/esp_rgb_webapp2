@@ -495,6 +495,62 @@ describe('ApiService', () => {
         expect.any(Object)
       );
     });
+
+    it('should remember v2 info support per controller after success', async () => {
+      const v2Payload = {
+        version: 2,
+        device: { deviceid: 1 },
+        app: { webapp_version: 'V5.0' }
+      };
+
+      mockFetch
+        .mockResolvedValueOnce({
+          status: 200,
+          json: async () => v2Payload
+        })
+        .mockResolvedValueOnce({
+          status: 200,
+          json: async () => v2Payload
+        });
+
+      const first = await apiService.getInfo();
+      const second = await apiService.getInfo();
+
+      expect(first.jsonData).toEqual(v2Payload);
+      expect(second.jsonData).toEqual(v2Payload);
+      expect(mockFetch).toHaveBeenCalledTimes(2);
+      expect(mockFetch.mock.calls[0][0]).toBe('http://192.168.1.100/info?v=2');
+      expect(mockFetch.mock.calls[1][0]).toBe('http://192.168.1.100/info?v=2');
+    });
+
+    it('should remember legacy info when v2 endpoint is not available', async () => {
+      const legacyPayload = { deviceid: 1, sming: '6.2.0' };
+
+      mockFetch
+        .mockResolvedValueOnce({
+          status: 404,
+          statusText: 'Not Found',
+          json: async () => ({})
+        })
+        .mockResolvedValueOnce({
+          status: 200,
+          json: async () => legacyPayload
+        })
+        .mockResolvedValueOnce({
+          status: 200,
+          json: async () => legacyPayload
+        });
+
+      const first = await apiService.getInfo();
+      const second = await apiService.getInfo();
+
+      expect(first.jsonData).toEqual(legacyPayload);
+      expect(second.jsonData).toEqual(legacyPayload);
+      expect(mockFetch).toHaveBeenCalledTimes(3);
+      expect(mockFetch.mock.calls[0][0]).toBe('http://192.168.1.100/info?v=2');
+      expect(mockFetch.mock.calls[1][0]).toBe('http://192.168.1.100/info');
+      expect(mockFetch.mock.calls[2][0]).toBe('http://192.168.1.100/info');
+    });
   });
 
   describe('Type Safety - HSV Float vs Integer', () => {

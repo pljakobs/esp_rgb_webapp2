@@ -13,19 +13,39 @@ import useWebSocket, { wsStatus } from "src/services/websocket.js";
 export function normalizeInfoData(raw) {
   if (!raw) return raw;
 
+  const isObject = (val) => val !== null && typeof val === "object";
+
   // Determine the schema version (default to version 1 if property is absent)
   const schemaVersion = raw.version !== undefined ? Number(raw.version) : 1;
 
+  // Some firmware variants return nested /info?v=2 payloads without an explicit
+  // top-level `version` field. Detect nested shape directly so we don't
+  // accidentally remap valid v2 responses as legacy flat data.
+  const hasNestedShape =
+    isObject(raw.device) ||
+    isObject(raw.app) ||
+    isObject(raw.runtime) ||
+    isObject(raw.connection) ||
+    isObject(raw.sming);
+
   // Case 1: Native nested structure (Version 2)
-  if (schemaVersion >= 2) {
+  if (schemaVersion >= 2 || hasNestedShape) {
     console.debug(
       `normalizeInfoData: detected schema version ${schemaVersion} (nested structure)`,
     );
-    if (raw.runtime && raw.runtime.event_num_clients === undefined) {
+    const normalized = {
+      ...raw,
+      runtime: isObject(raw.runtime) ? { ...raw.runtime } : raw.runtime,
+    };
+    if (
+      normalized.runtime &&
+      normalized.runtime.event_num_clients === undefined
+    ) {
       // Alias the v2 debug field to the legacy location for layout components
-      raw.runtime.event_num_clients = raw.debug?.eventserver_clients ?? 0;
+      normalized.runtime.event_num_clients =
+        normalized.debug?.eventserver_clients ?? 0;
     }
-    return raw;
+    return normalized;
   }
   // Legacy flat structure — remap to nested
   console.debug(
