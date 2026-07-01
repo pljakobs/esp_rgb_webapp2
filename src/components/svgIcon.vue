@@ -31,6 +31,7 @@ const SPRITE_ELEMENT_ID = "svg-icon-sprite";
 let spriteLoadPromise = null;
 let spriteRetryAllowedAt = 0;
 let spriteRetryWaitPromise = null;
+let spriteForceReloadAttempted = false;  // Prevent cascading forceReload calls
 
 function createRetryError(retryAfterMs) {
   const error = new Error("Failed to load sprite: 429");
@@ -98,7 +99,14 @@ function ensureSpriteLoaded({ forceReload = false } = {}) {
     return Promise.resolve();
   }
 
+  // Prevent cascading forceReload calls - only allow ONE forced reload per sprite load cycle
+  if (forceReload && spriteForceReloadAttempted) {
+    // A force reload was already attempted in this cycle; don't trigger another
+    return spriteLoadPromise || Promise.resolve();
+  }
+
   if (forceReload) {
+    spriteForceReloadAttempted = true;
     const existingSprite = document.getElementById(SPRITE_ELEMENT_ID);
     if (existingSprite) {
       existingSprite.remove();
@@ -386,12 +394,15 @@ export default {
 
       await ensureSpriteLoaded();
 
-      const symbol = document.getElementById(symbolId);
+      let symbol = document.getElementById(symbolId);
       if (!symbol) {
+        // Try force reload only once per sprite load cycle
+        // This handles the case where the initial load was in progress
         await ensureSpriteLoaded({ forceReload: true });
-        const reloadedSymbol = document.getElementById(symbolId);
-        if (!reloadedSymbol) {
-          // If the icon doesn't exist, try some common fallbacks for problematic icons
+        symbol = document.getElementById(symbolId);
+        
+        if (!symbol) {
+          // Icon still not found after reload attempt - use fallback
           const fallbackMappings = {
             lights_led_strip_variant: "lightbulb_outlined",
             led_strip_variant: "lightbulb_outlined",
@@ -413,9 +424,8 @@ export default {
 
           throw new Error(`Icon not found in sprite: ${symbolId}`);
         }
-        this.setSvgContentFromSymbol(reloadedSymbol);
-        return;
       }
+      
       this.setSvgContentFromSymbol(symbol);
     },
 
