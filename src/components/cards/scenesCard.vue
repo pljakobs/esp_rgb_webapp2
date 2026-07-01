@@ -1,5 +1,5 @@
 <template>
-  <MyCard icon="scene" title="Scenes">
+  <MyCard icon="scene" :title="$t('cards.scenes.title')">
     <q-card-section class="flex justify-center">
       <q-scroll-area class="inset-scroll-area">
         <div v-if="groupNodes && groupNodes.length > 0">

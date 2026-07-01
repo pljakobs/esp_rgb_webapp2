@@ -1,5 +1,5 @@
 <template>
-  <MyCard icon="article" title="Log Viewer" v-model:collapsed="cardCollapsed">
+  <MyCard icon="article" :title="$t('cards.logViewer.title')" v-model:collapsed="cardCollapsed">
     <q-card-section>
       <div class="row items-end q-col-gutter-sm">
         <div class="col-12 col-md-6">

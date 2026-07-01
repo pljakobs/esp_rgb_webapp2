@@ -4,12 +4,12 @@
       <div class="flex flex-center">
         <div class="q-pa-md">
           <h1><q-spinner-radio color="light-blue" /></h1>
-          loading from
+          {{ $t('layout.loading') }}
           {{
             controllers.currentController
               ? controllers.currentController.hostname
               : "..."
-          }}... <br />Configuration:
+          }}... <br />{{ $t('layout.configuration') }}
           <span
             v-if="configData.status === storeStatus.READY"
             class="text-success"
@@ -21,7 +21,7 @@
           />
           <span v-else class="text-danger">❌ {{ configData.error }} </span
           ><br />
-          Information:
+          {{ $t('layout.information') }}
           <span
             v-if="infoData.status === storeStatus.READY"
             class="text-success"
@@ -33,7 +33,7 @@
           />
           <span v-else class="text-danger">❌ {{ infoData.errro }}</span
           ><br />
-          Colors:
+          {{ $t('layout.colors') }}
           <span
             v-if="colorData.status === storeStatus.READY"
             class="text-success"
@@ -45,7 +45,7 @@
           />
           <span v-else class="text-danger">❌ {{ colorData.error }}</span
           ><br />
-          Presets and Scenes:
+          {{ $t('layout.presetsAndScenes') }}
           <span v-if="appData.status === storeStatus.READY" class="text-success"
             >✔️</span
           >
@@ -58,7 +58,7 @@
             v-else-if="appData.status === storeStatus.SYNCING"
             color="light-blue"
           >
-            <q-spinner-radio /> synching
+            <q-spinner-radio /> {{ $t('layout.synching') }}
           </span>
           <span v-else class="text-danger">❌ {{ appData.error }}</span>
         </div>
@@ -112,7 +112,7 @@
           :options="controllers.data"
           option-label="hostname"
           option-value="ip_address"
-          label="Select a controller"
+          :label="$t('layout.selectController')"
           @update:model-value="handleControllerSelection"
           @popup-show="() => $nextTick(() => (isSelectOpen = true))"
           @popup-hide="() => $nextTick(() => (isSelectOpen = false))"
@@ -154,15 +154,15 @@
         </mySelect>
 
         <q-list>
-          <q-item-label header>main menu</q-item-label>
+          <q-item-label header>{{ $t('nav.mainMenu') }}</q-item-label>
           <q-item clickable tag="router-link" to="/ColorPage">
             <q-item-section class="icon-section"
               ><svgIcon name="lightbulb_outlined" class="icon" />
             </q-item-section>
 
             <q-item-section class="text-section">
-              <q-item-label>Color</q-item-label>
-              <q-item-label caption>Set the current output color</q-item-label>
+              <q-item-label>{{ $t('nav.color') }}</q-item-label>
+              <q-item-label caption>{{ $t('nav.colorCaption') }}</q-item-label>
             </q-item-section>
           </q-item>
 
@@ -172,10 +172,8 @@
             </q-item-section>
 
             <q-item-section class="text-section">
-              <q-item-label>Groups and Scenes</q-item-label>
-              <q-item-label caption>
-                configure groups of controlelrs and scenes
-              </q-item-label>
+              <q-item-label>{{ $t('nav.groupsAndScenes') }}</q-item-label>
+              <q-item-label caption>{{ $t('nav.groupsAndScenesCaption') }}</q-item-label>
             </q-item-section>
           </q-item>
 
@@ -185,9 +183,9 @@
             </q-item-section>
 
             <q-item-section class="text-section">
-              <q-item-label>Color settings</q-item-label>
+              <q-item-label>{{ $t('nav.colorSettings') }}</q-item-label>
               <q-item-label caption
-                >configure the color model and transition mode</q-item-label
+                >{{ $t('nav.colorSettingsCaption') }}</q-item-label
               >
             </q-item-section>
           </q-item>
@@ -198,9 +196,9 @@
             </q-item-section>
 
             <q-item-section class="text-section">
-              <q-item-label>Network settings</q-item-label>
+              <q-item-label>{{ $t('nav.networkSettings') }}</q-item-label>
               <q-item-label caption
-                >Configure the network, mqtt and telemetry</q-item-label
+                >{{ $t('nav.networkSettingsCaption') }}</q-item-label
               >
             </q-item-section>
           </q-item>
@@ -211,11 +209,10 @@
             </q-item-section>
 
             <q-item-section class="text-section">
-              <q-item-label>System settings</q-item-label>
+              <q-item-label>{{ $t('nav.systemSettings') }}</q-item-label>
               <q-item-label caption
-                >configure pins, hostname and icon, upgrade firmware, backup and
-                restore settings
-              </q-item-label>
+                >{{ $t('nav.systemSettingsCaption') }}</q-item-label
+              >
             </q-item-section>
           </q-item>
 
@@ -225,8 +222,8 @@
             </q-item-section>
 
             <q-item-section class="text-section">
-              <q-item-label>Network init</q-item-label>
-              <q-item-label caption>join or leave a wifi network</q-item-label>
+              <q-item-label>{{ $t('nav.networkInit') }}</q-item-label>
+              <q-item-label caption>{{ $t('nav.networkInitCaption') }}</q-item-label>
             </q-item-section>
           </q-item>
 
@@ -245,17 +242,30 @@
             </q-item-section>
 
             <q-item-section class="text-section">
-              <q-item-label>test</q-item-label>
-              <q-item-label caption>developer's playground</q-item-label>
+              <q-item-label>{{ $t('nav.test') }}</q-item-label>
+              <q-item-label caption>{{ $t('nav.testCaption') }}</q-item-label>
             </q-item-section>
           </q-item>
         </q-list>
         <q-separator />
         <q-item>
           <q-item-section>
+            <mySelect
+              :model-value="locale"
+              :options="languageOptions"
+              :label="$t('common.language')"
+              emit-value
+              map-options
+              filled
+              @update:model-value="setLocale"
+            />
+          </q-item-section>
+        </q-item>
+        <q-item>
+          <q-item-section>
             <q-toggle
               v-model="isDarkMode"
-              label="Dark Mode"
+              :label="$t('common.darkMode')"
               left-label
               @update:model-value="toggleDarkMode"
             />
@@ -286,8 +296,7 @@
           <q-btn round class="ws-status-btn" :color="buttonColor">
             <svgIcon :name="buttonIconName" size="20px" />
             <q-tooltip
-              >shows the status of the Websocket connection to the selected
-              controller</q-tooltip
+              >{{ $t('layout.wsTooltip') }}</q-tooltip
             >
           </q-btn>
         </q-toolbar>
@@ -310,6 +319,7 @@ import { useColorDataStore } from "src/stores/colorDataStore";
 import { useAppDataStore } from "src/stores/appDataStore";
 import { infoDataStore } from "src/stores/infoDataStore";
 import { useControllersStore } from "src/stores/controllersStore";
+import { useLocale } from "src/composables/useLocale";
 import ControllerConfigCard from "src/components/cards/ControllerConfigCard.vue";
 
 import { storeStatus } from "src/stores/storeConstants";
@@ -332,11 +342,21 @@ export default defineComponent({
 
       console.log("RgbwwLayout.vue setup define stores");
       const controllers = useControllersStore();
+      const { locale, setLocale } = useLocale();
       const configData = configDataStore();
       const infoData = infoDataStore();
       const colorData = useColorDataStore();
       const appData = useAppDataStore();
       const intervalId = ref(null);
+
+      const languageOptions = [
+        { label: "English", value: "en" },
+        { label: "Deutsch", value: "de" },
+        { label: "Français", value: "fr" },
+        { label: "Italiano", value: "it" },
+        { label: "Português", value: "pt" },
+        { label: "Español", value: "es" },
+      ];
 
       console.log("RgbwwLayout.vue setup useWebSocket");
       const ws = useWebSocket();
@@ -772,6 +792,9 @@ export default defineComponent({
         buttonIconName,
         isDarkMode,
         toggleDarkMode,
+        locale,
+        setLocale,
+        languageOptions,
         routerViewColumnClass,
         getIconForController,
         getCustomControllerIcon,

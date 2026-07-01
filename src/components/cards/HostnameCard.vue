@@ -1,9 +1,9 @@
 <template>
-  <MyCard title="Hostname and Icon" icon="badge_outlined">
+  <MyCard :title="$t('cards.hostname.title')" icon="badge_outlined">
     <q-card-section>
       <q-input
         v-model="configData.data.general.device_name"
-        label="Hostname"
+        :label="$t('cards.hostname.hostname')"
         @blur="
           updateConfig(
             'general.device_name',
@@ -15,7 +15,7 @@
 
       <q-toggle
         v-model="configData.data.general.allow_web_icons"
-        label="Allow Web Icons (Google Fonts)"
+        :label="$t('cards.hostname.allowWebIcons')"
         @update:model-value="
           updateConfig(
             'general.allow_web_icons',
@@ -25,14 +25,12 @@
         class="q-mb-md"
       >
         <q-tooltip
-          >When enabled, you can select icons from the Google Fonts library, but
-          there is a risk of sending data to google (ip-address, browser,
-          referrer etc).</q-tooltip
+          >{{ $t('cards.hostname.allowWebIconsTooltip') }}</q-tooltip
         >
       </q-toggle>
 
       <div class="icon-selector-section">
-        <div class="text-subtitle2 q-mb-sm">Controller Icon</div>
+        <div class="text-subtitle2 q-mb-sm">{{ $t('cards.hostname.controllerIcon') }}</div>
 
         <!-- Current selection display with change button -->
         <div class="current-icon-display q-mb-md">
@@ -50,16 +48,16 @@
               <q-btn
                 color="primary"
                 @click="showMaterialBrowser = true"
-                label="change Icon"
+                :label="$t('cards.hostname.changeIcon')"
                 :disable="configData.data.general?.allow_web_icons === false"
               >
                 <svgIcon name="search" size="24px" style="margin-left: 8px" />
               </q-btn>
               <q-tooltip
                 v-if="configData.data.general?.allow_web_icons === false"
-                >Enable 'Allow Web Icons' to browse Google Fonts</q-tooltip
+                >{{ $t('cards.hostname.enableWebIconsTooltip') }}</q-tooltip
               >
-              <q-tooltip v-else>Browse Material Design Icons</q-tooltip>
+              <q-tooltip v-else>{{ $t('cards.hostname.browseMaterialIcons') }}</q-tooltip>
 
               <!-- Test Web Icon -->
               <div

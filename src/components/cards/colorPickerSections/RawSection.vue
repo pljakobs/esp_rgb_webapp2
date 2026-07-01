@@ -27,6 +27,7 @@
 
 <script>
 import { computed, ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import ColorSlider from "src/components/ColorSlider.vue";
 import { useColorDataStore } from "src/stores/colorDataStore";
 
@@ -55,6 +56,7 @@ export default {
   emits: ["update:modelValue", "add-preset"],
 
   setup(props, { emit }) {
+    const { t } = useI18n();
     const colorStore = useColorDataStore();
 
     // Local state for raw values
@@ -90,35 +92,40 @@ export default {
 
     const colorSliders = computed(() => [
       {
-        label: "Red",
+        key: "r",
+        label: t("colorSliders.red"),
         model: internalRaw.value.r,
         min: 0,
         max: 1023,
         color: "red",
       },
       {
-        label: "Green",
+        key: "g",
+        label: t("colorSliders.green"),
         model: internalRaw.value.g,
         min: 0,
         max: 1023,
         color: "green",
       },
       {
-        label: "Blue",
+        key: "b",
+        label: t("colorSliders.blue"),
         model: internalRaw.value.b,
         min: 0,
         max: 1023,
         color: "blue",
       },
       {
-        label: "Warm White",
+        key: "ww",
+        label: t("colorSliders.warmWhite"),
         model: internalRaw.value.ww,
         min: 0,
         max: 1023,
         color: "yellow",
       },
       {
-        label: "Cold White",
+        key: "cw",
+        label: t("colorSliders.coldWhite"),
         model: internalRaw.value.cw,
         min: 0,
         max: 1023,
@@ -129,15 +136,7 @@ export default {
     const updateColorSlider = (slider, value) => {
       // Only process updates if not updating from props and not from websocket
       if (!updatingFromProps.value && colorStore.change_by !== "websocket") {
-        const colorMap = {
-          Red: "r",
-          Green: "g",
-          Blue: "b",
-          "Warm White": "ww",
-          "Cold White": "cw",
-        };
-
-        const rawColorKey = colorMap[slider.label];
+        const rawColorKey = slider.key;
         if (rawColorKey) {
           internalRaw.value[rawColorKey] = value;
           emit("update:modelValue", { raw: { ...internalRaw.value } });

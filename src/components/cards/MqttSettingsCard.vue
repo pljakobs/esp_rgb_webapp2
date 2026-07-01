@@ -1,14 +1,11 @@
 <template>
-  <MyCard icon="settings_outlined" title="MQTT Settings">
+  <MyCard icon="settings_outlined" :title="$t('cards.mqtt.title')">
     <q-card-section>
-      <div>
-        MQTT settings require a restart to take effect. If changed, controller
-        will restart automatically.
-      </div>
+      <div>{{ $t('cards.mqtt.description') }}</div>
       <div class="text-h7">
         <q-toggle
           v-model="mqttEnabled"
-          label="enable MQTT"
+          :label="$t('cards.mqtt.enableMqtt')"
           left-label
           @update:model-value="updateMqttEnabled"
         />
@@ -18,22 +15,22 @@
     <!-- MQTT Server Configuration -->
     <q-card-section v-if="mqttEnabled" class="q-pt-none">
       <q-separator class="q-mb-md" />
-      <div class="text-h6 q-mb-md">MQTT Server Configuration</div>
+      <div class="text-h6 q-mb-md">{{ $t('cards.mqtt.serverConfig') }}</div>
       <div class="row q-gutter-md" style="max-width: 600px">
         <div style="width: 180px">
           <q-input
             v-model="mqttServer"
-            label="MQTT Server"
+            :label="$t('cards.mqtt.server')"
             @blur="updateMqttServer"
           />
         </div>
         <div style="width: 100px">
-          <q-input v-model="mqttPort" label="Port" @blur="updateMqttPort" />
+          <q-input v-model="mqttPort" :label="$t('cards.mqtt.port')" @blur="updateMqttPort" />
         </div>
         <div style="width: 120px">
           <q-input
             v-model="mqttTopicBase"
-            label="Topic"
+            :label="$t('cards.mqtt.topic')"
             @blur="updateMqttTopicBase"
           />
         </div>
@@ -42,7 +39,7 @@
         <div style="width: 180px">
           <q-input
             v-model="mqttUsername"
-            label="MQTT Username"
+            :label="$t('cards.mqtt.username')"
             @blur="updateMqttUsername"
           />
         </div>
@@ -51,8 +48,8 @@
             v-model="mqttPassword"
             filled
             :type="isPwd ? 'password' : 'text'"
-            label="MQTT Password"
-            hint="Password with toggle"
+            :label="$t('cards.mqtt.password')"
+            :hint="$t('cards.mqtt.passwordHint')"
             @blur="updateMqttPassword"
           >
             <template #append>
@@ -73,10 +70,10 @@
     <!-- Home Assistant Integration -->
     <q-card-section v-if="mqttEnabled" class="q-pt-none">
       <q-separator class="q-mb-md" />
-      <div class="text-h6 q-mb-md">Home Assistant Integration</div>
+      <div class="text-h6 q-mb-md">{{ $t('cards.mqtt.haIntegration') }}</div>
       <q-toggle
         v-model="haEnabled"
-        label="Enable Home Assistant Integration"
+        :label="$t('cards.mqtt.enableHa')"
         left-label
         @update:model-value="updateHaEnabled"
       />
@@ -86,16 +83,16 @@
           <div style="width: 180px">
             <q-input
               v-model="haDiscoveryPrefix"
-              label="Discovery Prefix"
-              hint="MQTT discovery topic prefix"
+              :label="$t('cards.mqtt.discoveryPrefix')"
+              :hint="$t('cards.mqtt.discoveryPrefixHint')"
               @blur="updateHaDiscoveryPrefix"
             />
           </div>
           <div style="width: 180px">
             <q-input
               v-model="haNodeId"
-              label="Node ID"
-              hint="Unique identifier for this device (defaults to controller name)"
+              :label="$t('cards.mqtt.nodeId')"
+              :hint="$t('cards.mqtt.nodeIdHint')"
               @blur="updateHaNodeId"
             />
           </div>
@@ -106,19 +103,19 @@
     <!-- Synchronization -->
     <q-card-section v-if="mqttEnabled" class="q-pt-none">
       <q-separator class="q-mb-md" />
-      <div class="text-h6 q-mb-md">Synchronization</div>
+      <div class="text-h6 q-mb-md">{{ $t('cards.mqtt.sync') }}</div>
 
       <div class="sync-table-container">
         <!-- Header row -->
         <div class="sync-header row text-grey-7 text-caption text-uppercase">
           <div class="col-4"></div>
-          <div class="col-4 text-center">Primary</div>
-          <div class="col-4 text-center">Secondary</div>
+          <div class="col-4 text-center">{{ $t('cards.mqtt.primary') }}</div>
+          <div class="col-4 text-center">{{ $t('cards.mqtt.secondary') }}</div>
         </div>
 
         <!-- Clock row -->
         <div class="sync-row row items-center">
-          <div class="col-4 sync-label">Clock</div>
+          <div class="col-4 sync-label">{{ $t('cards.mqtt.clock') }}</div>
           <div class="col-4 text-center">
             <q-toggle
               v-model="clockMasterEnabled"
@@ -137,7 +134,7 @@
 
         <!-- CMD row -->
         <div class="sync-row row items-center">
-          <div class="col-4 sync-label">CMD</div>
+          <div class="col-4 sync-label">{{ $t('cards.mqtt.cmd') }}</div>
           <div class="col-4 text-center">
             <q-toggle
               v-model="cmdMasterEnabled"
@@ -156,7 +153,7 @@
 
         <!-- Color row -->
         <div class="sync-row row items-center">
-          <div class="col-4 sync-label">Color</div>
+          <div class="col-4 sync-label">{{ $t('cards.mqtt.color') }}</div>
           <div class="col-4 text-center">
             <q-toggle
               v-model="colorMasterEnabled"

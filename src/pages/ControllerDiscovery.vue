@@ -6,9 +6,9 @@
     >
       <div class="text-center q-mb-lg">
         <q-icon name="wifi_find" size="80px" color="primary" />
-        <h4 class="q-my-md">Find Your Controller</h4>
+        <h4 class="q-my-md">{{ $t('discovery.title') }}</h4>
         <p class="text-grey-7">
-          Scanning your local network for ESP RGBWW controllers...
+          {{ $t('discovery.subtitle') }}
         </p>
       </div>
 
@@ -21,18 +21,18 @@
         <template v-slot:avatar>
           <q-icon name="wifi_off" />
         </template>
-        No network connection. Please connect to WiFi and try again.
+        {{ $t('discovery.noNetwork') }}
       </q-banner>
 
       <!-- Scanning Status -->
       <div v-if="scanning" class="text-center q-mb-lg">
         <q-spinner-dots size="50px" color="primary" />
-        <p class="q-mt-md">Found {{ controllers.length }} controller(s)...</p>
+        <p class="q-mt-md">{{ $t('discovery.scanning', { count: controllers.length }) }}</p>
       </div>
 
       <!-- Controller List -->
       <div v-if="!scanning && controllers.length > 0">
-        <h6 class="q-my-md">Available Controllers:</h6>
+        <h6 class="q-my-md">{{ $t('discovery.availableControllers') }}</h6>
         <q-list bordered separator>
           <q-item
             v-for="controller in controllers"
@@ -52,7 +52,7 @@
                 {{ controller.hostname }} ({{ controller.ip_address }})
               </q-item-label>
               <q-item-label caption v-if="controller.firmware">
-                Firmware: {{ controller.firmware }}
+                {{ $t('discovery.firmware', { version: controller.firmware }) }}
               </q-item-label>
             </q-item-section>
 
@@ -69,7 +69,7 @@
         class="text-center q-mb-lg"
       >
         <q-icon name="search_off" size="60px" color="grey-5" />
-        <p class="text-grey-7 q-mt-md">No controllers found on your network.</p>
+        <p class="text-grey-7 q-mt-md">{{ $t('discovery.noControllersFound') }}</p>
       </div>
 
       <!-- Actions -->
@@ -77,7 +77,7 @@
         <q-btn
           v-if="!scanning"
           color="primary"
-          label="Scan Again"
+          :label="$t('discovery.scanAgain')"
           icon="refresh"
           class="full-width"
           @click="startScan"
@@ -87,7 +87,7 @@
           v-if="!scanning"
           flat
           color="primary"
-          label="Manual Entry"
+          :label="$t('discovery.manualEntry')"
           icon="edit"
           class="full-width"
           @click="showManualEntry = true"
@@ -98,24 +98,24 @@
       <q-dialog v-model="showManualEntry">
         <q-card style="min-width: 350px">
           <q-card-section>
-            <div class="text-h6">Enter Controller IP</div>
+            <div class="text-h6">{{ $t('discovery.enterControllerIp') }}</div>
           </q-card-section>
 
           <q-card-section class="q-pt-none">
             <q-input
               v-model="manualIp"
-              label="IP Address"
-              placeholder="192.168.1.100"
+              :label="$t('discovery.ipAddress')"
+              :placeholder="$t('discovery.ipPlaceholder')"
               outlined
               @keyup.enter="connectManual"
             />
           </q-card-section>
 
           <q-card-actions align="right">
-            <q-btn flat label="Cancel" color="primary" v-close-popup />
+            <q-btn flat :label="$t('common.cancel')" color="primary" v-close-popup />
             <q-btn
               flat
-              label="Connect"
+              :label="$t('common.connect')"
               color="primary"
               @click="connectManual"
               :loading="verifying"
@@ -129,6 +129,7 @@
 
 <script>
 import { ref, onMounted, onUnmounted } from "vue";
+import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { useQuasar } from "quasar";
 import {

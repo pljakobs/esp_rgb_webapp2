@@ -1,11 +1,11 @@
 <template>
-  <MyCard icon="tune_outlined" title="Transition Mode">
+  <MyCard icon="tune_outlined" :title="$t('cards.transitionMode.title')">
     <q-card-section>
       <div class="text-h6 col-auto self-center q-gutter-md">
         <mySelect
           v-model="transitionModel"
           :options="transitionOptions"
-          label="Transition Mode"
+          :label="$t('cards.transitionMode.modeLabel')"
           style="width: 200px"
           @update:model-value="updateTransitionMode"
         >
@@ -35,6 +35,7 @@
 
 <script>
 import { ref, watch, onMounted } from "vue";
+import { useI18n } from "vue-i18n";
 import { configDataStore } from "src/stores/configDataStore";
 import ColorSlider from "src/components/ColorSlider.vue";
 import MyCard from "src/components/myCard.vue";
@@ -45,16 +46,21 @@ export default {
     ColorSlider,
   },
   setup() {
+    const { t } = useI18n();
     const configData = configDataStore();
 
-    const transitionOptions = ["Normal", "Spektrum", "Rainbow"];
+    const transitionOptions = [
+      { label: t("cards.transitionMode.options.normal"), value: "Normal" },
+      { label: t("cards.transitionMode.options.spektrum"), value: "Spektrum" },
+      { label: t("cards.transitionMode.options.rainbow"), value: "Rainbow" },
+    ];
     const transitionModel = ref(
-      transitionOptions[configData.data.color.hsv.model],
+      transitionOptions[configData.data.color.hsv.model]?.value || "Normal",
     );
 
     const colorGains = ref([
       {
-        label: "Red",
+        label: t("cards.transitionMode.gains.red"),
         model: "color.hsv.red",
         min: -30,
         max: 30,
@@ -62,7 +68,7 @@ export default {
         value: configData.data.color.hsv.red,
       },
       {
-        label: "Yellow",
+        label: t("cards.transitionMode.gains.yellow"),
         model: "color.hsv.yellow",
         min: -30,
         max: 30,
@@ -70,7 +76,7 @@ export default {
         value: configData.data.color.hsv.yellow,
       },
       {
-        label: "Green",
+        label: t("cards.transitionMode.gains.green"),
         model: "color.hsv.green",
         min: -30,
         max: 30,
@@ -78,7 +84,7 @@ export default {
         value: configData.data.color.hsv.green,
       },
       {
-        label: "Cyan",
+        label: t("cards.transitionMode.gains.cyan"),
         model: "color.hsv.cyan",
         min: -30,
         max: 30,
@@ -86,7 +92,7 @@ export default {
         value: configData.data.color.hsv.cyan,
       },
       {
-        label: "Blue",
+        label: t("cards.transitionMode.gains.blue"),
         model: "color.hsv.blue",
         min: -30,
         max: 30,
@@ -94,7 +100,7 @@ export default {
         value: configData.data.color.hsv.blue,
       },
       {
-        label: "Magenta",
+        label: t("cards.transitionMode.gains.magenta"),
         model: "color.hsv.magenta",
         min: -30,
         max: 30,
@@ -113,7 +119,9 @@ export default {
       console.log(
         `from update trigger: \nTransition model changed to ${newTransitionModel}`,
       );
-      const modelIndex = transitionOptions.indexOf(newTransitionModel);
+      const modelIndex = transitionOptions.findIndex(
+        (option) => option.value === newTransitionModel,
+      );
       console.log(
         "old transition model:",
         configData.data.color.hsv.model,
@@ -131,7 +139,7 @@ export default {
     onMounted(() => {
       // Initialize transition model and color gains
       transitionModel.value =
-        transitionOptions[configData.data.color.hsv.model];
+        transitionOptions[configData.data.color.hsv.model]?.value || "Normal";
       colorGains.value.forEach((gain) => {
         gain.value = configData.data.color.hsv[gain.model.split(".").pop()];
       });

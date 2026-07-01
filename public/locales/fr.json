@@ -1,0 +1,368 @@
+{
+  "common": {
+    "cancel": "Annuler",
+    "save": "Enregistrer",
+    "back": "Retour",
+    "next": "Suivant",
+    "finish": "Terminer",
+    "yes": "Oui",
+    "no": "Non",
+    "apply": "Appliquer",
+    "delete": "Supprimer",
+    "edit": "Modifier",
+    "add": "Ajouter",
+    "close": "Fermer",
+    "connect": "Connecter",
+    "language": "Langue",
+    "goHome": "Accueil",
+    "darkMode": "Mode sombre",
+    "showDetails": "Afficher les dÃ©tails",
+    "hideDetails": "Masquer les dÃ©tails"
+  },
+  "layout": {
+    "loading": "chargement depuis",
+    "configuration": "Configuration :",
+    "information": "Informations :",
+    "colors": "Couleurs :",
+    "presetsAndScenes": "Presets et scÃ¨nes :",
+    "synching": "synchronisation",
+    "lightinator": "Lightinator 5",
+    "selectController": "SÃ©lectionner un contrÃ´leur",
+    "wsTooltip": "affiche l'etat de la connexion WebSocket vers le contrÃ´leur sÃ©lectionnÃ©"
+  },
+  "nav": {
+    "mainMenu": "menu principal",
+    "color": "Couleur",
+    "colorCaption": "Definir la couleur de sortie actuelle",
+    "groupsAndScenes": "Groupes et scÃ¨nes",
+    "groupsAndScenesCaption": "configurer des groupes de contrÃ´leurs et des scÃ¨nes",
+    "colorSettings": "ParamÃ¨tres de couleur",
+    "colorSettingsCaption": "configurer le modÃ¨le de couleur et le mode de transition",
+    "networkSettings": "ParamÃ¨tres rÃ©seau",
+    "networkSettingsCaption": "Configurer le rÃ©seau, MQTT et la télémétrie",
+    "systemSettings": "ParamÃ¨tres systeme",
+    "systemSettingsCaption": "configurer les pins, le nom d'hôte et l'icÃ´ne, mettre Ã  jour le firmware, sauvegarder et restaurer les paramÃ¨tres",
+    "networkInit": "Initialisation rÃ©seau",
+    "networkInitCaption": "rejoindre ou quitter un rÃ©seau Wi-Fi",
+    "test": "test",
+    "testCaption": "bac a sable developpeur"
+  },
+  "discovery": {
+    "title": "Trouver votre contrÃ´leur",
+    "subtitle": "Analyse du rÃ©seau local pour les contrÃ´leurs ESP RGBWW...",
+    "noNetwork": "Aucune connexion rÃ©seau. Veuillez vous connecter au Wi-Fi et reessayer.",
+    "scanning": "{count} contrÃ´leur(s) trouve(s)...",
+    "availableControllers": "Controleurs disponibles :",
+    "firmware": "Firmware : {version}",
+    "noControllersFound": "Aucun contrÃ´leur trouve sur votre rÃ©seau.",
+    "scanAgain": "Relancer le scan",
+    "manualEntry": "Saisie manuelle",
+    "enterControllerIp": "Saisir l'IP du contrÃ´leur",
+    "ipAddress": "Adresse IP",
+    "ipPlaceholder": "192.168.1.100"
+  },
+  "setup": {
+    "deviceSetup": "Configuration de l'appareil",
+    "steps": {
+      "hostname": "Nom d'hôte",
+      "pinConfig": "Configuration des pins",
+      "colorModel": "ModÃ¨le de couleur",
+      "telemetry": "Télémétrie",
+      "complete": "Termine"
+    },
+    "hostnameStep": {
+      "title": "Definir le nom d'hôte de l'appareil",
+      "subtitle": "Choisissez un nom unique pour identifier cet appareil sur votre rÃ©seau",
+      "label": "Nom d'hôte",
+      "required": "Le nom d'hôte est requis",
+      "hint": "Le nom d'hôte sera utilise pour acceder a l'appareil sur votre rÃ©seau local"
+    },
+    "pinConfigStep": {
+      "title": "Configurer les pins de l'appareil",
+      "subtitle": "Selectionnez une configuration de pins pour votre appareil {soc}",
+      "noConfigTitle": "Aucune configuration de pins par defaut disponible",
+      "noConfigBody": "Aucun schema de pins preconfigure n'est disponible pour votre appareil {soc}. Vous pouvez continuer la configuration et definir les pins manuellement plus tard dans l'interface principale.",
+      "noConfigCaption": "La configuration des pins peut etre effectuee aprÃ¨s la configuration initiale.",
+      "pinConfigLabel": "Configuration des pins",
+      "selectedConfigDetails": "Details de la configuration sÃ©lectionnÃ©e :",
+      "pin": "Pin {number}"
+    },
+    "colorModelStep": {
+      "title": "Configurer le modÃ¨le de couleur",
+      "subtitle": "Selectionnez le modÃ¨le de couleur et ajustez les canaux",
+      "colorModelLabel": "ModÃ¨le de couleur"
+    },
+    "telemetryStep": {
+      "title": "Télémétrie",
+      "statsTitle": "Statistiques anonymes",
+      "statsBody": "Autoriser l'envoi de statistiques anonymes au developpeur ? Cela aide a ameliorer le firmware.",
+      "logTitle": "Journalisation distante",
+      "logBody": "Activer l'envoi des journaux de debug vers le serveur de télémétrie configurÃ© ?",
+      "changeNote": "Vous pouvez modifier ces paramÃ¨tres a tout moment sous ParamÃ¨tres rÃ©seau > Télémétrie.",
+      "dataNote": "Avec ce build, les donnÃ©es suivantes sont envoyÃ©es toutes les 30 s :",
+      "showDetails": "Afficher les dÃ©tails",
+      "hideDetails": "Masquer les dÃ©tails"
+    },
+    "completeStep": {
+      "title": "Configuration terminee",
+      "hostname": "Nom d'hôte",
+      "pinConfiguration": "Configuration des pins",
+      "colorModel": "ModÃ¨le de couleur",
+      "restarting": "Configuration enregistree. L'appareil redemarre...",
+      "reconnecting": "Reconnexion dans {seconds} secondes",
+      "saved": "Configuration enregistree !",
+      "goToDashboard": "Aller au tableau de bord"
+    }
+  },
+  "color": {
+    "saveAs": "Enregistrer comme preset {model}",
+    "presetName": "Nom du preset",
+    "favorites": "Favoris",
+    "presets": "Presets"
+  },
+  "colorSliders": {
+    "red": "Rouge",
+    "green": "Vert",
+    "blue": "Bleu",
+    "warmWhite": "Blanc chaud",
+    "coldWhite": "Blanc froid"
+  },
+  "cards": {
+    "connection": {
+      "title": "Connexion",
+      "ssid": "SSID :",
+      "macAddress": "Adresse MAC :",
+      "dhcp": "DHCP :",
+      "ipAddress": "Adresse IP :",
+      "ipNetmask": "Masque IP :",
+      "ipGateway": "Passerelle IP :"
+    },
+    "ipSettings": {
+      "title": "ParamÃ¨tres IP",
+      "description": "Les paramÃ¨tres IP necessitent un redemarrage. En cas de changement, le contrÃ´leur redemarrera automatiquement.",
+      "useDhcp": "utiliser DHCP",
+      "ipAddress": "Adresse IP",
+      "ipNetmask": "Masque rÃ©seau IP",
+      "ipGateway": "Passerelle IP",
+      "gatewayRangeError": "La passerelle n'est pas dans la plage rÃ©seau configurÃ©e",
+      "applyAndRestart": "Appliquer et redemarrer"
+    },
+    "mqtt": {
+      "title": "ParamÃ¨tres MQTT",
+      "description": "Les paramÃ¨tres MQTT necessitent un redemarrage. En cas de changement, le contrÃ´leur redemarrera automatiquement.",
+      "enableMqtt": "activer MQTT",
+      "serverConfig": "Configuration du serveur MQTT",
+      "server": "Serveur MQTT",
+      "port": "Port",
+      "topic": "Topic",
+      "username": "Nom d'utilisateur MQTT",
+      "password": "Mot de passe MQTT",
+      "passwordHint": "Mot de passe avec bouton bascule",
+      "haIntegration": "Integration Home Assistant",
+      "enableHa": "Activer l'integration Home Assistant",
+      "discoveryPrefix": "Prefixe Discovery",
+      "discoveryPrefixHint": "Prefixe du topic MQTT discovery",
+      "nodeId": "ID noeud",
+      "nodeIdHint": "Identifiant unique pour cet appareil (par defaut nom du contrÃ´leur)",
+      "sync": "Synchronisation",
+      "primary": "Primaire",
+      "secondary": "Secondaire",
+      "clock": "Horloge",
+      "cmd": "CMD",
+      "color": "Couleur"
+    },
+    "telemetry": {
+      "title": "Télémétrie",
+      "statsLabel": "Statistiques télémétrie",
+      "statsIntro": "La télémétrie est activÃ©e par defaut dans les builds debug et dÃ©sactivÃ©e par defaut dans les builds release.",
+      "statsStickyNote": "Mais: une fois activÃ©e ici, une mise Ã  jour vers un build release ne la reinitialise pas.",
+      "statsDescription": "Si activÃ©e, les statistiques de télémétrie sont envoyÃ©es a l'URL configurÃ©e. Ces donnÃ©es contiennent des statistiques d'usage anonymisÃ©es pour ameliorer le firmware.",
+      "logLabel": "Journal télémétrie",
+      "logDescription": "Si activÃ©e, les logs de télémétrie sont envoyes a l'URL configurÃ©e. Ces donnÃ©es contiennent des informations utiles pour le debug et l'amelioration du firmware.",
+      "url": "URL télémétrie",
+      "user": "Utilisateur télémétrie",
+      "password": "Mot de passe télémétrie",
+      "showDetails": "Afficher les dÃ©tails",
+      "hideDetails": "Masquer les dÃ©tails",
+      "dataNote": "Avec ce build, les donnÃ©es suivantes sont envoyÃ©es toutes les 30 s :"
+    },
+    "rsyslog": {
+      "title": "ParamÃ¨tres Rsyslog",
+      "description": "Configurer le transfert UDP rsyslog pour les journaux de l'appareil. Les changements s'appliquent aprÃ¨s redemarrage.",
+      "enable": "activer rsyslog",
+      "target": "Cible",
+      "host": "Hôte Rsyslog",
+      "port": "Port",
+      "autoConfigNote": "L'auto-configuration est geree dans le Log Viewer. Modifiez ici manuellement si necessaire."
+    },
+    "controllerConfig": {
+      "title": "Configuration du contrÃ´leur",
+      "pinConfig": "Configuration des pins",
+      "pinConfigLabel": "Configuration des pins",
+      "editConfig": "Modifier la configuration actuelle",
+      "addConfig": "Ajouter une nouvelle configuration",
+      "pwmConfig": "Configuration PWM",
+      "timerSettings": "ParamÃ¨tres timer",
+      "speedMode": "Mode vitesse",
+      "timerNumber": "NumÃ©ro de timer",
+      "frequency": "FrÃ©quence (Hz)",
+      "resolutionBits": "Bits de resolution",
+      "spreadSpectrum": "ParamÃ¨tres Spread Spectrum",
+      "spreadSpectrumMode": "Mode Spread Spectrum",
+      "width": "Largeur (%)",
+      "subsampling": "Sous-echantillonnage",
+      "phaseShift": "ParamÃ¨tres de decalage de phase",
+      "phaseShiftMode": "Mode decalage de phase",
+      "resetChanges": "Reinitialiser toutes les modifications"
+    },
+    "colorModel": {
+      "title": "Couleur",
+      "colorModel": "ModÃ¨le de couleur"
+    },
+    "firmwareUpdate": {
+      "title": "Mise Ã  jour firmware",
+      "otaUrl": "URL OTA",
+      "otaUrlHint": "URL du serveur de mise Ã  jour du firmware",
+      "checkFirmware": "Verifier le firmware",
+      "updateAll": "Tout mettre Ã  jour",
+      "reachabilityTitle": "RÃ©sumÃ© de disponibilite des contrÃ´leurs :",
+      "detected": "Detectes (joignables) : {available} sur {total} contrÃ´leurs connus.",
+      "temporarilyUnavailable": "{count} contrÃ´leur(s) marques temporairement indisponibles aprÃ¨s 3 tentatives de ping.",
+      "unreachableVisible": "{count} contrÃ´leur(s) marques visibles mais injoignables.",
+      "reachableNotVisible": "{count} contrÃ´leur(s) non marques visibles mais joignables.",
+      "excluded": "{count} contrÃ´leur(s) exclus (injoignables) :",
+      "updating": "Mise Ã  jour de {count} contrÃ´leurs",
+      "success": "SuccÃ¨s",
+      "failed": "Ãchec",
+      "skipped": "Ignore",
+      "progress": "Progression",
+      "controllerStatus": "Etat du contrÃ´leur",
+      "waiting": "En attente",
+      "complete": "Processus de mise Ã  jour termine !"
+    },
+    "scÃ¨nes": {
+      "title": "Scenes",
+      "takeSnapshot": "Prendre un snapshot de scene",
+      "editScene": "Modifier la scene",
+      "deleteScene": "Supprimer la scene",
+      "editGroup": "Modifier le groupe",
+      "deleteGroup": "Supprimer le groupe",
+      "noScenes": "Aucune scene disponible",
+      "addGroup": "Ajouter un groupe",
+      "addScene": "Ajouter une scene",
+      "sync": "Synchroniser",
+      "downloadLog": "TÃ©lÃ©charger le journal"
+    },
+    "groups": {
+      "title": "Groupes",
+      "processing": "Traitement...",
+      "editGroup": "Modifier le groupe",
+      "deleteGroup": "Supprimer le groupe",
+      "addGroup": "Ajouter un groupe"
+    },
+    "hostname": {
+      "title": "Nom d'hôte et icÃ´ne",
+      "hostname": "Nom d'hôte",
+      "allowWebIcons": "Autoriser les icÃ´nes web (Google Fonts)",
+      "allowWebIconsTooltip": "Si active, vous pouvez sÃ©lectionner des icÃ´nes depuis Google Fonts, mais cela peut envoyer des donnÃ©es a Google (adresse IP, navigateur, referent, etc.).",
+      "controllerIcon": "Icone du contrÃ´leur",
+      "changeIcon": "Changer l'icÃ´ne",
+      "enableWebIconsTooltip": "Activez 'Autoriser les icÃ´nes web' pour parcourir Google Fonts",
+      "browseMaterialIcons": "Parcourir les icÃ´nes Material Design"
+    },
+    "information": {
+      "title": "Informations"
+    },
+    "whiteBalance": {
+      "title": "Balance des blancs",
+      "selectColorTemperature": "SÃ©lectionner la temperature de couleur",
+      "warmWhite": "Blanc chaud",
+      "coldWhite": "Blanc froid"
+    },
+    "transitionMode": {
+      "title": "Mode de transition",
+      "modeLabel": "Mode de transition",
+      "options": {
+        "normal": "Normal",
+        "spektrum": "Spectre",
+        "rainbow": "Arc-en-ciel"
+      },
+      "gains": {
+        "red": "Rouge",
+        "yellow": "Jaune",
+        "green": "Vert",
+        "cyan": "Cyan",
+        "blue": "Bleu",
+        "magenta": "Magenta"
+      }
+    },
+    "webappUpdate": {
+      "title": "Mise Ã  jour webapp",
+      "autoUpdate": "Mise Ã  jour auto webapp",
+      "description": "Si active, verifie une nouvelle webapp Ã  chaque connexion Wi-Fi. Desactivez pour ne mettre Ã  jour que manuellement. Une webapp manquante est toujours tÃ©lÃ©chargÃ©e.",
+      "checkWebapp": "Verifier webapp",
+      "checking": "Verification de mise Ã  jour webapp...",
+      "checkStarted": "Verification dÃ©marrÃ©e",
+      "filesProgress": "{done} / {total} fichiers",
+      "retryingBusy": "Appareil occupÃ©, nouvelle tentative dans {seconds}s... ({attempt}/{maxRetries})",
+      "alreadyUpToDate": "Deja Ã  jour{version}",
+      "updatedTo": "Mis Ã  jour vers {version}",
+      "errorPrefix": "Erreur : {error}",
+      "states": {
+        "idle": "Inactif",
+        "queryingApi": "Recherche de mise Ã  jour...",
+        "downloading": "Telechargement...",
+        "activating": "Activation..."
+      },
+      "errors": {
+        "saveEnabled": "Ãchec de sauvegarde du parametre webapp activÃ©e : {error}",
+        "deviceBusyMaxRetries": "Appareil occupÃ© (429), abandon aprÃ¨s {retries} tentatives",
+        "checkFailed": "Ãchec de verification webapp : {error}"
+      }
+    },
+    "logViewer": {
+      "title": "Visualiseur de logs"
+    },
+    "debugFunctions": {
+      "title": "Fonctions de debug"
+    }
+  },
+  "telemetryTable": {
+    "columns": {
+      "field": "Champ",
+      "description": "Description",
+      "when": "Quand"
+    },
+    "when": {
+      "always": "toujours",
+      "afterUnexpectedReboot": "aprÃ¨s redemarrage inattendu",
+      "afterExceptionReboot": "aprÃ¨s redemarrage sur exception"
+    },
+    "fields": {
+      "id": "ID de puce de ce contrÃ´leur",
+      "time": "heure Unix actuelle (si NTP est configurÃ©)",
+      "uptime": "temps de fonctionnement actuel en secondes",
+      "ip": "adresse IP actuelle",
+      "freeHeap": "memoire heap libre actuelle en octets",
+      "minimumfreeHeapRuntime": "plus faible heap libre depuis le demarrage",
+      "minimumfreeHeap10min": "plus faible heap libre dans la fenetre de 10 minutes en cours",
+      "heapLowErrUptime": "nombre de declenchements low-heap guard depuis le demarrage",
+      "heapLowErr10min": "nombre de declenchements low-heap guard dans la fenetre de 10 minutes en cours",
+      "firmware": "version firmware actuellement en cours",
+      "build": "type de build firmware",
+      "soc": "type de system-on-chip",
+      "neighbours": "nombre d'appareils voisins visibles",
+      "mdnsReceived": "nombre de paquets mDNS recus",
+      "mdnsReplies": "nombre de paquets mDNS replies",
+      "rebootNumber": "compteur persistant de redemarrages",
+      "rebootReason": "code de raison de reset",
+      "rebootExccause": "registre de cause d'exception",
+      "rebootEpc": "instantane du compteur ordinal au redemarrage",
+      "rebootExcvaddr": "adresse fautive lors de l'exception",
+      "rebootDepc": "compteur ordinal de retour d'exception"
+    }
+  },
+  "errors": {
+    "notFound": "Oups. Rien ici..."
+  }
+}

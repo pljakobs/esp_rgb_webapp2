@@ -1,5 +1,5 @@
 <template>
-  <MyCard title="Firmware update" icon="systemsecurityupdate_outlined">
+  <MyCard :title="$t('cards.firmwareUpdate.title')" icon="systemsecurityupdate_outlined">
     <q-card-section>
       <q-input
         v-model="otaUrl"

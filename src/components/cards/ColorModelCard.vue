@@ -1,11 +1,11 @@
 <template>
-  <MyCard icon="palette_outlined" title="Color">
+  <MyCard icon="palette_outlined" :title="$t('cards.colorModel.title')">
     <q-card-section>
       <div class="text-h6 col-auto self-center q-gutter-md">
         <mySelect
           v-model="colorModel"
           :options="colorOptions"
-          label="Color Model"
+          :label="$t('cards.colorModel.colorModel')"
           style="width: 200px"
           @update:model-value="emitColorModel"
         >
@@ -29,6 +29,7 @@
 
 <script>
 import { ref, watch, computed, onMounted } from "vue";
+import { useI18n } from "vue-i18n";
 import { configDataStore } from "src/stores/configDataStore";
 import ColorSlider from "src/components/ColorSlider.vue";
 import MyCard from "src/components/myCard.vue";
@@ -40,6 +41,7 @@ export default {
   },
   emits: ["update:colorModel"],
   setup(props, { emit }) {
+    const { t } = useI18n();
     const configData = configDataStore();
 
     const colorModel = ref("");
@@ -49,21 +51,21 @@ export default {
     const colorSliders = computed(() => {
       const sliders = [
         {
-          label: "Red",
+          label: t("colorSliders.red"),
           model: "color.brightness.red",
           min: 0,
           max: 100,
           color: "red",
         },
         {
-          label: "Green",
+          label: t("colorSliders.green"),
           model: "color.brightness.green",
           min: 0,
           max: 100,
           color: "green",
         },
         {
-          label: "Blue",
+          label: t("colorSliders.blue"),
           model: "color.brightness.blue",
           min: 0,
           max: 100,
@@ -73,7 +75,7 @@ export default {
 
       if (colorModel.value === "RGBWW" || colorModel.value === "RGBWWCW") {
         sliders.push({
-          label: "Warm White",
+          label: t("colorSliders.warmWhite"),
           model: "color.brightness.ww",
           min: 0,
           max: 100,
@@ -83,7 +85,7 @@ export default {
 
       if (colorModel.value === "RGBCW" || colorModel.value === "RGBWWCW") {
         sliders.push({
-          label: "Cold White",
+          label: t("colorSliders.coldWhite"),
           model: "color.brightness.cw",
           min: 0,
           max: 100,

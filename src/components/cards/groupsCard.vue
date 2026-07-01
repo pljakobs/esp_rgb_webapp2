@@ -1,5 +1,5 @@
 <template>
-  <MyCard icon="light_group" title="Groups">
+  <MyCard icon="light_group" :title="$t('cards.groups.title')">
     <q-card-section class="flex justify-center">
       <q-scroll-area class="inset-scroll-area">
         <div v-if="isLoading" class="text-center q-pa-md">

@@ -1,7 +1,7 @@
 <template>
-  <MyCard icon="exposure_outlined" title="White balance">
+  <MyCard icon="exposure_outlined" :title="$t('cards.whiteBalance.title')">
     <q-card-section>
-      select color temperature
+      {{ $t('cards.whiteBalance.selectColorTemperature') }}
       <ColorSlider
         v-for="colorTemperature in colorTemperatures"
         :key="colorTemperature.label"
@@ -18,6 +18,7 @@
 
 <script>
 import { ref, onMounted } from "vue";
+import { useI18n } from "vue-i18n";
 import { configDataStore } from "src/stores/configDataStore";
 import ColorSlider from "src/components/ColorSlider.vue";
 import MyCard from "src/components/myCard.vue";
@@ -28,18 +29,19 @@ export default {
     ColorSlider,
   },
   setup() {
+    const { t } = useI18n();
     const configData = configDataStore();
 
     const colorTemperatures = ref([
       {
-        label: "warm white",
+        label: t("cards.whiteBalance.warmWhite"),
         model: "color.colortemp.ww",
         min: 2500,
         max: 8000,
         color: "yellow",
       },
       {
-        label: "cold white",
+        label: t("cards.whiteBalance.coldWhite"),
         model: "color.colortemp.cw",
         min: 2500,
         max: 8000,
