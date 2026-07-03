@@ -614,36 +614,38 @@ export default {
 
       const formatLog = (level, args) => {
         const timestamp = ((Date.now() - startTime) / 1000).toFixed(3);
-        const message = Array.from(args).map(arg => {
-          if (typeof arg === 'object') {
-            try {
-              return JSON.stringify(arg, null, 2);
-            } catch (e) {
-              return String(arg);
+        const message = Array.from(args)
+          .map((arg) => {
+            if (typeof arg === "object") {
+              try {
+                return JSON.stringify(arg, null, 2);
+              } catch (e) {
+                return String(arg);
+              }
             }
-          }
-          return String(arg);
-        }).join(' ');
+            return String(arg);
+          })
+          .join(" ");
         return `[${timestamp}s] [${level}] ${message}`;
       };
 
-      console.log = function(...args) {
-        logs.push(formatLog('LOG', args));
+      console.log = function (...args) {
+        logs.push(formatLog("LOG", args));
         originalLog.apply(console, args);
       };
 
-      console.warn = function(...args) {
-        logs.push(formatLog('WARN', args));
+      console.warn = function (...args) {
+        logs.push(formatLog("WARN", args));
         originalWarn.apply(console, args);
       };
 
-      console.error = function(...args) {
-        logs.push(formatLog('ERROR', args));
+      console.error = function (...args) {
+        logs.push(formatLog("ERROR", args));
         originalError.apply(console, args);
       };
 
-      console.info = function(...args) {
-        logs.push(formatLog('INFO', args));
+      console.info = function (...args) {
+        logs.push(formatLog("INFO", args));
         originalInfo.apply(console, args);
       };
 
@@ -653,11 +655,11 @@ export default {
         originalLog,
         originalWarn,
         originalError,
-        originalInfo
+        originalInfo,
       };
 
       consoleLoggerActive.value = true;
-      console.log('📝 Console logger activated');
+      console.log("📝 Console logger activated");
     };
 
     const stopConsoleLogger = () => {
@@ -669,7 +671,7 @@ export default {
       console.info = logCapture.originalInfo;
 
       consoleLoggerActive.value = false;
-      console.log('📝 Console logger deactivated');
+      console.log("📝 Console logger deactivated");
     };
 
     const runSync = async () => {
@@ -682,30 +684,30 @@ export default {
       initConsoleLogger();
 
       try {
-        console.log('🔄 Starting sync via syncService...');
+        console.log("🔄 Starting sync via syncService...");
         const result = await syncService.synchronizeData();
 
         if (result) {
           Notify.create({
-            type: 'positive',
-            message: 'Sync completed successfully',
-            timeout: 2000
+            type: "positive",
+            message: "Sync completed successfully",
+            timeout: 2000,
           });
         } else {
           Notify.create({
-            type: 'warning',
-            message: 'Sync completed with issues',
-            timeout: 3000
+            type: "warning",
+            message: "Sync completed with issues",
+            timeout: 3000,
           });
         }
 
         logCaptured.value = true;
       } catch (error) {
-        console.error('❌ Sync error:', error);
+        console.error("❌ Sync error:", error);
         Notify.create({
-          type: 'negative',
+          type: "negative",
           message: `Sync failed: ${error.message}`,
-          timeout: 5000
+          timeout: 5000,
         });
         logCaptured.value = true;
       } finally {
@@ -717,20 +719,20 @@ export default {
     const downloadLog = () => {
       if (!logCapture || !logCapture.logs.length) {
         Notify.create({
-          type: 'warning',
-          message: 'No logs captured',
-          timeout: 2000
+          type: "warning",
+          message: "No logs captured",
+          timeout: 2000,
         });
         return;
       }
 
-      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
       const filename = `sync-log-${timestamp}.txt`;
-      const content = logCapture.logs.join('\n');
+      const content = logCapture.logs.join("\n");
 
-      const blob = new Blob([content], { type: 'text/plain' });
+      const blob = new Blob([content], { type: "text/plain" });
       const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
+      const a = document.createElement("a");
       a.href = url;
       a.download = filename;
       document.body.appendChild(a);
@@ -739,9 +741,9 @@ export default {
       URL.revokeObjectURL(url);
 
       Notify.create({
-        type: 'positive',
+        type: "positive",
         message: `Log downloaded: ${filename}`,
-        timeout: 2000
+        timeout: 2000,
       });
     };
 

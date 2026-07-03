@@ -32,13 +32,24 @@ export default {
         console.log("infoData.status", infoData.status);
         console.log("infoData.data", infoData.data);
         connectionItems.value = [
-          { label: t("cards.connection.ssid"), value: infoData.data.connection.ssid },
-          { label: t("cards.connection.macAddress"), value: infoData.data.connection.mac },
+          {
+            label: t("cards.connection.ssid"),
+            value: infoData.data.connection.ssid,
+          },
+          {
+            label: t("cards.connection.macAddress"),
+            value: infoData.data.connection.mac,
+          },
           {
             label: t("cards.connection.dhcp"),
-            value: infoData.data.connection.dhcp ? t("common.yes") : t("common.no"),
+            value: infoData.data.connection.dhcp
+              ? t("common.yes")
+              : t("common.no"),
           },
-          { label: t("cards.connection.ipAddress"), value: infoData.data.connection.ip },
+          {
+            label: t("cards.connection.ipAddress"),
+            value: infoData.data.connection.ip,
+          },
           {
             label: t("cards.connection.ipNetmask"),
             value: infoData.data.connection.netmask,

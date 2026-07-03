@@ -19,7 +19,9 @@
         />
       </div>
 
-      <div class="text-h2" style="opacity: 0.4">{{ $t('errors.notFound') }}</div>
+      <div class="text-h2" style="opacity: 0.4">
+        {{ $t("errors.notFound") }}
+      </div>
 
       <q-btn
         class="q-mt-xl"

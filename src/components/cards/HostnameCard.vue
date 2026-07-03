@@ -24,13 +24,13 @@
         "
         class="q-mb-md"
       >
-        <q-tooltip
-          >{{ $t('cards.hostname.allowWebIconsTooltip') }}</q-tooltip
-        >
+        <q-tooltip>{{ $t("cards.hostname.allowWebIconsTooltip") }}</q-tooltip>
       </q-toggle>
 
       <div class="icon-selector-section">
-        <div class="text-subtitle2 q-mb-sm">{{ $t('cards.hostname.controllerIcon') }}</div>
+        <div class="text-subtitle2 q-mb-sm">
+          {{ $t("cards.hostname.controllerIcon") }}
+        </div>
 
         <!-- Current selection display with change button -->
         <div class="current-icon-display q-mb-md">
@@ -55,9 +55,11 @@
               </q-btn>
               <q-tooltip
                 v-if="configData.data.general?.allow_web_icons === false"
-                >{{ $t('cards.hostname.enableWebIconsTooltip') }}</q-tooltip
+                >{{ $t("cards.hostname.enableWebIconsTooltip") }}</q-tooltip
               >
-              <q-tooltip v-else>{{ $t('cards.hostname.browseMaterialIcons') }}</q-tooltip>
+              <q-tooltip v-else>{{
+                $t("cards.hostname.browseMaterialIcons")
+              }}</q-tooltip>
 
               <!-- Test Web Icon -->
               <div
