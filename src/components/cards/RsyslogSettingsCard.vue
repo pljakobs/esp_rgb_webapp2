@@ -1,7 +1,7 @@
 <template>
   <MyCard icon="article" :title="$t('cards.rsyslog.title')">
     <q-card-section>
-      <div>{{ $t('cards.rsyslog.description') }}</div>
+      <div>{{ $t("cards.rsyslog.description") }}</div>
       <div class="text-h7 q-mt-sm">
         <q-toggle
           v-model="enabled"
@@ -14,10 +14,14 @@
 
     <q-card-section v-if="enabled" class="q-pt-none">
       <q-separator class="q-mb-md" />
-      <div class="text-h6 q-mb-md">{{ $t('cards.rsyslog.target') }}</div>
+      <div class="text-h6 q-mb-md">{{ $t("cards.rsyslog.target") }}</div>
       <div class="row q-gutter-md" style="max-width: 420px">
         <div style="width: 220px">
-          <q-input v-model="host" :label="$t('cards.rsyslog.host')" @blur="updateHost" />
+          <q-input
+            v-model="host"
+            :label="$t('cards.rsyslog.host')"
+            @blur="updateHost"
+          />
         </div>
         <div style="width: 120px">
           <q-input
@@ -29,7 +33,7 @@
         </div>
       </div>
       <div class="text-caption q-mt-sm">
-        {{ $t('cards.rsyslog.autoConfigNote') }}
+        {{ $t("cards.rsyslog.autoConfigNote") }}
       </div>
     </q-card-section>
   </MyCard>

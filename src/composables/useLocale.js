@@ -44,7 +44,9 @@ export function useLocale() {
       pendingLoads.delete(lang);
 
       if (!messages) {
-        console.warn(`[i18n] Locale file for '${lang}' not found or invalid, falling back to 'en'`);
+        console.warn(
+          `[i18n] Locale file for '${lang}' not found or invalid, falling back to 'en'`,
+        );
         locale.value = "en";
         localStorage.setItem("locale", "en");
         return;
@@ -60,7 +62,11 @@ export function useLocale() {
   // If a non-English locale is stored, load it immediately so the app
   // does not remain on fallback English until the user manually reselects.
   const savedLocale = localStorage.getItem("locale");
-  if (savedLocale && savedLocale !== "en" && !availableLocales.includes(savedLocale)) {
+  if (
+    savedLocale &&
+    savedLocale !== "en" &&
+    !availableLocales.includes(savedLocale)
+  ) {
     setLocale(savedLocale);
   }
 

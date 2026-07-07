@@ -3,8 +3,8 @@
     <q-card-section>
       <div class="d-flex q-gutter-md">
         <div>
-            {{ $t('cards.telemetry.statsIntro') }}<br/>
-            {{ $t('cards.telemetry.statsStickyNote') }}
+          {{ $t("cards.telemetry.statsIntro") }}<br />
+          {{ $t("cards.telemetry.statsStickyNote") }}
         </div>
         <div>
           <q-btn-toggle
@@ -16,35 +16,40 @@
         </div>
         <div class="flex-grow-1">
           <div>
-            {{ $t('cards.telemetry.statsDescription') }}
+            {{ $t("cards.telemetry.statsDescription") }}
           </div>
         </div>
       </div>
     </q-card-section>
     <q-card-section>
-    <q-btn
-      :label="detailsButtonLabel"
-      @click="toggleDetails"
-      flat
-      color="primary"
-    />
-    <div v-if="showDetails">
-      <div>
-        {{ $t('cards.telemetry.dataNote') }}
-        <q-scroll-area style="height: 300px;">
-          <q-table
-            :rows="telemetryDataRows"
-            :columns="telemetryDataColumns"
-            row-key="col1"
-            flat
-            bordered
-            wrap-cells
-            :hide-bottom="true"
-            :pagination="{ rowsPerPage: telemetryDataRows.length, page: 1, sortBy: null, descending: false }"
-          />
-        </q-scroll-area>
+      <q-btn
+        :label="detailsButtonLabel"
+        @click="toggleDetails"
+        flat
+        color="primary"
+      />
+      <div v-if="showDetails">
+        <div>
+          {{ $t("cards.telemetry.dataNote") }}
+          <q-scroll-area style="height: 300px">
+            <q-table
+              :rows="telemetryDataRows"
+              :columns="telemetryDataColumns"
+              row-key="col1"
+              flat
+              bordered
+              wrap-cells
+              :hide-bottom="true"
+              :pagination="{
+                rowsPerPage: telemetryDataRows.length,
+                page: 1,
+                sortBy: null,
+                descending: false,
+              }"
+            />
+          </q-scroll-area>
+        </div>
       </div>
-    </div>
     </q-card-section>
     <q-card-section>
       <div class="d-flex q-gutter-md">
@@ -58,12 +63,12 @@
         </div>
         <div class="flex-grow-1">
           <div>
-            {{ $t('cards.telemetry.logDescription') }}
+            {{ $t("cards.telemetry.logDescription") }}
           </div>
         </div>
       </div>
     </q-card-section>
-      <q-card-section>
+    <q-card-section>
       <div class="row q-gutter-md">
         <div class="col-12">
           <q-input
@@ -111,7 +116,9 @@ export default {
     const telemetryDataColumns = computed(
       () => getTelemetryData(t).telemetryDataColumns,
     );
-    const telemetryDataRows = computed(() => getTelemetryData(t).telemetryDataRows);
+    const telemetryDataRows = computed(
+      () => getTelemetryData(t).telemetryDataRows,
+    );
     const configData = configDataStore();
     const coerceTelemetryEnabled = (value, fallback = false) => {
       if (typeof value === "boolean") {
@@ -133,7 +140,9 @@ export default {
 
     const statsValue = computed({
       get: () =>
-        coerceTelemetryEnabled(configData.data?.network?.telemetry?.statsEnabled),
+        coerceTelemetryEnabled(
+          configData.data?.network?.telemetry?.statsEnabled,
+        ),
       set: (value) => {
         configData.updateData("network.telemetry.statsEnabled", Boolean(value));
       },
@@ -182,7 +191,9 @@ export default {
     const showDetails = ref(false);
 
     const detailsButtonLabel = computed(() =>
-      showDetails.value ? t("cards.telemetry.hideDetails") : t("cards.telemetry.showDetails"),
+      showDetails.value
+        ? t("cards.telemetry.hideDetails")
+        : t("cards.telemetry.showDetails"),
     );
 
     const toggleDetails = () => {

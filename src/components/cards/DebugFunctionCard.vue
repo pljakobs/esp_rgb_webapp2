@@ -1,5 +1,8 @@
 <template>
-  <MyCard :title="$t('cards.debugFunctions.title')" icon="systemsecurityupdate_outlined">
+  <MyCard
+    :title="$t('cards.debugFunctions.title')"
+    icon="systemsecurityupdate_outlined"
+  >
     <q-card-section>
       <q-btn-group>
         <q-btn
@@ -136,14 +139,11 @@ export default {
       for (const controller of controllers.data) {
         if (!controller.ip_address) continue;
         try {
-          const response = await fetch(
-            `http://${controller.ip_address}/data`,
-            {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(payload),
-            },
-          );
+          const response = await fetch(`http://${controller.ip_address}/data`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
           if (!response.ok) {
             console.warn(
               `Failed to clear data on ${controller.hostname}: HTTP ${response.status}`,

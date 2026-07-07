@@ -2,7 +2,7 @@
   <div class="setup-wizard">
     <!-- Custom Wizard Header/Progress -->
     <div class="wizard-header q-mb-lg">
-      <div class="text-h5 q-mb-md">{{ $t('setup.deviceSetup') }}</div>
+      <div class="text-h5 q-mb-md">{{ $t("setup.deviceSetup") }}</div>
       <div class="custom-stepper">
         <div class="step-indicators row items-center justify-between q-px-md">
           <!-- Step 1: Hostname -->
@@ -19,7 +19,7 @@
                 class="step-check-overlay"
               />
             </div>
-            <div class="step-label">{{ $t('setup.steps.hostname') }}</div>
+            <div class="step-label">{{ $t("setup.steps.hostname") }}</div>
           </div>
           <!-- Step 2: Pin Configuration -->
           <div
@@ -35,7 +35,7 @@
                 class="step-check-overlay"
               />
             </div>
-            <div class="step-label">{{ $t('setup.steps.pinConfig') }}</div>
+            <div class="step-label">{{ $t("setup.steps.pinConfig") }}</div>
           </div>
           <!-- Step 3: Color Model -->
           <div
@@ -51,7 +51,7 @@
                 class="step-check-overlay"
               />
             </div>
-            <div class="step-label">{{ $t('setup.steps.colorModel') }}</div>
+            <div class="step-label">{{ $t("setup.steps.colorModel") }}</div>
           </div>
           <!-- Step 4: Telemetry -->
           <div
@@ -67,14 +67,14 @@
                 class="step-check-overlay"
               />
             </div>
-            <div class="step-label">{{ $t('setup.steps.telemetry') }}</div>
+            <div class="step-label">{{ $t("setup.steps.telemetry") }}</div>
           </div>
           <!-- Step 5: Completion -->
           <div class="step-indicator" :class="{ active: step === 5 }">
             <div class="step-icon">
               <svgIcon name="check_outlined" />
             </div>
-            <div class="step-label">{{ $t('setup.steps.complete') }}</div>
+            <div class="step-label">{{ $t("setup.steps.complete") }}</div>
           </div>
         </div>
       </div>
@@ -84,9 +84,9 @@
     <q-card flat bordered class="wizard-content q-pa-md">
       <!-- Step 1: Hostname -->
       <div v-if="step === 1" class="q-pa-md">
-        <div class="text-h6 q-mb-md">{{ $t('setup.hostnameStep.title') }}</div>
+        <div class="text-h6 q-mb-md">{{ $t("setup.hostnameStep.title") }}</div>
         <div class="text-subtitle2 q-mb-lg">
-          {{ $t('setup.hostnameStep.subtitle') }}
+          {{ $t("setup.hostnameStep.subtitle") }}
         </div>
         <q-input
           v-model="hostname"
@@ -97,15 +97,19 @@
           @blur="trimHostname"
         />
         <div class="text-caption q-mb-lg">
-          {{ $t('setup.hostnameStep.hint') }}
+          {{ $t("setup.hostnameStep.hint") }}
         </div>
       </div>
 
       <!-- Step 2: Pin Configuration -->
       <div v-if="step === 2" class="q-pa-md">
-        <div class="text-h6 q-mb-md">{{ $t('setup.pinConfigStep.title') }}</div>
+        <div class="text-h6 q-mb-md">{{ $t("setup.pinConfigStep.title") }}</div>
         <div class="text-subtitle2 q-mb-lg">
-          {{ $t('setup.pinConfigStep.subtitle', { soc: infoData.data.device?.soc?.toUpperCase() }) }}
+          {{
+            $t("setup.pinConfigStep.subtitle", {
+              soc: infoData.data.device?.soc?.toUpperCase(),
+            })
+          }}
         </div>
         <div v-if="socSpecificConfigs.length === 0" class="q-mt-md">
           <q-banner class="text-warning bg-warning-light q-mb-md" rounded>
@@ -113,14 +117,18 @@
               <svgIcon name="info_outlined" />
             </template>
             <div class="text-subtitle2">
-              {{ $t('setup.pinConfigStep.noConfigTitle') }}
+              {{ $t("setup.pinConfigStep.noConfigTitle") }}
             </div>
             <div class="text-body2 q-mt-sm">
-              {{ $t('setup.pinConfigStep.noConfigBody', { soc: infoData.data.device?.soc?.toUpperCase() }) }}
+              {{
+                $t("setup.pinConfigStep.noConfigBody", {
+                  soc: infoData.data.device?.soc?.toUpperCase(),
+                })
+              }}
             </div>
           </q-banner>
           <div class="text-caption text-grey-7">
-            {{ $t('setup.pinConfigStep.noConfigCaption') }}
+            {{ $t("setup.pinConfigStep.noConfigCaption") }}
           </div>
         </div>
         <div v-else>
@@ -135,7 +143,9 @@
             @update:model-value="handlePinConfigChange"
           />
           <div class="q-mt-md">
-            <div class="text-subtitle2">{{ $t('setup.pinConfigStep.selectedConfigDetails') }}</div>
+            <div class="text-subtitle2">
+              {{ $t("setup.pinConfigStep.selectedConfigDetails") }}
+            </div>
             <q-list dense class="q-mt-sm">
               <q-item
                 v-for="(channel, index) in currentPinConfig.channels"
@@ -148,7 +158,11 @@
                       :class="channel.name"
                     ></div>
                     <div class="text-capitalize">{{ channel.name }}:</div>
-                    <div class="q-ml-md">{{ $t('setup.pinConfigStep.pin', { number: channel.pin }) }}</div>
+                    <div class="q-ml-md">
+                      {{
+                        $t("setup.pinConfigStep.pin", { number: channel.pin })
+                      }}
+                    </div>
                   </div>
                 </q-item-section>
               </q-item>
@@ -159,9 +173,11 @@
 
       <!-- Step 3: Color Model -->
       <div v-if="step === 3" class="q-pa-md">
-        <div class="text-h6 q-mb-md">{{ $t('setup.colorModelStep.title') }}</div>
+        <div class="text-h6 q-mb-md">
+          {{ $t("setup.colorModelStep.title") }}
+        </div>
         <div class="text-subtitle2 q-mb-lg">
-          {{ $t('setup.colorModelStep.subtitle') }}
+          {{ $t("setup.colorModelStep.subtitle") }}
         </div>
         <mySelect
           v-model="colorModel"
@@ -187,11 +203,13 @@
 
       <!-- Step 4: Telemetry -->
       <div v-if="step === 4" class="q-pa-md">
-        <div class="text-h6 q-mb-md">{{ $t('setup.telemetryStep.title') }}</div>
+        <div class="text-h6 q-mb-md">{{ $t("setup.telemetryStep.title") }}</div>
 
-        <div class="text-subtitle2 q-mb-sm">{{ $t('setup.telemetryStep.statsTitle') }}</div>
+        <div class="text-subtitle2 q-mb-sm">
+          {{ $t("setup.telemetryStep.statsTitle") }}
+        </div>
         <div class="text-body2 q-mb-md text-grey-7">
-          {{ $t('setup.telemetryStep.statsBody') }}
+          {{ $t("setup.telemetryStep.statsBody") }}
         </div>
         <q-btn-toggle
           v-model="statsEnabled"
@@ -202,9 +220,11 @@
           ]"
         />
 
-        <div class="text-subtitle2 q-mb-sm">{{ $t('setup.telemetryStep.logTitle') }}</div>
+        <div class="text-subtitle2 q-mb-sm">
+          {{ $t("setup.telemetryStep.logTitle") }}
+        </div>
         <div class="text-body2 q-mb-md text-grey-7">
-          {{ $t('setup.telemetryStep.logBody') }}
+          {{ $t("setup.telemetryStep.logBody") }}
         </div>
         <q-btn-toggle
           v-model="logEnabled"
@@ -216,7 +236,7 @@
         />
 
         <div class="text-caption q-mt-md">
-          {{ $t('setup.telemetryStep.changeNote') }}
+          {{ $t("setup.telemetryStep.changeNote") }}
         </div>
         <div class="q-mt-md">
           <q-btn
@@ -227,7 +247,7 @@
           />
           <div v-if="showDetails">
             <div>
-              {{ $t('setup.telemetryStep.dataNote') }}
+              {{ $t("setup.telemetryStep.dataNote") }}
               <q-scroll-area style="height: 200px">
                 <q-table
                   :rows="telemetryDataRows"
@@ -250,35 +270,41 @@
         </div>
       </div>
 
-
-
       <!-- Step 5: Completion -->
       <div v-if="step === 5" class="q-pa-md">
-        <div class="text-h6 q-mb-md">{{ $t('setup.completeStep.title') }}</div>
+        <div class="text-h6 q-mb-md">{{ $t("setup.completeStep.title") }}</div>
         <q-list bordered separator class="q-mb-lg">
           <q-item>
             <q-item-section>
-              <q-item-label caption>{{ $t('setup.completeStep.hostname') }}</q-item-label>
+              <q-item-label caption>{{
+                $t("setup.completeStep.hostname")
+              }}</q-item-label>
               <q-item-label>{{ hostname }}</q-item-label>
             </q-item-section>
           </q-item>
           <q-item v-if="currentPinConfigName">
             <q-item-section>
-              <q-item-label caption>{{ $t('setup.completeStep.pinConfiguration') }}</q-item-label>
+              <q-item-label caption>{{
+                $t("setup.completeStep.pinConfiguration")
+              }}</q-item-label>
               <q-item-label>{{ currentPinConfigName }}</q-item-label>
             </q-item-section>
           </q-item>
           <q-item>
             <q-item-section>
-              <q-item-label caption>{{ $t('setup.completeStep.colorModel') }}</q-item-label>
+              <q-item-label caption>{{
+                $t("setup.completeStep.colorModel")
+              }}</q-item-label>
               <q-item-label>{{ colorModel }}</q-item-label>
             </q-item-section>
           </q-item>
         </q-list>
         <div v-if="needsRestart" class="text-center q-mt-lg">
           <q-spinner color="primary" size="3em" />
-          <div class="q-mt-md">{{ $t('setup.completeStep.restarting') }}</div>
-          <div class="q-mt-sm text-grey-7">{{ $t('setup.completeStep.reconnecting', { seconds: countdown }) }}</div>
+          <div class="q-mt-md">{{ $t("setup.completeStep.restarting") }}</div>
+          <div class="q-mt-sm text-grey-7">
+            {{ $t("setup.completeStep.reconnecting", { seconds: countdown }) }}
+          </div>
         </div>
         <div v-else class="text-center q-mt-lg">
           <svgIcon
@@ -287,8 +313,14 @@
             size="3em"
             class="q-mb-md block"
           />
-          <div class="text-h6 text-positive q-mb-md">{{ $t('setup.completeStep.saved') }}</div>
-          <q-btn color="primary" :label="$t('setup.completeStep.goToDashboard')" @click="router.push('/')" />
+          <div class="text-h6 text-positive q-mb-md">
+            {{ $t("setup.completeStep.saved") }}
+          </div>
+          <q-btn
+            color="primary"
+            :label="$t('setup.completeStep.goToDashboard')"
+            @click="router.push('/')"
+          />
         </div>
       </div>
 
@@ -342,7 +374,9 @@ export default {
     const telemetryDataColumns = computed(
       () => getTelemetryData(t).telemetryDataColumns,
     );
-    const telemetryDataRows = computed(() => getTelemetryData(t).telemetryDataRows);
+    const telemetryDataRows = computed(
+      () => getTelemetryData(t).telemetryDataRows,
+    );
     const controllers = useControllersStore();
     const infoData = infoDataStore();
     const configData = configDataStore();
@@ -390,7 +424,9 @@ export default {
     // Telemetry details
     const showDetails = ref(false);
     const detailsButtonLabel = computed(() =>
-      showDetails.value ? t('setup.telemetryStep.hideDetails') : t('setup.telemetryStep.showDetails'),
+      showDetails.value
+        ? t("setup.telemetryStep.hideDetails")
+        : t("setup.telemetryStep.showDetails"),
     );
     const toggleDetails = () => {
       showDetails.value = !showDetails.value;
@@ -533,7 +569,11 @@ export default {
       connecting.value = true;
       try {
         // Save hostname
-        await configData.updateData("general.device_name", hostname.value, true);
+        await configData.updateData(
+          "general.device_name",
+          hostname.value,
+          true,
+        );
 
         // Save pin config if one is selected
         if (currentPinConfigName.value && currentPinConfig.value.channels) {

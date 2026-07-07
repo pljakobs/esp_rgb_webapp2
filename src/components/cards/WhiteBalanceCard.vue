@@ -1,7 +1,7 @@
 <template>
   <MyCard icon="exposure_outlined" :title="$t('cards.whiteBalance.title')">
     <q-card-section>
-      {{ $t('cards.whiteBalance.selectColorTemperature') }}
+      {{ $t("cards.whiteBalance.selectColorTemperature") }}
       <ColorSlider
         v-for="colorTemperature in colorTemperatures"
         :key="colorTemperature.label"

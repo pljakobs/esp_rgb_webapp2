@@ -303,6 +303,8 @@
       "checkWebapp": "Check webapp",
       "checking": "Checking for webapp update...",
       "checkStarted": "Check started",
+      "fileListTitle": "Files",
+      "pendingFile": "Pending file {index}",
       "filesProgress": "{done} / {total} files",
       "retryingBusy": "Device busy, retrying in {seconds}s... ({attempt}/{maxRetries})",
       "alreadyUpToDate": "Already up to date{version}",

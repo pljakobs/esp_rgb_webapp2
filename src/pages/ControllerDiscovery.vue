@@ -6,9 +6,9 @@
     >
       <div class="text-center q-mb-lg">
         <q-icon name="wifi_find" size="80px" color="primary" />
-        <h4 class="q-my-md">{{ $t('discovery.title') }}</h4>
+        <h4 class="q-my-md">{{ $t("discovery.title") }}</h4>
         <p class="text-grey-7">
-          {{ $t('discovery.subtitle') }}
+          {{ $t("discovery.subtitle") }}
         </p>
       </div>
 
@@ -21,18 +21,20 @@
         <template v-slot:avatar>
           <q-icon name="wifi_off" />
         </template>
-        {{ $t('discovery.noNetwork') }}
+        {{ $t("discovery.noNetwork") }}
       </q-banner>
 
       <!-- Scanning Status -->
       <div v-if="scanning" class="text-center q-mb-lg">
         <q-spinner-dots size="50px" color="primary" />
-        <p class="q-mt-md">{{ $t('discovery.scanning', { count: controllers.length }) }}</p>
+        <p class="q-mt-md">
+          {{ $t("discovery.scanning", { count: controllers.length }) }}
+        </p>
       </div>
 
       <!-- Controller List -->
       <div v-if="!scanning && controllers.length > 0">
-        <h6 class="q-my-md">{{ $t('discovery.availableControllers') }}</h6>
+        <h6 class="q-my-md">{{ $t("discovery.availableControllers") }}</h6>
         <q-list bordered separator>
           <q-item
             v-for="controller in controllers"
@@ -52,7 +54,7 @@
                 {{ controller.hostname }} ({{ controller.ip_address }})
               </q-item-label>
               <q-item-label caption v-if="controller.firmware">
-                {{ $t('discovery.firmware', { version: controller.firmware }) }}
+                {{ $t("discovery.firmware", { version: controller.firmware }) }}
               </q-item-label>
             </q-item-section>
 
@@ -69,7 +71,9 @@
         class="text-center q-mb-lg"
       >
         <q-icon name="search_off" size="60px" color="grey-5" />
-        <p class="text-grey-7 q-mt-md">{{ $t('discovery.noControllersFound') }}</p>
+        <p class="text-grey-7 q-mt-md">
+          {{ $t("discovery.noControllersFound") }}
+        </p>
       </div>
 
       <!-- Actions -->
@@ -98,7 +102,7 @@
       <q-dialog v-model="showManualEntry">
         <q-card style="min-width: 350px">
           <q-card-section>
-            <div class="text-h6">{{ $t('discovery.enterControllerIp') }}</div>
+            <div class="text-h6">{{ $t("discovery.enterControllerIp") }}</div>
           </q-card-section>
 
           <q-card-section class="q-pt-none">
@@ -112,7 +116,12 @@
           </q-card-section>
 
           <q-card-actions align="right">
-            <q-btn flat :label="$t('common.cancel')" color="primary" v-close-popup />
+            <q-btn
+              flat
+              :label="$t('common.cancel')"
+              color="primary"
+              v-close-popup
+            />
             <q-btn
               flat
               :label="$t('common.connect')"

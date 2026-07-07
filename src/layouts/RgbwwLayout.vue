@@ -4,12 +4,12 @@
       <div class="flex flex-center">
         <div class="q-pa-md">
           <h1><q-spinner-radio color="light-blue" /></h1>
-          {{ $t('layout.loading') }}
+          {{ $t("layout.loading") }}
           {{
             controllers.currentController
               ? controllers.currentController.hostname
               : "..."
-          }}... <br />{{ $t('layout.configuration') }}
+          }}... <br />{{ $t("layout.configuration") }}
           <span
             v-if="configData.status === storeStatus.READY"
             class="text-success"
@@ -21,7 +21,7 @@
           />
           <span v-else class="text-danger">❌ {{ configData.error }} </span
           ><br />
-          {{ $t('layout.information') }}
+          {{ $t("layout.information") }}
           <span
             v-if="infoData.status === storeStatus.READY"
             class="text-success"
@@ -33,7 +33,7 @@
           />
           <span v-else class="text-danger">❌ {{ infoData.errro }}</span
           ><br />
-          {{ $t('layout.colors') }}
+          {{ $t("layout.colors") }}
           <span
             v-if="colorData.status === storeStatus.READY"
             class="text-success"
@@ -45,7 +45,7 @@
           />
           <span v-else class="text-danger">❌ {{ colorData.error }}</span
           ><br />
-          {{ $t('layout.presetsAndScenes') }}
+          {{ $t("layout.presetsAndScenes") }}
           <span v-if="appData.status === storeStatus.READY" class="text-success"
             >✔️</span
           >
@@ -58,7 +58,7 @@
             v-else-if="appData.status === storeStatus.SYNCING"
             color="light-blue"
           >
-            <q-spinner-radio /> {{ $t('layout.synching') }}
+            <q-spinner-radio /> {{ $t("layout.synching") }}
           </span>
           <span v-else class="text-danger">❌ {{ appData.error }}</span>
         </div>
@@ -154,15 +154,15 @@
         </mySelect>
 
         <q-list>
-          <q-item-label header>{{ $t('nav.mainMenu') }}</q-item-label>
+          <q-item-label header>{{ $t("nav.mainMenu") }}</q-item-label>
           <q-item clickable tag="router-link" to="/ColorPage">
             <q-item-section class="icon-section"
               ><svgIcon name="lightbulb_outlined" class="icon" />
             </q-item-section>
 
             <q-item-section class="text-section">
-              <q-item-label>{{ $t('nav.color') }}</q-item-label>
-              <q-item-label caption>{{ $t('nav.colorCaption') }}</q-item-label>
+              <q-item-label>{{ $t("nav.color") }}</q-item-label>
+              <q-item-label caption>{{ $t("nav.colorCaption") }}</q-item-label>
             </q-item-section>
           </q-item>
 
@@ -172,8 +172,10 @@
             </q-item-section>
 
             <q-item-section class="text-section">
-              <q-item-label>{{ $t('nav.groupsAndScenes') }}</q-item-label>
-              <q-item-label caption>{{ $t('nav.groupsAndScenesCaption') }}</q-item-label>
+              <q-item-label>{{ $t("nav.groupsAndScenes") }}</q-item-label>
+              <q-item-label caption>{{
+                $t("nav.groupsAndScenesCaption")
+              }}</q-item-label>
             </q-item-section>
           </q-item>
 
@@ -183,10 +185,10 @@
             </q-item-section>
 
             <q-item-section class="text-section">
-              <q-item-label>{{ $t('nav.colorSettings') }}</q-item-label>
-              <q-item-label caption
-                >{{ $t('nav.colorSettingsCaption') }}</q-item-label
-              >
+              <q-item-label>{{ $t("nav.colorSettings") }}</q-item-label>
+              <q-item-label caption>{{
+                $t("nav.colorSettingsCaption")
+              }}</q-item-label>
             </q-item-section>
           </q-item>
 
@@ -196,10 +198,10 @@
             </q-item-section>
 
             <q-item-section class="text-section">
-              <q-item-label>{{ $t('nav.networkSettings') }}</q-item-label>
-              <q-item-label caption
-                >{{ $t('nav.networkSettingsCaption') }}</q-item-label
-              >
+              <q-item-label>{{ $t("nav.networkSettings") }}</q-item-label>
+              <q-item-label caption>{{
+                $t("nav.networkSettingsCaption")
+              }}</q-item-label>
             </q-item-section>
           </q-item>
 
@@ -209,10 +211,10 @@
             </q-item-section>
 
             <q-item-section class="text-section">
-              <q-item-label>{{ $t('nav.systemSettings') }}</q-item-label>
-              <q-item-label caption
-                >{{ $t('nav.systemSettingsCaption') }}</q-item-label
-              >
+              <q-item-label>{{ $t("nav.systemSettings") }}</q-item-label>
+              <q-item-label caption>{{
+                $t("nav.systemSettingsCaption")
+              }}</q-item-label>
             </q-item-section>
           </q-item>
 
@@ -222,8 +224,10 @@
             </q-item-section>
 
             <q-item-section class="text-section">
-              <q-item-label>{{ $t('nav.networkInit') }}</q-item-label>
-              <q-item-label caption>{{ $t('nav.networkInitCaption') }}</q-item-label>
+              <q-item-label>{{ $t("nav.networkInit") }}</q-item-label>
+              <q-item-label caption>{{
+                $t("nav.networkInitCaption")
+              }}</q-item-label>
             </q-item-section>
           </q-item>
 
@@ -242,8 +246,8 @@
             </q-item-section>
 
             <q-item-section class="text-section">
-              <q-item-label>{{ $t('nav.test') }}</q-item-label>
-              <q-item-label caption>{{ $t('nav.testCaption') }}</q-item-label>
+              <q-item-label>{{ $t("nav.test") }}</q-item-label>
+              <q-item-label caption>{{ $t("nav.testCaption") }}</q-item-label>
             </q-item-section>
           </q-item>
         </q-list>
@@ -295,9 +299,7 @@
         <q-toolbar>
           <q-btn round class="ws-status-btn" :color="buttonColor">
             <svgIcon :name="buttonIconName" size="20px" />
-            <q-tooltip
-              >{{ $t('layout.wsTooltip') }}</q-tooltip
-            >
+            <q-tooltip>{{ $t("layout.wsTooltip") }}</q-tooltip>
           </q-btn>
         </q-toolbar>
       </q-footer>

@@ -1,7 +1,7 @@
 <template>
   <MyCard icon="settings_outlined" :title="$t('cards.ipSettings.title')">
     <q-card-section>
-      <div>{{ $t('cards.ipSettings.description') }}</div>
+      <div>{{ $t("cards.ipSettings.description") }}</div>
       <div class="text-h7">
         <q-toggle
           v-model="dhcp"
@@ -14,7 +14,11 @@
     <q-card-section v-if="!dhcp">
       <div class="row">
         <div class="col-4">
-          <q-input v-model="ip" :label="$t('cards.ipSettings.ipAddress')" @blur="validateGateway" />
+          <q-input
+            v-model="ip"
+            :label="$t('cards.ipSettings.ipAddress')"
+            @blur="validateGateway"
+          />
         </div>
         <div class="col-4">
           <q-input
@@ -32,7 +36,7 @@
         </div>
       </div>
       <div v-if="gatewayError" class="text-negative">
-        {{ $t('cards.ipSettings.gatewayRangeError') }}
+        {{ $t("cards.ipSettings.gatewayRangeError") }}
       </div>
       <q-btn
         :label="$t('cards.ipSettings.applyAndRestart')"

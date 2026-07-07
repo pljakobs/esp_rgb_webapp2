@@ -1,7 +1,7 @@
 <template>
   <MyCard icon="settings_outlined" :title="$t('cards.mqtt.title')">
     <q-card-section>
-      <div>{{ $t('cards.mqtt.description') }}</div>
+      <div>{{ $t("cards.mqtt.description") }}</div>
       <div class="text-h7">
         <q-toggle
           v-model="mqttEnabled"
@@ -15,7 +15,7 @@
     <!-- MQTT Server Configuration -->
     <q-card-section v-if="mqttEnabled" class="q-pt-none">
       <q-separator class="q-mb-md" />
-      <div class="text-h6 q-mb-md">{{ $t('cards.mqtt.serverConfig') }}</div>
+      <div class="text-h6 q-mb-md">{{ $t("cards.mqtt.serverConfig") }}</div>
       <div class="row q-gutter-md" style="max-width: 600px">
         <div style="width: 180px">
           <q-input
@@ -25,7 +25,11 @@
           />
         </div>
         <div style="width: 100px">
-          <q-input v-model="mqttPort" :label="$t('cards.mqtt.port')" @blur="updateMqttPort" />
+          <q-input
+            v-model="mqttPort"
+            :label="$t('cards.mqtt.port')"
+            @blur="updateMqttPort"
+          />
         </div>
         <div style="width: 120px">
           <q-input
@@ -70,7 +74,7 @@
     <!-- Home Assistant Integration -->
     <q-card-section v-if="mqttEnabled" class="q-pt-none">
       <q-separator class="q-mb-md" />
-      <div class="text-h6 q-mb-md">{{ $t('cards.mqtt.haIntegration') }}</div>
+      <div class="text-h6 q-mb-md">{{ $t("cards.mqtt.haIntegration") }}</div>
       <q-toggle
         v-model="haEnabled"
         :label="$t('cards.mqtt.enableHa')"
@@ -103,19 +107,19 @@
     <!-- Synchronization -->
     <q-card-section v-if="mqttEnabled" class="q-pt-none">
       <q-separator class="q-mb-md" />
-      <div class="text-h6 q-mb-md">{{ $t('cards.mqtt.sync') }}</div>
+      <div class="text-h6 q-mb-md">{{ $t("cards.mqtt.sync") }}</div>
 
       <div class="sync-table-container">
         <!-- Header row -->
         <div class="sync-header row text-grey-7 text-caption text-uppercase">
           <div class="col-4"></div>
-          <div class="col-4 text-center">{{ $t('cards.mqtt.primary') }}</div>
-          <div class="col-4 text-center">{{ $t('cards.mqtt.secondary') }}</div>
+          <div class="col-4 text-center">{{ $t("cards.mqtt.primary") }}</div>
+          <div class="col-4 text-center">{{ $t("cards.mqtt.secondary") }}</div>
         </div>
 
         <!-- Clock row -->
         <div class="sync-row row items-center">
-          <div class="col-4 sync-label">{{ $t('cards.mqtt.clock') }}</div>
+          <div class="col-4 sync-label">{{ $t("cards.mqtt.clock") }}</div>
           <div class="col-4 text-center">
             <q-toggle
               v-model="clockMasterEnabled"
@@ -134,7 +138,7 @@
 
         <!-- CMD row -->
         <div class="sync-row row items-center">
-          <div class="col-4 sync-label">{{ $t('cards.mqtt.cmd') }}</div>
+          <div class="col-4 sync-label">{{ $t("cards.mqtt.cmd") }}</div>
           <div class="col-4 text-center">
             <q-toggle
               v-model="cmdMasterEnabled"
@@ -153,7 +157,7 @@
 
         <!-- Color row -->
         <div class="sync-row row items-center">
-          <div class="col-4 sync-label">{{ $t('cards.mqtt.color') }}</div>
+          <div class="col-4 sync-label">{{ $t("cards.mqtt.color") }}</div>
           <div class="col-4 text-center">
             <q-toggle
               v-model="colorMasterEnabled"
@@ -249,10 +253,14 @@ export default {
     );
 
     const { model: haDiscoveryPrefix, save: updateHaDiscoveryPrefix } =
-      useConfigBinding(configData, "network.mqtt.homeassistant.discovery_prefix", {
-        fallback: "",
-        persist: true,
-      });
+      useConfigBinding(
+        configData,
+        "network.mqtt.homeassistant.discovery_prefix",
+        {
+          fallback: "",
+          persist: true,
+        },
+      );
 
     const { model: haNodeId, save: updateHaNodeId } = useConfigBinding(
       configData,
