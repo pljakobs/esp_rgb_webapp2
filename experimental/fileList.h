@@ -12,8 +12,8 @@
 	XX(favicon_ico, "icons/favicon.ico") \
 	XX(iconsSprite_svg_gz, "icons/iconsSprite.svg.gz") \
 	XX(index_html_gz, "index.html.gz") \
-	XX(de_json, "locales/de.json") \
-	XX(es_json, "locales/es.json") \
-	XX(fr_json, "locales/fr.json") \
-	XX(it_json, "locales/it.json") \
-	XX(pt_json, "locales/pt.json")
+	XX(de_json_gz, "locales/de.json.gz") \
+	XX(es_json_gz, "locales/es.json.gz") \
+	XX(fr_json_gz, "locales/fr.json.gz") \
+	XX(it_json_gz, "locales/it.json.gz") \
+	XX(pt_json_gz, "locales/pt.json.gz")
