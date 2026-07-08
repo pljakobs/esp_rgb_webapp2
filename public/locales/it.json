@@ -19,6 +19,14 @@
     "showDetails": "Mostra dettagli",
     "hideDetails": "Nascondi dettagli"
   },
+  "auth": {
+    "title": "Autenticazione richiesta",
+    "subtitle": "Questo controller richiede una password per continuare.",
+    "password": "Password",
+    "rememberMe": "Resta connesso",
+    "login": "Accedi",
+    "cancel": "Annulla"
+  },
   "layout": {
     "loading": "caricamento da",
     "configuration": "Configurazione:",
@@ -136,6 +144,15 @@
       "ipAddress": "Indirizzo IP:",
       "ipNetmask": "Maschera IP:",
       "ipGateway": "Gateway IP:"
+    },
+    "security": {
+      "title": "Protezione con password dell'API",
+      "description": "Richiedi una password per l'accesso all'API di questo controller (HTTP e WebSocket).",
+      "enable": "Attiva la protezione con password",
+      "password": "Password",
+      "passwordHint": "Inserisci una nuova password, quindi premi Imposta password",
+      "setPassword": "Imposta password",
+      "clearPassword": "Cancella password"
     },
     "ipSettings": {
       "title": "Impostazioni IP",

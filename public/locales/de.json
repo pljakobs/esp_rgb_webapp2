@@ -19,6 +19,14 @@
     "showDetails": "Details anzeigen",
     "hideDetails": "Details ausblenden"
   },
+  "auth": {
+    "title": "Authentifizierung erforderlich",
+    "subtitle": "Dieser Controller erfordert ein Passwort, um fortzufahren.",
+    "password": "Passwort",
+    "rememberMe": "Angemeldet bleiben",
+    "login": "Anmelden",
+    "cancel": "Abbrechen"
+  },
   "layout": {
     "loading": "lade von",
     "configuration": "Konfiguration:",
@@ -136,6 +144,15 @@
       "ipAddress": "IP-Adresse:",
       "ipNetmask": "IP-Netzmaske:",
       "ipGateway": "IP-Gateway:"
+    },
+    "security": {
+      "title": "API-Passwortschutz",
+      "description": "Passwort für den API-Zugriff auf diesen Controller erforderlich (HTTP und WebSocket).",
+      "enable": "Passwortschutz aktivieren",
+      "password": "Passwort",
+      "passwordHint": "Neues Passwort eingeben und dann auf „Passwort setzen“ drücken",
+      "setPassword": "Passwort setzen",
+      "clearPassword": "Passwort löschen"
     },
     "ipSettings": {
       "title": "IP-Einstellungen",
