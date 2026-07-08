@@ -5,6 +5,7 @@
     <MqttSettingsCard />
     <RsyslogSettingsCard />
     <TelemetryCard />
+    <SecurityCard />
 
   </div>
 </template>
@@ -15,6 +16,7 @@ import IpSettingsCard from "src/components/cards/IpSettingsCard.vue";
 import MqttSettingsCard from "src/components/cards/MqttSettingsCard.vue";
 import RsyslogSettingsCard from "src/components/cards/RsyslogSettingsCard.vue";
 import TelemetryCard from "src/components/cards/TelemetryCard.vue";
+import SecurityCard from "src/components/cards/SecurityCard.vue";
 
 
 export default {
@@ -24,6 +26,7 @@ export default {
     MqttSettingsCard,
     RsyslogSettingsCard,
     TelemetryCard,
+    SecurityCard,
   },
 };
 </script>

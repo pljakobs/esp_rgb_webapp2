@@ -1,4 +1,5 @@
 import { useControllersStore } from "../stores/controllersStore";
+import { useAuthStore } from "../stores/authStore";
 import {
   retryDelay,
   requestTimeout,
@@ -13,6 +14,11 @@ export class ApiService {
     this._activeRequests = new Map(); // ip_address -> Set of active request promises
     this._requestQueue = new Map(); // ip_address -> Array of queued requests
     this._infoEndpointPreference = new Map(); // controllerKey -> "v2" | "legacy"
+    // Controllers (by key) that have answered 401 and therefore require the
+    // Authorization header. We only attach credentials to these so that
+    // unsecured controllers - or controllers running firmware whose CORS
+    // preflight rejects the Authorization header - keep working.
+    this._authRequiredControllers = new Set();
 
     // Keep payloads below a conservative MTU budget to reduce pressure on ESP8266.
     this._chunking = {
@@ -40,6 +46,14 @@ export class ApiService {
 
   _getInfoEndpointPreference(controller = null) {
     return this._infoEndpointPreference.get(this._getControllerKey(controller));
+  }
+
+  _controllerRequiresAuth(controller = null) {
+    return this._authRequiredControllers.has(this._getControllerKey(controller));
+  }
+
+  _markControllerRequiresAuth(controller = null) {
+    this._authRequiredControllers.add(this._getControllerKey(controller));
   }
 
   get controllersStore() {
@@ -518,6 +532,19 @@ export class ApiService {
         },
       };
 
+      // Attach stored credentials for HTTP Basic auth only for controllers
+      // that have previously demanded it (returned 401). Sending Authorization
+      // unconditionally would break unsecured controllers and any controller
+      // whose CORS preflight does not allow the Authorization header.
+      const authStore = useAuthStore();
+      if (
+        authStore.basicAuthHeader &&
+        !requestOptions.headers.Authorization &&
+        this._controllerRequiresAuth(targetController)
+      ) {
+        requestOptions.headers.Authorization = authStore.basicAuthHeader;
+      }
+
       // Add Content-Type header and body for non-GET requests
       if (body && method !== "GET") {
         requestOptions.headers["Content-Type"] = "application/json";
@@ -561,6 +588,51 @@ export class ApiService {
         return {
           jsonData,
           error: { status: response.status, statusText: response.statusText },
+          status,
+        };
+      } else if (response.status === 401) {
+        // Authentication required or wrong credentials.
+        console.log("401 unauthorized on", endpoint);
+        const authStore = useAuthStore();
+        const alreadyMarked = this._controllerRequiresAuth(targetController);
+        // Remember that this controller is secured so future requests attach
+        // the Authorization header up front.
+        this._markControllerRequiresAuth(targetController);
+
+        if (retryCount < maxRetries) {
+          // If we already have stored credentials but hadn't attached them yet
+          // (the controller wasn't known to be secured), retry with them before
+          // bothering the user.
+          if (authStore.hasCredentials && !alreadyMarked) {
+            return this._executeFetchApi(
+              endpoint,
+              targetController,
+              options,
+              retryCount + 1,
+              timeoutMs,
+            );
+          }
+          // Otherwise prompt for (new) credentials and retry once available.
+          try {
+            await authStore.promptLogin();
+          } catch (_) {
+            return {
+              jsonData: null,
+              error: { message: "unauthorized", status: 401 },
+              status,
+            };
+          }
+          return this._executeFetchApi(
+            endpoint,
+            targetController,
+            options,
+            retryCount + 1,
+            timeoutMs,
+          );
+        }
+        return {
+          jsonData: null,
+          error: { message: "unauthorized", status: 401 },
           status,
         };
       } else if (response.status >= 400) {
