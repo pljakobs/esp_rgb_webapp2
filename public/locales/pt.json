@@ -19,6 +19,14 @@
     "showDetails": "Mostrar detalhes",
     "hideDetails": "Ocultar detalhes"
   },
+  "auth": {
+    "title": "Autenticação necessária",
+    "subtitle": "Este controlador requer uma senha para continuar.",
+    "password": "Senha",
+    "rememberMe": "Manter-me conectado",
+    "login": "Entrar",
+    "cancel": "Cancelar"
+  },
   "layout": {
     "loading": "carregando de",
     "configuration": "Configuração:",
@@ -136,6 +144,15 @@
       "ipAddress": "Endereço IP:",
       "ipNetmask": "Máscara IP:",
       "ipGateway": "Gateway IP:"
+    },
+    "security": {
+      "title": "Proteção por senha da API",
+      "description": "Exigir uma senha para o acesso à API deste controlador (HTTP e WebSocket).",
+      "enable": "Ativar proteção por senha",
+      "password": "Senha",
+      "passwordHint": "Digite uma nova senha e pressione Definir senha",
+      "setPassword": "Definir senha",
+      "clearPassword": "Limpar senha"
     },
     "ipSettings": {
       "title": "Configurações IP",

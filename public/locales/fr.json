@@ -19,6 +19,14 @@
     "showDetails": "Afficher les dÃ©tails",
     "hideDetails": "Masquer les dÃ©tails"
   },
+  "auth": {
+    "title": "Authentification requise",
+    "subtitle": "Ce contrôleur nécessite un mot de passe pour continuer.",
+    "password": "Mot de passe",
+    "rememberMe": "Rester connecté",
+    "login": "Se connecter",
+    "cancel": "Annuler"
+  },
   "layout": {
     "loading": "chargement depuis",
     "configuration": "Configuration :",
@@ -136,6 +144,15 @@
       "ipAddress": "Adresse IP :",
       "ipNetmask": "Masque IP :",
       "ipGateway": "Passerelle IP :"
+    },
+    "security": {
+      "title": "Protection par mot de passe de l'API",
+      "description": "Exiger un mot de passe pour l'accès à l'API de ce contrôleur (HTTP et WebSocket).",
+      "enable": "Activer la protection par mot de passe",
+      "password": "Mot de passe",
+      "passwordHint": "Saisissez un nouveau mot de passe, puis appuyez sur Définir le mot de passe",
+      "setPassword": "Définir le mot de passe",
+      "clearPassword": "Effacer le mot de passe"
     },
     "ipSettings": {
       "title": "ParamÃ¨tres IP",
