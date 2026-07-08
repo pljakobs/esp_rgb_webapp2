@@ -1,12 +1,12 @@
 #define FILE_LIST(XX) \
 	XX(VERSION, "VERSION") \
 	XX(RgbwwLayout_5Oqm1DC1_css_gz, "assets/RgbwwLayout-5Oqm1DC1.css.gz") \
-	XX(RgbwwLayout_tbLXfUkJ_js_gz, "assets/RgbwwLayout-tbLXfUkJ.js.gz") \
-	XX(autosaveFeedback_DuJcfxcE_js_gz, "assets/autosaveFeedback-DuJcfxcE.js.gz") \
-	XX(i18n_DI_JlaOg_js_gz, "assets/i18n-DI-JlaOg.js.gz") \
+	XX(RgbwwLayout_C69W_18M_js_gz, "assets/RgbwwLayout-C69W-18M.js.gz") \
+	XX(autosaveFeedback_C4tUcvkL_js_gz, "assets/autosaveFeedback-C4tUcvkL.js.gz") \
+	XX(i18n_CKi6Bvkb_js_gz, "assets/i18n-CKi6Bvkb.js.gz") \
 	XX(index_C50V7XiJ_css_gz, "assets/index-C50V7XiJ.css.gz") \
-	XX(index_CRId1o5m_js_gz, "assets/index-CRId1o5m.js.gz") \
-	XX(registerSvgIcon_BOK4sOIT_js_gz, "assets/registerSvgIcon-BOK4sOIT.js.gz") \
+	XX(index_S_IKWcNo_js_gz, "assets/index-S_IKWcNo.js.gz") \
+	XX(registerSvgIcon_CxdKln4I_js_gz, "assets/registerSvgIcon-CxdKln4I.js.gz") \
 	XX(vue_runtime_esm_bundler_BoBwyICd_js_gz, "assets/vue.runtime.esm-bundler-BoBwyICd.js.gz") \
 	XX(pinconfig_json, "config/pinconfig.json") \
 	XX(favicon_ico, "icons/favicon.ico") \
