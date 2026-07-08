@@ -1,4 +1,19 @@
 import { reactive, toRefs } from "vue";
+import { useAuthStore } from "src/stores/authStore";
+
+/**
+ * Compute a lowercase-hex SHA-256 digest of `input` using the Web Crypto API.
+ * Must match the firmware: SHA256(challenge + ":" + password).
+ * @param {string} input
+ * @returns {Promise<string>}
+ */
+async function sha256Hex(input) {
+  const bytes = new TextEncoder().encode(input);
+  const digest = await crypto.subtle.digest("SHA-256", bytes);
+  return Array.from(new Uint8Array(digest))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
 
 export const wsStatus = {
   CONNECTING: "connecting",
@@ -22,6 +37,11 @@ let reconnectTimeout = null;
 let reconnectAttempts = 0;
 let requestId = 1;
 const pendingRequests = new Map();
+// Ids belonging to in-flight `authenticate` calls, so their responses bypass
+// the auth-challenge auto-handler and resolve normally.
+const authRequestIds = new Set();
+// Single shared authentication attempt; concurrent challenges await the same one.
+let authPromise = null;
 //let manualClose = false;
 
 export default function useWebSocket() {
@@ -118,9 +138,27 @@ export default function useWebSocket() {
 
       if (id !== undefined && pendingRequests.has(id)) {
         const pending = pendingRequests.get(id);
-        pendingRequests.delete(id);
-        clearTimeout(pending.timeoutHandle);
-        pending.resolve(message.params ?? message.result ?? message);
+
+        const isAuthResponse = authRequestIds.has(id);
+        const challenge =
+          typeof message.challenge === "string" ? message.challenge : null;
+        const needsAuth =
+          !isAuthResponse &&
+          challenge &&
+          message.error &&
+          message.error.code === -32001;
+
+        if (needsAuth) {
+          // Hold this request, authenticate, then transparently retry it.
+          pendingRequests.delete(id);
+          clearTimeout(pending.timeoutHandle);
+          authenticateThenRetry(pending, challenge);
+        } else {
+          pendingRequests.delete(id);
+          authRequestIds.delete(id);
+          clearTimeout(pending.timeoutHandle);
+          pending.resolve(message.params ?? message.result ?? message);
+        }
       }
       /*
       console.log(
@@ -207,10 +245,114 @@ export default function useWebSocket() {
         reject(new Error(`websocket request timeout for method '${method}'`));
       }, timeoutMs);
 
-      pendingRequests.set(id, { resolve, reject, timeoutHandle });
+      pendingRequests.set(id, {
+        resolve,
+        reject,
+        timeoutHandle,
+        method,
+        params,
+        timeoutMs,
+      });
       state.socket.send(JSON.stringify(payload));
     });
   };
+
+  // Send an `authenticate` message and resolve with the firmware's response.
+  // Bypasses the auto-challenge handler via authRequestIds so failures (which
+  // carry a fresh challenge) can be inspected by the caller.
+  const sendAuthenticate = (hash) => {
+    const id = requestId++;
+    authRequestIds.add(id);
+    const payload = {
+      jsonrpc: "2.0",
+      id,
+      method: "authenticate",
+      params: { hash },
+    };
+
+    return new Promise((resolve, reject) => {
+      const timeoutHandle = setTimeout(() => {
+        pendingRequests.delete(id);
+        authRequestIds.delete(id);
+        reject(new Error("authenticate timeout"));
+      }, 3000);
+
+      pendingRequests.set(id, {
+        resolve,
+        reject,
+        timeoutHandle,
+        method: "authenticate",
+        params: { hash },
+        timeoutMs: 3000,
+      });
+
+      if (
+        state.status !== wsStatus.CONNECTED ||
+        state.socket?.readyState !== WebSocket.OPEN
+      ) {
+        clearTimeout(timeoutHandle);
+        pendingRequests.delete(id);
+        authRequestIds.delete(id);
+        reject(new Error("websocket not connected"));
+        return;
+      }
+      state.socket.send(JSON.stringify(payload));
+    });
+  };
+
+  async function doAuthenticate(initialChallenge) {
+    const auth = useAuthStore();
+    let challenge = initialChallenge;
+
+    for (let attempt = 0; attempt < 3; attempt++) {
+      if (!auth.hasCredentials) {
+        await auth.promptLogin();
+      }
+
+      const hash = await sha256Hex(`${challenge}:${auth.password}`);
+      const res = await sendAuthenticate(hash);
+
+      if (res && res.authenticated === true) {
+        auth.setAuthError(null);
+        return;
+      }
+
+      // Firmware returns a fresh challenge alongside the failure.
+      const nextChallenge =
+        typeof res?.challenge === "string" ? res.challenge : null;
+      auth.setAuthError("authentication failed");
+      auth.clear();
+      if (!nextChallenge) {
+        throw new Error("authentication failed");
+      }
+      challenge = nextChallenge;
+      await auth.promptLogin();
+    }
+    throw new Error("authentication failed");
+  }
+
+  function ensureAuthenticated(challenge) {
+    if (!authPromise) {
+      authPromise = doAuthenticate(challenge).finally(() => {
+        authPromise = null;
+      });
+    }
+    return authPromise;
+  }
+
+  async function authenticateThenRetry(pending, challenge) {
+    try {
+      await ensureAuthenticated(challenge);
+      const result = await request(
+        pending.method,
+        pending.params,
+        pending.timeoutMs,
+      );
+      pending.resolve(result);
+    } catch (err) {
+      pending.reject(err);
+    }
+  }
 
   const onJson = (key, callback) => {
     console.log("=> registering callback for ", key);

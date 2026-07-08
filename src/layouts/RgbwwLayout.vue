@@ -305,6 +305,11 @@
       </q-footer>
     </q-layout>
   </div>
+  <!-- Rendered outside the initial-loader branch so the authentication prompt
+       can appear even while the stores are still loading. Otherwise a secured
+       controller would deadlock: stores can't load without auth, and the
+       dialog wouldn't mount until the stores finished loading. -->
+  <LoginDialog />
 </template>
 
 <script>
@@ -323,6 +328,7 @@ import { infoDataStore } from "src/stores/infoDataStore";
 import { useControllersStore } from "src/stores/controllersStore";
 import { useLocale } from "src/composables/useLocale";
 import ControllerConfigCard from "src/components/cards/ControllerConfigCard.vue";
+import LoginDialog from "src/components/Dialogs/LoginDialog.vue";
 
 import { storeStatus } from "src/stores/storeConstants";
 import useWebSocket, { wsStatus } from "src/services/websocket.js";
@@ -333,6 +339,7 @@ export default defineComponent({
   name: "MainLayout",
   components: {
     ControllerConfigCard,
+    LoginDialog,
   },
 
   setup() {

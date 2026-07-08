@@ -19,6 +19,14 @@
     "showDetails": "Show Details",
     "hideDetails": "Hide Details"
   },
+  "auth": {
+    "title": "Authentication required",
+    "subtitle": "This controller requires a password to continue.",
+    "password": "Password",
+    "rememberMe": "Keep me logged in",
+    "login": "Log in",
+    "cancel": "Cancel"
+  },
   "layout": {
     "loading": "loading from",
     "configuration": "Configuration:",
@@ -136,6 +144,15 @@
       "ipAddress": "IP-Address:",
       "ipNetmask": "IP Netmask:",
       "ipGateway": "IP Gateway:"
+    },
+    "security": {
+      "title": "API Password Protection",
+      "description": "Require a password for API access to this controller (HTTP and WebSocket).",
+      "enable": "Enable password protection",
+      "password": "Password",
+      "passwordHint": "Enter a new password, then press Set password",
+      "setPassword": "Set password",
+      "clearPassword": "Clear password"
     },
     "ipSettings": {
       "title": "IP Settings",

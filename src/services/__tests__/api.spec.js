@@ -14,6 +14,19 @@ vi.mock('../../stores/controllersStore.js', () => ({
   useControllersStore: vi.fn()
 }));
 
+// Mock the authStore (HTTP Basic auth credentials)
+vi.mock('../../stores/authStore.js', () => ({
+  useAuthStore: vi.fn(() => ({
+    password: '',
+    hasCredentials: false,
+    basicAuthHeader: null,
+    promptLogin: vi.fn(),
+    setCredentials: vi.fn(),
+    clear: vi.fn(),
+    setAuthError: vi.fn()
+  }))
+}));
+
 const { useControllersStore } = await import('../../stores/controllersStore.js');
 const { requestTimeout, retryDelay } = await import('../../stores/storeConstants.js');
 
