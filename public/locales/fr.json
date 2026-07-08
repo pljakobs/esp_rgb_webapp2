@@ -36,33 +36,33 @@
     "synching": "synchronisation",
     "lightinator": "Lightinator 5",
     "selectController": "Sélectionner un contrôleur",
-    "wsTooltip": "affiche l'etat de la connexion WebSocket vers le contrôleur sélectionné"
+    "wsTooltip": "affiche l'état de la connexion WebSocket vers le contrôleur sélectionné"
   },
   "nav": {
     "mainMenu": "menu principal",
     "color": "Couleur",
-    "colorCaption": "Definir la couleur de sortie actuelle",
+    "colorCaption": "Définir la couleur de sortie actuelle",
     "groupsAndScenes": "Groupes et scènes",
     "groupsAndScenesCaption": "configurer des groupes de contrôleurs et des scènes",
     "colorSettings": "Paramètres de couleur",
     "colorSettingsCaption": "configurer le modèle de couleur et le mode de transition",
     "networkSettings": "Paramètres réseau",
     "networkSettingsCaption": "Configurer le réseau, MQTT et la télémétrie",
-    "systemSettings": "Paramètres systeme",
+    "systemSettings": "Paramètres système",
     "systemSettingsCaption": "configurer les pins, le nom d'hôte et l'icône, mettre à jour le firmware, sauvegarder et restaurer les paramètres",
     "networkInit": "Initialisation réseau",
     "networkInitCaption": "rejoindre ou quitter un réseau Wi-Fi",
     "test": "test",
-    "testCaption": "bac a sable developpeur"
+    "testCaption": "bac à sable développeur"
   },
   "discovery": {
     "title": "Trouver votre contrôleur",
     "subtitle": "Analyse du réseau local pour les contrôleurs ESP RGBWW...",
-    "noNetwork": "Aucune connexion réseau. Veuillez vous connecter au Wi-Fi et reessayer.",
-    "scanning": "{count} contrôleur(s) trouve(s)...",
-    "availableControllers": "Controleurs disponibles :",
+    "noNetwork": "Aucune connexion réseau. Veuillez vous connecter au Wi-Fi et réessayer.",
+    "scanning": "{count} contrôleur(s) trouvé(s)...",
+    "availableControllers": "Contrôleurs disponibles :",
     "firmware": "Firmware : {version}",
-    "noControllersFound": "Aucun contrôleur trouve sur votre réseau.",
+    "noControllersFound": "Aucun contrôleur trouvé sur votre réseau.",
     "scanAgain": "Relancer le scan",
     "manualEntry": "Saisie manuelle",
     "enterControllerIp": "Saisir l'IP du contrôleur",
@@ -76,49 +76,49 @@
       "pinConfig": "Configuration des pins",
       "colorModel": "Modèle de couleur",
       "telemetry": "Télémétrie",
-      "complete": "Termine"
+      "complete": "Terminé"
     },
     "hostnameStep": {
-      "title": "Definir le nom d'hôte de l'appareil",
+      "title": "Définir le nom d'hôte de l'appareil",
       "subtitle": "Choisissez un nom unique pour identifier cet appareil sur votre réseau",
       "label": "Nom d'hôte",
       "required": "Le nom d'hôte est requis",
-      "hint": "Le nom d'hôte sera utilise pour acceder a l'appareil sur votre réseau local"
+      "hint": "Le nom d'hôte sera utilisé pour accéder à l'appareil sur votre réseau local"
     },
     "pinConfigStep": {
       "title": "Configurer les pins de l'appareil",
-      "subtitle": "Selectionnez une configuration de pins pour votre appareil {soc}",
-      "noConfigTitle": "Aucune configuration de pins par defaut disponible",
-      "noConfigBody": "Aucun schema de pins preconfigure n'est disponible pour votre appareil {soc}. Vous pouvez continuer la configuration et definir les pins manuellement plus tard dans l'interface principale.",
-      "noConfigCaption": "La configuration des pins peut etre effectuee après la configuration initiale.",
+      "subtitle": "Sélectionnez une configuration de pins pour votre appareil {soc}",
+      "noConfigTitle": "Aucune configuration de pins par défaut disponible",
+      "noConfigBody": "Aucun schéma de pins préconfiguré n'est disponible pour votre appareil {soc}. Vous pouvez continuer la configuration et définir les pins manuellement plus tard dans l'interface principale.",
+      "noConfigCaption": "La configuration des pins peut être effectuée après la configuration initiale.",
       "pinConfigLabel": "Configuration des pins",
       "selectedConfigDetails": "Details de la configuration sélectionnée :",
       "pin": "Pin {number}"
     },
     "colorModelStep": {
       "title": "Configurer le modèle de couleur",
-      "subtitle": "Selectionnez le modèle de couleur et ajustez les canaux",
+      "subtitle": "Sélectionnez le modèle de couleur et ajustez les canaux",
       "colorModelLabel": "Modèle de couleur"
     },
     "telemetryStep": {
       "title": "Télémétrie",
       "statsTitle": "Statistiques anonymes",
-      "statsBody": "Autoriser l'envoi de statistiques anonymes au developpeur ? Cela aide a ameliorer le firmware.",
+      "statsBody": "Autoriser l'envoi de statistiques anonymes au développeur ? Cela aide à améliorer le firmware.",
       "logTitle": "Journalisation distante",
       "logBody": "Activer l'envoi des journaux de debug vers le serveur de télémétrie configuré ?",
-      "changeNote": "Vous pouvez modifier ces paramètres a tout moment sous Paramètres réseau > Télémétrie.",
+      "changeNote": "Vous pouvez modifier ces paramètres à tout moment sous Paramètres réseau > Télémétrie.",
       "dataNote": "Avec ce build, les données suivantes sont envoyées toutes les 30 s :",
       "showDetails": "Afficher les détails",
       "hideDetails": "Masquer les détails"
     },
     "completeStep": {
-      "title": "Configuration terminee",
+      "title": "Configuration terminée",
       "hostname": "Nom d'hôte",
       "pinConfiguration": "Configuration des pins",
       "colorModel": "Modèle de couleur",
-      "restarting": "Configuration enregistree. L'appareil redemarre...",
+      "restarting": "Configuration enregistrée. L'appareil redémarre...",
       "reconnecting": "Reconnexion dans {seconds} secondes",
-      "saved": "Configuration enregistree !",
+      "saved": "Configuration enregistrée !",
       "goToDashboard": "Aller au tableau de bord"
     }
   },
@@ -156,17 +156,17 @@
     },
     "ipSettings": {
       "title": "Paramètres IP",
-      "description": "Les paramètres IP necessitent un redemarrage. En cas de changement, le contrôleur redemarrera automatiquement.",
+      "description": "Les paramètres IP nécessitent un redémarrage. En cas de changement, le contrôleur redémarrera automatiquement.",
       "useDhcp": "utiliser DHCP",
       "ipAddress": "Adresse IP",
       "ipNetmask": "Masque réseau IP",
       "ipGateway": "Passerelle IP",
       "gatewayRangeError": "La passerelle n'est pas dans la plage réseau configurée",
-      "applyAndRestart": "Appliquer et redemarrer"
+      "applyAndRestart": "Appliquer et redémarrer"
     },
     "mqtt": {
       "title": "Paramètres MQTT",
-      "description": "Les paramètres MQTT necessitent un redemarrage. En cas de changement, le contrôleur redemarrera automatiquement.",
+      "description": "Les paramètres MQTT nécessitent un redémarrage. En cas de changement, le contrôleur redémarrera automatiquement.",
       "enableMqtt": "activer MQTT",
       "serverConfig": "Configuration du serveur MQTT",
       "server": "Serveur MQTT",
@@ -175,12 +175,12 @@
       "username": "Nom d'utilisateur MQTT",
       "password": "Mot de passe MQTT",
       "passwordHint": "Mot de passe avec bouton bascule",
-      "haIntegration": "Integration Home Assistant",
-      "enableHa": "Activer l'integration Home Assistant",
-      "discoveryPrefix": "Prefixe Discovery",
-      "discoveryPrefixHint": "Prefixe du topic MQTT discovery",
-      "nodeId": "ID noeud",
-      "nodeIdHint": "Identifiant unique pour cet appareil (par defaut nom du contrôleur)",
+      "haIntegration": "Intégration Home Assistant",
+      "enableHa": "Activer l'intégration Home Assistant",
+      "discoveryPrefix": "Préfixe Discovery",
+      "discoveryPrefixHint": "Préfixe du topic MQTT discovery",
+      "nodeId": "ID nœud",
+      "nodeIdHint": "Identifiant unique pour cet appareil (par défaut nom du contrôleur)",
       "sync": "Synchronisation",
       "primary": "Primaire",
       "secondary": "Secondaire",
@@ -191,11 +191,11 @@
     "telemetry": {
       "title": "Télémétrie",
       "statsLabel": "Statistiques télémétrie",
-      "statsIntro": "La télémétrie est activée par defaut dans les builds debug et désactivée par defaut dans les builds release.",
-      "statsStickyNote": "Mais: une fois activée ici, une mise à jour vers un build release ne la reinitialise pas.",
-      "statsDescription": "Si activée, les statistiques de télémétrie sont envoyées a l'URL configurée. Ces données contiennent des statistiques d'usage anonymisées pour ameliorer le firmware.",
+      "statsIntro": "La télémétrie est activée par défaut dans les builds debug et désactivée par défaut dans les builds release.",
+      "statsStickyNote": "Mais : une fois activée ici, une mise à jour vers un build release ne la réinitialise pas.",
+      "statsDescription": "Si activée, les statistiques de télémétrie sont envoyées à l'URL configurée. Ces données contiennent des statistiques d'usage anonymisées pour améliorer le firmware.",
       "logLabel": "Journal télémétrie",
-      "logDescription": "Si activée, les logs de télémétrie sont envoyes a l'URL configurée. Ces données contiennent des informations utiles pour le debug et l'amelioration du firmware.",
+      "logDescription": "Si activée, les logs de télémétrie sont envoyés à l'URL configurée. Ces données contiennent des informations utiles pour le debug et l'amélioration du firmware.",
       "url": "URL télémétrie",
       "user": "Utilisateur télémétrie",
       "password": "Mot de passe télémétrie",
@@ -205,12 +205,12 @@
     },
     "rsyslog": {
       "title": "Paramètres Rsyslog",
-      "description": "Configurer le transfert UDP rsyslog pour les journaux de l'appareil. Les changements s'appliquent après redemarrage.",
+      "description": "Configurer le transfert UDP rsyslog pour les journaux de l'appareil. Les changements s'appliquent après redémarrage.",
       "enable": "activer rsyslog",
       "target": "Cible",
       "host": "Hôte Rsyslog",
       "port": "Port",
-      "autoConfigNote": "L'auto-configuration est geree dans le Log Viewer. Modifiez ici manuellement si necessaire."
+      "autoConfigNote": "L'auto-configuration est gérée dans le Log Viewer. Modifiez ici manuellement si nécessaire."
     },
     "controllerConfig": {
       "title": "Configuration du contrôleur",
@@ -223,14 +223,14 @@
       "speedMode": "Mode vitesse",
       "timerNumber": "Numéro de timer",
       "frequency": "Fréquence (Hz)",
-      "resolutionBits": "Bits de resolution",
+      "resolutionBits": "Bits de résolution",
       "spreadSpectrum": "Paramètres Spread Spectrum",
       "spreadSpectrumMode": "Mode Spread Spectrum",
       "width": "Largeur (%)",
-      "subsampling": "Sous-echantillonnage",
-      "phaseShift": "Paramètres de decalage de phase",
-      "phaseShiftMode": "Mode decalage de phase",
-      "resetChanges": "Reinitialiser toutes les modifications"
+      "subsampling": "Sous-échantillonnage",
+      "phaseShift": "Paramètres de décalage de phase",
+      "phaseShiftMode": "Mode décalage de phase",
+      "resetChanges": "Réinitialiser toutes les modifications"
     },
     "colorModel": {
       "title": "Couleur",
@@ -240,22 +240,22 @@
       "title": "Mise à jour firmware",
       "otaUrl": "URL OTA",
       "otaUrlHint": "URL du serveur de mise à jour du firmware",
-      "checkFirmware": "Verifier le firmware",
+      "checkFirmware": "Vérifier le firmware",
       "updateAll": "Tout mettre à jour",
-      "reachabilityTitle": "Résumé de disponibilite des contrôleurs :",
-      "detected": "Detectes (joignables) : {available} sur {total} contrôleurs connus.",
-      "temporarilyUnavailable": "{count} contrôleur(s) marques temporairement indisponibles après 3 tentatives de ping.",
-      "unreachableVisible": "{count} contrôleur(s) marques visibles mais injoignables.",
-      "reachableNotVisible": "{count} contrôleur(s) non marques visibles mais joignables.",
+      "reachabilityTitle": "Résumé de disponibilité des contrôleurs :",
+      "detected": "Détectés (joignables) : {available} sur {total} contrôleurs connus.",
+      "temporarilyUnavailable": "{count} contrôleur(s) marqués temporairement indisponibles après 3 tentatives de ping.",
+      "unreachableVisible": "{count} contrôleur(s) marqués visibles mais injoignables.",
+      "reachableNotVisible": "{count} contrôleur(s) non marqués visibles mais joignables.",
       "excluded": "{count} contrôleur(s) exclus (injoignables) :",
       "updating": "Mise à jour de {count} contrôleurs",
       "success": "Succès",
       "failed": "Échec",
-      "skipped": "Ignore",
+      "skipped": "Ignoré",
       "progress": "Progression",
-      "controllerStatus": "Etat du contrôleur",
+      "controllerStatus": "État du contrôleur",
       "waiting": "En attente",
-      "complete": "Processus de mise à jour termine !"
+      "complete": "Processus de mise à jour terminé !"
     },
     "scenes": {
       "title": "Scènes",
@@ -281,8 +281,8 @@
       "title": "Nom d'hôte et icône",
       "hostname": "Nom d'hôte",
       "allowWebIcons": "Autoriser les icônes web (Google Fonts)",
-      "allowWebIconsTooltip": "Si active, vous pouvez sélectionner des icônes depuis Google Fonts, mais cela peut envoyer des données a Google (adresse IP, navigateur, referent, etc.).",
-      "controllerIcon": "Icone du contrôleur",
+      "allowWebIconsTooltip": "Si activé, vous pouvez sélectionner des icônes depuis Google Fonts, mais cela peut envoyer des données à Google (adresse IP, navigateur, référent, etc.).",
+      "controllerIcon": "Icône du contrôleur",
       "changeIcon": "Changer l'icône",
       "enableWebIconsTooltip": "Activez 'Autoriser les icônes web' pour parcourir Google Fonts",
       "browseMaterialIcons": "Parcourir les icônes Material Design"
@@ -292,7 +292,7 @@
     },
     "whiteBalance": {
       "title": "Balance des blancs",
-      "selectColorTemperature": "Sélectionner la temperature de couleur",
+      "selectColorTemperature": "Sélectionner la température de couleur",
       "warmWhite": "Blanc chaud",
       "coldWhite": "Blanc froid"
     },
@@ -316,25 +316,25 @@
     "webappUpdate": {
       "title": "Mise à jour webapp",
       "autoUpdate": "Mise à jour auto webapp",
-      "description": "Si active, verifie une nouvelle webapp à chaque connexion Wi-Fi. Desactivez pour ne mettre à jour que manuellement. Une webapp manquante est toujours téléchargée.",
-      "checkWebapp": "Verifier webapp",
-      "checking": "Verification de mise à jour webapp...",
-      "checkStarted": "Verification démarrée",
+      "description": "Si activé, vérifie une nouvelle webapp à chaque connexion Wi-Fi. Désactivez pour ne mettre à jour que manuellement. Une webapp manquante est toujours téléchargée.",
+      "checkWebapp": "Vérifier webapp",
+      "checking": "Vérification de mise à jour webapp...",
+      "checkStarted": "Vérification démarrée",
       "filesProgress": "{done} / {total} fichiers",
       "retryingBusy": "Appareil occupé, nouvelle tentative dans {seconds}s... ({attempt}/{maxRetries})",
-      "alreadyUpToDate": "Deja à jour{version}",
+      "alreadyUpToDate": "Déjà à jour{version}",
       "updatedTo": "Mis à jour vers {version}",
       "errorPrefix": "Erreur : {error}",
       "states": {
         "idle": "Inactif",
         "queryingApi": "Recherche de mise à jour...",
-        "downloading": "Telechargement...",
+        "downloading": "Téléchargement...",
         "activating": "Activation..."
       },
       "errors": {
         "saveEnabled": "Échec de sauvegarde du parametre webapp activée : {error}",
         "deviceBusyMaxRetries": "Appareil occupé (429), abandon après {retries} tentatives",
-        "checkFailed": "Échec de verification webapp : {error}"
+        "checkFailed": "Échec de vérification webapp : {error}"
       }
     },
     "logViewer": {
@@ -352,29 +352,29 @@
     },
     "when": {
       "always": "toujours",
-      "afterUnexpectedReboot": "après redemarrage inattendu",
-      "afterExceptionReboot": "après redemarrage sur exception"
+      "afterUnexpectedReboot": "après redémarrage inattendu",
+      "afterExceptionReboot": "après redémarrage sur exception"
     },
     "fields": {
       "id": "ID de puce de ce contrôleur",
       "time": "heure Unix actuelle (si NTP est configuré)",
       "uptime": "temps de fonctionnement actuel en secondes",
       "ip": "adresse IP actuelle",
-      "freeHeap": "memoire heap libre actuelle en octets",
-      "minimumfreeHeapRuntime": "plus faible heap libre depuis le demarrage",
-      "minimumfreeHeap10min": "plus faible heap libre dans la fenetre de 10 minutes en cours",
-      "heapLowErrUptime": "nombre de declenchements low-heap guard depuis le demarrage",
-      "heapLowErr10min": "nombre de declenchements low-heap guard dans la fenetre de 10 minutes en cours",
+      "freeHeap": "mémoire heap libre actuelle en octets",
+      "minimumfreeHeapRuntime": "plus faible heap libre depuis le démarrage",
+      "minimumfreeHeap10min": "plus faible heap libre dans la fenêtre de 10 minutes en cours",
+      "heapLowErrUptime": "nombre de déclenchements low-heap guard depuis le démarrage",
+      "heapLowErr10min": "nombre de déclenchements low-heap guard dans la fenêtre de 10 minutes en cours",
       "firmware": "version firmware actuellement en cours",
       "build": "type de build firmware",
       "soc": "type de system-on-chip",
       "neighbours": "nombre d'appareils voisins visibles",
-      "mdnsReceived": "nombre de paquets mDNS recus",
+      "mdnsReceived": "nombre de paquets mDNS reçus",
       "mdnsReplies": "nombre de paquets mDNS replies",
-      "rebootNumber": "compteur persistant de redemarrages",
+      "rebootNumber": "compteur persistant de redémarrages",
       "rebootReason": "code de raison de reset",
       "rebootExccause": "registre de cause d'exception",
-      "rebootEpc": "instantane du compteur ordinal au redemarrage",
+      "rebootEpc": "instantané du compteur ordinal au redémarrage",
       "rebootExcvaddr": "adresse fautive lors de l'exception",
       "rebootDepc": "compteur ordinal de retour d'exception"
     }
