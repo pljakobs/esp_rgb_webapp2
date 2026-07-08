@@ -1,13 +1,13 @@
 #define FILE_LIST(XX) \
 	XX(VERSION, "VERSION") \
-	XX(RgbwwLayout_BPoOfUMc_js_gz, "assets/RgbwwLayout-BPoOfUMc.js.gz") \
-	XX(RgbwwLayout_BYUw5iM1_css_gz, "assets/RgbwwLayout-BYUw5iM1.css.gz") \
-	XX(autosaveFeedback_CYivx7JF_js_gz, "assets/autosaveFeedback-CYivx7JF.js.gz") \
-	XX(i18n_B8sCvi9S_js_gz, "assets/i18n-B8sCvi9S.js.gz") \
-	XX(index_CiXzFafi_css_gz, "assets/index-CiXzFafi.css.gz") \
-	XX(index_DT3O9zPQ_js_gz, "assets/index-DT3O9zPQ.js.gz") \
-	XX(registerSvgIcon_CXs0DfAc_js_gz, "assets/registerSvgIcon-CXs0DfAc.js.gz") \
-	XX(vue_runtime_esm_bundler_BZx7IWwY_js_gz, "assets/vue.runtime.esm-bundler-BZx7IWwY.js.gz") \
+	XX(RgbwwLayout_5Oqm1DC1_css_gz, "assets/RgbwwLayout-5Oqm1DC1.css.gz") \
+	XX(RgbwwLayout_tbLXfUkJ_js_gz, "assets/RgbwwLayout-tbLXfUkJ.js.gz") \
+	XX(autosaveFeedback_DuJcfxcE_js_gz, "assets/autosaveFeedback-DuJcfxcE.js.gz") \
+	XX(i18n_DI_JlaOg_js_gz, "assets/i18n-DI-JlaOg.js.gz") \
+	XX(index_C50V7XiJ_css_gz, "assets/index-C50V7XiJ.css.gz") \
+	XX(index_CRId1o5m_js_gz, "assets/index-CRId1o5m.js.gz") \
+	XX(registerSvgIcon_BOK4sOIT_js_gz, "assets/registerSvgIcon-BOK4sOIT.js.gz") \
+	XX(vue_runtime_esm_bundler_BoBwyICd_js_gz, "assets/vue.runtime.esm-bundler-BoBwyICd.js.gz") \
 	XX(pinconfig_json, "config/pinconfig.json") \
 	XX(favicon_ico, "icons/favicon.ico") \
 	XX(iconsSprite_svg_gz, "icons/iconsSprite.svg.gz") \
