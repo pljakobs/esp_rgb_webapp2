@@ -257,9 +257,9 @@
       "waiting": "En attente",
       "complete": "Processus de mise à jour termine !"
     },
-    "scènes": {
-      "title": "Scenes",
-      "takeSnapshot": "Prendre un snapshot de scene",
+    "scenes": {
+      "title": "Scènes",
+      "takeSnapshot": "Prendre un snapshot de scène",
       "editScene": "Modifier la scene",
       "deleteScene": "Supprimer la scene",
       "editGroup": "Modifier le groupe",
