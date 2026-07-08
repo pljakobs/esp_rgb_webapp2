@@ -108,22 +108,30 @@ export default {
       }
     };
 
-    const savePassword = () => {
+    const savePassword = async () => {
       if (newPassword.value.length === 0) {
         return;
       }
-      configData.updateData("security.api_password", newPassword.value, true);
+      // Persist the password and enable protection in a single atomic config
+      // update. Sending them as two separate requests races on the ESP8266
+      // (limited connections) and one can be dropped.
+      await configData.updateMultipleData({
+        "security.api_password": newPassword.value,
+        "security.api_secured": true,
+      });
       // Store the credentials locally so this session stays authenticated.
       authStore.setCredentials(newPassword.value);
-      // Now that a password exists, actually enable protection.
-      saveApiSecured(true);
       apiSecured.value = true;
       newPassword.value = "";
     };
 
-    const clearPassword = () => {
-      configData.updateData("security.api_password", "", true);
-      saveApiSecured(false);
+    const clearPassword = async () => {
+      // Clear the password and disable protection in a single atomic config
+      // update, otherwise the two requests race and api_secured can survive.
+      await configData.updateMultipleData({
+        "security.api_password": "",
+        "security.api_secured": false,
+      });
       apiSecured.value = false;
       newPassword.value = "";
       authStore.clear();
