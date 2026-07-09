@@ -1,5 +1,5 @@
 {
-  "version": 21,
+  "version": 22,
   "available_pins": [
     {
       "soc": "esp8266",
@@ -69,7 +69,7 @@
         { "name": "warmwhite", "pin": "15" },
         { "name": "coldwhite", "pin": "12" }
       ]
-    }
+    },
     {
       "name": "QuinLED An-Penta-Deca",
       "soc": "esp32",
@@ -91,6 +91,7 @@
         { "name": "LED13", "pin": "15" },
         { "name": "LED14", "pin": "14" },
         { "name": "LED15", "pin": "2" }
-
+      ]
     }
+  ]
 }
