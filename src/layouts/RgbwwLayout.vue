@@ -365,6 +365,7 @@ export default defineComponent({
         { label: "Italiano", value: "it" },
         { label: "Português", value: "pt" },
         { label: "Español", value: "es" },
+        { label: "Ελληνικά", value: "el" },
       ];
 
       console.log("RgbwwLayout.vue setup useWebSocket");
