@@ -1,18 +1,19 @@
 #define FILE_LIST(XX) \
 	XX(VERSION, "VERSION") \
-	XX(RgbwwLayout_5Oqm1DC1_css_gz, "assets/RgbwwLayout-5Oqm1DC1.css.gz") \
-	XX(RgbwwLayout_C69W_18M_js_gz, "assets/RgbwwLayout-C69W-18M.js.gz") \
-	XX(autosaveFeedback_C4tUcvkL_js_gz, "assets/autosaveFeedback-C4tUcvkL.js.gz") \
-	XX(i18n_CKi6Bvkb_js_gz, "assets/i18n-CKi6Bvkb.js.gz") \
+	XX(RgbwwLayout_BDYZwdoa_js_gz, "assets/RgbwwLayout-BDYZwdoa.js.gz") \
+	XX(RgbwwLayout_cmddkSS1_css_gz, "assets/RgbwwLayout-cmddkSS1.css.gz") \
+	XX(autosaveFeedback_hEZnD_3__js_gz, "assets/autosaveFeedback-hEZnD_3_.js.gz") \
+	XX(i18n_YUnLkL_n_js_gz, "assets/i18n-YUnLkL_n.js.gz") \
 	XX(index_C50V7XiJ_css_gz, "assets/index-C50V7XiJ.css.gz") \
-	XX(index_S_IKWcNo_js_gz, "assets/index-S_IKWcNo.js.gz") \
-	XX(registerSvgIcon_CxdKln4I_js_gz, "assets/registerSvgIcon-CxdKln4I.js.gz") \
+	XX(index_CZnq4ck__js_gz, "assets/index-CZnq4ck-.js.gz") \
+	XX(registerSvgIcon_RPLLnK03_js_gz, "assets/registerSvgIcon-RPLLnK03.js.gz") \
 	XX(vue_runtime_esm_bundler_BoBwyICd_js_gz, "assets/vue.runtime.esm-bundler-BoBwyICd.js.gz") \
 	XX(pinconfig_json, "config/pinconfig.json") \
 	XX(favicon_ico, "icons/favicon.ico") \
 	XX(iconsSprite_svg_gz, "icons/iconsSprite.svg.gz") \
 	XX(index_html_gz, "index.html.gz") \
 	XX(de_json_gz, "locales/de.json.gz") \
+	XX(el_json_gz, "locales/el.json.gz") \
 	XX(es_json_gz, "locales/es.json.gz") \
 	XX(fr_json_gz, "locales/fr.json.gz") \
 	XX(it_json_gz, "locales/it.json.gz") \
