@@ -12,7 +12,9 @@
         <template v-for="(value, key) in infoData.data" :key="key">
           <!-- Nested object → sub-section (spans both columns) -->
           <template v-if="isObject(value) && !isFirmwareCommentKey(key)">
-            <div class="section-header" style="grid-column: 1 / -1">{{ formatKey(key) }}</div>
+            <div class="section-header" style="grid-column: 1 / -1">
+              {{ formatKey(key) }}
+            </div>
             <!-- Runtime section: fields on the left, heap sparkline on the right -->
             <div
               v-if="key === 'runtime'"
@@ -155,8 +157,7 @@ export default {
       return h
         .map((e, i) => {
           const x = SPARKLINE_PAD + (i / (n - 1)) * usableW;
-          const y =
-            SPARKLINE_PAD + (1 - (e.val - minV) / range) * usableH;
+          const y = SPARKLINE_PAD + (1 - (e.val - minV) / range) * usableH;
           return `${x.toFixed(1)},${y.toFixed(1)}`;
         })
         .join(" ");
@@ -172,7 +173,9 @@ export default {
       const usableH = SPARKLINE_H - 2 * SPARKLINE_PAD;
       return {
         x: +(SPARKLINE_PAD + usableW).toFixed(1),
-        y: +(SPARKLINE_PAD + (1 - (last.val - minV) / range) * usableH).toFixed(1),
+        y: +(SPARKLINE_PAD + (1 - (last.val - minV) / range) * usableH).toFixed(
+          1,
+        ),
       };
     });
 
@@ -202,7 +205,7 @@ export default {
       refreshInfo();
       refreshInterval = setInterval(() => {
         refreshInfo();
-      }, 5000);
+      }, 10000);
     }
 
     // Record heap whenever the info store updates
