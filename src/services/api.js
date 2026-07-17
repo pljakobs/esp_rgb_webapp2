@@ -20,11 +20,20 @@ export class ApiService {
     // preflight rejects the Authorization header - keep working.
     this._authRequiredControllers = new Set();
 
+    // Track unique in-flight/queued requests: ip_address -> Map(requestKey -> Promise)
+    this._inFlightRequests = new Map();
+
     // Keep payloads below a conservative MTU budget to reduce pressure on ESP8266.
     this._chunking = {
       maxPayloadBytes: 1200,
       interChunkDelayMs: 75,
     };
+  }
+
+  _getRequestKey(endpoint, options = {}) {
+    const method = (options.method || "GET").toUpperCase();
+    const bodyStr = options.body ? JSON.stringify(options.body) : "";
+    return `${method}:${endpoint}:${bodyStr}`;
   }
 
   _getControllerKey(controller = null) {
@@ -145,10 +154,10 @@ export class ApiService {
     timeoutMs = requestTimeout,
   ) {
     console.log(
-      `fetchApi called for endpoint: ${endpoint}, controller: ${controller?.ip_address || "current"}, retryCount: ${retryCount}, timeoutMs: ${timeoutMs}`,
+      `fetchApi called for endpoint: ${endpoint}, controller: ${controller?.ip_address || "current"}, retryCount: ${retryCount}, timeoutMs: ${timeoutMs}`, //[cite: 15]
     );
     const targetController =
-      controller || this.controllersStore.currentController;
+      controller || this.controllersStore.currentController; //[cite: 15]
 
     if (!targetController) {
       return {
@@ -158,9 +167,26 @@ export class ApiService {
       };
     }
 
-    // Queue requests to prevent overwhelming individual controllers
     const controllerIp = targetController.ip_address;
-    return this._queueRequest(controllerIp, () =>
+    const requestKey = this._getRequestKey(endpoint, options);
+
+    // Initialize tracking map for this controller if it doesn't exist
+    if (!this._inFlightRequests.has(controllerIp)) {
+      this._inFlightRequests.set(controllerIp, new Map());
+    }
+
+    const controllerInFlight = this._inFlightRequests.get(controllerIp);
+
+    // If an identical request is already active or queued, share the promise
+    if (controllerInFlight.has(requestKey)) {
+      console.log(
+        `[ApiService] Coalescing duplicate request for: ${requestKey}`,
+      );
+      return controllerInFlight.get(requestKey);
+    }
+
+    // Queue and execute the request as usual[cite: 15]
+    const promise = this._queueRequest(controllerIp, () =>
       this._executeApi(
         endpoint,
         targetController,
@@ -169,6 +195,16 @@ export class ApiService {
         timeoutMs,
       ),
     );
+
+    // Store the promise so subsequent identical requests can attach to it
+    controllerInFlight.set(requestKey, promise);
+
+    // Remove the request signature once the request cycle (including retries) is complete
+    promise.finally(() => {
+      controllerInFlight.delete(requestKey);
+    });
+
+    return promise;
   }
 
   _getEndpointPath(endpoint) {
