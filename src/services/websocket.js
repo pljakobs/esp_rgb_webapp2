@@ -1,6 +1,8 @@
 import { reactive, toRefs } from "vue";
 import { useAuthStore } from "src/stores/authStore";
 
+let requestQueue = Promise.resolve();
+
 /**
  * Compute a lowercase-hex SHA-256 digest of `input` using the Web Crypto API.
  * Must match the firmware: SHA256(challenge + ":" + password).
@@ -229,32 +231,38 @@ export default function useWebSocket() {
   };
 
   const request = (method, params = {}, timeoutMs = 1500) => {
-    if (
-      state.status !== wsStatus.CONNECTED ||
-      state.socket?.readyState !== WebSocket.OPEN
-    ) {
-      return Promise.reject(new Error("websocket not connected"));
-    }
+    // Chain the new request onto the existing queue
+    requestQueue = requestQueue.then(async () => {
+      // Standard connection check
+      if (
+        state.status !== wsStatus.CONNECTED ||
+        state.socket?.readyState !== WebSocket.OPEN
+      ) {
+        throw new Error("websocket not connected");
+      }
 
-    const id = requestId++;
-    const payload = { jsonrpc: "2.0", id, method, params };
+      const id = requestId++;
+      const payload = { jsonrpc: "2.0", id, method, params };
 
-    return new Promise((resolve, reject) => {
-      const timeoutHandle = setTimeout(() => {
-        pendingRequests.delete(id);
-        reject(new Error(`websocket request timeout for method '${method}'`));
-      }, timeoutMs);
+      return new Promise((resolve, reject) => {
+        const timeoutHandle = setTimeout(() => {
+          pendingRequests.delete(id);
+          reject(new Error(`websocket request timeout for method '${method}'`));
+        }, timeoutMs);
 
-      pendingRequests.set(id, {
-        resolve,
-        reject,
-        timeoutHandle,
-        method,
-        params,
-        timeoutMs,
+        pendingRequests.set(id, {
+          resolve,
+          reject,
+          timeoutHandle,
+          method,
+          params,
+          timeoutMs,
+        });
+        state.socket.send(JSON.stringify(payload));
       });
-      state.socket.send(JSON.stringify(payload));
     });
+
+    return requestQueue;
   };
 
   // Send an `authenticate` message and resolve with the firmware's response.
