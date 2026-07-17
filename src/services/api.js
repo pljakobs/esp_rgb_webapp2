@@ -28,32 +28,40 @@ export class ApiService {
   }
 
   _getControllerKey(controller = null) {
-    const targetController = controller || this.controllersStore.currentController;
+    const targetController =
+      controller || this.controllersStore.currentController;
+
     if (!targetController) {
       return "__default__";
     }
-    return String(
-      targetController.ip_address || targetController.hostname || "__default__",
-    );
-  }
 
-  _setInfoEndpointPreference(controller = null, preference) {
-    if (preference !== "v2" && preference !== "legacy") {
-      return;
+    let resolvedIp = targetController.ip_address;
+
+    // Normalize aliases to the actual current IP address
+    if (["self", "current"].includes(resolvedIp)) {
+      resolvedIp = this.controllersStore.currentController?.ipAddress;
     }
-    this._infoEndpointPreference.set(this._getControllerKey(controller), preference);
-  }
 
+    // Fallback order: resolved IP (or mapped IP) -> hostname -> default
+    return String(resolvedIp || targetController.hostname || "__default__");
+  }
   _getInfoEndpointPreference(controller = null) {
     return this._infoEndpointPreference.get(this._getControllerKey(controller));
   }
 
   _controllerRequiresAuth(controller = null) {
-    return this._authRequiredControllers.has(this._getControllerKey(controller));
+    return this._authRequiredControllers.has(
+      this._getControllerKey(controller),
+    );
   }
 
   _markControllerRequiresAuth(controller = null) {
     this._authRequiredControllers.add(this._getControllerKey(controller));
+  }
+
+  _setInfoEndpointPreference(controller = null, preference) {
+    const key = this._getControllerKey(controller);
+    this._infoEndpointPreference.set(key, preference);
   }
 
   get controllersStore() {
@@ -67,6 +75,7 @@ export class ApiService {
    * Ensure only one request per controller at a time
    */
   async _queueRequest(controllerIp, requestFn) {
+    console.log(`Queueing request for controller ${controllerIp}`);
     // If no active requests for this controller, execute immediately
     if (
       !this._activeRequests.has(controllerIp) ||
@@ -135,6 +144,9 @@ export class ApiService {
     retryCount = 0,
     timeoutMs = requestTimeout,
   ) {
+    console.log(
+      `fetchApi called for endpoint: ${endpoint}, controller: ${controller?.ip_address || "current"}, retryCount: ${retryCount}, timeoutMs: ${timeoutMs}`,
+    );
     const targetController =
       controller || this.controllersStore.currentController;
 
@@ -529,6 +541,7 @@ export class ApiService {
         method,
         headers: {
           ...headers,
+          Connection: "keep-alive",
         },
       };
 
