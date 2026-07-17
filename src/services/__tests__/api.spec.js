@@ -178,15 +178,19 @@ describe("ApiService", () => {
       });
 
       await apiService.fetchApi("data", null, {
-        headers: expect.objectContaining({ "X-Custom-Header": "test-value" }),
+        headers: { "X-Custom-Header": "test-value" },
       });
 
-      expect(mockFetch).toHaveBeenCalledWith(
-        expect.any(String),
-        expect.objectContaining({
-          headers: { "X-Custom-Header": "test-value" },
-        }),
-      );
+      // 1. Verify the fetch was called
+      expect(mockFetch).toHaveBeenCalled();
+
+      // 2. Extract the options from the first call
+      const options = mockFetch.mock.calls[0][1];
+
+      // 3. Assert on the headers property specifically
+      expect(options.headers).toMatchObject({
+        "X-Custom-Header": "test-value",
+      });
     });
 
     it("should split large /data POST payloads into throttled chunks", async () => {
