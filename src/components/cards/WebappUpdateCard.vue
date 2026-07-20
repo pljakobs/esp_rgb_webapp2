@@ -53,7 +53,8 @@
           :key="`${idx}-${entry.path}`"
           class="row items-center q-py-xs no-wrap"
         >
-          <q-icon
+          <!-- Using the global svgIcon component -->
+          <svgIcon
             :name="entry.done ? 'check_circle' : 'radio_button_unchecked'"
             :color="entry.done ? 'positive' : 'grey-6'"
             size="18px"
