@@ -59,6 +59,7 @@ $warning: #f2c037;
   --shadow-color: var(--shadow-color-light);
   --label-color: var(--label-color-light);
   --icon-select-color: var(--icon-select-color-light);
+  --accent-color: #{$accent};
 }
 
 [data-theme="dark"] {
@@ -72,4 +73,5 @@ $warning: #f2c037;
   --shadow-color: var(--shadow-color-dark);
   --label-color: var(--label-color-dark);
   --icon-select-color: var(--icon-select-color-dark);
+  --accent-color: #{$accent};
 }
