@@ -118,38 +118,60 @@
           @popup-hide="() => $nextTick(() => (isSelectOpen = false))"
         >
           <template v-slot:option="scope">
-            <q-item clickable @click="scope.toggleOption(scope.opt)">
-              <q-item-section avatar>
-                <div class="row items-center">
-                  <!-- Custom controller icon -->
-                  <svgIcon
-                    :name="getCustomControllerIconReactive(scope.opt)"
-                    size="20px"
-                    fallbackIcon="lightbulb_outlined"
-                    :style="{
-                      color:
-                        scope.opt.visible === false
-                          ? '#888'
-                          : getCustomControllerIconReactive(scope.opt) ===
-                              'lightbulb_outlined'
-                            ? undefined
-                            : '#FFD600',
-                    }"
-                  />
-                  <!-- Role-based icon (home/api) if applicable -->
-                  <svgIcon
-                    v-if="getIconForController(scope.opt)"
-                    :name="getIconForController(scope.opt)"
-                    size="16px"
-                    class="q-ml-xs"
-                  />
+            <BasePatchCard
+              :active="
+                controllers.currentController?.ip_address ===
+                scope.opt.ip_address
+              "
+              @click="scope.toggleOption(scope.opt)"
+            >
+              <!-- Left Avatar Slot -->
+              <template #avatar>
+                <svgIcon
+                  :name="getCustomControllerIconReactive(scope.opt)"
+                  size="20px"
+                  fallbackIcon="lightbulb_outlined"
+                  :style="{
+                    color:
+                      scope.opt.visible === false
+                        ? '#888'
+                        : getCustomControllerIconReactive(scope.opt) ===
+                            'lightbulb_outlined'
+                          ? undefined
+                          : '#FFD600',
+                  }"
+                />
+                <svgIcon
+                  v-if="getIconForController(scope.opt)"
+                  :name="getIconForController(scope.opt)"
+                  size="16px"
+                  class="q-ml-xs"
+                />
+              </template>
+
+              <!-- Center Text Content Slot -->
+              <template #content>
+                <div class="text-subtitle2 text-weight-bold line-height-1">
+                  {{ getControllerDisplayName(scope.opt) }}
                 </div>
-              </q-item-section>
-              <q-item-section>
-                <q-item-label>{{ scope.opt.hostname }}</q-item-label>
-                <q-item-label caption>{{ scope.opt.ip_address }}</q-item-label>
-              </q-item-section>
-            </q-item>
+                <div class="text-caption line-height-1 q-mt-xs">
+                  {{ scope.opt.ip_address }}
+                </div>
+              </template>
+
+              <!-- Right Actions/Indicators Slot -->
+              <template #actions>
+                <!-- Visual radio selection bubble matching the operational layout wireframe -->
+                <q-radio
+                  :model-value="controllers.currentController?.ip_address"
+                  :val="scope.opt.ip_address"
+                  size="xs"
+                  keep-color
+                  color="primary"
+                  @update:model-value="scope.toggleOption(scope.opt)"
+                />
+              </template>
+            </BasePatchCard>
           </template>
         </mySelect>
 
@@ -329,7 +351,7 @@ import { useControllersStore } from "src/stores/controllersStore";
 import { useLocale } from "src/composables/useLocale";
 import ControllerConfigCard from "src/components/cards/ControllerConfigCard.vue";
 import LoginDialog from "src/components/Dialogs/LoginDialog.vue";
-
+import BasePatchCard from "src/components/basePatchCard.vue";
 import { storeStatus } from "src/stores/storeConstants";
 import useWebSocket, { wsStatus } from "src/services/websocket.js";
 import { useRouter } from "vue-router";
@@ -340,6 +362,7 @@ export default defineComponent({
   components: {
     ControllerConfigCard,
     LoginDialog,
+    BasePatchCard,
   },
 
   setup() {
@@ -787,6 +810,24 @@ export default defineComponent({
         return "lightbulb_outlined";
       };
 
+      const getControllerDisplayName = (controller) => {
+        if (!controller) return "Unknown";
+
+        if (appData.data && appData.data.controllers) {
+          const controllerMetadata = appData.data.controllers.find(
+            (c) => String(c.id) === String(controller.id),
+          );
+          if (controllerMetadata && controllerMetadata.name) {
+            return controllerMetadata.name;
+          }
+        }
+        return (
+          controller.hostname ||
+          configData.data?.general?.device_name ||
+          "Unknown"
+        );
+      };
+
       return {
         leftDrawerOpen,
         configData,
@@ -812,6 +853,8 @@ export default defineComponent({
         currentControllerIcon,
         currentControllerHostname,
         showInitialLoader,
+        BasePatchCard,
+        getControllerDisplayName,
       };
     } catch (error) {
       console.error("Error in setup function:", error);
@@ -895,5 +938,18 @@ export default defineComponent({
   100% {
     box-shadow: 0 4px 8px 0 var(--shadow-color);
   }
+}
+.line-height-1 {
+  line-height: 1.25;
+}
+.custom-card-title {
+  /* Safely falls back to theme text colors instead of a fixed blue/black */
+  color: var(--field-value-color);
+}
+
+.custom-card-caption {
+  /* Maps to your custom secondary label color scheme */
+  color: var(--label-color);
+  margin-top: 4px;
 }
 </style>

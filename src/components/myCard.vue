@@ -1,5 +1,5 @@
 <template>
-  <q-card class="full-width no-gutter">
+  <q-card class="my-card full-width no-gutter">
     <q-card-section class="row items-center">
       <svgIcon :name="icon" />
       <div class="text-h6">{{ title }}</div>
@@ -65,6 +65,16 @@ export default {
 </script>
 
 <style scoped>
+.my-card {
+  transition: all 0.4s ease-in-out;
+  border-width: 1px;
+  border-radius: 10px;
+}
+.my-card:hover {
+  transform: translateY(-3px); /* Slightly lifts the card for feedback */
+  box-shadow: 0 4px 12px var(--accent-color); /* Creates the "lighting up" effect */
+  filter: brightness(1.08); /* Boosts internal element brightness slightly */
+}
 .rotate-icon {
   transition: transform 0.4s ease;
   cursor: pointer;
