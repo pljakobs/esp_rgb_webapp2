@@ -96,12 +96,8 @@ export default configure((/* ctx */) => {
           ...viteConf.build.rollupOptions,
           output: {
             ...viteConf.build.rollupOptions?.output,
-
-            // 1. Prevent creation of small chunks (forces tiny component files to merge)
-            experimentalMinChunkSize: 20000, // 20 KB minimum chunk size
-
-            // 2. Combine all Quasar UI components and Vue core into dedicated vendor chunks
             manualChunks(id) {
+              // 1. Framework dependencies
               if (
                 id.includes("node_modules/quasar") ||
                 id.includes("node_modules/@quasar")
@@ -114,6 +110,10 @@ export default configure((/* ctx */) => {
                 id.includes("node_modules/vue-router")
               ) {
                 return "vendor-vue";
+              }
+              // 2. Collapse all internal app source code (stores, utilities, pages) into the main bundle
+              if (id.includes("/src/")) {
+                return "index";
               }
             },
           },
