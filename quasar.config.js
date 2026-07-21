@@ -85,15 +85,39 @@ export default configure((/* ctx */) => {
         viteConf.server.watch.usePolling = true;
         viteConf.server.watch.interval = 200;
 
-        // Dynamic imports configuration for chunked loading
-        viteConf.build.polyfillDynamicImport = true;
-        viteConf.build.rollupOptions = {
-          output: {
-            // Chunk splitting is active to separate pages and vendor libraries
-          },
-        };
+        // Build configuration for ESP8266
+        viteConf.build ??= {};
         viteConf.build.cssMinify = "esbuild";
         viteConf.build.modulePreload = { polyfill: true };
+        viteConf.build.assetsCrossOrigin = "anonymous";
+
+        // Rollup chunking configuration
+        viteConf.build.rollupOptions = {
+          ...viteConf.build.rollupOptions,
+          output: {
+            ...viteConf.build.rollupOptions?.output,
+
+            // 1. Prevent creation of small chunks (forces tiny component files to merge)
+            experimentalMinChunkSize: 20000, // 20 KB minimum chunk size
+
+            // 2. Combine all Quasar UI components and Vue core into dedicated vendor chunks
+            manualChunks(id) {
+              if (
+                id.includes("node_modules/quasar") ||
+                id.includes("node_modules/@quasar")
+              ) {
+                return "vendor-quasar";
+              }
+              if (
+                id.includes("node_modules/vue") ||
+                id.includes("node_modules/pinia") ||
+                id.includes("node_modules/vue-router")
+              ) {
+                return "vendor-vue";
+              }
+            },
+          },
+        };
       },
       useFilenameHashes: true,
       vueRouterMode: "hash",
