@@ -1,24 +1,11 @@
 #define FILE_LIST(XX) \
 	XX(VERSION, "VERSION") \
-	XX(ErrorNotFound_B2YWOMR4_js_gz, "assets/ErrorNotFound-B2YWOMR4.js.gz") \
-	XX(RgbwwLayout_Cb85Vp_l_js_gz, "assets/RgbwwLayout-Cb85Vp_l.js.gz") \
-	XX(RgbwwLayout_Cqn2t1XV_css_gz, "assets/RgbwwLayout-Cqn2t1XV.css.gz") \
-	XX(_plugin_vue_export_helper_K9rsuiWd_js_gz, "assets/_plugin-vue_export-helper-K9rsuiWd.js.gz") \
-	XX(appDataStore_CmIv_EB9_js_gz, "assets/appDataStore-CmIv-EB9.js.gz") \
-	XX(autosaveFeedback_BbVTfHdp_js_gz, "assets/autosaveFeedback-BbVTfHdp.js.gz") \
-	XX(colorDataStore_DcboHQXf_js_gz, "assets/colorDataStore-DcboHQXf.js.gz") \
-	XX(configDataStore_CQz58jio_js_gz, "assets/configDataStore-CQz58jio.js.gz") \
-	XX(controllersStore_D2BvhUpz_js_gz, "assets/controllersStore-D2BvhUpz.js.gz") \
-	XX(i18n_Dk0TydpN_js_gz, "assets/i18n-Dk0TydpN.js.gz") \
-	XX(index_Cw4dqaRA_css_gz, "assets/index-Cw4dqaRA.css.gz") \
-	XX(index_DY0geSXQ_js_gz, "assets/index-DY0geSXQ.js.gz") \
-	XX(registerSvgIcon_CBgCXYtT_js_gz, "assets/registerSvgIcon-CBgCXYtT.js.gz") \
+	XX(index_Dwp2XFNw_js_gz, "assets/index-Dwp2XFNw.js.gz") \
+	XX(index_RRGGbD0a_js_gz, "assets/index-RRGGbD0a.js.gz") \
+	XX(index_jleaG4Qk_css_gz, "assets/index-jleaG4Qk.css.gz") \
 	XX(rolldown_runtime_BQ__32WO_js_gz, "assets/rolldown-runtime-BQ-_32WO.js.gz") \
-	XX(testPage_Db16pKxx_js_gz, "assets/testPage-Db16pKxx.js.gz") \
-	XX(testPage_tn0RQdqM_css_gz, "assets/testPage-tn0RQdqM.css.gz") \
-	XX(vendor_quasar_8eJ_lQTH_js_gz, "assets/vendor-quasar-8eJ_lQTH.js.gz") \
+	XX(vendor_quasar_DFzpfFja_js_gz, "assets/vendor-quasar-DFzpfFja.js.gz") \
 	XX(vendor_quasar_DbF9uUGz_css_gz, "assets/vendor-quasar-DbF9uUGz.css.gz") \
-	XX(vendor_vue_BTAjF7ag_js_gz, "assets/vendor-vue-BTAjF7ag.js.gz") \
 	XX(pinconfig_json, "config/pinconfig.json") \
 	XX(favicon_ico, "icons/favicon.ico") \
 	XX(iconsSprite_svg_gz, "icons/iconsSprite.svg.gz") \
