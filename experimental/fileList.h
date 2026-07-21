@@ -1,41 +1,24 @@
 #define FILE_LIST(XX) \
 	XX(VERSION, "VERSION") \
-	XX(ErrorNotFound_Bj1R0vQX_js_gz, "assets/ErrorNotFound-Bj1R0vQX.js.gz") \
-	XX(QBtn_Gf_zwUP__js_gz, "assets/QBtn-Gf-zwUP_.js.gz") \
-	XX(QBtnGroup_3Uujhj_G_js_gz, "assets/QBtnGroup-3Uujhj_G.js.gz") \
-	XX(QChip_DIPQlOBW_js_gz, "assets/QChip-DIPQlOBW.js.gz") \
-	XX(QItem_2tVqi__a_js_gz, "assets/QItem-2tVqi-_a.js.gz") \
-	XX(QItemLabel_DbDBl1Kq_js_gz, "assets/QItemLabel-DbDBl1Kq.js.gz") \
-	XX(QList_C08kJkCw_js_gz, "assets/QList-C08kJkCw.js.gz") \
-	XX(QScrollArea_C3NLGS7N_js_gz, "assets/QScrollArea-C3NLGS7N.js.gz") \
-	XX(QScrollObserver_rvHy_SnA_js_gz, "assets/QScrollObserver-rvHy_SnA.js.gz") \
-	XX(QSelect_XRzU4J6R_js_gz, "assets/QSelect-XRzU4J6R.js.gz") \
-	XX(QSeparator_CS_k9L_1_js_gz, "assets/QSeparator-CS-k9L-1.js.gz") \
-	XX(QSlideTransition_Dxs0qC_d_js_gz, "assets/QSlideTransition-Dxs0qC_d.js.gz") \
-	XX(QToggle_MoI_HuTw_js_gz, "assets/QToggle-MoI_HuTw.js.gz") \
-	XX(QToolbar_DEPpt8dg_js_gz, "assets/QToolbar-DEPpt8dg.js.gz") \
+	XX(ErrorNotFound_B2YWOMR4_js_gz, "assets/ErrorNotFound-B2YWOMR4.js.gz") \
+	XX(RgbwwLayout_Cb85Vp_l_js_gz, "assets/RgbwwLayout-Cb85Vp_l.js.gz") \
 	XX(RgbwwLayout_Cqn2t1XV_css_gz, "assets/RgbwwLayout-Cqn2t1XV.css.gz") \
-	XX(RgbwwLayout_D4l9WTDR_js_gz, "assets/RgbwwLayout-D4l9WTDR.js.gz") \
-	XX(TouchPan_CV9Lop6U_js_gz, "assets/TouchPan-CV9Lop6U.js.gz") \
-	XX(_plugin_vue_export_helper_BfH5aWgM_js_gz, "assets/_plugin-vue_export-helper-BfH5aWgM.js.gz") \
-	XX(autosaveFeedback_BzcF4NOx_js_gz, "assets/autosaveFeedback-BzcF4NOx.js.gz") \
-	XX(colorDataStore_AjjPJfyU_js_gz, "assets/colorDataStore-AjjPJfyU.js.gz") \
-	XX(configDataStore_CVWBDCDK_js_gz, "assets/configDataStore-CVWBDCDK.js.gz") \
-	XX(format_nlSnVrKS_js_gz, "assets/format-nlSnVrKS.js.gz") \
-	XX(i18n_DpNCU4pG_js_gz, "assets/i18n-DpNCU4pG.js.gz") \
-	XX(index_rzlepOJy_css_gz, "assets/index-rzlepOJy.css.gz") \
-	XX(index_uk70DfG7_js_gz, "assets/index-uk70DfG7.js.gz") \
-	XX(myCard_B0ijYdbL_js_gz, "assets/myCard-B0ijYdbL.js.gz") \
-	XX(myCard_Bllj48Ir_css_gz, "assets/myCard-Bllj48Ir.css.gz") \
-	XX(registerSvgIcon_CLhoJaHR_js_gz, "assets/registerSvgIcon-CLhoJaHR.js.gz") \
-	XX(rtl_8L58Tx_8_js_gz, "assets/rtl-8L58Tx-8.js.gz") \
-	XX(testPage_Bdrp0L_h_js_gz, "assets/testPage-Bdrp0L-h.js.gz") \
+	XX(_plugin_vue_export_helper_K9rsuiWd_js_gz, "assets/_plugin-vue_export-helper-K9rsuiWd.js.gz") \
+	XX(appDataStore_CmIv_EB9_js_gz, "assets/appDataStore-CmIv-EB9.js.gz") \
+	XX(autosaveFeedback_BbVTfHdp_js_gz, "assets/autosaveFeedback-BbVTfHdp.js.gz") \
+	XX(colorDataStore_DcboHQXf_js_gz, "assets/colorDataStore-DcboHQXf.js.gz") \
+	XX(configDataStore_CQz58jio_js_gz, "assets/configDataStore-CQz58jio.js.gz") \
+	XX(controllersStore_D2BvhUpz_js_gz, "assets/controllersStore-D2BvhUpz.js.gz") \
+	XX(i18n_Dk0TydpN_js_gz, "assets/i18n-Dk0TydpN.js.gz") \
+	XX(index_Cw4dqaRA_css_gz, "assets/index-Cw4dqaRA.css.gz") \
+	XX(index_DY0geSXQ_js_gz, "assets/index-DY0geSXQ.js.gz") \
+	XX(registerSvgIcon_CBgCXYtT_js_gz, "assets/registerSvgIcon-CBgCXYtT.js.gz") \
+	XX(rolldown_runtime_BQ__32WO_js_gz, "assets/rolldown-runtime-BQ-_32WO.js.gz") \
+	XX(testPage_Db16pKxx_js_gz, "assets/testPage-Db16pKxx.js.gz") \
 	XX(testPage_tn0RQdqM_css_gz, "assets/testPage-tn0RQdqM.css.gz") \
-	XX(use_dialog_plugin_component_Byk57Bkj_js_gz, "assets/use-dialog-plugin-component-Byk57Bkj.js.gz") \
-	XX(use_fullscreen_CoCnLN1__js_gz, "assets/use-fullscreen-CoCnLN1_.js.gz") \
-	XX(use_router_link_BpUbyQNm_js_gz, "assets/use-router-link-BpUbyQNm.js.gz") \
-	XX(vue_i18n_BsZJlTsW_js_gz, "assets/vue-i18n-BsZJlTsW.js.gz") \
-	XX(vue_runtime_esm_bundler_CHZOoL3M_js_gz, "assets/vue.runtime.esm-bundler-CHZOoL3M.js.gz") \
+	XX(vendor_quasar_8eJ_lQTH_js_gz, "assets/vendor-quasar-8eJ_lQTH.js.gz") \
+	XX(vendor_quasar_DbF9uUGz_css_gz, "assets/vendor-quasar-DbF9uUGz.css.gz") \
+	XX(vendor_vue_BTAjF7ag_js_gz, "assets/vendor-vue-BTAjF7ag.js.gz") \
 	XX(pinconfig_json, "config/pinconfig.json") \
 	XX(favicon_ico, "icons/favicon.ico") \
 	XX(iconsSprite_svg_gz, "icons/iconsSprite.svg.gz") \
