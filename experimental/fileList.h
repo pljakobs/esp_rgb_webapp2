@@ -1,13 +1,41 @@
 #define FILE_LIST(XX) \
 	XX(VERSION, "VERSION") \
-	XX(RgbwwLayout_CNcNyaPH_js_gz, "assets/RgbwwLayout-CNcNyaPH.js.gz") \
+	XX(ErrorNotFound_Bj1R0vQX_js_gz, "assets/ErrorNotFound-Bj1R0vQX.js.gz") \
+	XX(QBtn_Gf_zwUP__js_gz, "assets/QBtn-Gf-zwUP_.js.gz") \
+	XX(QBtnGroup_3Uujhj_G_js_gz, "assets/QBtnGroup-3Uujhj_G.js.gz") \
+	XX(QChip_DIPQlOBW_js_gz, "assets/QChip-DIPQlOBW.js.gz") \
+	XX(QItem_2tVqi__a_js_gz, "assets/QItem-2tVqi-_a.js.gz") \
+	XX(QItemLabel_DbDBl1Kq_js_gz, "assets/QItemLabel-DbDBl1Kq.js.gz") \
+	XX(QList_C08kJkCw_js_gz, "assets/QList-C08kJkCw.js.gz") \
+	XX(QScrollArea_C3NLGS7N_js_gz, "assets/QScrollArea-C3NLGS7N.js.gz") \
+	XX(QScrollObserver_rvHy_SnA_js_gz, "assets/QScrollObserver-rvHy_SnA.js.gz") \
+	XX(QSelect_XRzU4J6R_js_gz, "assets/QSelect-XRzU4J6R.js.gz") \
+	XX(QSeparator_CS_k9L_1_js_gz, "assets/QSeparator-CS-k9L-1.js.gz") \
+	XX(QSlideTransition_Dxs0qC_d_js_gz, "assets/QSlideTransition-Dxs0qC_d.js.gz") \
+	XX(QToggle_MoI_HuTw_js_gz, "assets/QToggle-MoI_HuTw.js.gz") \
+	XX(QToolbar_DEPpt8dg_js_gz, "assets/QToolbar-DEPpt8dg.js.gz") \
+	XX(RgbwwLayout_C_qVGBu4_js_gz, "assets/RgbwwLayout-C_qVGBu4.js.gz") \
 	XX(RgbwwLayout_Cqn2t1XV_css_gz, "assets/RgbwwLayout-Cqn2t1XV.css.gz") \
-	XX(autosaveFeedback_Dp_JjiNV_js_gz, "assets/autosaveFeedback-Dp-JjiNV.js.gz") \
-	XX(i18n_DP34s8VI_js_gz, "assets/i18n-DP34s8VI.js.gz") \
-	XX(index_C3I0tb_i_css_gz, "assets/index-C3I0tb-i.css.gz") \
-	XX(index_DCHoaKIb_js_gz, "assets/index-DCHoaKIb.js.gz") \
-	XX(registerSvgIcon_C14xzFt5_js_gz, "assets/registerSvgIcon-C14xzFt5.js.gz") \
-	XX(vue_runtime_esm_bundler_BoBwyICd_js_gz, "assets/vue.runtime.esm-bundler-BoBwyICd.js.gz") \
+	XX(TouchPan_CV9Lop6U_js_gz, "assets/TouchPan-CV9Lop6U.js.gz") \
+	XX(_plugin_vue_export_helper_BfH5aWgM_js_gz, "assets/_plugin-vue_export-helper-BfH5aWgM.js.gz") \
+	XX(autosaveFeedback_B3l9lIDC_js_gz, "assets/autosaveFeedback-B3l9lIDC.js.gz") \
+	XX(colorDataStore_AjjPJfyU_js_gz, "assets/colorDataStore-AjjPJfyU.js.gz") \
+	XX(configDataStore_CVWBDCDK_js_gz, "assets/configDataStore-CVWBDCDK.js.gz") \
+	XX(format_nlSnVrKS_js_gz, "assets/format-nlSnVrKS.js.gz") \
+	XX(i18n_DpNCU4pG_js_gz, "assets/i18n-DpNCU4pG.js.gz") \
+	XX(index_CdG5yJSM_css_gz, "assets/index-CdG5yJSM.css.gz") \
+	XX(index_DmISGi9U_js_gz, "assets/index-DmISGi9U.js.gz") \
+	XX(myCard_B0ijYdbL_js_gz, "assets/myCard-B0ijYdbL.js.gz") \
+	XX(myCard_Bllj48Ir_css_gz, "assets/myCard-Bllj48Ir.css.gz") \
+	XX(registerSvgIcon_BTrzxHKj_js_gz, "assets/registerSvgIcon-BTrzxHKj.js.gz") \
+	XX(rtl_8L58Tx_8_js_gz, "assets/rtl-8L58Tx-8.js.gz") \
+	XX(testPage_Cevm1FQ0_js_gz, "assets/testPage-Cevm1FQ0.js.gz") \
+	XX(testPage_tn0RQdqM_css_gz, "assets/testPage-tn0RQdqM.css.gz") \
+	XX(use_dialog_plugin_component_Byk57Bkj_js_gz, "assets/use-dialog-plugin-component-Byk57Bkj.js.gz") \
+	XX(use_fullscreen_CoCnLN1__js_gz, "assets/use-fullscreen-CoCnLN1_.js.gz") \
+	XX(use_router_link_BpUbyQNm_js_gz, "assets/use-router-link-BpUbyQNm.js.gz") \
+	XX(vue_i18n_BsZJlTsW_js_gz, "assets/vue-i18n-BsZJlTsW.js.gz") \
+	XX(vue_runtime_esm_bundler_CHZOoL3M_js_gz, "assets/vue.runtime.esm-bundler-CHZOoL3M.js.gz") \
 	XX(pinconfig_json, "config/pinconfig.json") \
 	XX(favicon_ico, "icons/favicon.ico") \
 	XX(iconsSprite_svg_gz, "icons/iconsSprite.svg.gz") \
