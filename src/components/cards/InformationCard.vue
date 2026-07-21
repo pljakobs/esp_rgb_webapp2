@@ -286,12 +286,20 @@ export default {
 <style scoped>
 .info-section {
   padding: 8px 5%;
+  container-type: inline-size;
 }
 
 .info-rows {
   display: grid;
-  grid-template-columns: max-content 1fr;
+  grid-template-columns: auto 1fr; /* auto fits the label width precisely */
   column-gap: 12px;
+}
+
+.info-value {
+  color: var(--field-value-color, inherit);
+  word-break: break-word; /* allow breaking long strings/hashes, but not squeezing digits */
+  white-space: nowrap; /* prevents numbers from wrapping into single-digit vertical stacks */
+  padding: 2px 0;
 }
 
 .info-row {
@@ -303,12 +311,6 @@ export default {
   color: var(--field-label-color, inherit);
   padding: 2px 0;
   white-space: nowrap;
-}
-
-.info-value {
-  color: var(--field-value-color, inherit);
-  word-break: break-all;
-  padding: 2px 0;
 }
 
 .section-header {
@@ -330,24 +332,33 @@ export default {
 .runtime-section {
   display: flex;
   flex-direction: row;
+  flex-wrap: wrap; /* Allows the graph to break to a new line when squeezed */
   gap: 16px;
   align-items: flex-start;
   padding-left: 12px;
 }
 
 .runtime-section .info-rows {
-  flex: 1 1 auto;
+  flex: 1 1 200px; /* Take available width, but collapse if less than 200px */
   min-width: 0;
 }
 
 /* Sparkline panel */
 .heap-sparkline-wrap {
-  flex: 0 0 auto;
-  width: 240px;
+  flex: 1 1 240px; /* Expand when wrapped, shrink back to 240px when side-by-side */
+  max-width: 100%;
   display: flex;
   flex-direction: column;
   align-items: stretch;
   gap: 2px;
+}
+
+/* When the view gets narrow, stack the graph under the runtime numbers */
+@container (max-width: 360px) {
+  .runtime-section {
+    flex-direction: column;
+    align-items: stretch;
+  }
 }
 
 .heap-sparkline-label {
