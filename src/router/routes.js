@@ -4,42 +4,82 @@ import NetworkSettings from "pages/NetworkSettings.vue";
 import SystemSettings from "pages/SystemSettings.vue";
 import NetworkInit from "pages/NetworkInit.vue";
 import GroupsAndScenes from "pages/GroupsAndScenes.vue";
+import { defineAsyncComponent } from "vue";
 
-import testPage from "pages/testPage.vue";
+// Helper function to retry module downloads when ESP8266 returns 429
+function loadAsyncComponent(importFn) {
+  return defineAsyncComponent({
+    loader: () => {
+      return new Promise((resolve, reject) => {
+        const attempt = (retriesLeft, delay) => {
+          importFn()
+            .then(resolve)
+            .catch((error) => {
+              if (retriesLeft <= 0) {
+                reject(error);
+                return;
+              }
+              setTimeout(() => {
+                attempt(retriesLeft - 1, delay * 2);
+              }, delay);
+            });
+        };
+        attempt(3, 1000);
+      });
+    },
+    delay: 200,
+    timeout: 10000,
+  });
+}
 
 const routes = [
   {
     path: "/",
     component: () => import("layouts/RgbwwLayout.vue"),
     children: [
-      { path: "", component: ColorPage },
+      {
+        path: "",
+        component: loadAsyncComponent(() => import("pages/ColorPage.vue")),
+      },
       {
         path: "/ColorPage",
-        component: ColorPage,
+        component: loadAsyncComponent(() => import("pages/ColorPage.vue")),
       },
       {
         path: "/ColorSettings",
-        component: ColorSettings,
+        component: loadAsyncComponent(() => import("pages/ColorSettings.vue")),
       },
       {
         path: "/NetworkSettings",
-        component: NetworkSettings,
+        component: loadAsyncComponent(
+          () => import("pages/NetworkSettings.vue"),
+        ),
       },
       {
         path: "/SystemSettings",
-        component: SystemSettings,
+        component: loadAsyncComponent(() => import("pages/SystemSettings.vue")),
       },
-      { path: "/test", component: testPage },
-      { path: "/networkinit", component: NetworkInit },
-      { path: "/GroupsAndScenes", component: GroupsAndScenes },
+      {
+        path: "/test",
+        component: loadAsyncComponent(() => import("pages/testPage.vue")),
+      },
+      {
+        path: "/networkinit",
+        component: loadAsyncComponent(() => import("pages/NetworkInit.vue")),
+      },
+      {
+        path: "/GroupsAndScenes",
+        component: loadAsyncComponent(
+          () => import("pages/GroupsAndScenes.vue"),
+        ),
+      },
     ],
   },
-  // Always leave this as last one,
-  // but you can also remove it
-  // {
-  // path: "/:catchAll(.*)*",
-  //component: () => import("pages/ErrorNotFound.vue"),
-  // },
+  // Always leave this as last one
+  {
+    path: "/:catchAll(.*)*",
+    component: () => import("pages/ErrorNotFound.vue"),
+  },
 ];
 
 export default routes;
