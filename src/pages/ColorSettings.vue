@@ -1,11 +1,11 @@
 <template>
   <TransitionModeCard />
   <ColorModelCard @update:color-model="handleColorModelUpdate" />
-  <WhiteBalanceCard v-if="colorMode === 3" />
+  <WhiteBalanceCard v-if="supportsColorTemp" />
 </template>
 
 <script>
-import { ref, watch, onMounted } from "vue";
+import { ref, watch, onMounted, computed } from "vue";
 import { configDataStore } from "src/stores/configDataStore";
 import TransitionModeCard from "src/components/cards/TransitionModeCard.vue";
 import ColorModelCard from "src/components/cards/ColorModelCard.vue";
@@ -29,6 +29,10 @@ export default {
       );
       colorMode.value = newColorModel;
     };
+
+    const supportsColorTemp = computed(
+      () => configData.hasColorTemperatureSupport,
+    );
 
     watch(
       () => configData.data.color.color_mode,
@@ -58,6 +62,7 @@ export default {
       ColorModelCard,
       WhiteBalanceCard,
       handleColorModelUpdate,
+      supportsColorTemp,
     };
   },
 };

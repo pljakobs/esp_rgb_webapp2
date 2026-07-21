@@ -32,6 +32,24 @@ export const configDataStore = defineStore("configDataStore", {
       // other properties...
     },
   }),
+  getters: {
+    /**
+     * Checks if the active color mode is dual-white (WWCW or RGBWWCW)
+     * @returns {boolean}
+     */
+    hasColorTemperatureSupport(state) {
+      const general = state.data?.general;
+      const supportedModels = general?.supported_color_models;
+      const currentModeIndex = state.data?.color?.color_mode;
+
+      if (!Array.isArray(supportedModels) || currentModeIndex == null) {
+        return false;
+      }
+
+      const currentModeStr = supportedModels[currentModeIndex];
+      return currentModeStr === "WWCW" || currentModeStr === "RGBWWCW";
+    },
+  },
   actions: {
     async fetchData() {
       this.status = storeStatus.LOADING;
