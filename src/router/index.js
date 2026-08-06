@@ -1,6 +1,9 @@
 import { route } from 'quasar/wrappers'
 import { createRouter, createMemoryHistory, createWebHistory, createWebHashHistory } from 'vue-router'
 import routes from './routes'
+import { isChunkLoadError } from 'src/routes/loadAsyncComponent'
+
+const CHUNK_RELOAD_FLAG_KEY = 'rgbww:reloaded-after-chunk-load-error'
 
 /*
  * If not building with SSR mode, you can
@@ -24,6 +27,21 @@ export default route(function (/* { store, ssrContext } */) {
     // quasar.conf.js -> build -> vueRouterMode
     // quasar.conf.js -> build -> publicPath
     history: createHistory(process.env.VUE_ROUTER_BASE)
+  })
+
+  Router.onError((error) => {
+    if (process.env.SERVER || !isChunkLoadError(error)) {
+      console.error(error)
+      return
+    }
+
+    if (window.sessionStorage.getItem(CHUNK_RELOAD_FLAG_KEY) === '1') {
+      console.error(error)
+      return
+    }
+
+    window.sessionStorage.setItem(CHUNK_RELOAD_FLAG_KEY, '1')
+    window.location.reload()
   })
 
   return Router

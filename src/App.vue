@@ -56,6 +56,10 @@ export default defineComponent({
       );
 
       onMounted(async () => {
+        window.sessionStorage.removeItem(
+          "rgbww:reloaded-after-chunk-load-error",
+        );
+
         await runInitializeStores();
         initializeNotifications();
         initializeAppCommands();
