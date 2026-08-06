@@ -93,9 +93,10 @@
 </template>
 
 <script>
-import { onUnmounted, ref, watch, computed } from "vue";
+import { onMounted, onUnmounted, ref, watch, computed } from "vue";
 import { infoDataStore } from "src/stores/infoDataStore";
 import MyCard from "src/components/myCard.vue";
+import useWebSocket, { wsStatus } from "src/services/websocket.js";
 
 // 30 min @ 5 s poll interval = 360 samples max
 const MAX_HEAP_SAMPLES = 360;
@@ -114,7 +115,9 @@ export default {
   setup(props) {
     const infoData = infoDataStore();
     const cardCollapsed = ref(props.collapsed);
+    const ws = useWebSocket();
     let refreshInterval = null;
+    let removeRuntimeListener = null;
 
     // ── heap history ─────────────────────────────────────────────────────────
     // Each entry: { ts: Date.now(), val: number }
@@ -205,7 +208,50 @@ export default {
       refreshInfo();
       refreshInterval = setInterval(() => {
         refreshInfo();
-      }, 10000);
+      }, 60000);
+    }
+
+    function sendRuntimeSubscription(subscribe) {
+      if (ws.status.value !== wsStatus.CONNECTED) return;
+      ws.send(subscribe ? "runtime_info_subscribe" : "runtime_info_unsubscribe", {
+        channel: "runtime_info",
+      });
+    }
+
+    function applyRuntimeUpdate(params) {
+      if (!params || typeof params !== "object") return;
+      if (!infoData.data || typeof infoData.data !== "object") {
+        infoData.data = {};
+      }
+      const currentRuntime =
+        infoData.data.runtime && typeof infoData.data.runtime === "object"
+          ? infoData.data.runtime
+          : {};
+      const mergedRuntime = {
+        ...currentRuntime,
+        uptime: Number(params.uptime ?? currentRuntime.uptime ?? 0),
+        heap_free: Number(params.heap_free ?? currentRuntime.heap_free ?? 0),
+        minfreeHeapRuntime: Number(
+          params.minfreeHeapRuntime ?? currentRuntime.minfreeHeapRuntime ?? 0,
+        ),
+        minfreeHeap10min: Number(
+          params.minfreeHeap10min ?? currentRuntime.minfreeHeap10min ?? 0,
+        ),
+        heapLowErrUptime: Number(
+          params.heapLowErrUptime ?? currentRuntime.heapLowErrUptime ?? 0,
+        ),
+        heapLowErr10min: Number(
+          params.heapLowErr10min ?? currentRuntime.heapLowErr10min ?? 0,
+        ),
+      };
+      infoData.data = {
+        ...infoData.data,
+        runtime: mergedRuntime,
+      };
+
+      if (Number.isFinite(mergedRuntime.heap_free)) {
+        recordHeap(mergedRuntime.heap_free);
+      }
     }
 
     // Record heap whenever the info store updates
@@ -223,6 +269,8 @@ export default {
       },
     );
 
+    // Collapse only gates the (slow) HTTP info refresh loop; the runtime_info
+    // push subscription is tied to the component lifecycle (mount/unmount) below.
     watch(
       cardCollapsed,
       (collapsed) => {
@@ -235,7 +283,28 @@ export default {
       { immediate: true },
     );
 
+    // Re-subscribe after a (re)connect — subscriptions are per-connection on the
+    // firmware and are dropped when the socket closes.
+    watch(
+      () => ws.status.value,
+      (status) => {
+        if (status === wsStatus.CONNECTED) {
+          sendRuntimeSubscription(true);
+        }
+      },
+    );
+
+    onMounted(() => {
+      removeRuntimeListener = ws.onJson("runtime_info", applyRuntimeUpdate);
+      sendRuntimeSubscription(true);
+    });
+
     onUnmounted(() => {
+      sendRuntimeSubscription(false);
+      if (typeof removeRuntimeListener === "function") {
+        removeRuntimeListener();
+        removeRuntimeListener = null;
+      }
       stopRefreshLoop();
     });
 

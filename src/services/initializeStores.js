@@ -24,6 +24,8 @@ const storeCacheKeys = {
   appData: null,
 };
 let activeInitToken = 0;
+let watchersInitialized = false;
+let initPromise = null;
 
 const sleep = (ms) =>
   new Promise((resolve) => setTimeout(resolve, Math.max(ms, 0)));
@@ -31,143 +33,161 @@ const sleep = (ms) =>
 export default async function initializeStores(options = {}) {
   const { force = false } = options;
 
-  const controllers = useControllersStore();
-  const configStore = configDataStore();
-  const colorStore = useColorDataStore();
-  const infoStore = infoDataStore();
-  const appDataStore = useAppDataStore();
-  const webSocket = useWebSocket();
-
-  // Watch for changes to currentController and (re)connect websocket
-  watch(
-    () =>
-      controllers.currentController && controllers.currentController.ip_address,
-    (ip, prevIp) => {
-      if (ip && ip !== prevIp) {
-        const wsUrl = `ws://${ip}/ws`;
-        if (webSocket.url?.value !== wsUrl) {
-          webSocket.connect(wsUrl);
-        }
-      }
-    },
-    { immediate: true },
-  );
-
-  if (!controllers.currentController) {
-    controllers.currentController = localhost;
-    console.warn("store uninitialized: setting localhost as currentController");
-    //return;
+  if (initPromise) {
+    return initPromise;
   }
 
-  activeInitToken += 1;
-  const initToken = activeInitToken;
+  initPromise = (async () => {
+    const controllers = useControllersStore();
+    const configStore = configDataStore();
+    const colorStore = useColorDataStore();
+    const infoStore = infoDataStore();
+    const appDataStore = useAppDataStore();
+    const webSocket = useWebSocket();
 
-  const isStale = () => initToken !== activeInitToken;
-
-  const safeDelay = async (ms) => {
-    if (ms <= 0) {
-      return true;
+    // Watch for changes to currentController and (re)connect websocket once.
+    if (!watchersInitialized) {
+      watch(
+        () =>
+          controllers.currentController &&
+          controllers.currentController.ip_address,
+        (ip, prevIp) => {
+          if (ip && ip !== prevIp) {
+            const wsUrl = `ws://${ip}/ws`;
+            if (webSocket.url?.value !== wsUrl) {
+              webSocket.connect(wsUrl);
+            }
+          }
+        },
+        { immediate: true },
+      );
+      watchersInitialized = true;
     }
-    await sleep(ms);
-    return !isStale();
-  };
 
-  try {
-    if (!(await safeDelay(INIT_DELAYS.controllers))) {
-      return;
+    if (!controllers.currentController) {
+      controllers.currentController = localhost;
+      console.warn(
+        "store uninitialized: setting localhost as currentController",
+      );
+      //return;
     }
 
-    const shouldFetchControllers = force || !controllersLoaded;
-    if (shouldFetchControllers) {
-      console.log("Fetching controllers data (force:", force, ")");
-      await controllers.fetchData();
+    activeInitToken += 1;
+    const initToken = activeInitToken;
+
+    const isStale = () => initToken !== activeInitToken;
+
+    const safeDelay = async (ms) => {
+      if (ms <= 0) {
+        return true;
+      }
+      await sleep(ms);
+      return !isStale();
+    };
+
+    try {
+      if (!(await safeDelay(INIT_DELAYS.controllers))) {
+        return;
+      }
+
+      const shouldFetchControllers = force || !controllersLoaded;
+      if (shouldFetchControllers) {
+        console.log("Fetching controllers data (force:", force, ")");
+        await controllers.fetchData();
+        if (isStale()) {
+          return;
+        }
+        if (controllers.status === storeStatus.READY) {
+          controllersLoaded = true;
+        }
+      }
+
+      const activeController = controllers.currentController;
+      if (!activeController || !activeController.ip_address) {
+        console.warn("Controller has no IP address; aborting store init");
+        return;
+      }
+
+      const controllerKey = `${activeController.hostname}|${activeController.ip_address}`;
+      if (controllerKey !== lastControllerKey) {
+        console.log("Controller changed, resetting store caches");
+        lastControllerKey = controllerKey;
+        Object.keys(storeCacheKeys).forEach((key) => {
+          storeCacheKeys[key] = null;
+        });
+      }
+
+      if (!(await safeDelay(INIT_DELAYS.websocket))) {
+        return;
+      }
+
+      const targetUrl = `ws://${activeController.ip_address}/ws`;
+      const currentUrl = webSocket.url?.value;
+      if (currentUrl && currentUrl !== targetUrl) {
+        console.log("Switching websocket connection to", targetUrl);
+        webSocket.destroy();
+      }
+      webSocket.connect(targetUrl);
+
+      if (!(await safeDelay(INIT_DELAYS.storeStart))) {
+        return;
+      }
+
+      const storeSteps = [
+        {
+          key: "info",
+          store: infoStore,
+          fetch: () => infoStore.fetchData(),
+        },
+        {
+          key: "color",
+          store: colorStore,
+          fetch: () => colorStore.fetchData(),
+        },
+        {
+          key: "config",
+          store: configStore,
+          fetch: () => configStore.fetchData(),
+        },
+        {
+          key: "appData",
+          store: appDataStore,
+          fetch: () => appDataStore.fetchData(),
+        },
+      ];
+
       if (isStale()) {
         return;
       }
-      if (controllers.status === storeStatus.READY) {
-        controllersLoaded = true;
-      }
-    }
 
-    const activeController = controllers.currentController;
-    if (!activeController || !activeController.ip_address) {
-      console.warn("Controller has no IP address; aborting store init");
-      return;
-    }
-
-    const controllerKey = `${activeController.hostname}|${activeController.ip_address}`;
-    if (controllerKey !== lastControllerKey) {
-      console.log("Controller changed, resetting store caches");
-      lastControllerKey = controllerKey;
-      Object.keys(storeCacheKeys).forEach((key) => {
-        storeCacheKeys[key] = null;
-      });
-    }
-
-    if (!(await safeDelay(INIT_DELAYS.websocket))) {
-      return;
-    }
-
-    const targetUrl = `ws://${activeController.ip_address}/ws`;
-    const currentUrl = webSocket.url?.value;
-    if (currentUrl && currentUrl !== targetUrl) {
-      console.log("Switching websocket connection to", targetUrl);
-      webSocket.destroy();
-    }
-    webSocket.connect(targetUrl);
-
-    if (!(await safeDelay(INIT_DELAYS.storeStart))) {
-      return;
-    }
-
-    const storeSteps = [
-      {
-        key: "info",
-        store: infoStore,
-        fetch: () => infoStore.fetchData(),
-      },
-      {
-        key: "color",
-        store: colorStore,
-        fetch: () => colorStore.fetchData(),
-      },
-      {
-        key: "config",
-        store: configStore,
-        fetch: () => configStore.fetchData(),
-      },
-      {
-        key: "appData",
-        store: appDataStore,
-        fetch: () => appDataStore.fetchData(),
-      },
-    ];
-
-    if (isStale()) {
-      return;
-    }
-
-    await Promise.all(
-      storeSteps.map(async (step) => {
-        const shouldFetch = force || storeCacheKeys[step.key] !== controllerKey;
-        if (!shouldFetch) return;
-        try {
-          await step.fetch();
-          if (step.store.status === storeStatus.READY) {
-            storeCacheKeys[step.key] = controllerKey;
+      await Promise.all(
+        storeSteps.map(async (step) => {
+          const shouldFetch = force || storeCacheKeys[step.key] !== controllerKey;
+          if (!shouldFetch) return;
+          try {
+            await step.fetch();
+            if (step.store.status === storeStatus.READY) {
+              storeCacheKeys[step.key] = controllerKey;
+            }
+          } catch (error) {
+            console.error(`Failed to initialize ${step.key} store:`, error);
           }
-        } catch (error) {
-          console.error(`Failed to initialize ${step.key} store:`, error);
-        }
-      }),
-    );
+        }),
+      );
 
-    if (isStale()) {
-      return;
+      if (isStale()) {
+        return;
+      }
+
+      appDataStore.watchForSync();
+    } catch (error) {
+      console.error("error initializing stores:", error);
     }
+  })();
 
-    appDataStore.watchForSync();
-  } catch (error) {
-    console.error("error initializing stores:", error);
+  try {
+    return await initPromise;
+  } finally {
+    initPromise = null;
   }
 }

@@ -369,6 +369,21 @@ export default function useWebSocket() {
     }
     console.log("registered callback for ", key);
     state.callbacks[key].push(callback);
+
+    return () => {
+      offJson(key, callback);
+    };
+  };
+
+  const offJson = (key, callback) => {
+    const list = state.callbacks[key];
+    if (!list || !list.length) {
+      return;
+    }
+    state.callbacks[key] = list.filter((cb) => cb !== callback);
+    if (!state.callbacks[key].length) {
+      delete state.callbacks[key];
+    }
   };
 
   // Call connect to open the WebSocket
@@ -379,6 +394,7 @@ export default function useWebSocket() {
     connect,
     destroy,
     onJson,
+    offJson,
   };
   return currentSocket;
 }

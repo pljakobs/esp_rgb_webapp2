@@ -18,29 +18,45 @@ export default defineComponent({
     try {
       const controllers = useControllersStore();
       const $q = useQuasar(); // Get Quasar's global instance
+      let initInFlight = false;
 
       console.log("controllers:", controllers);
 
       const webhost = window.location.hostname;
       console.log("webhost", webhost);
 
-      let lastIp = controllers.currentController?.ip_address;
+      const runInitializeStores = async () => {
+        if (initInFlight) {
+          return;
+        }
+        initInFlight = true;
+        try {
+          await initializeStores();
+        } finally {
+          initInFlight = false;
+        }
+      };
+
       watch(
         () => controllers.currentController?.ip_address,
         (newIp, oldIp) => {
+          // Ignore the first resolution from null/undefined to avoid a second
+          // startup initialization burst while the first one is still running.
+          if (!oldIp || !newIp) {
+            return;
+          }
           if (newIp && newIp !== oldIp) {
             console.log(
               "switching to controller",
               controllers.currentController.hostname,
             );
-            initializeStores();
+            runInitializeStores();
           }
-          lastIp = newIp;
         },
       );
 
-      onMounted(() => {
-        initializeStores();
+      onMounted(async () => {
+        await runInitializeStores();
         initializeNotifications();
         initializeAppCommands();
         initializeLogService();

@@ -94,7 +94,7 @@ export const infoDataStore = defineStore("infoDataStore", {
       }
 
       try {
-        const params = await ws.request("info", { V: "2" }, timeoutMs);
+        const params = await ws.request("info", { V: "2", sparse: true }, timeoutMs);
         const payload = params?.message ?? params;
         return payload && typeof payload === "object" ? payload : null;
       } catch (error) {
