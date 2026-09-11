@@ -42,6 +42,8 @@ async function apiRequest(endpoint, options = {}) {
 }
 
 // Helper to generate unique IDs
+// this has a few limitations to it (like the risk that the random number might be exeptinally short)
+// ToDo: rework in the future
 function generateId(prefix) {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 }

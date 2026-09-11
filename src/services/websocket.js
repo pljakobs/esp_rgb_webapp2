@@ -143,7 +143,9 @@ export default function useWebSocket() {
 
         const isAuthResponse = authRequestIds.has(id);
         const challenge =
-          typeof message.challenge === "string" ? message.challenge : null;
+          typeof message.error?.challenge === "string"
+            ? message.error.challenge
+            : null;
         const needsAuth =
           !isAuthResponse &&
           challenge &&
@@ -325,9 +327,9 @@ export default function useWebSocket() {
         return;
       }
 
-      // Firmware returns a fresh challenge alongside the failure.
+      // Firmware returns a fresh challenge alongside the failure, nested in error.
       const nextChallenge =
-        typeof res?.challenge === "string" ? res.challenge : null;
+        typeof res?.error?.challenge === "string" ? res.error.challenge : null;
       auth.setAuthError("authentication failed");
       auth.clear();
       if (!nextChallenge) {

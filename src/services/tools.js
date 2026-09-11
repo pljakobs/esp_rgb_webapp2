@@ -130,7 +130,34 @@ function getLocalID(n) {
   let max = min * 10 - 1;
   return Math.floor(Math.random() * (max - min + 1) + min);
 }
+/*
+better implementation? 
 
+const makeID = (() => {
+  let counter = 0;
+
+  function getLocalID() {
+    // 1. Local counter guarantees uniqueness even within the same microsecond
+    counter = (counter + 1) & 0xFFFF; // 0 to 65535
+
+    // 2. High-precision timer + PRNG fallback
+    const time = Math.floor(performance.now() * 1000); 
+    const rand = Math.floor(Math.random() * 0xFFFF);
+
+    // Combine into a fixed 8-character hexadecimal string
+    const mixed = ((time ^ rand) + counter) >>> 0;
+    return mixed.toString(16).padStart(8, '0');
+  }
+
+  return function makeID() {
+    const infoData = infoDataStore();
+    const controllerID =
+      infoData.data?.device?.deviceid ?? infoData.data?.deviceid ?? 'unknown';
+
+    return `${controllerID}-${getLocalID()}`;
+  };
+})();
+*/
 /**
  * Gets controllers by their IDs from a group's controller_id array
  * @param {Object|string} group - The group object or group ID
