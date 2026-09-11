@@ -1,11 +1,11 @@
 #define FILE_LIST(XX) \
 	XX(VERSION, "VERSION") \
-	XX(index_BrmnSy57_js_gz, "assets/index-BrmnSy57.js.gz") \
-	XX(index_CXjiUYVN_css_gz, "assets/index-CXjiUYVN.css.gz") \
-	XX(index_Cz9sTK1w_js_gz, "assets/index-Cz9sTK1w.js.gz") \
+	XX(index_C8NxLBQ6_js_gz, "assets/index-C8NxLBQ6.js.gz") \
+	XX(index_DKNRf9PT_js_gz, "assets/index-DKNRf9PT.js.gz") \
+	XX(index_tPiHcHlw_css_gz, "assets/index-tPiHcHlw.css.gz") \
 	XX(rolldown_runtime_BQ__32WO_js_gz, "assets/rolldown-runtime-BQ-_32WO.js.gz") \
-	XX(vendor_quasar_C7vAmlMN_js_gz, "assets/vendor-quasar-C7vAmlMN.js.gz") \
 	XX(vendor_quasar_DbF9uUGz_css_gz, "assets/vendor-quasar-DbF9uUGz.css.gz") \
+	XX(vendor_quasar_yYbXca1K_js_gz, "assets/vendor-quasar-yYbXca1K.js.gz") \
 	XX(pinconfig_json, "config/pinconfig.json") \
 	XX(favicon_ico, "icons/favicon.ico") \
 	XX(iconsSprite_svg_gz, "icons/iconsSprite.svg.gz") \
