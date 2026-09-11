@@ -28,7 +28,9 @@
                   class="info-row"
                 >
                   <span class="info-label">{{ formatKey(subKey) }}</span>
-                  <span class="info-value">{{ subVal }}</span>
+                  <span class="info-value">{{
+                    formatRuntimeValue(subKey, subVal)
+                  }}</span>
                 </div>
               </div>
               <div v-if="heapHistory.length > 1" class="heap-sparkline-wrap">
@@ -187,6 +189,23 @@ export default {
       return bytes + " B";
     }
 
+    function formatRuntimeValue(key, value) {
+      if (key !== "uptime") return value;
+
+      let seconds = Math.max(0, Math.floor(Number(value) || 0));
+      const days = Math.floor(seconds / 86400);
+      seconds %= 86400;
+      const hours = Math.floor(seconds / 3600);
+      seconds %= 3600;
+      const minutes = Math.floor(seconds / 60);
+      seconds %= 60;
+
+      const time = [hours, minutes, seconds]
+        .map((part) => String(part).padStart(2, "0"))
+        .join(":");
+      return `${String(days)}d, ${time}`;
+    }
+
     // ── data polling ─────────────────────────────────────────────────────────
     async function refreshInfo() {
       try {
@@ -213,9 +232,12 @@ export default {
 
     function sendRuntimeSubscription(subscribe) {
       if (ws.status.value !== wsStatus.CONNECTED) return;
-      ws.send(subscribe ? "runtime_info_subscribe" : "runtime_info_unsubscribe", {
-        channel: "runtime_info",
-      });
+      ws.send(
+        subscribe ? "runtime_info_subscribe" : "runtime_info_unsubscribe",
+        {
+          channel: "runtime_info",
+        },
+      );
     }
 
     function applyRuntimeUpdate(params) {
@@ -347,6 +369,7 @@ export default {
       sparklinePoints,
       sparklineDot,
       formatHeap,
+      formatRuntimeValue,
     };
   },
 };
