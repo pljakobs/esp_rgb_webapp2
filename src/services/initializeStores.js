@@ -3,6 +3,7 @@ import { configDataStore } from "src/stores/configDataStore";
 import { useColorDataStore } from "src/stores/colorDataStore";
 import { useAppDataStore } from "src/stores/appDataStore";
 import { infoDataStore } from "src/stores/infoDataStore";
+import { useRuntimeHistoryStore } from "src/stores/runtimeHistoryStore";
 import { useControllersStore } from "src/stores/controllersStore";
 import { storeStatus, localhost } from "src/stores/storeConstants";
 import useWebSocket from "src/services/websocket.js";
@@ -42,6 +43,7 @@ export default async function initializeStores(options = {}) {
     const configStore = configDataStore();
     const colorStore = useColorDataStore();
     const infoStore = infoDataStore();
+    const runtimeHistoryStore = useRuntimeHistoryStore();
     const appDataStore = useAppDataStore();
     const webSocket = useWebSocket();
 
@@ -128,6 +130,7 @@ export default async function initializeStores(options = {}) {
         webSocket.destroy();
       }
       webSocket.connect(targetUrl);
+      runtimeHistoryStore.start();
 
       if (!(await safeDelay(INIT_DELAYS.storeStart))) {
         return;

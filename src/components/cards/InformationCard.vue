@@ -41,6 +41,23 @@
                   preserveAspectRatio="none"
                   xmlns="http://www.w3.org/2000/svg"
                 >
+                  <line
+                    v-for="line in heapTimeGrid"
+                    :key="`time-${line.minutes}`"
+                    :x1="line.x"
+                    y1="4"
+                    :x2="line.x"
+                    y2="116"
+                    class="sparkline-grid-line"
+                  />
+                  <line
+                    v-if="minfreeHeapLine"
+                    x1="4"
+                    :y1="minfreeHeapLine.y"
+                    x2="396"
+                    :y2="minfreeHeapLine.y"
+                    class="sparkline-threshold"
+                  />
                   <polyline
                     :points="sparklinePoints"
                     fill="none"
@@ -58,9 +75,13 @@
                     class="sparkline-dot"
                   />
                 </svg>
-                <div class="heap-sparkline-minmax">
-                  <span>{{ formatHeap(heapMin) }}</span>
+                <div class="heap-sparkline-axis heap-sparkline-time-axis">
+                  <span>-30 min</span>
+                  <span>now</span>
+                </div>
+                <div class="heap-sparkline-axis heap-sparkline-value-axis">
                   <span>{{ formatHeap(heapMax) }}</span>
+                  <span>0 B</span>
                 </div>
               </div>
             </div>
@@ -95,13 +116,11 @@
 </template>
 
 <script>
-import { onMounted, onUnmounted, ref, watch, computed } from "vue";
+import { onUnmounted, ref, watch, computed } from "vue";
 import { infoDataStore } from "src/stores/infoDataStore";
+import { useRuntimeHistoryStore } from "src/stores/runtimeHistoryStore";
 import MyCard from "src/components/myCard.vue";
-import useWebSocket, { wsStatus } from "src/services/websocket.js";
 
-// 30 min @ 5 s poll interval = 360 samples max
-const MAX_HEAP_SAMPLES = 360;
 const SPARKLINE_W = 400;
 const SPARKLINE_H = 120;
 const SPARKLINE_PAD = 4; // px padding inside viewBox
@@ -116,53 +135,49 @@ export default {
   components: { MyCard },
   setup(props) {
     const infoData = infoDataStore();
+    const runtimeHistory = useRuntimeHistoryStore();
     const cardCollapsed = ref(props.collapsed);
-    const ws = useWebSocket();
     let refreshInterval = null;
-    let removeRuntimeListener = null;
 
-    // ── heap history ─────────────────────────────────────────────────────────
-    // Each entry: { ts: Date.now(), val: number }
-    const heapHistory = ref([]);
-
-    function pruneHeapHistory() {
-      const cutoff = Date.now() - 30 * 60 * 1000;
-      const idx = heapHistory.value.findIndex((e) => e.ts >= cutoff);
-      if (idx > 0) heapHistory.value.splice(0, idx);
-    }
-
-    function recordHeap(val) {
-      if (typeof val !== "number" || isNaN(val)) return;
-      heapHistory.value.push({ ts: Date.now(), val });
-      if (heapHistory.value.length > MAX_HEAP_SAMPLES) {
-        heapHistory.value.shift();
-      }
-      pruneHeapHistory();
-    }
-
-    const heapMin = computed(() =>
-      heapHistory.value.length
-        ? Math.min(...heapHistory.value.map((e) => e.val))
-        : 0,
-    );
+    const heapHistory = computed(() => runtimeHistory.heapHistory);
     const heapMax = computed(() =>
       heapHistory.value.length
         ? Math.max(...heapHistory.value.map((e) => e.val))
         : 1,
     );
 
+    const heapTimeGrid = computed(() => {
+      const usableW = SPARKLINE_W - 2 * SPARKLINE_PAD;
+      return [5, 10, 15, 20, 25].map((minutes) => ({
+        minutes,
+        x: +(SPARKLINE_PAD + usableW * (1 - minutes / 30)).toFixed(1),
+      }));
+    });
+
+    const minfreeHeapLine = computed(() => {
+      const threshold = Number(
+        infoData.data?.runtime?.minfreeHeapRuntime ?? 0,
+      );
+      const maxValue = heapMax.value;
+      if (!Number.isFinite(threshold) || threshold <= 0 || threshold > maxValue) {
+        return null;
+      }
+      const usableH = SPARKLINE_H - 2 * SPARKLINE_PAD;
+      return {
+        y: +(SPARKLINE_PAD + (1 - threshold / maxValue) * usableH).toFixed(1),
+      };
+    });
+
     const sparklinePoints = computed(() => {
       const h = heapHistory.value;
       if (h.length < 2) return "";
-      const n = h.length;
-      const minV = heapMin.value;
-      const range = heapMax.value - minV || 1;
       const usableW = SPARKLINE_W - 2 * SPARKLINE_PAD;
       const usableH = SPARKLINE_H - 2 * SPARKLINE_PAD;
       return h
         .map((e, i) => {
-          const x = SPARKLINE_PAD + (i / (n - 1)) * usableW;
-          const y = SPARKLINE_PAD + (1 - (e.val - minV) / range) * usableH;
+          const ageMinutes = Math.max(0, (Date.now() - e.ts) / 60000);
+          const x = SPARKLINE_PAD + usableW * (1 - ageMinutes / 30);
+          const y = SPARKLINE_PAD + (1 - e.val / heapMax.value) * usableH;
           return `${x.toFixed(1)},${y.toFixed(1)}`;
         })
         .join(" ");
@@ -172,15 +187,12 @@ export default {
       const h = heapHistory.value;
       if (h.length < 2) return null;
       const last = h[h.length - 1];
-      const minV = heapMin.value;
-      const range = heapMax.value - minV || 1;
       const usableW = SPARKLINE_W - 2 * SPARKLINE_PAD;
       const usableH = SPARKLINE_H - 2 * SPARKLINE_PAD;
+      const ageMinutes = Math.max(0, (Date.now() - last.ts) / 60000);
       return {
-        x: +(SPARKLINE_PAD + usableW).toFixed(1),
-        y: +(SPARKLINE_PAD + (1 - (last.val - minV) / range) * usableH).toFixed(
-          1,
-        ),
+        x: +(SPARKLINE_PAD + usableW * (1 - ageMinutes / 30)).toFixed(1),
+        y: +(SPARKLINE_PAD + (1 - last.val / heapMax.value) * usableH).toFixed(1),
       };
     });
 
@@ -230,60 +242,6 @@ export default {
       }, 60000);
     }
 
-    function sendRuntimeSubscription(subscribe) {
-      if (ws.status.value !== wsStatus.CONNECTED) return;
-      ws.send(
-        subscribe ? "runtime_info_subscribe" : "runtime_info_unsubscribe",
-        {
-          channel: "runtime_info",
-        },
-      );
-    }
-
-    function applyRuntimeUpdate(params) {
-      if (!params || typeof params !== "object") return;
-      if (!infoData.data || typeof infoData.data !== "object") {
-        infoData.data = {};
-      }
-      const currentRuntime =
-        infoData.data.runtime && typeof infoData.data.runtime === "object"
-          ? infoData.data.runtime
-          : {};
-      const mergedRuntime = {
-        ...currentRuntime,
-        uptime: Number(params.uptime ?? currentRuntime.uptime ?? 0),
-        heap_free: Number(params.heap_free ?? currentRuntime.heap_free ?? 0),
-        minfreeHeapRuntime: Number(
-          params.minfreeHeapRuntime ?? currentRuntime.minfreeHeapRuntime ?? 0,
-        ),
-        minfreeHeap10min: Number(
-          params.minfreeHeap10min ?? currentRuntime.minfreeHeap10min ?? 0,
-        ),
-        heapLowErrUptime: Number(
-          params.heapLowErrUptime ?? currentRuntime.heapLowErrUptime ?? 0,
-        ),
-        heapLowErr10min: Number(
-          params.heapLowErr10min ?? currentRuntime.heapLowErr10min ?? 0,
-        ),
-      };
-      infoData.data = {
-        ...infoData.data,
-        runtime: mergedRuntime,
-      };
-
-      if (Number.isFinite(mergedRuntime.heap_free)) {
-        recordHeap(mergedRuntime.heap_free);
-      }
-    }
-
-    // Record heap whenever the info store updates
-    watch(
-      () => infoData.data?.runtime?.heap_free,
-      (val) => {
-        if (val !== undefined && val !== null) recordHeap(Number(val));
-      },
-    );
-
     watch(
       () => props.collapsed,
       (collapsed) => {
@@ -305,28 +263,9 @@ export default {
       { immediate: true },
     );
 
-    // Re-subscribe after a (re)connect — subscriptions are per-connection on the
-    // firmware and are dropped when the socket closes.
-    watch(
-      () => ws.status.value,
-      (status) => {
-        if (status === wsStatus.CONNECTED) {
-          sendRuntimeSubscription(true);
-        }
-      },
-    );
-
-    onMounted(() => {
-      removeRuntimeListener = ws.onJson("runtime_info", applyRuntimeUpdate);
-      sendRuntimeSubscription(true);
-    });
-
+    // Runtime history and subscription live in runtimeHistoryStore. The card
+    // only controls its own slow HTTP refresh loop and rendering lifecycle.
     onUnmounted(() => {
-      sendRuntimeSubscription(false);
-      if (typeof removeRuntimeListener === "function") {
-        removeRuntimeListener();
-        removeRuntimeListener = null;
-      }
       stopRefreshLoop();
     });
 
@@ -364,8 +303,9 @@ export default {
       isFirmwareCommentKey,
       firmwareComment,
       heapHistory,
-      heapMin,
       heapMax,
+      heapTimeGrid,
+      minfreeHeapLine,
       sparklinePoints,
       sparklineDot,
       formatHeap,
@@ -439,6 +379,7 @@ export default {
 .heap-sparkline-wrap {
   flex: 1 1 240px; /* Expand when wrapped, shrink back to 240px when side-by-side */
   max-width: 100%;
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: stretch;
@@ -476,11 +417,35 @@ export default {
   fill: currentColor;
 }
 
-.heap-sparkline-minmax {
+.sparkline-grid-line {
+  stroke: currentColor;
+  stroke-dasharray: 1 4;
+  opacity: 0.22;
+}
+
+.sparkline-threshold {
+  stroke: currentColor;
+  stroke-dasharray: 5 4;
+  opacity: 0.65;
+}
+
+.heap-sparkline-axis {
   display: flex;
   justify-content: space-between;
   font-size: 0.65em;
   opacity: 0.55;
+}
+
+.heap-sparkline-time-axis {
+  margin-top: -2px;
+}
+
+.heap-sparkline-value-axis {
+  position: absolute;
+  inset: 0 0 22px;
+  pointer-events: none;
+  flex-direction: column;
+  align-items: flex-end;
 }
 
 .firmware-comment-container {
