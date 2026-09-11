@@ -58,20 +58,34 @@
                     :y2="minfreeHeapLine.y"
                     class="sparkline-threshold"
                   />
-                  <polyline
-                    :points="sparklinePoints"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="1.5"
-                    stroke-linejoin="round"
-                    stroke-linecap="round"
-                    class="sparkline-line"
-                  />
+                  <template
+                    v-for="(segment, index) in sparklineSegments"
+                    :key="`segment-${index}`"
+                  >
+                    <polygon
+                      :points="segment.area"
+                      :fill="segment.color"
+                      fill-opacity="0.3"
+                      class="sparkline-area"
+                    />
+                    <line
+                      :x1="segment.x1"
+                      :y1="segment.y1"
+                      :x2="segment.x2"
+                      :y2="segment.y2"
+                      :stroke="segment.color"
+                      stroke-width="1.5"
+                      stroke-linejoin="round"
+                      stroke-linecap="round"
+                      class="sparkline-line"
+                    />
+                  </template>
                   <circle
                     v-if="sparklineDot"
                     :cx="sparklineDot.x"
                     :cy="sparklineDot.y"
                     r="2.5"
+                    :fill="sparklineDot.color"
                     class="sparkline-dot"
                   />
                 </svg>
@@ -141,8 +155,12 @@ export default {
 
     const heapHistory = computed(() => runtimeHistory.heapHistory);
     const heapMax = computed(() =>
-      heapHistory.value.length
-        ? Math.max(...heapHistory.value.map((e) => e.val))
+      heapHistory.value.filter((e) => Number.isFinite(e?.val)).length
+        ? Math.max(
+            ...heapHistory.value
+              .filter((e) => Number.isFinite(e?.val))
+              .map((e) => e.val),
+          )
         : 1,
     );
 
@@ -155,11 +173,13 @@ export default {
     });
 
     const minfreeHeapLine = computed(() => {
-      const threshold = Number(
-        infoData.data?.runtime?.minfreeHeapRuntime ?? 0,
-      );
+      const threshold = Number(infoData.data?.runtime?.minfreeHeapRuntime ?? 0);
       const maxValue = heapMax.value;
-      if (!Number.isFinite(threshold) || threshold <= 0 || threshold > maxValue) {
+      if (
+        !Number.isFinite(threshold) ||
+        threshold <= 0 ||
+        threshold > maxValue
+      ) {
         return null;
       }
       const usableH = SPARKLINE_H - 2 * SPARKLINE_PAD;
@@ -168,23 +188,58 @@ export default {
       };
     });
 
-    const sparklinePoints = computed(() => {
-      const h = heapHistory.value;
-      if (h.length < 2) return "";
+    function heapColor(value) {
+      if (!Number.isFinite(value)) return null;
+      if (value >= 16000) return "#35c759";
+      if (value >= 12000) {
+        const ratio = (value - 12000) / 4000;
+        return `rgb(${Math.round(245 - 192 * ratio)}, ${Math.round(197 + 2 * ratio)}, 66)`;
+      }
+      if (value >= 7000) {
+        const ratio = (value - 7000) / 5000;
+        return `rgb(${Math.round(239 + 6 * ratio)}, ${Math.round(68 + 129 * ratio)}, ${Math.round(68 - 2 * ratio)})`;
+      }
+      return "#ef4444";
+    }
+
+    const sparklineSegments = computed(() => {
+      const history = heapHistory.value;
+      if (history.length < 2) return [];
       const usableW = SPARKLINE_W - 2 * SPARKLINE_PAD;
       const usableH = SPARKLINE_H - 2 * SPARKLINE_PAD;
-      return h
-        .map((e, i) => {
-          const ageMinutes = Math.max(0, (Date.now() - e.ts) / 60000);
-          const x = SPARKLINE_PAD + usableW * (1 - ageMinutes / 30);
-          const y = SPARKLINE_PAD + (1 - e.val / heapMax.value) * usableH;
-          return `${x.toFixed(1)},${y.toFixed(1)}`;
-        })
-        .join(" ");
+      const baseline = SPARKLINE_H - SPARKLINE_PAD;
+      const points = history.map((entry) => {
+        if (!Number.isFinite(entry?.val) || !Number.isFinite(entry?.ts)) {
+          return null;
+        }
+        const ageMinutes = Math.max(0, (Date.now() - entry.ts) / 60000);
+        return {
+          x: SPARKLINE_PAD + usableW * (1 - ageMinutes / 30),
+          y: SPARKLINE_PAD + (1 - entry.val / heapMax.value) * usableH,
+          color: heapColor(entry.val),
+        };
+      });
+      return points.slice(1).flatMap((point, index) => {
+        const previous = points[index];
+        if (!point || !previous) return [];
+        const color = point.color || previous.color;
+        return [
+          {
+            x1: previous.x.toFixed(1),
+            y1: previous.y.toFixed(1),
+            x2: point.x.toFixed(1),
+            y2: point.y.toFixed(1),
+            color,
+            area: `${previous.x.toFixed(1)},${previous.y.toFixed(1)} ${point.x.toFixed(1)},${point.y.toFixed(1)} ${point.x.toFixed(1)},${baseline} ${previous.x.toFixed(1)},${baseline}`,
+          },
+        ];
+      });
     });
 
     const sparklineDot = computed(() => {
-      const h = heapHistory.value;
+      const h = heapHistory.value.filter(
+        (entry) => Number.isFinite(entry?.val) && Number.isFinite(entry?.ts),
+      );
       if (h.length < 2) return null;
       const last = h[h.length - 1];
       const usableW = SPARKLINE_W - 2 * SPARKLINE_PAD;
@@ -192,7 +247,10 @@ export default {
       const ageMinutes = Math.max(0, (Date.now() - last.ts) / 60000);
       return {
         x: +(SPARKLINE_PAD + usableW * (1 - ageMinutes / 30)).toFixed(1),
-        y: +(SPARKLINE_PAD + (1 - last.val / heapMax.value) * usableH).toFixed(1),
+        y: +(SPARKLINE_PAD + (1 - last.val / heapMax.value) * usableH).toFixed(
+          1,
+        ),
+        color: heapColor(last.val),
       };
     });
 
@@ -306,7 +364,7 @@ export default {
       heapMax,
       heapTimeGrid,
       minfreeHeapLine,
-      sparklinePoints,
+      sparklineSegments,
       sparklineDot,
       formatHeap,
       formatRuntimeValue,
@@ -414,7 +472,7 @@ export default {
 }
 
 .sparkline-dot {
-  fill: currentColor;
+  opacity: 0.95;
 }
 
 .sparkline-grid-line {
