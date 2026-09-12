@@ -92,7 +92,8 @@ export default {
         }
 
         otaProgress.value.fallbackMode = true;
-        otaProgress.value.message = "OTA in progress (waiting for status updates)...";
+        otaProgress.value.message =
+          "OTA in progress (waiting for status updates)...";
 
         clearInterval(countdownTimer);
         otaProgress.value.reloadCountdown = 20;
@@ -822,13 +823,15 @@ export default {
           selectionState.loading = true;
           selectionState.loadingMessage = `Scanning controllers (${scannedControllers}/${totalControllers}) - detected ${detectedControllers}/${totalControllers} - checking ${controller.hostname}...`;
 
-          const { reachable, attempts } = await pingControllerWithRetry(controller);
+          const { reachable, attempts } =
+            await pingControllerWithRetry(controller);
           scannedControllers += 1;
           if (reachable) {
             detectedControllers += 1;
           }
 
-          const temporarilyUnavailable = !reachable && attempts >= maxPingRetries;
+          const temporarilyUnavailable =
+            !reachable && attempts >= maxPingRetries;
 
           selectionState.loading = true;
           selectionState.loadingMessage = `Scanning controllers (${scannedControllers}/${totalControllers}) - detected ${detectedControllers}/${totalControllers}...`;
@@ -1691,7 +1694,6 @@ export default {
   },
 };
 </script>
-
 <style>
 .controller-status {
   border-bottom: 1px solid #eee;
@@ -1707,6 +1709,8 @@ export default {
   align-items: center;
   gap: 4px;
   padding: 2px 6px;
+  border-radius: 12px;
+  font-size: 0.8em;
 
   .status-icon {
     display: inline-flex;
@@ -1722,14 +1726,12 @@ export default {
   .spin svg {
     animation: icon-spin 1s linear infinite;
   }
+}
 
-  @keyframes icon-spin {
-    100% {
-      transform: rotate(360deg);
-    }
+@keyframes icon-spin {
+  100% {
+    transform: rotate(360deg);
   }
-  border-radius: 12px;
-  font-size: 0.8em;
 }
 
 .status-indicator.waiting {
