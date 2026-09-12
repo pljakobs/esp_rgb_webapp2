@@ -1697,7 +1697,6 @@ export default {
   },
 };
 </script>
-
 <style>
 .controller-status {
   border-bottom: 1px solid #eee;
@@ -1713,6 +1712,8 @@ export default {
   align-items: center;
   gap: 4px;
   padding: 2px 6px;
+  border-radius: 12px;
+  font-size: 0.8em;
 
   .status-icon {
     display: inline-flex;
@@ -1728,14 +1729,12 @@ export default {
   .spin svg {
     animation: icon-spin 1s linear infinite;
   }
+}
 
-  @keyframes icon-spin {
-    100% {
-      transform: rotate(360deg);
-    }
+@keyframes icon-spin {
+  100% {
+    transform: rotate(360deg);
   }
-  border-radius: 12px;
-  font-size: 0.8em;
 }
 
 .status-indicator.waiting {
