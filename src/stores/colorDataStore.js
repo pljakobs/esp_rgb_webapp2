@@ -45,9 +45,9 @@ export const useColorDataStore = defineStore("colorDataStore", {
 
         ws.onJson("color_event", (params) => {
           this.change_by = "websocket";
-          console.log("params mode: ", params.mode);
+          console.log("params: ", params);
           console.log("existing color data: ", this);
-          if (params.mode === "hsv") {
+          if (params?.hsv) {
             console.log("updating hsv color data", JSON.stringify(params.hsv));
             const value = {
               h: Math.round(params.hsv.h * 100) / 100,
@@ -64,7 +64,7 @@ export const useColorDataStore = defineStore("colorDataStore", {
               "new hsv color          ",
               JSON.stringify(this.data.hsv),
             );
-          } else if (params.mode === "raw") {
+          } else if (params?.raw) {
             console.log("updating raw color data", params.raw);
             this.data.raw = params.raw;
           }
