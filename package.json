@@ -15,21 +15,23 @@
     "build": "quasar build "
   },
   "dependencies": {
-    "@quasar/cli": "^3.0.0",
-    "@quasar/extras": "^1.18.0",
+    "@intlify/unplugin-vue-i18n": "^11.0.0",
+    "@quasar/cli": "^4.0.0",
+    "@quasar/extras": "^1.16.16",
     "@vue/eslint-config-standard": "^9.0.0",
     "jsdom": "^29.0.0",
     "pinia": "^3.0.3",
-    "quasar": "2.20.0",
-    "vue-i18n": "^11.4.6",
-    "vue-router": "^4.6.4"
+    "quasar": "2.19.3",
+    "vue-i18n": "^11.4.10",
+    "vue-router": "4.5.0"
   },
   "devDependencies": {
+    "@intlify/unplugin-vue-i18n": "^11.0.0",
     "@pinia/testing": "^1.0.3",
-    "@quasar/app-vite": "^2.6.2",
+    "@quasar/app-vite": "2.6.0",
     "@vitejs/plugin-vue": "^6.0.3",
     "@vue/compiler-sfc": "^3.5.26",
-    "@vue/devtools": "^6.6.4",
+    "@vue/devtools": "^8.0.1",
     "@vue/test-utils": "^2.4.0-alpha.2",
     "autoprefixer": "^10.4.17",
     "baseline-browser-mapping": "^2.9.10",
@@ -40,9 +42,9 @@
     "postcss": "^8.5.1",
     "prettier": "^3.3.3",
     "rollup-plugin-visualizer": "^7.0.1",
-    "vite": "^8.0.16",
-    "vitest": "^4.1.9",
-    "vue": "^3.5.38",
+    "vite": "^7.1.6",
+    "vitest": "^4.0.16",
+    "vue": "3.5.32",
     "webpack-bundle-analyzer": "^5.1.0"
   },
   "engines": {

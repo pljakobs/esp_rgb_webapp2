@@ -1,9 +1,3 @@
-import ColorPage from "pages/ColorPage.vue";
-import ColorSettings from "pages/ColorSettings.vue";
-import NetworkSettings from "pages/NetworkSettings.vue";
-import SystemSettings from "pages/SystemSettings.vue";
-import NetworkInit from "pages/NetworkInit.vue";
-import GroupsAndScenes from "pages/GroupsAndScenes.vue";
 import { loadAsyncComponent } from "src/routes/loadAsyncComponent";
 
 const routes = [
