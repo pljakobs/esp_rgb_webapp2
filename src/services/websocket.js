@@ -44,7 +44,6 @@ const pendingRequests = new Map();
 const authRequestIds = new Set();
 // Single shared authentication attempt; concurrent challenges await the same one.
 let authPromise = null;
-//let manualClose = false;
 
 export default function useWebSocket() {
   function connect(url) {
@@ -107,24 +106,20 @@ export default function useWebSocket() {
         state.status = wsStatus.FAILED;
         state.socket.close();
         reconnect();
-      }, 125000); // This is the timeout for the keep_alive message
+      }, 125000);
     }
 
     function reconnect() {
-      // Try to reconnect after 5 seconds for the first 5 attempts
-      // Then try to reconnect after 10 seconds for the next 20 attempts
-      // Then try to reconnect after 20 seconds for all subsequent attempts
-      let delay;
-      if (reconnectAttempts < 5) {
-        delay = 5000;
-      } else if (reconnectAttempts < 25) {
-        delay = 10000;
-      } else {
-        delay = 20000;
+      if (reconnectTimeout) {
+        clearTimeout(reconnectTimeout);
       }
 
+      let delay =
+        reconnectAttempts < 5 ? 5000 : reconnectAttempts < 25 ? 10000 : 20000;
+
       if (state.url != null && state.status === wsStatus.FAILED) {
-        setTimeout(() => {
+        reconnectTimeout = setTimeout(() => {
+          reconnectTimeout = null;
           connect(state.url);
         }, delay);
       }
@@ -153,7 +148,6 @@ export default function useWebSocket() {
           message.error.code === -32001;
 
         if (needsAuth) {
-          // Hold this request, authenticate, then transparently retry it.
           pendingRequests.delete(id);
           clearTimeout(pending.timeoutHandle);
           authenticateThenRetry(pending, challenge);
@@ -164,14 +158,7 @@ export default function useWebSocket() {
           pending.resolve(message.params ?? message.result ?? message);
         }
       }
-      /*
-      console.log(
-        "=> websocket message",
-        key,
-        id,
-        JSON.stringify(message.params),
-      );
-      */
+
       if (key === "keep_alive") {
         handleKeepAlive(message);
       } else if (state.callbacks[key]) {
@@ -187,22 +174,15 @@ export default function useWebSocket() {
       if (state.status !== wsStatus.DISCONNECTED) {
         state.status = wsStatus.FAILED;
       }
-      reconnect();
     };
 
     state.socket.onclose = () => {
       console.log("=> websocket closing");
+      const wasFailed = state.status !== wsStatus.DISCONNECTED;
       state.socket = null;
-      if (state.status !== wsStatus.DISCONNECTED) {
-        console.log(
-          "=> websocket was not disconnected -> probably lost connection",
-        );
-        state.status = wsStatus.FAILED;
-      }
 
-      // Try to reconnect using progressive backoff
-      if (state.url != null && state.status === wsStatus.FAILED) {
-        console.log("=> websocket reconnecting");
+      if (wasFailed) {
+        state.status = wsStatus.FAILED;
         reconnect();
       }
     };
@@ -211,10 +191,8 @@ export default function useWebSocket() {
   function destroy() {
     console.log("=> websocket closing by destroy()");
     if (state.socket && state.socket.readyState === WebSocket.OPEN) {
-      //if socket was open, close
       state.socket.close();
     }
-    //state.socket.close();
     state.status = wsStatus.DISCONNECTED;
 
     clearTimeout(lostConnectionTimeout);
@@ -233,9 +211,7 @@ export default function useWebSocket() {
   };
 
   const request = (method, params = {}, timeoutMs = 1500) => {
-    // Chain the new request onto the existing queue
     requestQueue = requestQueue.then(async () => {
-      // Standard connection check
       if (
         state.status !== wsStatus.CONNECTED ||
         state.socket?.readyState !== WebSocket.OPEN
@@ -267,9 +243,6 @@ export default function useWebSocket() {
     return requestQueue;
   };
 
-  // Send an `authenticate` message and resolve with the firmware's response.
-  // Bypasses the auto-challenge handler via authRequestIds so failures (which
-  // carry a fresh challenge) can be inspected by the caller.
   const sendAuthenticate = (hash) => {
     const id = requestId++;
     authRequestIds.add(id);
@@ -327,7 +300,6 @@ export default function useWebSocket() {
         return;
       }
 
-      // Firmware returns a fresh challenge alongside the failure, nested in error.
       const nextChallenge =
         typeof res?.error?.challenge === "string" ? res.error.challenge : null;
       auth.setAuthError("authentication failed");
@@ -388,8 +360,7 @@ export default function useWebSocket() {
     }
   };
 
-  // Call connect to open the WebSocket
-  let currentSocket = {
+  return {
     ...toRefs(state),
     send,
     request,
@@ -398,5 +369,4 @@ export default function useWebSocket() {
     onJson,
     offJson,
   };
-  return currentSocket;
 }
