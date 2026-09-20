@@ -1,5 +1,5 @@
 <template>
-  <MyCard :title="$t('cards.webappUpdate.title')" icon="web_outlined">
+  <MyCard :title="$t('cards.webappUpdate.title')" icon="browser_updated">
     <q-card-section>
       <q-toggle
         v-model="webappEnabled"
