@@ -2,6 +2,16 @@
   <div v-if="showInitialLoader">
     <div class="center-container bg-light-grey">
       <div class="flex flex-center">
+        <div class="q-mb-md">
+          <div class="rotated-icon-wraper">
+            <svgIcon
+              name="lightinator_full"
+              size="512px"
+              color="light-blue"
+              style="transform: rotate(-90deg)"
+            />
+          </div>
+        </div>
         <div class="q-pa-md">
           <h1><q-spinner-radio color="light-blue" /></h1>
           {{ $t("layout.loading") }}
@@ -78,7 +88,7 @@
             @click="toggleLeftDrawer"
           >
             <q-avatar>
-              <svgIcon name="menu_outlined_24" size="24px" />
+              <svgIcon name="lightinator_logo" size="24px" />
             </q-avatar>
           </q-btn>
           <q-toolbar-title>
@@ -967,5 +977,13 @@ export default defineComponent({
   /* Maps to your custom secondary label color scheme */
   color: var(--label-color);
   margin-top: 4px;
+}
+
+.rotated-icon-wrapper {
+  display: flex;
+  justify-content: right;
+  align-items: center;
+  width: 100px; /* Forces layout width to collapse horizontal gap */
+  overflow: visible;
 }
 </style>
