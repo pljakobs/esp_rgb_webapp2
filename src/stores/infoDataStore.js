@@ -94,7 +94,11 @@ export const infoDataStore = defineStore("infoDataStore", {
       }
 
       try {
-        const params = await ws.request("info", { V: "2", sparse: true }, timeoutMs);
+        const params = await ws.request(
+          "info",
+          { V: "2", sparse: true },
+          timeoutMs,
+        );
         const payload = params?.message ?? params;
         return payload && typeof payload === "object" ? payload : null;
       } catch (error) {
@@ -107,7 +111,7 @@ export const infoDataStore = defineStore("infoDataStore", {
     },
 
     async fetchData() {
-      // Only set LOADING on initial fetch; preserve status during polling updates
+      // Only set LOADING on initial fetch; preserve status during updates
       const isInitialLoad = this.data === null;
       if (isInitialLoad) {
         this.status = storeStatus.LOADING;

@@ -5,6 +5,7 @@
 <script>
 import { onMounted, watch, defineComponent } from "vue";
 import { useControllersStore } from "src/stores/controllersStore";
+import { localhost } from "src/stores/storeConstants";
 import initializeStores from "src/services/initializeStores";
 import initializeNotifications from "src/services/notifications";
 import initializeAppCommands from "src/services/appCommands";
@@ -21,9 +22,7 @@ export default defineComponent({
       let initInFlight = false;
 
       console.log("controllers:", controllers);
-
-      const webhost = window.location.hostname;
-      console.log("webhost", webhost);
+      console.log("webhost override target:", localhost);
 
       const runInitializeStores = async () => {
         if (initInFlight) {

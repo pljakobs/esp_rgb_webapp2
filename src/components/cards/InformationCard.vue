@@ -23,7 +23,7 @@
             >
               <div class="info-rows">
                 <div
-                  v-for="(subVal, subKey) in value"
+                  v-for="(subVal, subKey) in runtimeData"
                   :key="subKey"
                   class="info-row"
                 >
@@ -153,6 +153,13 @@ export default {
     const cardCollapsed = ref(props.collapsed);
     let refreshInterval = null;
 
+    const runtimeData = computed(() => {
+      return {
+        ...infoData.data?.runtime,
+        ...runtimeHistory.runtime,
+      };
+    });
+
     const heapHistory = computed(() => runtimeHistory.heapHistory);
     const heapMax = computed(() =>
       heapHistory.value.filter((e) => Number.isFinite(e?.val)).length
@@ -173,7 +180,7 @@ export default {
     });
 
     const minfreeHeapLine = computed(() => {
-      const threshold = Number(infoData.data?.runtime?.minfreeHeapRuntime ?? 0);
+      const threshold = Number(runtimeData.value?.minfreeHeapRuntime ?? 0);
       const maxValue = heapMax.value;
       if (
         !Number.isFinite(threshold) ||
@@ -312,11 +319,9 @@ export default {
     watch(
       cardCollapsed,
       (collapsed) => {
-        if (collapsed) {
-          stopRefreshLoop();
-          return;
+        if (!collapsed) {
+          infoData.fetchData();
         }
-        startRefreshLoop();
       },
       { immediate: true },
     );
@@ -356,6 +361,7 @@ export default {
     return {
       infoData,
       cardCollapsed,
+      runtimeData,
       formatKey,
       isObject,
       isFirmwareCommentKey,

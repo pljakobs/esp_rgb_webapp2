@@ -43,7 +43,7 @@ export const useColorDataStore = defineStore("colorDataStore", {
       if (!this.websocketSubscribed) {
         const ws = useWebSocket();
 
-        ws.onJson("color_event", (params) => {
+        ws.onNotification("color_event", (params) => {
           this.change_by = "websocket";
           console.log("params: ", params);
           console.log("existing color data: ", this);

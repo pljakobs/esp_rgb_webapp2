@@ -151,7 +151,7 @@ export default {
         }
       },
     );
-    ws.onJson("ota_status", (params) => {
+    ws.onNotification("ota_status", (params) => {
       // Switch from time-based to WS-driven mode on first message
       clearInterval(fallbackProgressInterval);
       fallbackProgressInterval = null;

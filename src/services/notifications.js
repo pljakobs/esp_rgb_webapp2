@@ -3,7 +3,7 @@ import useWebSocket from "src/services/websocket";
 
 const ws = useWebSocket();
 export default function initializeNotifications() {
-  ws.onJson("notification", (params) => {
+  ws.onNotification("notification", (params) => {
     if (!params?.message) return;
     Notify.create({
       message: params.message,

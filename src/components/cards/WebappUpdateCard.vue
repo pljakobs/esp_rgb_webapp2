@@ -256,7 +256,7 @@ export default {
 
     // Listen for webapp OTA status pushed over WebSocket
     const ws = useWebSocket();
-    ws.onJson("webapp_ota_status", (params) => {
+    ws.onNotification("webapp_ota_status", (params) => {
       if (!params) return;
 
       otaState.value = params.state ?? "idle";

@@ -132,7 +132,7 @@ export const useControllersStore = defineStore("controllersStore", {
         if (!this.websocketSubscribed) {
           const ws = useWebSocket();
 
-          ws.onJson("updated_host", (params) => {
+          ws.onNotification("updated_host", (params) => {
             const host = params.message;
             if (!host?.ip_address) {
               return;
@@ -151,7 +151,7 @@ export const useControllersStore = defineStore("controllersStore", {
             }
           });
 
-          ws.onJson("new_host", (params) => {
+          ws.onNotification("new_host", (params) => {
             const host = params.message;
             if (!host?.ip_address) {
               return;
@@ -168,7 +168,7 @@ export const useControllersStore = defineStore("controllersStore", {
             }
           });
 
-          ws.onJson("removed_host", (params) => {
+          ws.onNotification("removed_host", (params) => {
             const host = params.message;
             if (!host?.ip_address) {
               return;
@@ -1762,7 +1762,7 @@ export const useControllersStore = defineStore("controllersStore", {
     // Let's adjust the `localhost` handling in `initializeStores.js`.
     // The `localhost` object is a constant and should not be modified. Its `hostname` property should not be updated. The `currentController` object's `hostname` should be used for display.
     // Let's revert the `localhost.hostname` assignments and ensure `currentController` is set correctly.
-    
+
     insertControllerAlphabetically(controller) {
       this.data.push(controller);
       this.data.sort((a, b) => a.hostname.localeCompare(b.hostname));

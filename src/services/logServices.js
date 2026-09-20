@@ -39,7 +39,7 @@ function parseLogMessage(message) {
 }
 
 export default function initializeLogService() {
-  ws.onJson("log", (params) => {
+  ws.onNotification("log", (params) => {
     const logEntry = parseLogMessage(params.message);
     logStore.logs.push(logEntry);
     trimLogStore(); // Check and trim the log store if necessary

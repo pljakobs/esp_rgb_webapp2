@@ -321,7 +321,7 @@
         <q-toolbar>
           <q-btn round class="ws-status-btn" :color="buttonColor">
             <svgIcon :name="buttonIconName" size="20px" />
-            <q-tooltip>{{ $t("layout.wsTooltip") }}</q-tooltip>
+            <q-tooltip>{{ wsTooltipText }}</q-tooltip>
           </q-btn>
         </q-toolbar>
       </q-footer>
@@ -456,6 +456,7 @@ export default defineComponent({
         switch (ws.status.value) {
           case wsStatus.CONNECTED:
             return "green";
+          case wsStatus.FAILED:
           case wsStatus.DISCONNECTED:
             return "red";
           case wsStatus.CONNECTING:
@@ -475,6 +476,20 @@ export default defineComponent({
             return "help_outlined";
           default:
             return "info_outlined";
+        }
+      });
+
+      const wsTooltipText = computed(() => {
+        switch (ws.status.value) {
+          case wsStatus.CONNECTED:
+            return t("layout.wsStatusConnected");
+          case wsStatus.CONNECTING:
+            return t("layout.wsStatusConnecting");
+          case wsStatus.FAILED:
+            return t("layout.wsStatusFailed");
+          case wsStatus.DISCONNECTED:
+          default:
+            return t("layout.wsStatusDisconnected");
         }
       });
 
@@ -855,6 +870,7 @@ export default defineComponent({
         showInitialLoader,
         BasePatchCard,
         getControllerDisplayName,
+        wsTooltipText,
       };
     } catch (error) {
       console.error("Error in setup function:", error);

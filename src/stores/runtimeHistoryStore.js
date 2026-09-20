@@ -42,12 +42,17 @@ export const useRuntimeHistoryStore = defineStore("runtimeHistory", {
 
         this.runtime = mergedRuntime;
         if (Number.isFinite(mergedRuntime.heap_free)) {
-          this.heapHistory.push({ ts: Date.now(), val: mergedRuntime.heap_free });
+          this.heapHistory.push({
+            ts: Date.now(),
+            val: mergedRuntime.heap_free,
+          });
           if (this.heapHistory.length > MAX_HEAP_SAMPLES) {
             this.heapHistory.shift();
           }
           const cutoff = Date.now() - HISTORY_WINDOW_MS;
-          const firstRecent = this.heapHistory.findIndex((entry) => entry.ts >= cutoff);
+          const firstRecent = this.heapHistory.findIndex(
+            (entry) => entry.ts >= cutoff,
+          );
           if (firstRecent > 0) this.heapHistory.splice(0, firstRecent);
         }
 
@@ -60,12 +65,19 @@ export const useRuntimeHistoryStore = defineStore("runtimeHistory", {
         };
       };
 
-      ws.onJson("runtime_info", applyRuntimeUpdate);
+      ws.onNotification("runtime_info", applyRuntimeUpdate);
       watch(
         () => ws.status.value,
-        (status) => {
+        async (status) => {
           if (status === wsStatus.CONNECTED) {
-            ws.send("runtime_info_subscribe", { channel: "runtime_info" });
+            try {
+              const response = await ws.request("runtime_info_subscribe", {
+                channel: "runtime_info",
+              });
+              console.log("Subscribed to runtime_info successfully:", response);
+            } catch (err) {
+              console.error("Failed to subscribe to runtime_info:", err);
+            }
           }
         },
         { immediate: true },
