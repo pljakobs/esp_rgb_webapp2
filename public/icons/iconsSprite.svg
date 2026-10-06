@@ -7,6 +7,7 @@
 <symbol id="article" viewBox="0 -960 960 960"><path d="M280-280h280v-80H280v80Zm0-160h400v-80H280v80Zm0-160h400v-80H280v80Zm-80 480q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h560q33 0 56.5 23.5T840-760v560q0 33-23.5 56.5T760-120H200Zm0-80h560v-560H200v560Zm0-560v560-560Z"/></symbol>
 <symbol id="badge_outlined" viewBox="0 0 24 24"><path d="M14 12h4v1.5h-4zm0 3h4v1.5h-4z"/><path d="M20 7h-5V4c0-1.1-.9-2-2-2h-2c-1.1 0-2 .9-2 2v3H4c-1.1 0-2 .9-2 2v11c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V9c0-1.1-.9-2-2-2zm-9 0V4h2v5h-2V7zm9 13H4V9h5c0 1.1.9 2 2 2h2c1.1 0 2-.9 2-2h5v11z"/><circle cx="9" cy="13.5" r="1.5"/><path d="M11.08 16.18c-.64-.28-1.34-.43-2.08-.43s-1.44.15-2.08.43c-.56.24-.92.78-.92 1.39V18h6v-.43c0-.61-.36-1.15-.92-1.39z"/></symbol>
 <symbol id="blur" viewBox="0 -960 960 960"><path d="M120-380q-8 0-14-6t-6-14q0-8 6-14t14-6q8 0 14 6t6 14q0 8-6 14t-14 6Zm0-160q-8 0-14-6t-6-14q0-8 6-14t14-6q8 0 14 6t6 14q0 8-6 14t-14 6Zm120 340q-17 0-28.5-11.5T200-240q0-17 11.5-28.5T240-280q17 0 28.5 11.5T280-240q0 17-11.5 28.5T240-200Zm0-160q-17 0-28.5-11.5T200-400q0-17 11.5-28.5T240-440q17 0 28.5 11.5T280-400q0 17-11.5 28.5T240-360Zm0-160q-17 0-28.5-11.5T200-560q0-17 11.5-28.5T240-600q17 0 28.5 11.5T280-560q0 17-11.5 28.5T240-520Zm0-160q-17 0-28.5-11.5T200-720q0-17 11.5-28.5T240-760q17 0 28.5 11.5T280-720q0 17-11.5 28.5T240-680Zm160 340q-25 0-42.5-17.5T340-400q0-25 17.5-42.5T400-460q25 0 42.5 17.5T460-400q0 25-17.5 42.5T400-340Zm0-160q-25 0-42.5-17.5T340-560q0-25 17.5-42.5T400-620q25 0 42.5 17.5T460-560q0 25-17.5 42.5T400-500Zm0 300q-17 0-28.5-11.5T360-240q0-17 11.5-28.5T400-280q17 0 28.5 11.5T440-240q0 17-11.5 28.5T400-200Zm0-480q-17 0-28.5-11.5T360-720q0-17 11.5-28.5T400-760q17 0 28.5 11.5T440-720q0 17-11.5 28.5T400-680Zm0 580q-8 0-14-6t-6-14q0-8 6-14t14-6q8 0 14 6t6 14q0 8-6 14t-14 6Zm0-720q-8 0-14-6t-6-14q0-8 6-14t14-6q8 0 14 6t6 14q0 8-6 14t-14 6Zm160 480q-25 0-42.5-17.5T500-400q0-25 17.5-42.5T560-460q25 0 42.5 17.5T620-400q0 25-17.5 42.5T560-340Zm0-160q-25 0-42.5-17.5T500-560q0-25 17.5-42.5T560-620q25 0 42.5 17.5T620-560q0 25-17.5 42.5T560-500Zm0 300q-17 0-28.5-11.5T520-240q0-17 11.5-28.5T560-280q17 0 28.5 11.5T600-240q0 17-11.5 28.5T560-200Zm0-480q-17 0-28.5-11.5T520-720q0-17 11.5-28.5T560-760q17 0 28.5 11.5T600-720q0 17-11.5 28.5T560-680Zm0 580q-8 0-14-6t-6-14q0-8 6-14t14-6q8 0 14 6t6 14q0 8-6 14t-14 6Zm0-720q-8 0-14-6t-6-14q0-8 6-14t14-6q8 0 14 6t6 14q0 8-6 14t-14 6Zm160 620q-17 0-28.5-11.5T680-240q0-17 11.5-28.5T720-280q17 0 28.5 11.5T760-240q0 17-11.5 28.5T720-200Zm0-160q-17 0-28.5-11.5T680-400q0-17 11.5-28.5T720-440q17 0 28.5 11.5T760-400q0 17-11.5 28.5T720-360Zm0-160q-17 0-28.5-11.5T680-560q0-17 11.5-28.5T720-600q17 0 28.5 11.5T760-560q0 17-11.5 28.5T720-520Zm0-160q-17 0-28.5-11.5T680-720q0-17 11.5-28.5T720-760q17 0 28.5 11.5T760-720q0 17-11.5 28.5T720-680Zm120 300q-8 0-14-6t-6-14q0-8 6-14t14-6q8 0 14 6t6 14q0 8-6 14t-14 6Zm0-160q-8 0-14-6t-6-14q0-8 6-14t14-6q8 0 14 6t6 14q0 8-6 14t-14 6Z"/></symbol>
+<symbol id="browser_updated" viewBox="0 -960 960 960"><path d="M240-120v-80l40-40H160q-33 0-56.5-23.5T80-320v-440q0-33 23.5-56.5T160-840h320v80H160v440h640v-120h80v120q0 33-23.5 56.5T800-240H680l40 40v80H240Zm360-240L400-560l56-56 104 103v-327h80v327l104-103 56 56-200 200Z"/></symbol>
 <symbol id="check_circle" viewBox="0 -960 960 960"><path d="m424-296 282-282-56-56-226 226-114-114-56 56 170 170Zm56 216q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Z"/></symbol>
 <symbol id="check_outlined" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19L21 7l-1.41-1.41L9 16.17z"/></symbol>
 <symbol id="close" viewBox="0 -960 960 960"><path d="M480-424 284-228q-11 11-28 11t-28-11q-11-11-11-28t11-28l196-196-196-196q-11-11-11-28t11-28q11-11 28-11t28 11l196 196 196-196q11-11 28-11t28 11q11 11 11 28t-11 28L536-480l196 196q11 11 11 28t-11 28q-11 11-28 11t-28-11L480-424Z"/></symbol>
@@ -29,6 +30,96 @@
 <symbol id="lightbulb-off" viewBox="0 0 24 24"><path d="M12,2C9.76,2 7.78,3.05 6.5,4.68L7.93,6.11C8.84,4.84 10.32,4 12,4A5,5 0 0,1 17,9C17,10.68 16.16,12.16 14.89,13.06L16.31,14.5C17.94,13.21 19,11.24 19,9A7,7 0 0,0 12,2M3.28,4L2,5.27L5.04,8.3C5,8.53 5,8.76 5,9C5,11.38 6.19,13.47 8,14.74V17A1,1 0 0,0 9,18H14.73L18.73,22L20,20.72L3.28,4M7.23,10.5L12.73,16H10V13.58C8.68,13 7.66,11.88 7.23,10.5M9,20V21A1,1 0 0,0 10,22H14A1,1 0 0,0 15,21V20H9Z" /></symbol>
 <symbol id="lightbulb-on" viewBox="0 0 24 24"><path d="M1 11H4V13H1V11M19.1 3.5L17 5.6L18.4 7L20.5 4.9L19.1 3.5M11 1H13V4H11V1M4.9 3.5L3.5 4.9L5.6 7L7 5.6L4.9 3.5M10 22C10 22.6 10.4 23 11 23H13C13.6 23 14 22.6 14 22V21H10V22M12 6C8.7 6 6 8.7 6 12C6 14.2 7.2 16.2 9 17.2V19C9 19.6 9.4 20 10 20H14C14.6 20 15 19.6 15 19V17.2C16.8 16.2 18 14.2 18 12C18 8.7 15.3 6 12 6M13 15.9V17H11V15.9C9.3 15.5 8 13.9 8 12C8 9.8 9.8 8 12 8S16 9.8 16 12C16 13.9 14.7 15.4 13 15.9M20 11H23V13H20V11Z" /></symbol>
 <symbol id="lightbulb_outlined" viewBox="0 0 24 24"><path d="M9 21c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-1H9v1zm3-19C8.14 2 5 5.14 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74c0-3.86-3.14-7-7-7zm2.85 11.1l-.85.6V16h-4v-2.3l-.85-.6A4.997 4.997 0 0 1 7 9c0-2.76 2.24-5 5-5s5 2.24 5 5c0 1.63-.8 3.16-2.15 4.1z"/></symbol>
+<symbol id="lightinator_full" viewBox="0 0 500 120">
+  <defs>
+    <!-- Light Glow Gradient with #1976D2 as Key Color -->
+    <linearGradient id="glowGrad2D" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1976D2" />
+      <stop offset="50%" stop-color="#4ECDC4" />
+      <stop offset="100%" stop-color="#FFD166" />
+    </linearGradient>
+    <radialGradient id="centerGlow2D" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#1976D2" stop-opacity="1"/>
+      <stop offset="100%" stop-color="#4ECDC4" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Icon: Symmetrical 2D Mesh -->
+  <g transform="translate(10, 10)">
+    <!-- Flat Orbit Ring -->
+    <circle cx="50" cy="50" r="38" fill="none" stroke="url(#glowGrad2D)" stroke-width="2" stroke-dasharray="4 3" opacity="0.5"/>
+
+    <!-- Symmetrical Radial Spokes -->
+    <line x1="50" y1="50" x2="50" y2="12" stroke="url(#glowGrad2D)" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="50" y1="50" x2="82.9" y2="31" stroke="url(#glowGrad2D)" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="50" y1="50" x2="82.9" y2="69" stroke="url(#glowGrad2D)" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="50" y1="50" x2="50" y2="88" stroke="url(#glowGrad2D)" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="50" y1="50" x2="17.1" y2="69" stroke="url(#glowGrad2D)" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="50" y1="50" x2="17.1" y2="31" stroke="url(#glowGrad2D)" stroke-width="2.5" stroke-linecap="round"/>
+
+    <!-- Outer Rim Connections -->
+    <polygon points="50,12 82.9,31 82.9,69 50,88 17.1,69 17.1,31" fill="none" stroke="url(#glowGrad2D)" stroke-width="1.5" opacity="0.3"/>
+
+    <!-- Outer Nodes -->
+    <circle cx="50" cy="12" r="4" fill="currentColor"/>
+    <circle cx="82.9" cy="31" r="4" fill="currentColor"/>
+    <circle cx="82.9" cy="69" r="4" fill="currentColor"/>
+    <circle cx="50" cy="88" r="4" fill="currentColor"/>
+    <circle cx="17.1" cy="69" r="4" fill="currentColor"/>
+    <circle cx="17.1" cy="31" r="4" fill="currentColor"/>
+
+    <!-- Dead Center Hub -->
+    <circle cx="50" cy="50" r="14" fill="url(#centerGlow2D)"/>
+    <circle cx="50" cy="50" r="7" fill="currentColor"/>
+  </g>
+
+  <!-- Typography -->
+  <text x="120" y="68" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="800" font-size="42" fill="currentColor" letter-spacing="-0.5">
+    LIGHT<tspan fill="currentColor">INATOR</tspan>
+  </text>
+  <text x="122" y="90" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="600" font-size="12" fill="currentColor" letter-spacing="2">
+    MESHED LED CONTROL PLATFORM
+  </text>
+</symbol>
+<symbol id="lightinator_logo" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="sparkGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1976D2" />
+      <stop offset="50%" stop-color="#4ECDC4" />
+      <stop offset="100%" stop-color="#FFD166" />
+    </linearGradient>
+    <radialGradient id="sparkCenterGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#1976D2" stop-opacity="1"/>
+      <stop offset="100%" stop-color="#4ECDC4" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Outer Orbit Ring -->
+  <circle cx="50" cy="50" r="38" fill="none" stroke="url(#sparkGrad)" stroke-width="2" stroke-dasharray="4 3" opacity="0.5"/>
+
+  <!-- Radial Spokes -->
+  <line x1="50" y1="50" x2="50" y2="12" stroke="url(#sparkGrad)" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="50" y1="50" x2="82.9" y2="31" stroke="url(#sparkGrad)" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="50" y1="50" x2="82.9" y2="69" stroke="url(#sparkGrad)" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="50" y1="50" x2="50" y2="88" stroke="url(#sparkGrad)" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="50" y1="50" x2="17.1" y2="69" stroke="url(#sparkGrad)" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="50" y1="50" x2="17.1" y2="31" stroke="url(#sparkGrad)" stroke-width="2.5" stroke-linecap="round"/>
+
+  <!-- Outer Rim Connections -->
+  <polygon points="50,12 82.9,31 82.9,69 50,88 17.1,69 17.1,31" fill="none" stroke="url(#sparkGrad)" stroke-width="1.5" opacity="0.3"/>
+
+  <!-- Outer Nodes -->
+  <circle cx="50" cy="12" r="4" fill="currentColor"/>
+  <circle cx="82.9" cy="31" r="4" fill="currentColor"/>
+  <circle cx="82.9" cy="69" r="4" fill="currentColor"/>
+  <circle cx="50" cy="88" r="4" fill="currentColor"/>
+  <circle cx="17.1" cy="69" r="4" fill="currentColor"/>
+  <circle cx="17.1" cy="31" r="4" fill="currentColor"/>
+
+  <!-- Dead Center Hub -->
+  <circle cx="50" cy="50" r="14" fill="url(#sparkCenterGlow)"/>
+  <circle cx="50" cy="50" r="7" fill="currentColor"/>
+</symbol>
 <symbol id="lights_led-strip-variant" viewBox="0 0 24 24"><path d="M2.95 3L2 6.91L19.34 11.25L20.29 7.34L2.95 3M6.09 6.89L4.16 6.41L4.64 4.46L6.57 4.94L6.09 6.89M9.94 7.86L8 7.38L8.5 5.42L10.42 5.91L9.94 7.86M13.8 8.82L11.87 8.34L12.35 6.39L14.27 6.87L13.8 8.82M17.65 9.79L15.72 9.31L16.2 7.35L18.13 7.84L17.65 9.79M4.66 12.75L3.71 16.66L21.05 21L22 17.1L4.66 12.75M7.8 16.65L5.88 16.16L6.35 14.21L8.28 14.69L7.8 16.65M11.65 17.61L9.73 17.13L10.2 15.18L12.13 15.66L11.65 17.61M15.5 18.58L13.58 18.09L14.06 16.14L16 16.62L15.5 18.58M19.36 19.54L17.43 19.06L17.91 17.11L19.84 17.59L19.36 19.54M6.25 12.11L11 10.2L17.75 11.89L13 13.8L6.25 12.11Z" /></symbol>
 <symbol id="linked_services" viewBox="0 -960 960 960"><path d="M760-600q-57 0-99-34t-56-86H354q-11 42-41.5 72.5T240-606v251q52 14 86 56t34 99q0 66-47 113T200-40q-66 0-113-47T40-200q0-57 34-99t86-56v-251q-52-14-86-56t-34-98q0-66 47-113t113-47q56 0 98 34t56 86h251q14-52 56-86t99-34q66 0 113 47t47 113q0 66-47 113t-113 47ZM200-120q33 0 56.5-24t23.5-56q0-33-23.5-56.5T200-280q-32 0-56 23.5T120-200q0 32 24 56t56 24Zm0-560q33 0 56.5-23.5T280-760q0-33-23.5-56.5T200-840q-32 0-56 23.5T120-760q0 33 24 56.5t56 23.5ZM760-40q-66 0-113-47t-47-113q0-66 47-113t113-47q66 0 113 47t47 113q0 66-47 113T760-40Zm0-80q33 0 56.5-24t23.5-56q0-33-23.5-56.5T760-280q-33 0-56.5 23.5T680-200q0 32 23.5 56t56.5 24Zm0-560q33 0 56.5-23.5T840-760q0-33-23.5-56.5T760-840q-33 0-56.5 23.5T680-760q0 33 23.5 56.5T760-680ZM200-200Zm0-560Zm560 560Zm0-560Z"/></symbol>
 <symbol id="memory_outlined" viewBox="0 0 24 24"><path d="M15 9H9v6h6V9zm-2 4h-2v-2h2v2zm8-2V9h-2V7c0-1.1-.9-2-2-2h-2V3h-2v2h-2V3H9v2H7c-1.1 0-2 .9-2 2v2H3v2h2v2H3v2h2v2c0 1.1.9 2 2 2h2v2h2v-2h2v2h2v-2h2c1.1 0 2-.9 2-2v-2h2v-2h-2v-2h2zm-4 6H7V7h10v10z"/></symbol>
