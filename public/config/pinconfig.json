@@ -1,5 +1,5 @@
 {
-  "version": 22,
+  "version": 23,
   "available_pins": [
     {
       "soc": "esp8266",
@@ -29,6 +29,19 @@
         { "name": "blue", "pin": "14" },
         { "name": "warmwhite", "pin": "5" },
         { "name": "coldwhite", "pin": "4" }
+      ]
+    },
+    {
+      "name": "mrpj C3-12F",
+      "soc": "esp32c3",
+      "model": "rgbww",
+      "clear_pin": 22,
+      "channels": [
+        { "name": "red", "pin": "5" },
+        { "name": "green", "pin": "4" },
+        { "name": "blue", "pin": "3" },
+        { "name": "warmwhite", "pin": "19" },
+        { "name": "coldwhite", "pin": "18" }
       ]
     },
     {
