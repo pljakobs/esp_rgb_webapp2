@@ -1,9 +1,9 @@
 #define FILE_LIST(XX) \
 	XX(VERSION, "VERSION") \
-	XX(index_BWICwC0Q_js_gz, "assets/index-BWICwC0Q.js.gz") \
-	XX(index_CArGwE8Q_css_gz, "assets/index-CArGwE8Q.css.gz") \
-	XX(index_paAsfzvy_js_gz, "assets/index-paAsfzvy.js.gz") \
-	XX(vendor_quasar_CjKvnQKo_js_gz, "assets/vendor-quasar-CjKvnQKo.js.gz") \
+	XX(index_AASFNU96_js_gz, "assets/index-AASFNU96.js.gz") \
+	XX(index_Cfh3MDze_js_gz, "assets/index-Cfh3MDze.js.gz") \
+	XX(index_DJxIUGOK_css_gz, "assets/index-DJxIUGOK.css.gz") \
+	XX(vendor_quasar_BrfYHIO5_js_gz, "assets/vendor-quasar-BrfYHIO5.js.gz") \
 	XX(vendor_quasar_DbF9uUGz_css_gz, "assets/vendor-quasar-DbF9uUGz.css.gz") \
 	XX(pinconfig_json, "config/pinconfig.json") \
 	XX(favicon_ico, "icons/favicon.ico") \
