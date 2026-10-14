@@ -94,7 +94,7 @@
                     ? 'lightinator_controller_dark'
                     : 'lightinator_controller_light'
                 "
-                size="24px"
+                size="36px"
               />
             </q-avatar>
           </q-btn>
