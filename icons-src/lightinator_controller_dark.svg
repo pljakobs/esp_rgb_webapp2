@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" role="img" aria-labelledby="title">
+  <title id="title">Lightinator Controller Firmware - Dark</title>
+  <g style="--tile:#34383f;--ring:#81d0c9;--trace:#55c2ba;--outline:#252a30;--chip:#1f8588;--hub:#f7ffff;--blue:#2878c6;--sky:#3295df;--cyan:#13b3c3;--mint:#5bc7bb;--green:#13a783;--yellow:#f3c44f;--mark:#218f8d">
+    <rect x="4" y="4" width="248" height="248" rx="38" fill="var(--tile)"/>
+    <circle cx="128" cy="128" r="104" fill="none" stroke="var(--ring)" stroke-width="5" stroke-dasharray="13 11" opacity="0.9"/>
+    <rect x="84" y="84" width="88" height="88" rx="14" fill="var(--chip)" stroke="var(--trace)" stroke-width="7"/>
+    <g stroke="var(--trace)" stroke-width="6" stroke-linecap="round">
+      <path d="M101 73v11M128 73v11M155 73v11M101 172v11M128 172v11M155 172v11"/>
+      <path d="M73 101h11M73 128h11M73 155h11M172 101h11M172 128h11M172 155h11"/>
+    </g>
+    <g fill="none" stroke="var(--trace)" stroke-width="8" stroke-linecap="round">
+      <path d="M128 128 128 31"/><path d="M128 128 213 78"/><path d="M128 128 213 178"/>
+      <path d="M128 128 128 225"/><path d="M128 128 43 178"/><path d="M128 128 43 78"/>
+    </g>
+    <g stroke="var(--outline)" stroke-width="3">
+      <circle cx="128" cy="31" r="14" fill="var(--blue)"/><circle cx="213" cy="78" r="14" fill="var(--sky)"/>
+      <circle cx="213" cy="178" r="14" fill="var(--cyan)"/><circle cx="128" cy="225" r="14" fill="var(--mint)"/>
+      <circle cx="43" cy="178" r="14" fill="var(--green)"/><circle cx="43" cy="78" r="14" fill="var(--yellow)"/>
+    </g>
+    <circle cx="128" cy="128" r="25" fill="var(--hub)" stroke="var(--trace)" stroke-width="7"/>
+    <path d="M119 128a9 9 0 1 1 18 0c0 5-4 7-4 11h-10c0-4-4-6-4-11Zm5 15h8m-7 4h6" fill="none" stroke="var(--mark)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>

@@ -88,7 +88,14 @@
             @click="toggleLeftDrawer"
           >
             <q-avatar>
-              <svgIcon name="lightinator_logo" size="24px" />
+              <svgIcon
+                :name="
+                  isDarkMode
+                    ? 'lightinator_controller_dark'
+                    : 'lightinator_controller_light'
+                "
+                size="24px"
+              />
             </q-avatar>
           </q-btn>
           <q-toolbar-title>
