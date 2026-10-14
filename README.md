@@ -1,5 +1,7 @@
 ## esp rgb web frontent rewrite
 
+<img align="right" width="96" height="96" src="icons-src/lightinator_controller_dark.svg" alt="Lightinator controller icon">
+
 ### Reason
 The old web frontent has originally been written using AngularJS in 2015 or 2016 and while it continues to work just fine, asking around in my community has made me think that porting it to a newer, 
 leaner framework is probably no more troublesome than porting it to a new version of Agular. Also, the impression I got was that Angular has gone the route of providing the tools for very large projects
