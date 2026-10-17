@@ -4,19 +4,19 @@ on:
   workflow_run:
     workflows: ["Frontend Tests"]
     types: [completed]
-    branches: [experimental, experimental-externalUI, devel, testing, stable]
+    branches: [experimental, experimental-externalUI, develop, testing, stable]
 
   workflow_dispatch:
     inputs:
       branch:
         description: 'Branch to build'
         required: true
-        default: 'devel'
+        default: 'develop'
         type: choice
         options:
           - stable
           - testing
-          - devel
+          - develop
           - experimental
           - experimental-externalUI
 
