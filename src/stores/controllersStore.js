@@ -10,6 +10,7 @@ export const useControllersStore = defineStore("controllersStore", {
     storeStatus: storeStatus.store.LOADING,
     currentController: null, // Will be set from /hosts response only
     homeController: null, // Will be set from /hosts response only
+    isControllerLoading: false,
     http_response_status: null,
     websocketSubscribed: false,
     error: null,
