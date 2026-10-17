@@ -4,12 +4,12 @@
 
 This project uses three parallel build tracks for coordinated webapp and firmware releases:
 
-### 1. **Development Track** (`devel` → `develop`)
+### 1. **Development Track** (`develop`)
 
-- **Webapp Branch**: `devel`
+- **Webapp Branch**: `develop`
 - **Firmware Branch**: `develop`
 - **Purpose**: Active development, frequent changes
-- **Artifacts**: Published to `https://pljakobs.github.io/esp_rgb_webapp2/devel/`
+- **Artifacts**: Published to `https://pljakobs.github.io/esp_rgb_webapp2/develop/`
 
 ### 2. **Testing Track** (`testing` → `testing`)
 
@@ -29,7 +29,7 @@ This project uses three parallel build tracks for coordinated webapp and firmwar
 
 ### Webapp Build (esp_rgb_webapp2)
 
-1. Push to `devel`, `testing`, or `stable` branch
+1. Push to `develop`, `testing`, or `stable` branch
 2. `frontendBuild` workflow runs:
    - Builds Quasar app
    - Generates version info (V5.0-{build_num}-{branch})
@@ -41,7 +41,7 @@ This project uses three parallel build tracks for coordinated webapp and firmwar
 
 1. Receives `repository_dispatch` event with branch info
 2. Maps webapp branch to firmware branch:
-   - `devel` → `develop`
+   - `develop` → `develop`
    - `testing` → `testing`
    - `stable` → `stable`
 3. Downloads webapp artifacts from branch-specific URL
@@ -52,7 +52,7 @@ This project uses three parallel build tracks for coordinated webapp and firmwar
 
 | Webapp Branch | Firmware Branch | Artifact URL                                        |
 | ------------- | --------------- | --------------------------------------------------- |
-| devel         | develop         | https://pljakobs.github.io/esp_rgb_webapp2/devel/   |
+| develop       | develop         | https://pljakobs.github.io/esp_rgb_webapp2/develop/ |
 | testing       | testing         | https://pljakobs.github.io/esp_rgb_webapp2/testing/ |
 | stable        | stable          | https://pljakobs.github.io/esp_rgb_webapp2/stable/  |
 
@@ -63,7 +63,7 @@ To promote changes from one track to another:
 ```bash
 # Development → Testing
 git checkout testing
-git merge devel
+git merge develop
 git push
 
 # Testing → Stable
@@ -80,7 +80,7 @@ This will trigger the appropriate build workflows automatically.
 
 ```bash
 # From GitHub Actions UI, select frontendBuild workflow
-# Choose branch: devel, testing, or stable
+# Choose branch: develop, testing, or stable
 ```
 
 ### Firmware Only
@@ -94,7 +94,7 @@ This will trigger the appropriate build workflows automatically.
 
 ```
 gh-pages/
-├── devel/
+├── develop/
 │   ├── index.html
 │   ├── spa-files.zip
 │   └── fileList.h
@@ -114,7 +114,7 @@ All builds use the format: `V5.0-{build_number}-{branch}`
 
 Example:
 
-- `V5.0-123-devel`
+- `V5.0-123-develop`
 - `V5.0-45-testing`
 - `V5.0-67-stable`
 
@@ -123,5 +123,5 @@ Example:
 1. **Branch-specific artifacts**: Each branch publishes to its own directory
 2. **keep_files: true**: Prevents overwriting artifacts from other branches
 3. **Automatic triggering**: Webapp builds automatically trigger corresponding firmware builds
-4. **Branch mapping**: Handles naming differences between repos (devel↔develop)
+4. **Branch mapping**: Uses matching channel names across repos
 5. **Success checking**: Firmware only triggers on successful webapp builds

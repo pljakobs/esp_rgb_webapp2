@@ -3,12 +3,12 @@ name: Frontend Tests
 on:
   push:
     branches:
-      - devel
+      - develop
       - testing
       - stable
   pull_request:
     branches:
-      - devel
+      - develop
       - testing
       - stable
 
