@@ -39,6 +39,10 @@ export default configure((/* ctx */) => {
     name: "generate-icon-sprite-build",
     apply: "build",
     closeBundle() {
+      fs.rmSync(path.resolve(process.cwd(), "dist/spa/locales"), {
+        recursive: true,
+        force: true,
+      });
       runIconGeneration();
       runGzipSpa();
     },
@@ -88,6 +92,7 @@ export default configure((/* ctx */) => {
         // Build configuration for ESP8266
         viteConf.build ??= {};
         viteConf.build.cssMinify = "esbuild";
+        viteConf.build.cssCodeSplit = false;
         viteConf.build.modulePreload = { polyfill: true };
         viteConf.build.assetsCrossOrigin = "anonymous";
 
@@ -96,26 +101,8 @@ export default configure((/* ctx */) => {
           ...viteConf.build.rollupOptions,
           output: {
             ...viteConf.build.rollupOptions?.output,
-            manualChunks(id) {
-              // 1. Framework dependencies
-              if (
-                id.includes("node_modules/quasar") ||
-                id.includes("node_modules/@quasar")
-              ) {
-                return "vendor-quasar";
-              }
-              if (
-                id.includes("node_modules/vue") ||
-                id.includes("node_modules/pinia") ||
-                id.includes("node_modules/vue-router")
-              ) {
-                return "vendor-vue";
-              }
-              // 2. Collapse all internal app source code (stores, utilities, pages) into the main bundle
-              if (id.includes("/src/")) {
-                return "index";
-              }
-            },
+            manualChunks: undefined,
+            inlineDynamicImports: true,
           },
         };
       },

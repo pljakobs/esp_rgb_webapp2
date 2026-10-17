@@ -8,7 +8,7 @@ then
 	gzip -9 *.map
 fi
 cd ../icons
-gzip -9 *.svg
+gzip -9f *.svg
 if [ -d lights ]
 then
 	cd lights
