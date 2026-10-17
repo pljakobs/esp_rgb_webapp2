@@ -22,16 +22,19 @@ export const useRuntimeHistoryStore = defineStore("runtimeHistory", {
       const infoData = infoDataStore();
       const controllers = useControllersStore();
       const applyRuntimeUpdate = (params) => {
-        if (
-          !params ||
-          typeof params !== "object" ||
-          controllers.isControllerLoading
-        ) return;
+        if (!params || typeof params !== "object") return;
 
-        const controller = controllers.currentController;
+        const socketUrl = ws.url?.value ?? "";
+        const socketHost = socketUrl
+          .replace(/^wss?:\/\//, "")
+          .replace(/\/.*$/, "");
+        const controller =
+          controllers.data.find(
+            (entry) => String(entry.ip_address) === socketHost,
+          ) || controllers.currentController;
         const controllerKey = controller
           ? `${controller.id ?? ""}|${controller.ip_address ?? controller.hostname ?? ""}`
-          : "";
+          : socketHost;
 
         const mergedRuntime = {
           ...this.runtime,
@@ -78,14 +81,6 @@ export const useRuntimeHistoryStore = defineStore("runtimeHistory", {
       };
 
       ws.onNotification("runtime_info", applyRuntimeUpdate);
-      watch(
-        () => controllers.isControllerLoading,
-        (isLoading, wasLoading) => {
-          if (wasLoading && !isLoading && infoData.data?.runtime) {
-            applyRuntimeUpdate(infoData.data.runtime);
-          }
-        },
-      );
       watch(
         () => ws.status.value,
         async (status) => {
