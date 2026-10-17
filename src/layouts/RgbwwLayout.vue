@@ -299,7 +299,7 @@
         </q-item>
       </q-drawer>
       <q-page-container class="page-container">
-        <div id="q-app" class="full-width full-height no-gutter">
+        <div id="q-app" class="full-width full-height no-gutter relative-position">
           <div
             id="parent"
             class="fit row wrap justify-center items-start content-start no-gutter with-bottom-padding"
@@ -315,6 +315,9 @@
               </template>
             </div>
           </div>
+          <q-inner-loading :showing="controllers.isControllerLoading">
+            <q-spinner size="48px" color="primary" />
+          </q-inner-loading>
         </div>
       </q-page-container>
       <q-footer class="bg-primary text-white">

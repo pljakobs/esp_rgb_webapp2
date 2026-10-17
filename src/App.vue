@@ -27,13 +27,18 @@ export default defineComponent({
       let lastIp = controllers.currentController?.ip_address;
       watch(
         () => controllers.currentController?.ip_address,
-        (newIp, oldIp) => {
+        async (newIp, oldIp) => {
           if (newIp && newIp !== oldIp) {
             console.log(
               "switching to controller",
               controllers.currentController.hostname,
             );
-            initializeStores();
+            controllers.isControllerLoading = true;
+            try {
+              await initializeStores();
+            } finally {
+              controllers.isControllerLoading = false;
+            }
           }
           lastIp = newIp;
         },

@@ -40,7 +40,9 @@
                   xmlns="http://www.w3.org/2000/svg"
                 >
                   <polyline
-                    :points="sparklinePoints"
+                    v-for="(points, index) in sparklinePaths"
+                    :key="`sparkline-path-${index}`"
+                    :points="points"
                     fill="none"
                     stroke="currentColor"
                     stroke-width="1.5"
@@ -48,6 +50,17 @@
                     stroke-linecap="round"
                     class="sparkline-line"
                   />
+                  <line
+                    v-for="(boundary, index) in sparklineControllerBoundaries"
+                    :key="`controller-boundary-${index}`"
+                    :x1="boundary.x"
+                    y1="4"
+                    :x2="boundary.x"
+                    y2="116"
+                    class="sparkline-controller-boundary"
+                  >
+                    <title>Controller changed</title>
+                  </line>
                   <circle
                     v-if="sparklineDot"
                     :cx="sparklineDot.x"
@@ -95,6 +108,7 @@
 <script>
 import { onUnmounted, ref, watch, computed } from "vue";
 import { infoDataStore } from "src/stores/infoDataStore";
+import { useControllersStore } from "src/stores/controllersStore";
 import MyCard from "src/components/myCard.vue";
 
 // 30 min @ 5 s poll interval = 360 samples max
@@ -113,6 +127,7 @@ export default {
   components: { MyCard },
   setup(props) {
     const infoData = infoDataStore();
+    const controllers = useControllersStore();
     const cardCollapsed = ref(props.collapsed);
     let refreshInterval = null;
 
@@ -128,7 +143,12 @@ export default {
 
     function recordHeap(val) {
       if (typeof val !== "number" || isNaN(val)) return;
-      heapHistory.value.push({ ts: Date.now(), val });
+      if (controllers.isControllerLoading) return;
+      const controller = controllers.currentController;
+      const controllerKey = controller
+        ? `${controller.id ?? ""}|${controller.ip_address ?? controller.hostname ?? ""}`
+        : "";
+      heapHistory.value.push({ ts: Date.now(), val, controllerKey });
       if (heapHistory.value.length > MAX_HEAP_SAMPLES) {
         heapHistory.value.shift();
       }
@@ -146,21 +166,56 @@ export default {
         : 1,
     );
 
-    const sparklinePoints = computed(() => {
+    const sparklinePaths = computed(() => {
       const h = heapHistory.value;
-      if (h.length < 2) return "";
+      if (h.length < 2) return [];
       const n = h.length;
       const minV = heapMin.value;
       const range = heapMax.value - minV || 1;
       const usableW = SPARKLINE_W - 2 * SPARKLINE_PAD;
       const usableH = SPARKLINE_H - 2 * SPARKLINE_PAD;
-      return h
-        .map((e, i) => {
+      const points = h.map((e, i) => {
           const x = SPARKLINE_PAD + (i / (n - 1)) * usableW;
           const y = SPARKLINE_PAD + (1 - (e.val - minV) / range) * usableH;
           return `${x.toFixed(1)},${y.toFixed(1)}`;
-        })
-        .join(" ");
+      });
+      const paths = [];
+      let path = [points[0]];
+      for (let index = 1; index < h.length; index++) {
+        const previousKey = h[index - 1].controllerKey;
+        const currentKey = h[index].controllerKey;
+        if (previousKey && currentKey && previousKey !== currentKey) {
+          paths.push(path.join(" "));
+          path = [];
+        }
+        path.push(points[index]);
+      }
+      paths.push(path.join(" "));
+      return paths;
+    });
+
+    const sparklineControllerBoundaries = computed(() => {
+      const h = heapHistory.value;
+      if (h.length < 2) return [];
+      const usableW = SPARKLINE_W - 2 * SPARKLINE_PAD;
+      return h.slice(1).flatMap((entry, index) => {
+        const previous = h[index];
+        if (
+          !previous.controllerKey ||
+          !entry.controllerKey ||
+          previous.controllerKey === entry.controllerKey
+        ) {
+          return [];
+        }
+        return [
+          {
+            x: +(
+              SPARKLINE_PAD +
+              ((index + 0.5) / (h.length - 1)) * usableW
+            ).toFixed(1),
+          },
+        ];
+      });
     });
 
     const sparklineDot = computed(() => {
@@ -213,6 +268,15 @@ export default {
       () => infoData.data?.runtime?.heap_free,
       (val) => {
         if (val !== undefined && val !== null) recordHeap(Number(val));
+      },
+    );
+
+    watch(
+      () => controllers.isControllerLoading,
+      (isLoading, wasLoading) => {
+        if (wasLoading && !isLoading) {
+          recordHeap(Number(infoData.data?.runtime?.heap_free));
+        }
       },
     );
 
@@ -275,7 +339,8 @@ export default {
       heapHistory,
       heapMin,
       heapMax,
-      sparklinePoints,
+      sparklinePaths,
+      sparklineControllerBoundaries,
       sparklineDot,
       formatHeap,
     };
@@ -367,6 +432,13 @@ export default {
 
 .sparkline-line {
   opacity: 0.8;
+}
+
+.sparkline-controller-boundary {
+  stroke: #ff9800;
+  stroke-dasharray: 4 2;
+  stroke-width: 2.5;
+  vector-effect: non-scaling-stroke;
 }
 
 .sparkline-dot {
