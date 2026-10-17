@@ -9,6 +9,7 @@ export const useControllersStore = defineStore("controllersStore", {
     status: storeStatus.LOADING,
     currentController: localhost,
     homeController: localhost,
+    isControllerLoading: false,
     http_response_status: null,
     data: [],
   }),

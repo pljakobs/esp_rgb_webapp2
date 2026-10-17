@@ -26,12 +26,17 @@ export default defineComponent({
 
       watch(
         () => controllers.currentController,
-        () => {
+        async () => {
+          controllers.isControllerLoading = true;
+          try {
+            await initializeStores();
+          } finally {
+            controllers.isControllerLoading = false;
+          }
           console.log(
             "switching to controller",
             controllers.currentController.hostname,
           );
-          initializeStores();
         },
       );
 
