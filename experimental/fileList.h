@@ -1,20 +1,8 @@
 #define FILE_LIST(XX) \
 	XX(VERSION, "VERSION") \
-	XX(RgbwwLayout_CZDLxrzK_css_gz, "assets/RgbwwLayout-CZDLxrzK.css.gz") \
-	XX(RgbwwLayout_vjFe6UtF_js_gz, "assets/RgbwwLayout-vjFe6UtF.js.gz") \
-	XX(autosaveFeedback_D4NXv59e_js_gz, "assets/autosaveFeedback-D4NXv59e.js.gz") \
-	XX(i18n_BwL_TyQs_js_gz, "assets/i18n-BwL_TyQs.js.gz") \
-	XX(index_BTyeB92z_js_gz, "assets/index-BTyeB92z.js.gz") \
-	XX(index_r_Orr2cS_css_gz, "assets/index-r-Orr2cS.css.gz") \
-	XX(registerSvgIcon_CgTgc4cS_js_gz, "assets/registerSvgIcon-CgTgc4cS.js.gz") \
-	XX(vue_runtime_esm_bundler_BoBwyICd_js_gz, "assets/vue.runtime.esm-bundler-BoBwyICd.js.gz") \
+	XX(index_Dd50RJ2d_js_gz, "assets/index-Dd50RJ2d.js.gz") \
+	XX(style_C2eZ_WGp_css_gz, "assets/style-C2eZ_WGp.css.gz") \
 	XX(pinconfig_json, "config/pinconfig.json") \
 	XX(favicon_ico, "icons/favicon.ico") \
 	XX(iconsSprite_svg_gz, "icons/iconsSprite.svg.gz") \
-	XX(index_html_gz, "index.html.gz") \
-	XX(de_json_gz, "locales/de.json.gz") \
-	XX(el_json_gz, "locales/el.json.gz") \
-	XX(es_json_gz, "locales/es.json.gz") \
-	XX(fr_json_gz, "locales/fr.json.gz") \
-	XX(it_json_gz, "locales/it.json.gz") \
-	XX(pt_json_gz, "locales/pt.json.gz")
+	XX(index_html_gz, "index.html.gz")
