@@ -1,10 +1,13 @@
 #define FILE_LIST(XX) \
 	XX(VERSION, "VERSION") \
-	XX(index_BZ94chtY_js_gz, "assets/index-BZ94chtY.js.gz") \
-	XX(index_C4VlLtFD_css_gz, "assets/index-C4VlLtFD.css.gz") \
-	XX(index_DyltSo81_js_gz, "assets/index-DyltSo81.js.gz") \
-	XX(vendor_quasar_DbF9uUGz_css_gz, "assets/vendor-quasar-DbF9uUGz.css.gz") \
-	XX(vendor_quasar_ZN0YpuHc_js_gz, "assets/vendor-quasar-ZN0YpuHc.js.gz") \
+	XX(RgbwwLayout_Cqn2t1XV_css_gz, "assets/RgbwwLayout-Cqn2t1XV.css.gz") \
+	XX(RgbwwLayout_Dxm8urrs_js_gz, "assets/RgbwwLayout-Dxm8urrs.js.gz") \
+	XX(autosaveFeedback_BQGuQ3bk_js_gz, "assets/autosaveFeedback-BQGuQ3bk.js.gz") \
+	XX(i18n_BBHRxrLh_js_gz, "assets/i18n-BBHRxrLh.js.gz") \
+	XX(index_CCOCsfvi_js_gz, "assets/index-CCOCsfvi.js.gz") \
+	XX(index_Dssuiayh_css_gz, "assets/index-Dssuiayh.css.gz") \
+	XX(registerSvgIcon_DyWTz4jx_js_gz, "assets/registerSvgIcon-DyWTz4jx.js.gz") \
+	XX(vue_runtime_esm_bundler_BoBwyICd_js_gz, "assets/vue.runtime.esm-bundler-BoBwyICd.js.gz") \
 	XX(pinconfig_json, "config/pinconfig.json") \
 	XX(favicon_ico, "icons/favicon.ico") \
 	XX(iconsSprite_svg_gz, "icons/iconsSprite.svg.gz") \
