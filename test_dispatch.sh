@@ -24,7 +24,7 @@ curl -v -X POST \
   -H "Authorization: Bearer $TOKEN" \
   -H "X-GitHub-Api-Version: 2022-11-28" \
   https://api.github.com/repos/pljakobs/esp_rgbww_firmware/dispatches \
-  -d '{"event_type":"frontend-build-completed","client_payload":{"branch":"develop","webapp_branch":"devel","run_id":"test123"}}'
+  -d '{"event_type":"frontend-build-completed","client_payload":{"branch":"develop","webapp_branch":"develop","run_id":"test123"}}'
 
 echo ""
 echo "Exit code: $?"

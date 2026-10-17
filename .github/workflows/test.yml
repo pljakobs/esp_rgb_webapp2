@@ -4,13 +4,13 @@ on:
   push:
     branches:
       - experimental
-      - devel
+      - develop
       - testing
       - stable
   pull_request:
     branches:
       - experimental
-      - devel
+      - develop
       - testing
       - stable
 

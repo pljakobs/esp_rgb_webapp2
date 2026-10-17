@@ -1,6 +1,7 @@
 import { defineStore } from "pinia";
 import { watch } from "vue";
 import { infoDataStore } from "src/stores/infoDataStore";
+import { useControllersStore } from "src/stores/controllersStore";
 import useWebSocket, { wsStatus } from "src/services/websocket.js";
 
 const MAX_HEAP_SAMPLES = 360;
@@ -19,8 +20,10 @@ export const useRuntimeHistoryStore = defineStore("runtimeHistory", {
 
       const ws = useWebSocket();
       const infoData = infoDataStore();
+      const controllers = useControllersStore();
       const applyRuntimeUpdate = (params) => {
         if (!params || typeof params !== "object") return;
+        if (controllers.isControllerLoading) return;
 
         const mergedRuntime = {
           ...this.runtime,
@@ -42,9 +45,13 @@ export const useRuntimeHistoryStore = defineStore("runtimeHistory", {
 
         this.runtime = mergedRuntime;
         if (Number.isFinite(mergedRuntime.heap_free)) {
+          const controller = controllers.currentController;
           this.heapHistory.push({
             ts: Date.now(),
             val: mergedRuntime.heap_free,
+            controllerKey: controller
+              ? `${controller.id ?? ""}|${controller.ip_address ?? controller.hostname ?? ""}`
+              : "",
           });
           if (this.heapHistory.length > MAX_HEAP_SAMPLES) {
             this.heapHistory.shift();

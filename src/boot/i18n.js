@@ -1,11 +1,10 @@
 import { createI18n } from "vue-i18n";
-import en from "src/i18n/en.json";
 
-const localeModules = import.meta.glob("../../public/locales/*.json", {
+const localeModules = import.meta.glob("../i18n/*.json", {
   eager: true,
   import: "default",
 });
-const messages = { en };
+const messages = {};
 for (const [localePath, translations] of Object.entries(localeModules)) {
   const language = localePath.split("/").pop().replace(/\.json$/, "");
   messages[language] = translations;

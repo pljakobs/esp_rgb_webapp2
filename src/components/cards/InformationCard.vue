@@ -9,7 +9,7 @@
     </q-card-section>
     <q-card-section v-else class="info-section">
       <div class="info-rows">
-        <template v-for="(value, key) in infoData.data" :key="key">
+        <template v-for="(value, key) in infoSections" :key="key">
           <!-- Nested object → sub-section (spans both columns) -->
           <template v-if="isObject(value) && !isFirmwareCommentKey(key)">
             <div class="section-header" style="grid-column: 1 / -1">
@@ -80,6 +80,17 @@
                       class="sparkline-line"
                     />
                   </template>
+                  <line
+                    v-for="(boundary, index) in sparklineControllerBoundaries"
+                    :key="`controller-boundary-${index}`"
+                    :x1="boundary.x"
+                    y1="4"
+                    :x2="boundary.x"
+                    y2="116"
+                    class="sparkline-controller-boundary"
+                  >
+                    <title>Controller changed</title>
+                  </line>
                   <circle
                     v-if="sparklineDot"
                     :cx="sparklineDot.x"
@@ -159,6 +170,10 @@ export default {
         ...runtimeHistory.runtime,
       };
     });
+    const infoSections = computed(() => ({
+      ...infoData.data,
+      runtime: runtimeData.value,
+    }));
 
     const heapHistory = computed(() => runtimeHistory.heapHistory);
     const heapMax = computed(() =>
@@ -224,11 +239,16 @@ export default {
           x: SPARKLINE_PAD + usableW * (1 - ageMinutes / 30),
           y: SPARKLINE_PAD + (1 - entry.val / heapMax.value) * usableH,
           color: heapColor(entry.val),
+          controllerKey: entry.controllerKey,
         };
       });
       return points.slice(1).flatMap((point, index) => {
         const previous = points[index];
         if (!point || !previous) return [];
+        if (
+          point.controllerKey && previous.controllerKey &&
+          point.controllerKey !== previous.controllerKey
+        ) return [];
         const color = point.color || previous.color;
         return [
           {
@@ -238,6 +258,30 @@ export default {
             y2: point.y.toFixed(1),
             color,
             area: `${previous.x.toFixed(1)},${previous.y.toFixed(1)} ${point.x.toFixed(1)},${point.y.toFixed(1)} ${point.x.toFixed(1)},${baseline} ${previous.x.toFixed(1)},${baseline}`,
+          },
+        ];
+      });
+    });
+
+    const sparklineControllerBoundaries = computed(() => {
+      const h = heapHistory.value;
+      if (h.length < 2) return [];
+      const usableW = SPARKLINE_W - 2 * SPARKLINE_PAD;
+      return h.slice(1).flatMap((entry, index) => {
+        const previous = h[index];
+        if (
+          !previous.controllerKey ||
+          !entry.controllerKey ||
+          previous.controllerKey === entry.controllerKey
+        ) {
+          return [];
+        }
+        return [
+          {
+            x: +(
+              SPARKLINE_PAD +
+              (1 - Math.max(0, (Date.now() - (previous.ts + entry.ts) / 2) / 60000) / 30) * usableW
+            ).toFixed(1),
           },
         ];
       });
@@ -360,6 +404,7 @@ export default {
 
     return {
       infoData,
+      infoSections,
       cardCollapsed,
       runtimeData,
       formatKey,
@@ -371,6 +416,7 @@ export default {
       heapTimeGrid,
       minfreeHeapLine,
       sparklineSegments,
+      sparklineControllerBoundaries,
       sparklineDot,
       formatHeap,
       formatRuntimeValue,
@@ -475,6 +521,13 @@ export default {
 
 .sparkline-line {
   opacity: 0.8;
+}
+
+.sparkline-controller-boundary {
+  stroke: #ff9800;
+  stroke-dasharray: 4 2;
+  stroke-width: 2.5;
+  vector-effect: non-scaling-stroke;
 }
 
 .sparkline-dot {

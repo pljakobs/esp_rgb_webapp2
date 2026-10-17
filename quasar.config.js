@@ -39,10 +39,6 @@ export default configure((/* ctx */) => {
     name: "generate-icon-sprite-build",
     apply: "build",
     closeBundle() {
-      fs.rmSync(path.resolve(process.cwd(), "dist/spa/locales"), {
-        recursive: true,
-        force: true,
-      });
       runIconGeneration();
       runGzipSpa();
     },
