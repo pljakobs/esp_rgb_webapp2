@@ -80,6 +80,17 @@
                       class="sparkline-line"
                     />
                   </template>
+                  <line
+                    v-for="(boundary, index) in sparklineControllerBoundaries"
+                    :key="`controller-boundary-${index}`"
+                    :x1="boundary.x"
+                    y1="4"
+                    :x2="boundary.x"
+                    y2="116"
+                    class="sparkline-controller-boundary"
+                  >
+                    <title>Controller changed</title>
+                  </line>
                   <circle
                     v-if="sparklineDot"
                     :cx="sparklineDot.x"
@@ -224,11 +235,19 @@ export default {
           x: SPARKLINE_PAD + usableW * (1 - ageMinutes / 30),
           y: SPARKLINE_PAD + (1 - entry.val / heapMax.value) * usableH,
           color: heapColor(entry.val),
+          controllerKey: entry.controllerKey || "",
         };
       });
       return points.slice(1).flatMap((point, index) => {
         const previous = points[index];
         if (!point || !previous) return [];
+        if (
+          point.controllerKey &&
+          previous.controllerKey &&
+          point.controllerKey !== previous.controllerKey
+        ) {
+          return [];
+        }
         const color = point.color || previous.color;
         return [
           {
@@ -240,6 +259,29 @@ export default {
             area: `${previous.x.toFixed(1)},${previous.y.toFixed(1)} ${point.x.toFixed(1)},${point.y.toFixed(1)} ${point.x.toFixed(1)},${baseline} ${previous.x.toFixed(1)},${baseline}`,
           },
         ];
+      });
+    });
+
+    const sparklineControllerBoundaries = computed(() => {
+      const history = heapHistory.value.filter(
+        (entry) => Number.isFinite(entry?.val) && Number.isFinite(entry?.ts),
+      );
+      const usableW = SPARKLINE_W - 2 * SPARKLINE_PAD;
+      const xFor = (entry) => {
+        const ageMinutes = Math.max(0, (Date.now() - entry.ts) / 60000);
+        return SPARKLINE_PAD + usableW * (1 - ageMinutes / 30);
+      };
+
+      return history.slice(1).flatMap((entry, index) => {
+        const previous = history[index];
+        if (
+          !previous.controllerKey ||
+          !entry.controllerKey ||
+          previous.controllerKey === entry.controllerKey
+        ) {
+          return [];
+        }
+        return [{ x: +((xFor(previous) + xFor(entry)) / 2).toFixed(1) }];
       });
     });
 
@@ -371,6 +413,7 @@ export default {
       heapTimeGrid,
       minfreeHeapLine,
       sparklineSegments,
+      sparklineControllerBoundaries,
       sparklineDot,
       formatHeap,
       formatRuntimeValue,
@@ -491,6 +534,13 @@ export default {
   stroke: currentColor;
   stroke-dasharray: 5 4;
   opacity: 0.65;
+}
+
+.sparkline-controller-boundary {
+  stroke: #ff9800;
+  stroke-dasharray: 4 2;
+  stroke-width: 2.5;
+  vector-effect: non-scaling-stroke;
 }
 
 .heap-sparkline-axis {

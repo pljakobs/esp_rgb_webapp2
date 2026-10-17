@@ -38,7 +38,7 @@ export default defineComponent({
 
       watch(
         () => controllers.currentController?.ip_address,
-        (newIp, oldIp) => {
+        async (newIp, oldIp) => {
           // Ignore the first resolution from null/undefined to avoid a second
           // startup initialization burst while the first one is still running.
           if (!oldIp || !newIp) {
@@ -49,7 +49,12 @@ export default defineComponent({
               "switching to controller",
               controllers.currentController.hostname,
             );
-            runInitializeStores();
+            controllers.isControllerLoading = true;
+            try {
+              await runInitializeStores();
+            } finally {
+              controllers.isControllerLoading = false;
+            }
           }
         },
       );
