@@ -6,7 +6,7 @@ on:
     types:
       - completed
     branches:
-      - devel
+      - develop
 
 jobs:
   dispatch:
@@ -19,7 +19,7 @@ jobs:
           # Map webapp branch names to firmware branch names if needed
           BRANCH="${{ github.event.workflow_run.head_branch }}"
           case "$BRANCH" in
-            "devel")
+            "develop")
               FIRMWARE_BRANCH="develop"
               ;;
             *)

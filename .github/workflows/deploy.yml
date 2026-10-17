@@ -4,19 +4,19 @@ on:
   workflow_run:
     workflows: ["Frontend Tests"]
     types: [completed]
-    branches: [experimental, experimental-externalUI, devel, testing, stable]
+    branches: [experimental, experimental-externalUI, develop, testing, stable]
 
   workflow_dispatch:
     inputs:
       branch:
         description: 'Branch to build'
         required: true
-        default: 'devel'
+        default: 'develop'
         type: choice
         options:
           - stable
           - testing
-          - devel
+          - develop
           - experimental
           - experimental-externalUI
 
@@ -203,7 +203,7 @@ jobs:
           # Map webapp branch names to firmware branch names if needed
           WEBAPP_BRANCH="${{ steps.get_branch.outputs.branch }}"
           case "$WEBAPP_BRANCH" in
-            "devel")
+            "develop")
               FIRMWARE_BRANCH="develop"
               ;;
             *)
