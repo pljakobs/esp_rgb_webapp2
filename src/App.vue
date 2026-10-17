@@ -19,21 +19,27 @@ export default defineComponent({
     try {
       const controllers = useControllersStore();
       const $q = useQuasar(); // Get Quasar's global instance
-      let initInFlight = false;
+      let initInFlight = null;
+      let initPending = false;
+      let controllerLoadRequest = 0;
 
       console.log("controllers:", controllers);
       console.log("webhost override target:", localhost);
 
-      const runInitializeStores = async () => {
+      const runInitializeStores = () => {
         if (initInFlight) {
-          return;
+          initPending = true;
+          return initInFlight;
         }
-        initInFlight = true;
-        try {
-          await initializeStores();
-        } finally {
-          initInFlight = false;
-        }
+        initInFlight = (async () => {
+          do {
+            initPending = false;
+            await initializeStores();
+          } while (initPending);
+        })().finally(() => {
+          initInFlight = null;
+        });
+        return initInFlight;
       };
 
       watch(
@@ -45,6 +51,7 @@ export default defineComponent({
             return;
           }
           if (newIp && newIp !== oldIp) {
+            const loadRequest = ++controllerLoadRequest;
             console.log(
               "switching to controller",
               controllers.currentController.hostname,
@@ -53,7 +60,9 @@ export default defineComponent({
             try {
               await runInitializeStores();
             } finally {
-              controllers.isControllerLoading = false;
+              if (loadRequest === controllerLoadRequest) {
+                controllers.isControllerLoading = false;
+              }
             }
           }
         },
