@@ -18,6 +18,7 @@ export default defineComponent({
     try {
       const controllers = useControllersStore();
       const $q = useQuasar(); // Get Quasar's global instance
+      let controllerLoadRequest = 0;
 
       console.log("controllers:", controllers);
 
@@ -29,6 +30,7 @@ export default defineComponent({
         () => controllers.currentController?.ip_address,
         async (newIp, oldIp) => {
           if (newIp && newIp !== oldIp) {
+            const loadRequest = ++controllerLoadRequest;
             console.log(
               "switching to controller",
               controllers.currentController.hostname,
@@ -37,7 +39,9 @@ export default defineComponent({
             try {
               await initializeStores();
             } finally {
-              controllers.isControllerLoading = false;
+              if (loadRequest === controllerLoadRequest) {
+                controllers.isControllerLoading = false;
+              }
             }
           }
           lastIp = newIp;
