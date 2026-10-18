@@ -78,7 +78,7 @@ export const useRuntimeHistoryStore = defineStore("runtimeHistory", {
         async (status) => {
           if (status === wsStatus.CONNECTED) {
             try {
-              const response = await ws.request("runtime_info_subscribe", {
+              const response = await ws.request("subscribe", {
                 channel: "runtime_info",
               });
               console.log("Subscribed to runtime_info successfully:", response);
