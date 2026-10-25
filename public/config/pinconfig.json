@@ -1,5 +1,5 @@
 {
-  "version": 23,
+  "version": 24,
   "available_pins": [
     {
       "soc": "esp8266",
@@ -35,7 +35,7 @@
       "name": "mrpj C3-12F",
       "soc": "esp32c3",
       "model": "rgbww",
-      "clear_pin": 22,
+      "clear_pin": 2,
       "channels": [
         { "name": "red", "pin": "5" },
         { "name": "green", "pin": "4" },
@@ -94,6 +94,29 @@
         { "name": "LED3", "pin": "25" },
         { "name": "LED4", "pin": "23" },
         { "name": "LED5", "pin": "22" },
+        { "name": "LED6", "pin": "21" },
+        { "name": "LED7", "pin": "19" },
+        { "name": "LED8", "pin": "18" },
+        { "name": "LED9", "pin": "17" },
+        { "name": "LED10", "pin": "14" },
+        { "name": "LED11", "pin": "13" },
+        { "name": "LED12", "pin": "12" },
+        { "name": "LED13", "pin": "15" },
+        { "name": "LED14", "pin": "14" },
+        { "name": "LED15", "pin": "2" }
+      ]
+    },
+    {
+      "name": "QuinLED An-Penta-Deca transitional",
+      "soc": "esp32",
+      "model": "rgbww",
+      "clear_pin": "",
+      "channels": [
+        { "name": "red", "pin": "27" },
+        { "name": "green", "pin": "26" },
+        { "name": "blue", "pin": "25" },
+        { "name": "warmwhite", "pin": "23" },
+        { "name": "coldwhite", "pin": "22" },
         { "name": "LED6", "pin": "21" },
         { "name": "LED7", "pin": "19" },
         { "name": "LED8", "pin": "18" },
