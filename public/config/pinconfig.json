@@ -105,6 +105,19 @@
         { "name": "LED14", "pin": "14" },
         { "name": "LED15", "pin": "2" }
       ]
+    },
+    {
+      "name": "QuinLED RGBWW",
+      "soc": "esp32",
+      "model": "rgbww",
+      "clear_pin": "",
+      "channels": [
+        { "name": "red", "pin": "25" },
+        { "name": "green", "pin": "26" },
+        { "name": "blue", "pin": "27" },
+        { "name": "warmwhite", "pin": "23" },
+        { "name": "coldwhite", "pin": "22" }
+      ]
     }
   ]
 }
