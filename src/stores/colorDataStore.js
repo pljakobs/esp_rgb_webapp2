@@ -107,8 +107,12 @@ export const useColorDataStore = defineStore("colorDataStore", {
             );
           } else if (field === "raw") {
             console.log("processing raw update");
+            console.log("raw update value: ", JSON.stringify(value));
+            console.log("current raw data: ", JSON.stringify(this.data));
             const [[key, val]] = Object.entries(value);
             console.log("key: ", key, " value: ", val);
+            console.log("initializing raw data if necessary");
+            this.data.raw = this.data.raw || {};
             this.data.raw[key] = val;
           } else {
             console.error("Invalid field in updateData: ", field);
