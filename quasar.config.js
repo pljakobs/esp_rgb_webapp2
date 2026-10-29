@@ -93,12 +93,11 @@ export default configure((/* ctx */) => {
         viteConf.build.assetsCrossOrigin = "anonymous";
 
         // Rollup chunking configuration
-        viteConf.build.rollupOptions = {
-          ...viteConf.build.rollupOptions,
+        viteConf.build.rolldownOptions = {
+          ...viteConf.build.rolldownOptions,
           output: {
-            ...viteConf.build.rollupOptions?.output,
-            manualChunks: undefined,
-            inlineDynamicImports: true,
+            ...viteConf.build.rolldownOptions?.output,
+            codeSplitting: false,
           },
         };
       },
