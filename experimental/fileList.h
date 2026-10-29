@@ -1,6 +1,6 @@
 #define FILE_LIST(XX) \
 	XX(VERSION, "VERSION") \
-	XX(index_BhQKDRmN_js_gz, "assets/index-BhQKDRmN.js.gz") \
+	XX(index_JIFQn6gr_js_gz, "assets/index-JIFQn6gr.js.gz") \
 	XX(style_C2eZ_WGp_css_gz, "assets/style-C2eZ_WGp.css.gz") \
 	XX(pinconfig_json, "config/pinconfig.json") \
 	XX(favicon_ico, "icons/favicon.ico") \
