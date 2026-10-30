@@ -112,8 +112,8 @@ export default {
             const rgb = hsvToRgb(newValue.hsv);
             internalColor.value = rgbToHex(rgb);
           }
-          if (newValue?.ct !== undefined) {
-            ct.value = newValue.ct;
+          if (newValue?.hsv?.ct !== undefined) {
+            ct.value = newValue.hsv.ct;
           }
         } catch (error) {
           console.log("Error processing updates from props:", error);
