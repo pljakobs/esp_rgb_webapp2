@@ -39,6 +39,8 @@ jobs:
     outputs:
       version: ${{ steps.create_version.outputs.version }}
       branch: ${{ steps.resolve_release.outputs.release_ref }}
+      min_firmware: ${{ steps.resolve_release.outputs.min_firmware }}
+      max_firmware: ${{ steps.resolve_release.outputs.max_firmware }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -52,7 +54,7 @@ jobs:
           node-version: "24"
 
       - name: Install dependencies
-        run: npm ci --legacy-peer-deps
+        run: npm install --legacy-peer-deps
 
       # Generate version information
       - name: Get branch name
@@ -83,9 +85,16 @@ jobs:
             *) echo "Unsupported webapp release ref: $CI_SOURCE_BRANCH" >&2; exit 1 ;;
           esac
           RELEASE_REF="$RELEASE_LINE/$STAGE"
+          MIN_FIRMWARE="V5.0"
+          MAX_FIRMWARE=""
+          if [[ "$RELEASE_LINE" == "5.1" ]]; then
+            MAX_FIRMWARE="V5.2"
+          fi
           echo "release_line=$RELEASE_LINE" >> "$GITHUB_OUTPUT"
           echo "stage=$STAGE" >> "$GITHUB_OUTPUT"
           echo "release_ref=$RELEASE_REF" >> "$GITHUB_OUTPUT"
+          echo "min_firmware=$MIN_FIRMWARE" >> "$GITHUB_OUTPUT"
+          echo "max_firmware=$MAX_FIRMWARE" >> "$GITHUB_OUTPUT"
 
       - name: Create version file
         id: create_version
@@ -379,6 +388,8 @@ jobs:
           BRANCH="${{ needs.build.outputs.branch }}"
           VERSION="${{ needs.build.outputs.version }}"
           FILES_JSON_B64="${{ steps.compute_md5.outputs.files_json_b64 }}"
+          MIN_FIRMWARE="${{ needs.build.outputs.min_firmware }}"
+          MAX_FIRMWARE="${{ needs.build.outputs.max_firmware }}"
           DEPLOY_SERVER="${{ env.deploy_server }}"
           PUBLISHER_DIR="publisher-webapp-${{ github.run_id }}-${{ github.run_attempt }}"
           MANAGE_SCRIPT="$PUBLISHER_DIR/manage_version-${{ github.run_id }}-${{ github.run_attempt }}.py"
@@ -394,12 +405,6 @@ jobs:
               ;;
           esac
 
-          if [[ "$VERSION" =~ ^[Vv]?([0-9]+)\.([0-9]+) ]]; then
-            MIN_FIRMWARE="${BASH_REMATCH[1]}.${BASH_REMATCH[2]}.0"
-          else
-            MIN_FIRMWARE="0.0.0"
-          fi
-
           cd "$DEPLOY_PATH"
           export VERSION_ASSET_ROOT="$DEPLOY_PATH"
           test -f "$MANAGE_SCRIPT" && test -x "$MANAGE_PYTHON"
@@ -409,10 +414,11 @@ jobs:
           mkdir -p "download/webui/${BRANCH}/latest"
 
           echo "Publishing webapp entry to SQLite for ${BRANCH} ${VERSION}..."
-          "$MANAGE_PYTHON" "$MANAGE_SCRIPT" version.json add-webapp "$BRANCH" "$VERSION" \
-            --type "$WEBAPP_TYPE" \
-            --min-firmware "$MIN_FIRMWARE" \
-            --files-json-b64 "$FILES_JSON_B64"
+          PUBLISH_ARGS=(--type "$WEBAPP_TYPE" --min-firmware "$MIN_FIRMWARE" --files-json-b64 "$FILES_JSON_B64")
+          if [[ -n "$MAX_FIRMWARE" ]]; then
+            PUBLISH_ARGS+=(--max-firmware "$MAX_FIRMWARE")
+          fi
+          "$MANAGE_PYTHON" "$MANAGE_SCRIPT" version.json add-webapp "$BRANCH" "$VERSION" "${PUBLISH_ARGS[@]}"
 
           # Update latest pointer
           mkdir -p "download/webui/${BRANCH}/latest"
