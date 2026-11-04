@@ -54,11 +54,16 @@ raise SystemExit('Forbidden git operation in policy test')
 
     def execute(self, selected, values=None, environment=None, success=True):
         values = values or {}
-        source = EXPRESSION.sub(lambda match: str(values[match[1].strip()]), selected["run"])
+
+        def render(text):
+            return EXPRESSION.sub(lambda match: str(values[match[1].strip()]), str(text))
+
+        source = render(selected["run"])
+        configured = {key: render(value) for key, value in selected.get("env", {}).items()}
         output = Path(self.environment["GITHUB_OUTPUT"])
         output.write_text("")
         result = subprocess.run([shutil.which("bash"), "--noprofile", "--norc", "-e"], input=source,
-                                cwd=self.directory, env={**self.environment, **(environment or {})},
+                                cwd=self.directory, env={**self.environment, **configured, **(environment or {})},
                                 capture_output=True, text=True, timeout=10)
         if success:
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
@@ -93,7 +98,7 @@ raise SystemExit('Forbidden git operation in policy test')
 
     def test_actual_branch_step(self):
         document = workflow("deploy.yml")
-        for branch in ("develop", "testing", "stable", "experimental", "5.1/develop"):
+        for branch in ("develop", "testing", "stable", "experimental", "5.0/develop", "5.1/develop"):
             with self.subTest(branch=branch):
                 result = self.execute(step(document, "build", "Get branch name"), environment={"CI_TEST_BRANCH": branch})
                 self.assertEqual(result["branch"], branch)
@@ -101,15 +106,33 @@ raise SystemExit('Forbidden git operation in policy test')
     def test_actual_webapp_version_step(self):
         source = self.directory / "src"
         source.mkdir()
-        for branch in ("develop", "testing", "stable", "experimental"):
-            with self.subTest(branch=branch):
+        document = workflow("deploy.yml")
+        mappings = [
+            ("develop", "5.0", "develop", "5.0/develop"),
+            ("testing", "5.0", "testing", "5.0/testing"),
+            ("stable", "5.0", "prod", "5.0/prod"),
+            ("experimental", "5.1", "develop", "5.1/develop"),
+            ("5.0/prod", "5.0", "prod", "5.0/prod"),
+            ("5.1/testing", "5.1", "testing", "5.1/testing"),
+        ]
+        for source_branch, release_line, stage, release_ref in mappings:
+            with self.subTest(branch=source_branch):
                 target = source / "version.js"
                 target.write_text("__APP_VERSION__ __APP_BRANCH__ __BUILD_NUMBER__ __BUILD_DATE__")
-                result = self.execute(step(workflow("deploy.yml"), "build", "Create version file"), {
-                    "github.run_number": "42", "steps.get_branch.outputs.branch": branch,
+                resolved = self.execute(step(document, "build", "Resolve release line and stage"), {
+                    "steps.get_branch.outputs.branch": source_branch,
                 })
-                self.assertEqual(result["version"], f"V5.0-42-{branch}")
-                self.assertIn(f"V5.0-42-{branch} {branch} 42 ", target.read_text())
+                self.assertEqual((resolved["release_line"], resolved["stage"], resolved["release_ref"]),
+                                 (release_line, stage, release_ref))
+                result = self.execute(step(document, "build", "Create version file"), {
+                    "github.run_number": "42",
+                    "steps.resolve_release.outputs.release_line": release_line,
+                    "steps.resolve_release.outputs.stage": stage,
+                    "steps.resolve_release.outputs.release_ref": release_ref,
+                })
+                expected_version = f"V{release_line}-42-{stage}"
+                self.assertEqual(result["version"], expected_version)
+                self.assertIn(f"{expected_version} {release_ref} 42 ", target.read_text())
                 self.assertNotIn("__APP_", target.read_text())
 
     def test_publisher_requires_immutable_pin(self):
@@ -142,10 +165,13 @@ raise SystemExit('Forbidden git operation in policy test')
         tests = workflow("test.yml")
         deploy = workflow("deploy.yml")
         expected = ["experimental", "develop", "testing", "stable"]
-        self.assertEqual(tests["on"]["push"]["branches"], expected)
-        self.assertEqual(tests["on"]["pull_request"]["branches"], expected)
-        self.assertEqual(deploy["on"]["workflow_run"]["branches"], ["experimental", "experimental-externalUI", "develop", "testing", "stable"])
-        self.assertIn("experimental-externalUI", deploy["on"]["workflow_dispatch"]["inputs"]["branch"]["options"])
+        canonical = ["5.0/**", "5.1/**"]
+        self.assertEqual(tests["on"]["push"]["branches"], expected + canonical)
+        self.assertEqual(tests["on"]["pull_request"]["branches"], expected + canonical)
+        self.assertEqual(deploy["on"]["workflow_run"]["branches"], expected + canonical)
+        options = deploy["on"]["workflow_dispatch"]["inputs"]["branch"]["options"]
+        self.assertEqual(options[:6], ["5.0/develop", "5.0/testing", "5.0/prod", "5.1/develop", "5.1/testing", "5.1/prod"])
+        self.assertEqual(options[6:], ["stable", "testing", "develop", "experimental"])
 
     def test_deploy_outputs_require_a_successful_same_repository_push(self):
         document = workflow("deploy.yml")
