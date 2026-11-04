@@ -30,7 +30,7 @@ jobs:
     #runs-on: ubuntu-latest
     runs-on: ubuntu-latest
     # Only run if the triggering workflow succeeded
-    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push' && github.event.workflow_run.head_repository.full_name == github.repository) }}
     outputs:
       version: ${{ steps.create_version.outputs.version }}
       branch: ${{ steps.get_branch.outputs.branch }}
@@ -211,7 +211,7 @@ jobs:
     runs-on: ubuntu-latest
     #runs-on: self-hosted
     needs: build
-    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push' && github.event.workflow_run.head_repository.full_name == github.repository) }}
     env:
       deploy_user: github-deploy
       deploy_server: lightinator.de
