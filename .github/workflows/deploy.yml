@@ -43,7 +43,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
         with:
-          ref: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.branch || github.event.workflow_run.head_branch }}
+          ref: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.branch || github.event.workflow_run.head_sha }}
           token: ${{ secrets.GH_PAT }}
 
       - name: Set up Node.js
@@ -57,7 +57,16 @@ jobs:
       # Generate version information
       - name: Get branch name
         id: get_branch
-        run: echo "branch=$(git rev-parse --abbrev-ref HEAD)" >> $GITHUB_OUTPUT
+        env:
+          CI_EVENT_NAME: ${{ github.event_name }}
+          CI_INPUT_BRANCH: ${{ github.event.inputs.branch }}
+          CI_RUN_BRANCH: ${{ github.event.workflow_run.head_branch }}
+        run: |
+          if [[ "$CI_EVENT_NAME" == "workflow_dispatch" ]]; then
+            echo "branch=$CI_INPUT_BRANCH" >> "$GITHUB_OUTPUT"
+          else
+            echo "branch=$CI_RUN_BRANCH" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Resolve release line and stage
         id: resolve_release

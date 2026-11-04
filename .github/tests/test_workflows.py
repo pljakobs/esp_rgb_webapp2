@@ -99,8 +99,13 @@ raise SystemExit('Forbidden git operation in policy test')
     def test_actual_branch_step(self):
         document = workflow("deploy.yml")
         for branch in ("develop", "testing", "stable", "experimental", "5.0/develop", "5.1/develop"):
-            with self.subTest(branch=branch):
-                result = self.execute(step(document, "build", "Get branch name"), environment={"CI_TEST_BRANCH": branch})
+            for event_name in ("workflow_dispatch", "workflow_run"):
+                with self.subTest(branch=branch, event=event_name):
+                    result = self.execute(step(document, "build", "Get branch name"), {
+                        "github.event_name": event_name,
+                        "github.event.inputs.branch": branch if event_name == "workflow_dispatch" else "",
+                        "github.event.workflow_run.head_branch": branch if event_name == "workflow_run" else "",
+                    })
                 self.assertEqual(result["branch"], branch)
 
     def test_actual_webapp_version_step(self):
@@ -182,6 +187,13 @@ raise SystemExit('Forbidden git operation in policy test')
         publish = json.dumps(document["jobs"]["publish"])
         self.assertIn("${{ needs.build.outputs.branch }}", publish)
         self.assertIn("${{ needs.build.outputs.version }}", publish)
+
+    def test_workflow_run_build_checks_out_the_tested_commit_sha(self):
+        checkout = step(workflow("deploy.yml"), "build", "Checkout repository")["with"]
+        self.assertEqual(
+            checkout["ref"],
+            "${{ github.event_name == 'workflow_dispatch' && github.event.inputs.branch || github.event.workflow_run.head_sha }}",
+        )
 
     def test_pr_or_foreign_workflow_cannot_reach_privileged_publish_jobs(self):
         document = workflow("deploy.yml")

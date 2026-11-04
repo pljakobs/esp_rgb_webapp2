@@ -1,6 +1,6 @@
 # Lightinator Cross-Project Master Plan
 
-Status: M1 read-only discovery deployed; client/CI rollout and device qualification remain open.
+Status: M1 read-only discovery deployed; CI preparation is on separate feature branches; canonical branch cutover, client rollout, and device qualification remain open.
 Updated: 2026-11-04.
 
 This document coordinates work across the workspace. It owns delivery order,
@@ -46,7 +46,7 @@ The complete update chain must support these dimensions before branch cutover.
 | Milestone | Outcome                                                                                                                                         | Depends On                                             | Status        |
 | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ | ------------- |
 | M1        | Version-aware publication, server discovery/options, updater clients, legacy adapters, and shared-frontend compatibility/storage qualification. | None                                                   | In progress: local implementation/tests |
-| M2        | Versioned development-line cutover, exact RGBWWLed pins, correct CI matrices; qualify contracts for next-generation runtime work.               | M1 readiness gates; CI preparation can proceed earlier | Planned       |
+| M2        | Versioned development-line cutover, exact RGBWWLed pins, correct CI matrices; qualify contracts for next-generation runtime work.               | M1 readiness gates; CI preparation can proceed earlier | CI prep on feature branches; cutover pending |
 | M3        | Multiple virtual lights and resource-aware PWM allocation in firmware.                                                                          | M1, M2 contract baseline                               | Planned       |
 | M4        | QuinLED named pins and virtual-light management in Webapp2 and Home Assistant.                                                                  | M3 API/runtime; catalogue design can proceed earlier   | Planned       |
 | M5        | Configurable button actions and I2C bus configuration.                                                                                          | M3, M4 resource model                                  | Planned       |
@@ -167,98 +167,36 @@ successful builds. The detailed plan defines policy, rollout, and test coverage.
 
 ## M2: Versioned Release Stages
 
-### 1. Prepare Refs and Dependency Pins
+### CI Preparation Status
 
-- Record source commit IDs, local/remote refs, uncommitted changes, protected/default
-  branches, and external consumers before changing refs. Preserve unrelated work.
-- Resolve RGBWWLed release `0.10.1` and `0.11.0` to verified immutable commits;
-  confirm actual tag spelling and component version metadata. Do not invent SHAs
-  or edit a version string to pretend a different component revision is installed.
-  Remark: RGBWWLed will see some major change for channel handling, 0.11.0 is not the last fixed version
-- Pin the `Components/RGBWWLed` gitlink separately on each firmware line. Keep
-  recursive submodule checkout at the recorded commit; never use a floating
-  `git submodule update --remote` in a release build. Review the existing
-  `.gitmodules` `origin/feature/fade` branch hint so it does not contradict pins.
-- Prepare CI changes on the source lines before cutover, then establish
-  `5.0/develop` from `develop` and `5.1/develop` from `experimental` with the
-  appropriate line-specific pin changes. Keep firmware-to-webapp mappings explicit;
-  a shared frontend need not mirror firmware release lines or branch identities.
-  Do not merge 5.1-only runtime changes into 5.0 to share CI edits.
-- Keep old refs available during a bounded migration window. Push/delete refs,
-  change branch protections/defaults, and enable publishing only as explicit
-  rollout operations; this planning document does not perform those actions.
-- 5.1 will extend the test surface and therefore will need tests that are not applicable to 5.0
+The current build and release procedure is documented in
+[CI_RELEASE_PROCESS.md](../esp_rgbww_firmware/CI_RELEASE_PROCESS.md). CI preparation
+is implemented on the separate firmware and webapp feature branches; local policy
+suites and GitHub workflow-validation runs passed. The preparation covers versioned
+triggers, immutable source checkout, line-specific matrices and version counters,
+RGBWWLed pin checks, external SPA delivery, and the M1 pinned SSH/rsync publisher.
 
-### 2. Resolve Build Context Once
+This is not branch cutover or a qualified production release. The versioned release
+branches have not been created, complete firmware matrix builds have not been run,
+and device/browser/HA release flows remain unqualified.
 
-In firmware [.github/workflows/build_firmware.yml](../esp_rgbww_firmware/.github/workflows/build_firmware.yml),
-make the preparation job emit canonical branch, version line, stage, source SHA,
-artifact-safe branch key, required RGBWWLed version/commit, and SoC JSON/CSV.
+### Remaining Cutover Gates
 
-- Push: resolve the version line from the pushed canonical branch.
-- Pull request: use the base branch for line/matrix policy and test the PR merge
-  revision. Do not infer the release line from an arbitrary feature-branch name.
-- Manual dispatch: resolve and validate the selected branch, and check out that
-  branch's exact resolved SHA consistently in every job.
-- Temporarily map `develop` to `5.0/develop` and `experimental` to `5.1/develop`
-  when handling migration aliases. Reject unknown release lines rather than
-  silently defaulting to develop or all SoCs.
-- Use one policy for matrix, metadata, and pin validation. After checkout, fail
-  if the submodule commit/version does not match the selected release line.
+- Establish `5.0/develop` from the current advanced firmware line while pinning
+  RGBWWLed `0.10.1`; establish `5.1/develop` from its source line with `0.11.0`.
+  Preserve old refs and confirm consumers before changing defaults/protections.
+- Fix local/Host firmware version fallbacks so they do not hard-code `V5.0`.
+- Pin the Sming builder image by digest and action revisions; `latest`, floating
+  hosted runners, and tag-based action refs currently prevent byte-reproducible builds.
+- Make same-line version allocation collision-safe and make firmware publication
+  fail closed when any expected SoC/build artifact is missing.
+- Carry and persist exact source/dependency provenance in the catalogue; current
+  M1 publisher compatibility records do not represent the later manifest model.
+- Run every required firmware variant, Host checks, external-webapp compatibility
+  tests, server staging checks, and device/browser/HA qualification before enabling
+  canonical production publication.
 
-### 3. Adapt Build and Test Workflows
-
-- Replace the fixed SoC list with `5.0 = [esp8266, esp32, esp32c3]` and
-  `5.1 = [esp32, esp32c3]`. Preserve existing debug/release and image variants.
-- Update push/PR filters, dispatch choices, branch-to-webapp mappings, and
-  development-stage runtime-webapp handling for both canonical branches.
-- Remove ESP8266 as the condition for generic once-per-release work such as
-  version-info upload, release tagging, and webapp schema dispatch. Prefer a
-  dedicated job after required tests/builds succeed; if using a representative
-  matrix cell, constrain every variant axis so the work runs exactly once.
-- Retain the ESP8266-only condition for its partition-map generation.
-- Scope version/tag discovery and prerelease numbering to the selected `5.0` or
-  `5.1` line; current global `v5.*` discovery must not let one line advance another.
-  Preserve the selected major/minor and handle retries/concurrent runs without
-  colliding tags or publishing different artifacts under one version.
-- Update firmware [component.mk](../esp_rgbww_firmware/component.mk) version
-  fallbacks, currently hard-coded to `V5.0`, so local and Host builds report the
-  correct line when CI does not supply an explicit version.
-- Update [swarm_test.yml](../esp_rgbww_firmware/.github/workflows/swarm_test.yml)
-  filters/dispatch checkout; keep Host validation for both lines and retain the
-  restriction against running untrusted PR code on the self-hosted runner.
-- Update webapp [test.yml](.github/workflows/test.yml) and
-  [deploy.yml](.github/workflows/deploy.yml): versioned refs, firmware dispatch
-  mapping, line-derived version strings instead of fixed `V5.0`, and nested paths.
-  Audit slash-containing branch names in substitutions, URLs, and artifact names.
-
-### 4. Apply M1 Publication and Discovery Contract
-
-In firmware [deploy-pages.yml](../esp_rgbww_firmware/.github/workflows/deploy-pages.yml):
-
-- Select the exact successful triggering run and source SHA, not the publishing
-  workflow's default branch or an unrelated newer run. Exclude PR builds from
-  release publication and use explicit approved canonical branches.
-- Keep artifact keys sanitized consistently between producer and consumer
-  (`5.1-develop`), while canonical metadata/paths retain `5.1/develop`.
-  Preserve a compatibility path for older artifacts where needed.
-- Require the declared SoC list to agree with the release line. Allow the legacy
-  all-SoC metadata fallback only for known legacy 5.0 artifacts, never for 5.1.
-- Require every expected build artifact before updating catalogue/latest records;
-  missing ESP8266 on 5.1 is intentional, missing ESP32/C3 is a failed publication.
-- Carry canonical branch, firmware version, source/dependency SHAs, and supported
-  SoCs through version-info, uploads, webapp dispatch, and discovery metadata.
-- Audit existing server upload/discovery and updater handling for slash-containing
-  stages. Preserve deployed legacy clients while ensuring ESP8266 cannot discover
-  5.1 and an ESP32 client is not moved between lines by SoC matching alone.
-- Check the log service can resolve artifacts from versioned paths. Do not require
-  the entire proposed product-aware catalogue redesign to complete M1.
-
-### 5. Validate and Cut Over
-
-First add focused policy tests for branch/event resolution, matrices, version
-isolation, pin mismatch rejection, artifact naming, and publish eligibility.
-Lint YAML and embedded shell, then run non-publishing CI qualification:
+The existing expected build matrix remains:
 
 | Case                                        | Expected Result                                                  |
 | ------------------------------------------- | ---------------------------------------------------------------- |
