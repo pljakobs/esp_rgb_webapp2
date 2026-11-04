@@ -4,21 +4,26 @@ on:
   workflow_run:
     workflows: ["Frontend Tests"]
     types: [completed]
-    branches: [experimental, experimental-externalUI, develop, testing, stable]
+    branches: [experimental, develop, testing, stable, '5.0/**', '5.1/**']
 
   workflow_dispatch:
     inputs:
       branch:
         description: 'Branch to build'
         required: true
-        default: 'develop'
+        default: '5.0/develop'
         type: choice
         options:
+          - 5.0/develop
+          - 5.0/testing
+          - 5.0/prod
+          - 5.1/develop
+          - 5.1/testing
+          - 5.1/prod
           - stable
           - testing
           - develop
           - experimental
-          - experimental-externalUI
 
 permissions:
   contents: write
@@ -27,17 +32,18 @@ permissions:
 
 jobs:
   build:
+    #runs-on: ubuntu-latest
     runs-on: ubuntu-latest
     # Only run if the triggering workflow succeeded
-    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push' && github.event.workflow_run.head_repository.full_name == github.repository) }}
     outputs:
       version: ${{ steps.create_version.outputs.version }}
-      branch: ${{ steps.get_branch.outputs.branch }}
+      branch: ${{ steps.resolve_release.outputs.release_ref }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
         with:
-          ref: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.branch || github.event.workflow_run.head_branch }}
+          ref: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.branch || github.event.workflow_run.head_sha }}
           token: ${{ secrets.GH_PAT }}
 
       - name: Set up Node.js
@@ -46,24 +52,57 @@ jobs:
           node-version: "24"
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci --legacy-peer-deps
 
       # Generate version information
       - name: Get branch name
         id: get_branch
-        run: echo "branch=$(git rev-parse --abbrev-ref HEAD)" >> $GITHUB_OUTPUT
+        env:
+          CI_EVENT_NAME: ${{ github.event_name }}
+          CI_INPUT_BRANCH: ${{ github.event.inputs.branch }}
+          CI_RUN_BRANCH: ${{ github.event.workflow_run.head_branch }}
+        run: |
+          if [[ "$CI_EVENT_NAME" == "workflow_dispatch" ]]; then
+            echo "branch=$CI_INPUT_BRANCH" >> "$GITHUB_OUTPUT"
+          else
+            echo "branch=$CI_RUN_BRANCH" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Resolve release line and stage
+        id: resolve_release
+        env:
+          CI_SOURCE_BRANCH: ${{ steps.get_branch.outputs.branch }}
+        run: |
+          case "$CI_SOURCE_BRANCH" in
+            5.0/develop|develop) RELEASE_LINE="5.0"; STAGE="develop" ;;
+            5.0/testing|testing) RELEASE_LINE="5.0"; STAGE="testing" ;;
+            5.0/prod|stable) RELEASE_LINE="5.0"; STAGE="prod" ;;
+            5.1/develop|experimental) RELEASE_LINE="5.1"; STAGE="develop" ;;
+            5.1/testing) RELEASE_LINE="5.1"; STAGE="testing" ;;
+            5.1/prod) RELEASE_LINE="5.1"; STAGE="prod" ;;
+            *) echo "Unsupported webapp release ref: $CI_SOURCE_BRANCH" >&2; exit 1 ;;
+          esac
+          RELEASE_REF="$RELEASE_LINE/$STAGE"
+          echo "release_line=$RELEASE_LINE" >> "$GITHUB_OUTPUT"
+          echo "stage=$STAGE" >> "$GITHUB_OUTPUT"
+          echo "release_ref=$RELEASE_REF" >> "$GITHUB_OUTPUT"
 
       - name: Create version file
         id: create_version
+        env:
+          CI_BUILD_NUMBER: ${{ github.run_number }}
+          CI_RELEASE_LINE: ${{ steps.resolve_release.outputs.release_line }}
+          CI_RELEASE_STAGE: ${{ steps.resolve_release.outputs.stage }}
+          CI_RELEASE_REF: ${{ steps.resolve_release.outputs.release_ref }}
         run: |
-          BUILD_NUM=${{ github.run_number }}
-          BRANCH=${{ steps.get_branch.outputs.branch }}
-          VERSION="V5.0-${BUILD_NUM}-${BRANCH}"
+          BUILD_NUM="$CI_BUILD_NUMBER"
+          BRANCH="$CI_RELEASE_REF"
+          VERSION="V${CI_RELEASE_LINE}-${BUILD_NUM}-${CI_RELEASE_STAGE}"
           BUILD_DATE=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
 
           # Generate version.js file with actual values
           sed -i "s/__APP_VERSION__/${VERSION}/g" src/version.js
-          sed -i "s/__APP_BRANCH__/${BRANCH}/g" src/version.js
+          sed -i "s|__APP_BRANCH__|${BRANCH}|g" src/version.js
           sed -i "s/__BUILD_NUMBER__/${BUILD_NUM}/g" src/version.js
           sed -i "s/__BUILD_DATE__/${BUILD_DATE}/g" src/version.js
 
@@ -80,6 +119,14 @@ jobs:
 
       - name: Run gzipSPA.sh
         run: ./gzipSPA.sh
+
+      - name: Copy bootstrap HTML files into dist/spa
+        run: |
+          # captive.html and updating.html live at the repo root (not built by Quasar).
+          # Copy them into dist/spa/ so they are included in the spa-files.zip artifact
+          # and available for firmware builds that embed them as FSTR flash strings.
+          cp captive.html dist/spa/captive.html
+          cp updating.html dist/spa/updating.html
 
       - name: Generate icon list
         run: node generate_icon_list.js > ./fileList.h
@@ -104,7 +151,7 @@ jobs:
 
       - name: Create download page
         run: |
-          BRANCH=${{ steps.get_branch.outputs.branch }}
+          BRANCH="${{ steps.resolve_release.outputs.release_ref }}"
           mkdir -p gh-pages-content
           VERSION="${{ steps.create_version.outputs.version }}"
           BUILD_DATE=$(date)
@@ -127,7 +174,7 @@ jobs:
 
       - name: Publish branch artifacts to gh-pages
         run: |
-          BRANCH="${{ steps.get_branch.outputs.branch }}"
+          BRANCH="${{ steps.resolve_release.outputs.release_ref }}"
           PUBLISH_DIR="$RUNNER_TEMP/gh-pages-worktree"
 
           git config user.name "github-actions[bot]"
@@ -198,76 +245,42 @@ jobs:
 
           echo "All artifacts verified and accessible!"
 
-      - name: Trigger firmware build
-        run: |
-          # Map webapp branch names to firmware branch names if needed
-          WEBAPP_BRANCH="${{ steps.get_branch.outputs.branch }}"
-          case "$WEBAPP_BRANCH" in
-            "develop")
-              FIRMWARE_BRANCH="develop"
-              ;;
-            *)
-              FIRMWARE_BRANCH="$WEBAPP_BRANCH"
-              ;;
-          esac
-
-          echo "Triggering firmware build for branch: $FIRMWARE_BRANCH (webapp: $WEBAPP_BRANCH)"
-
-          # Build JSON payload
-          PAYLOAD=$(cat <<EOF
-          {
-            "event_type": "frontend-build-completed",
-            "client_payload": {
-              "branch": "$FIRMWARE_BRANCH",
-              "webapp_branch": "$WEBAPP_BRANCH",
-              "run_id": "${{ github.run_id }}"
-            }
-          }
-          EOF
-          )
-
-          echo "Payload:"
-          echo "$PAYLOAD"
-
-          # Use curl with verbose output
-          HTTP_CODE=$(curl -X POST \
-            -H "Accept: application/vnd.github+json" \
-            -H "Authorization: Bearer ${{ secrets.GH_PAT }}" \
-            -H "X-GitHub-Api-Version: 2022-11-28" \
-            -H "Content-Type: application/json" \
-            -w "%{http_code}" \
-            -o /tmp/response.txt \
-            https://api.github.com/repos/pljakobs/esp_rgbww_firmware/dispatches \
-            -d "$PAYLOAD")
-
-          echo "HTTP Status: $HTTP_CODE"
-          echo "Response:"
-          cat /tmp/response.txt
-
-          if [ "$HTTP_CODE" -ne "204" ]; then
-            echo "ERROR: Failed to trigger firmware build (HTTP $HTTP_CODE)"
-            exit 1
-          fi
-
-          echo "Successfully triggered firmware build"
-
   publish:
     runs-on: ubuntu-latest
+    #runs-on: self-hosted
     needs: build
-    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push' && github.event.workflow_run.head_repository.full_name == github.repository) }}
     env:
       deploy_user: github-deploy
       deploy_server: lightinator.de
       deploy_path: /home/github-deploy/nginx/html
+      DISTRIBUTION_PUBLISHER_SHA: ${{ vars.DISTRIBUTION_PUBLISHER_SHA }}
 
     steps:
-      - name: Checkout firmware repository (for manage_version.py)
+      - name: Validate publisher pin
+        run: |
+          [[ "$DISTRIBUTION_PUBLISHER_SHA" =~ ^[0-9a-f]{40}$ ]] || {
+            echo "Set DISTRIBUTION_PUBLISHER_SHA to a reviewed distribution-server commit SHA"
+            exit 1
+          }
+
+      - name: Checkout pinned distribution publisher
         uses: actions/checkout@v6
         with:
-          repository: pljakobs/esp_rgbww_firmware
-          ref: experimental-externalUI
-          path: esp_firmware_repo
-          token: ${{ secrets.GH_PAT }}
+          repository: pljakobs/lightinator_server
+          ref: ${{ env.DISTRIBUTION_PUBLISHER_SHA }}
+          path: distribution_publisher
+          persist-credentials: false
+
+      - name: Test pinned distribution publisher
+        run: |
+          set -euo pipefail
+          test "$(git -C distribution_publisher rev-parse HEAD)" = "$DISTRIBUTION_PUBLISHER_SHA"
+          test "$(python3 distribution_publisher/manage_version.py --publisher-contract)" = "lightinator-sqlite-v1"
+          python3 -m venv "$RUNNER_TEMP/publisher-venv"
+          "$RUNNER_TEMP/publisher-venv/bin/pip" install -r distribution_publisher/requirements-test.txt
+          cd distribution_publisher
+          "$RUNNER_TEMP/publisher-venv/bin/python" -m unittest discover -s tests -v
 
       - name: Download SPA files artifact
         uses: actions/download-artifact@v8
@@ -340,7 +353,12 @@ jobs:
           # Prepare staging area
           mkdir -p staging/download/webui/$BRANCH/$VERSION
           cp -r dist/spa/. staging/download/webui/$BRANCH/$VERSION/
-          cp esp_firmware_repo/manage_version.py staging/
+          PUBLISHER_DIR="publisher-webapp-${{ github.run_id }}-${{ github.run_attempt }}"
+          mkdir -p "staging/$PUBLISHER_DIR"
+          cp distribution_publisher/manage_version.py "staging/$PUBLISHER_DIR/manage_version-${{ github.run_id }}-${{ github.run_attempt }}.py"
+          cp distribution_publisher/version_api.py distribution_publisher/migrate_to_sqlite.py "staging/$PUBLISHER_DIR/"
+          cp -r distribution_publisher/images "staging/$PUBLISHER_DIR/"
+          printf '%s\n' "$DISTRIBUTION_PUBLISHER_SHA" > "staging/$PUBLISHER_DIR/SOURCE_REVISION"
 
           LOCAL_WEBAPP_FILE_COUNT=$(find staging/download/webui/$BRANCH/$VERSION -type f | wc -l)
           echo "Staged webapp file count for deployment: $LOCAL_WEBAPP_FILE_COUNT"
@@ -353,7 +371,7 @@ jobs:
           # GitHub Actions expressions are expanded before the shell runs;
           # single-quoted 'REMOTE_EOF' prevents local bash from expanding $VAR references
           # that are meant to be set at the top of the remote script.
-          cat > staging/remote_update_webapp.sh << 'REMOTE_EOF'
+          cat > "staging/remote_update_webapp-${{ github.run_id }}-${{ github.run_attempt }}.sh" << 'REMOTE_EOF'
           #!/bin/bash
           set -e
 
@@ -362,9 +380,13 @@ jobs:
           VERSION="${{ needs.build.outputs.version }}"
           FILES_JSON_B64="${{ steps.compute_md5.outputs.files_json_b64 }}"
           DEPLOY_SERVER="${{ env.deploy_server }}"
+          PUBLISHER_DIR="publisher-webapp-${{ github.run_id }}-${{ github.run_attempt }}"
+          MANAGE_SCRIPT="$PUBLISHER_DIR/manage_version-${{ github.run_id }}-${{ github.run_attempt }}.py"
+          MANAGE_PYTHON="/home/github-deploy/lightinator-server/.venv/bin/python"
+          export VERSION_DB_PATH="${VERSION_DB_PATH:-/home/github-deploy/lightinator-server/firmware.db}"
 
           case "$BRANCH" in
-            stable|testing)
+            */prod|*/testing|stable|testing)
               WEBAPP_TYPE="release"
               ;;
             *)
@@ -379,12 +401,15 @@ jobs:
           fi
 
           cd "$DEPLOY_PATH"
+          export VERSION_ASSET_ROOT="$DEPLOY_PATH"
+          test -f "$MANAGE_SCRIPT" && test -x "$MANAGE_PYTHON"
+          test "$(cat "$PUBLISHER_DIR/SOURCE_REVISION")" = "${{ env.DISTRIBUTION_PUBLISHER_SHA }}"
+          test "$("$MANAGE_PYTHON" "$MANAGE_SCRIPT" --publisher-contract)" = "lightinator-sqlite-v1"
           mkdir -p "download/webui/${BRANCH}/${VERSION}"
           mkdir -p "download/webui/${BRANCH}/latest"
-          chmod +x manage_version.py
 
-          echo "Updating version.json with webapp entry for ${BRANCH} ${VERSION}..."
-          python3 manage_version.py version.json add-webapp "$BRANCH" "$VERSION" \
+          echo "Publishing webapp entry to SQLite for ${BRANCH} ${VERSION}..."
+          "$MANAGE_PYTHON" "$MANAGE_SCRIPT" version.json add-webapp "$BRANCH" "$VERSION" \
             --type "$WEBAPP_TYPE" \
             --min-firmware "$MIN_FIRMWARE" \
             --files-json-b64 "$FILES_JSON_B64"
@@ -403,12 +428,12 @@ jobs:
           chown -R github-deploy:nginx download/webui
           find download/webui -type d -exec chmod 755 {} \;
           find download/webui -type f -exec chmod 644 {} \;
-          chmod +x manage_version.py
 
-          rm remote_update_webapp.sh
+          rm -r -- "$PUBLISHER_DIR"
+          rm "remote_update_webapp-${{ github.run_id }}-${{ github.run_attempt }}.sh"
           REMOTE_EOF
 
-          chmod +x staging/remote_update_webapp.sh
+          chmod +x "staging/remote_update_webapp-${{ github.run_id }}-${{ github.run_attempt }}.sh"
 
           echo "Syncing webapp files to ${{ env.deploy_server }}..."
           rsync -rlvz --chmod=Du=rwx,Dgo=rx,Fu=rw,Fgo=r \
@@ -417,7 +442,7 @@ jobs:
 
           echo "Running remote update script..."
           ssh -o StrictHostKeyChecking=no ${{ env.deploy_user }}@${{ env.deploy_server }} \
-            "bash ${{ env.deploy_path }}/remote_update_webapp.sh"
+            "flock /tmp/lightinator-webapp-deploy.lock bash ${{ env.deploy_path }}/remote_update_webapp-${{ github.run_id }}-${{ github.run_attempt }}.sh"
 
           echo "Verifying remote deployment contents..."
           REMOTE_WEBAPP_FILE_COUNT=$(ssh -o StrictHostKeyChecking=no ${{ env.deploy_user }}@${{ env.deploy_server }} \
