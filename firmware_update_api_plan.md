@@ -1,7 +1,43 @@
 # Firmware Update Refactoring Plan & API Specification
 
+Status: historical refactoring proposal. The version-aware contract, selector
+dimensions, compatibility adapters, and shared-frontend strategy are now owned by
+[UPDATE_INFRASTRUCTURE_PLAN.md](UPDATE_INFRASTRUCTURE_PLAN.md), scheduled as M1 in
+[MASTER_PLAN.md](MASTER_PLAN.md). The API sketches below are not deployed facts
+and must not override that newer contract. In particular, debug/release build type,
+major/minor release line, and stage are separate dimensions; legacy schema fallbacks
+remain at compatibility boundaries until old clients/servers have migrated.
+
+## Implementation Progress (2026-11-04)
+
+- [x] Phase 1 service isolation: [src/services/firmwareApi.js](src/services/firmwareApi.js)
+  now handles API discovery, legacy-API fallback, normalized records, and explicit
+  line/stage/type requests for single-device and per-device fleet callers.
+- [x] Phase 3 API discovery and independent release-line selection are wired into
+  the update card/dialog. Selected artifacts are revalidated before OTA.
+- [x] Phase 4 per-controller API candidate selection is implemented; it preserves
+  the installed line/stage/type rather than selecting one shared fleet binary.
+- [x] Focused service/selector/transition tests: 23 passed. Legacy API adapters
+  intentionally remain for supported older servers.
+- [x] Phase 2 cleanup: remove obsolete catalogue merging and dormant/generic fleet
+  fallbacks. API normalization owns compatibility handling.
+- [x] Update All requires a newer release within the installed major/minor line,
+  stage, feed and build type; unmatched/unknown controllers are skipped. It never
+  migrates a `5.0/testing` ESP32 to `5.1/testing` without an explicit manual selection.
+- [ ] Replace legacy installed-version parsing with structured device metadata once
+  the firmware exposes it; current parsing is centralized in the compatibility layer.
+- [ ] Qualify single/fleet update progress, retry, reboot, and watchdog behavior
+  end to end on actual supported devices. Retaining existing handlers is not a
+  substitute for regression evidence.
+
+These are local implementation statuses, not deployment approval. The older v1
+API sketches and phase instructions below are retained as historical design;
+the linked M1 plan owns the current v2 contract and remaining acceptance gates.
+
 ## 1. Overview
-The current implementation in `FirmwareUpdateCard.vue` relies on fetching a static, monolithic `version.json` file via `otaUrl` and executing manual array merging, filtering, deduplication, and sorting on the client side. 
+At the time of this proposal, `FirmwareUpdateCard.vue` fetched a static,
+monolithic `version.json` file via `otaUrl`. That discovery path has now been
+replaced with API usage, and the obsolete catalogue/fallback paths have been removed.
 
 This plan details the migration to a targeted FastAPI REST service backed by SQLite, offloading querying and filtering to the server, standardizing response schemas, and updating the Vue client.
 
