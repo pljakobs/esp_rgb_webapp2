@@ -129,8 +129,8 @@ raise SystemExit('Forbidden git operation in policy test')
                 })
                 self.assertEqual((resolved["release_line"], resolved["stage"], resolved["release_ref"]),
                                  (release_line, stage, release_ref))
-                self.assertEqual(resolved["min_firmware"], "V5.0")
-                self.assertEqual(resolved["max_firmware"], "V5.2" if release_line == "5.1" else "")
+                self.assertEqual(resolved["min_firmware"], f"V{release_line}")
+                self.assertEqual(resolved["max_firmware"], "")
                 result = self.execute(step(document, "build", "Create version file"), {
                     "github.run_number": "42",
                     "steps.resolve_release.outputs.release_line": release_line,
@@ -142,14 +142,14 @@ raise SystemExit('Forbidden git operation in policy test')
                 self.assertIn(f"{expected_version} {release_ref} 42 ", target.read_text())
                 self.assertNotIn("__APP_", target.read_text())
 
-    def test_51_external_webapp_is_published_as_a_50_to_51_bridge(self):
+    def test_webapp_publication_uses_its_own_firmware_line(self):
         document = workflow("deploy.yml")
         resolved = self.execute(step(document, "build", "Resolve release line and stage"), {
             "steps.get_branch.outputs.branch": "experimental",
         })
         self.assertEqual(resolved["release_ref"], "5.1/develop")
-        self.assertEqual(resolved["min_firmware"], "V5.0")
-        self.assertEqual(resolved["max_firmware"], "V5.2")
+        self.assertEqual(resolved["min_firmware"], "V5.1")
+        self.assertEqual(resolved["max_firmware"], "")
         outputs = document["jobs"]["build"]["outputs"]
         self.assertIn("steps.resolve_release.outputs.max_firmware", outputs["max_firmware"])
         remote_script = step(document, "publish", "Deploy webapp to lightinator.de")["run"]

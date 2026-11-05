@@ -85,11 +85,8 @@ jobs:
             *) echo "Unsupported webapp release ref: $CI_SOURCE_BRANCH" >&2; exit 1 ;;
           esac
           RELEASE_REF="$RELEASE_LINE/$STAGE"
-          MIN_FIRMWARE="V5.0"
+          MIN_FIRMWARE="V${RELEASE_LINE}"
           MAX_FIRMWARE=""
-          if [[ "$RELEASE_LINE" == "5.1" ]]; then
-            MAX_FIRMWARE="V5.2"
-          fi
           echo "release_line=$RELEASE_LINE" >> "$GITHUB_OUTPUT"
           echo "stage=$STAGE" >> "$GITHUB_OUTPUT"
           echo "release_ref=$RELEASE_REF" >> "$GITHUB_OUTPUT"
