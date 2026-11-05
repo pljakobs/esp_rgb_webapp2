@@ -88,34 +88,16 @@ export default configure((/* ctx */) => {
         // Build configuration for ESP8266
         viteConf.build ??= {};
         viteConf.build.cssMinify = "esbuild";
+        viteConf.build.cssCodeSplit = false;
         viteConf.build.modulePreload = { polyfill: true };
         viteConf.build.assetsCrossOrigin = "anonymous";
 
         // Rollup chunking configuration
-        viteConf.build.rollupOptions = {
-          ...viteConf.build.rollupOptions,
+        viteConf.build.rolldownOptions = {
+          ...viteConf.build.rolldownOptions,
           output: {
-            ...viteConf.build.rollupOptions?.output,
-            manualChunks(id) {
-              // 1. Framework dependencies
-              if (
-                id.includes("node_modules/quasar") ||
-                id.includes("node_modules/@quasar")
-              ) {
-                return "vendor-quasar";
-              }
-              if (
-                id.includes("node_modules/vue") ||
-                id.includes("node_modules/pinia") ||
-                id.includes("node_modules/vue-router")
-              ) {
-                return "vendor-vue";
-              }
-              // 2. Collapse all internal app source code (stores, utilities, pages) into the main bundle
-              if (id.includes("/src/")) {
-                return "index";
-              }
-            },
+            ...viteConf.build.rolldownOptions?.output,
+            codeSplitting: false,
           },
         };
       },

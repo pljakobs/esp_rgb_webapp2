@@ -16,11 +16,5 @@ then
 	cd ..
 fi
 cd ..
-if [ -d locales ]
-then
-	cd locales
-	gzip -9f *.json
-	cd ..
-fi
 popd
 
