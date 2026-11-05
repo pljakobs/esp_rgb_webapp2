@@ -1,25 +1,25 @@
 pushd dist/spa
-gzip *.html
+gzip -f *.html
 cd assets
-gzip -9 *.js
-gzip -9 *.css
+gzip -9f *.js
+gzip -9f *.css
 if [ -f *.map ]
 then
-	gzip -9 *.map
+	gzip -9f *.map
 fi
 cd ../icons
-gzip -9 *.svg
+gzip -9f *.svg
 if [ -d lights ]
 then
 	cd lights
-	gzip -9 *.svg
+	gzip -9f *.svg
 	cd ..
 fi
 cd ..
 if [ -d locales ]
 then
 	cd locales
-	gzip -9 *.json
+	gzip -9f *.json
 	cd ..
 fi
 popd

@@ -46,6 +46,14 @@ import FirmwareSelectDialog from "src/components/Dialogs/firmwareSelectDialog.vu
 import FirmwareUpdateProgressDialog from "src/components/Dialogs/firmwareUpdateProgressDialog.vue";
 import ControllerSelectionDialog from "src/components/Dialogs/ControllerSelectionDialog.vue";
 import svgIcon from "src/components/svgIcon.vue";
+import {
+  ensureFirmwareTransition,
+  fetchFirmwareVersions,
+  findAutomaticFirmwareUpdate,
+  firmwareIdentity,
+  isAutomaticFirmwareCandidate,
+  revalidateFirmware,
+} from "src/services/firmwareApi.js";
 
 export default {
   components: {
@@ -317,128 +325,25 @@ export default {
     const fetchFirmware = async () => {
       console.log("Fetching firmware from:", otaUrl.value);
       try {
-        const response = await fetch(otaUrl.value, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        });
-
-        if (!response.ok) {
-          Dialog.create({
-            title: "HTTP error",
-            message: `HTTP error! status: ${response.status}`,
-            color: "negative",
-            icon: "report_problem",
-            persistent: true,
-          });
-          return;
-        }
-
-        const data = await response.json();
-        firmware.value = data;
-
-        // Extract branch from git_version (e.g., "V5.0-331-develop" → "develop")
-        const getBranchFromVersion = (versionString) => {
-          if (!versionString) return "stable";
-          const parts = versionString.split("-");
-          return parts.length > 2 ? parts[parts.length - 1] : "stable";
-        };
-
-        // Create a combined array of firmware options from both firmware and history arrays
-        const allFirmwareOptions = [];
-
-        // First, process the main firmware array
-        if (data.firmware && Array.isArray(data.firmware)) {
-          data.firmware.forEach((fw) => {
-            // Only include firmware for the current SOC
-            if (
-              fw.soc?.toLowerCase() === infoData.data.device?.soc?.toLowerCase()
-            ) {
-              // Ensure all required properties exist
-              const firmwareOption = {
-                ...fw,
-                // Make sure fw_version exists (prioritize fw_version if both exist)
-                fw_version: fw.fw_version || fw.version,
-              };
-              allFirmwareOptions.push(firmwareOption);
-            }
-          });
-        }
-
-        // Then, process the history array
-        if (data.history && Array.isArray(data.history)) {
-          data.history.forEach((histItem) => {
-            // Only include firmware for the current SOC
-            if (
-              histItem.soc?.toLowerCase() ===
-              infoData.data.device?.soc?.toLowerCase()
-            ) {
-              // Skip if this exact version is already in the options
-              const isDuplicate = allFirmwareOptions.some(
-                (fw) =>
-                  fw.branch === histItem.branch &&
-                  fw.type === histItem.type &&
-                  fw.fw_version === histItem.fw_version,
-              );
-
-              if (!isDuplicate) {
-                // Ensure all required properties exist
-                const historyOption = {
-                  ...histItem,
-                  // Make sure fw_version exists (prioritize fw_version if both exist)
-                  fw_version: histItem.fw_version || histItem.version,
-                };
-                allFirmwareOptions.push(historyOption);
-              }
-            }
-          });
-        }
-
-        // Set available firmware to our combined and filtered list
-        availableFirmware.value = allFirmwareOptions;
-
-        // Keep firmware comment for the currently running build available in shared info state.
-        const currentBranch = getBranchFromVersion(infoData.data.git_version);
-        const currentVersion = infoData.data.git_version;
-        const currentType = infoData.data.build_type;
-        const currentSoc = infoData.data.soc;
-        const currentFirmware = allFirmwareOptions.find(
+        availableFirmware.value = await fetchFirmwareVersions(
+          otaUrl.value,
+          infoData.data.device?.soc,
+        );
+        firmware.value = availableFirmware.value;
+        const installed = infoData.data.app || {};
+        const identity = firmwareIdentity(installed.git_version);
+        const currentFirmware = availableFirmware.value.find(
           (fw) =>
-            fw.soc === currentSoc &&
-            (fw.branch || "stable") === currentBranch &&
-            fw.type === currentType &&
-            (fw.fw_version || fw.version) === currentVersion,
+            fw.release_line === identity.release_line &&
+            fw.stage === identity.stage &&
+            fw.type === installed.build_type &&
+            fw.version === installed.git_version,
         );
 
         if (infoData.data) {
           infoData.data.firmware_comment =
             currentFirmware?.comment || currentFirmware?.fw_comment || "";
         }
-
-        // Sort by version and put current build type first for better UX
-        availableFirmware.value.sort((a, b) => {
-          // Put current build type first
-          if (
-            a.type?.toLowerCase() ===
-              infoData.data.app?.build_type?.toLowerCase() &&
-            b.type?.toLowerCase() !==
-              infoData.data.app?.build_type?.toLowerCase()
-          )
-            return -1;
-          if (
-            a.type?.toLowerCase() !==
-              infoData.data.app?.build_type?.toLowerCase() &&
-            b.type?.toLowerCase() ===
-              infoData.data.app?.build_type?.toLowerCase()
-          )
-            return 1;
-
-          // Then sort by version (assuming semantic versioning)
-          return b.fw_version.localeCompare(a.fw_version, undefined, {
-            numeric: true,
-          });
-        });
 
         console.log("Available firmware:", availableFirmware.value);
         console.log("About to show firmware selection dialog...");
@@ -477,9 +382,8 @@ export default {
 
         // Add the current branch to the current info
         const getBranchFromVersion = (versionString) => {
-          if (!versionString) return "develop";
-          const parts = versionString.split("-");
-          return parts.length > 2 ? parts[parts.length - 1] : "develop";
+          const identity = firmwareIdentity(versionString);
+          return `${identity.release_line}/${identity.stage}`;
         };
 
         // Create a copy of infoData.data and add branch property
@@ -528,8 +432,37 @@ export default {
       selectedFirmware,
       controller,
       initialUptime = null,
+      automatic = false,
     ) => {
       try {
+        selectedFirmware = await revalidateFirmware(
+          otaUrl.value,
+          selectedFirmware,
+        );
+        const installedInfo =
+          !automatic && controller.id === controllersStore.currentController.id
+            ? infoData.data
+            : await fetchControllerInfo(controller, 2000);
+        if (
+          installedInfo.device?.soc?.toLowerCase() !==
+          selectedFirmware.soc?.toLowerCase()
+        ) {
+          throw new Error(
+            "Selected firmware does not match the controller SoC",
+          );
+        }
+        if (automatic) {
+          if (!isAutomaticFirmwareCandidate(selectedFirmware, installedInfo)) {
+            throw new Error(
+              "Controller channel changed or no newer release remains; automatic update cancelled",
+            );
+          }
+        }
+        await ensureFirmwareTransition(
+          otaUrl.value,
+          selectedFirmware,
+          installedInfo.app?.git_version,
+        );
         console.log(
           "Updating controller:",
           controller.hostname,
@@ -922,39 +855,7 @@ export default {
 
           console.log("Updating selected controllers:", selectedControllers);
 
-          let firmwareData;
-          let initialLoadingDialog = null;
           try {
-            if (!firmware.value) {
-              // Show initial loading dialog while fetching firmware info
-              initialLoadingDialog = Dialog.create({
-                title: "Preparing Update",
-                message: "Fetching firmware information...",
-                progress: {
-                  indeterminate: true,
-                },
-                persistent: true,
-              });
-              // Fetch firmware data
-              const response = await fetch(otaUrl.value, {
-                method: "GET",
-                headers: {
-                  "Content-Type": "application/json",
-                },
-              });
-              if (!response.ok) {
-                if (initialLoadingDialog) initialLoadingDialog.hide();
-                throw new Error(`HTTP error! status: ${response.status}`);
-              }
-              firmwareData = await response.json();
-            } else {
-              firmwareData = firmware.value;
-            }
-
-            if (initialLoadingDialog) initialLoadingDialog.hide();
-
-            console.log("Firmware data:", firmwareData);
-
             // Use the selected controllers
             const allControllers = selectedControllers;
 
@@ -1206,168 +1107,8 @@ export default {
             };
 
             const getBranchFromVersion = (versionString) => {
-              if (!versionString) return "stable";
-              const parts = versionString.split("-");
-              return parts.length > 2 ? parts[parts.length - 1] : "stable";
-            };
-
-            // Fix the updateLocalController function
-            const updateLocalController = async (firmwareData) => {
-              const localController = controllersStore.currentController;
-
-              try {
-                // Update status to checking
-                updateStatus(
-                  localController,
-                  "checking",
-                  "Fetching controller information...",
-                );
-
-                // Get current uptime for reboot verification
-                const uptime = infoData.data.runtime?.uptime;
-                const soc = infoData.data.device?.soc?.toLowerCase();
-                const build_type = infoData.data.app?.build_type?.toLowerCase();
-                const git_version = infoData.data.app?.git_version;
-
-                // Extract branch from version and show controller info
-                const controllerBranch = getBranchFromVersion(git_version);
-                updateStatus(
-                  localController, // Fixed: should reference localController, not controller
-                  "checking",
-                  `Controller information: SOC=${soc}, type=${build_type}, branch=${controllerBranch}, version=${git_version}, uptime=${uptime}`,
-                );
-
-                // Find matching firmware with branch consideration
-                const matchingFirmware = firmwareData.firmware.find(
-                  (fw) =>
-                    fw.soc?.toLowerCase() === soc &&
-                    fw.type?.toLowerCase() === build_type &&
-                    (fw.branch || "stable").toLowerCase() === controllerBranch,
-                );
-
-                if (matchingFirmware) {
-                  // We found an exact match
-                  updateStatus(
-                    localController,
-                    "updating",
-                    `Updating to version ${
-                      matchingFirmware.fw_version || matchingFirmware.version
-                    }`,
-                  );
-
-                  const updateResult = await updateController(
-                    matchingFirmware,
-                    localController,
-                    uptime,
-                  );
-
-                  if (updateResult.success) {
-                    let statusMessage = "Update completed successfully";
-                    if (updateResult.rebootVerified) {
-                      statusMessage += ` and reboot verified (new uptime: ${updateResult.newUptime})`;
-                    } else if (updateResult.message) {
-                      statusMessage += `. ${updateResult.message}`;
-                    }
-
-                    updateStatus(
-                      localController,
-                      "success",
-                      statusMessage,
-                      git_version,
-                      matchingFirmware.fw_version || matchingFirmware.version,
-                    );
-                  } else {
-                    updateStatus(
-                      localController,
-                      "failed",
-                      "Update process failed",
-                    );
-                  }
-                  return;
-                }
-
-                // No exact match found, try fallbacks
-                // 1. Same SOC and branch, any build type
-                let fallbackFirmware = firmwareData.firmware.find(
-                  (fw) =>
-                    fw.soc?.toLowerCase() === soc &&
-                    (fw.branch || "stable").toLowerCase() === controllerBranch,
-                );
-
-                // 2. Same SOC and build type, any branch
-                if (!fallbackFirmware) {
-                  fallbackFirmware = firmwareData.firmware.find(
-                    (fw) =>
-                      fw.soc?.toLowerCase() === soc &&
-                      fw.type?.toLowerCase() === build_type,
-                  );
-                }
-
-                // 3. Same SOC, any branch, any build type (most generic fallback)
-                if (!fallbackFirmware) {
-                  fallbackFirmware = firmwareData.firmware.find(
-                    (fw) => fw.soc?.toLowerCase() === soc,
-                  );
-                }
-
-                if (fallbackFirmware) {
-                  const fallbackBranch = fallbackFirmware.branch || "stable";
-                  const fallbackDescription = `${fallbackFirmware.soc}/${fallbackFirmware.type}/${fallbackBranch}`;
-                  const fallbackVersion =
-                    fallbackFirmware.fw_version || fallbackFirmware.version;
-
-                  updateStatus(
-                    localController,
-                    "updating",
-                    `No exact firmware match found. Using fallback: ${fallbackDescription} v${fallbackVersion}`,
-                  );
-
-                  // Update with fallback firmware
-                  const updateResult = await updateController(
-                    fallbackFirmware,
-                    localController,
-                    uptime,
-                  );
-
-                  if (updateResult.success) {
-                    let statusMessage =
-                      "Update completed successfully with fallback firmware";
-                    if (updateResult.rebootVerified) {
-                      statusMessage += ` and reboot verified (new uptime: ${updateResult.newUptime})`;
-                    } else if (updateResult.message) {
-                      statusMessage += `. ${updateResult.message}`;
-                    }
-
-                    updateStatus(
-                      localController,
-                      "success",
-                      statusMessage,
-                      git_version,
-                      fallbackVersion,
-                    );
-                  } else {
-                    updateStatus(
-                      localController,
-                      "failed",
-                      "Update process failed",
-                    );
-                  }
-                } else {
-                  // No fallback found
-                  updateStatus(
-                    localController,
-                    "skipped",
-                    `No matching firmware found for SOC: ${soc}, type: ${build_type}, branch: ${controllerBranch}`,
-                  );
-                }
-              } catch (error) {
-                console.error(`Error processing local controller:`, error);
-                updateStatus(
-                  localController,
-                  "failed",
-                  `Error: ${error.message}`,
-                );
-              }
+              const identity = firmwareIdentity(versionString);
+              return `${identity.release_line}/${identity.stage}`;
             };
 
             // Process all controllers in parallel
@@ -1450,140 +1191,24 @@ export default {
                 );
 
                 // Find matching firmware with branch consideration
-                const matchingFirmware = firmwareData.firmware.find(
-                  (fw) =>
-                    fw.soc?.toLowerCase() === soc &&
-                    fw.type?.toLowerCase() === build_type &&
-                    (fw.branch || "stable").toLowerCase() === controllerBranch,
+                const automaticSelection = await findAutomaticFirmwareUpdate(
+                  otaUrl.value,
+                  controllerInfo,
                 );
+                const matchingFirmware = automaticSelection.firmware;
 
                 if (!matchingFirmware) {
-                  // Try different fallback options with decreasing specificity
-                  // 1. Same SOC and branch, any build type
-                  let fallbackFirmware = firmwareData.firmware.find(
-                    (fw) =>
-                      fw.soc?.toLowerCase() === soc &&
-                      (fw.branch || "stable").toLowerCase() ===
-                        controllerBranch,
-                  );
-
-                  // 2. Same SOC and build type, any branch
-                  if (!fallbackFirmware) {
-                    fallbackFirmware = firmwareData.firmware.find(
-                      (fw) =>
-                        fw.soc?.toLowerCase() === soc &&
-                        fw.type?.toLowerCase() === build_type,
-                    );
-                  }
-
-                  // 3. Same SOC, any branch, any build type (most generic fallback)
-                  if (!fallbackFirmware) {
-                    fallbackFirmware = firmwareData.firmware.find(
-                      (fw) => fw.soc?.toLowerCase() === soc,
-                    );
-                  }
-
-                  if (fallbackFirmware) {
-                    const fallbackBranch = fallbackFirmware.branch || "stable";
-                    const fallbackDescription = `${fallbackFirmware.soc}/${fallbackFirmware.type}/${fallbackBranch}`;
-                    const fallbackVersion =
-                      fallbackFirmware.fw_version || fallbackFirmware.version;
-
-                    updateStatus(
-                      controller,
-                      "updating",
-                      `No exact firmware match found. Using fallback: ${fallbackDescription} v${fallbackVersion}`,
-                    );
-
-                    // Update with fallback firmware and pass uptime for reboot verification
-                    const updateResult = await updateController(
-                      fallbackFirmware,
-                      controller,
-                      uptime,
-                    );
-
-                    if (updateResult.success) {
-                      let statusMessage = "Updated with fallback firmware";
-
-                      // Add reboot verification details if available
-                      if (updateResult.rebootVerified) {
-                        statusMessage += ` and reboot verified (new uptime: ${updateResult.newUptime})`;
-                      } else if (updateResult.message) {
-                        statusMessage += `. ${updateResult.message}`;
-                      }
-
-                      updateStatus(
-                        controller,
-                        "success",
-                        statusMessage,
-                        git_version,
-                        fallbackVersion,
-                      );
-
-                      results.success++;
-                      results.details.push({
-                        controller: controller.hostname,
-                        status: "success",
-                        from: git_version,
-                        to: fallbackVersion,
-                        note: "Used fallback firmware",
-                        rebootVerified: updateResult.rebootVerified,
-                        message: updateResult.message,
-                      });
-                    } else {
-                      updateStatus(
-                        controller,
-                        "failed",
-                        "Update failed with fallback firmware",
-                      );
-
-                      results.failed++;
-                      results.details.push({
-                        controller: controller.hostname,
-                        status: "failed",
-                        reason: "Update process failed with fallback firmware",
-                      });
-                    }
-                  } else {
-                    // No fallback available
-                    updateStatus(
-                      controller,
-                      "skipped",
-                      `No matching firmware found for SOC: ${soc}, type: ${build_type}, branch: ${controllerBranch}`,
-                    );
-
-                    results.skipped++;
-                    results.details.push({
-                      controller: controller.hostname,
-                      status: "skipped",
-                      reason: `No matching firmware found for SOC: ${soc}, type: ${build_type}, branch: ${controllerBranch}`,
-                    });
-                  }
-
-                  updateUI();
-                  return;
-                }
-
-                // Skip if already on latest version
-                if (
-                  git_version ===
-                  (matchingFirmware.fw_version || matchingFirmware.version)
-                ) {
                   updateStatus(
                     controller,
                     "skipped",
-                    `Already on latest version (${
-                      matchingFirmware.fw_version || matchingFirmware.version
-                    })`,
+                    automaticSelection.reason,
                   );
 
                   results.skipped++;
                   results.details.push({
                     controller: controller.hostname,
                     status: "skipped",
-                    reason: `Already on latest version (${
-                      matchingFirmware.fw_version || matchingFirmware.version
-                    })`,
+                    reason: automaticSelection.reason,
                   });
 
                   updateUI();
@@ -1603,6 +1228,7 @@ export default {
                   matchingFirmware,
                   controller,
                   uptime,
+                  true,
                 );
 
                 if (updateResult.success) {

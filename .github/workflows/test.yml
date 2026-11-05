@@ -35,6 +35,11 @@ jobs:
         run: npm test -- src/services/__tests__/api.spec.js
           src/stores/__tests__/appDataStore.spec.js
           src/services/__tests__/syncService.spec.js
+          src/services/__tests__/firmwareApi.spec.js
+          src/components/Dialogs/firmwareSelectDialog.spec.js
+
+      - name: Build production frontend
+        run: npm run build
 
       - name: Test summary
         if: always()
@@ -46,7 +51,8 @@ jobs:
           echo "- **API Service**: 27 tests (request handling, errors, retries, type safety)" >> $GITHUB_STEP_SUMMARY
           echo "- **Data Store**: 31 tests (state management, CRUD operations, error recovery)" >> $GITHUB_STEP_SUMMARY
           echo "- **Sync Service**: 35 tests (multi-controller sync, data collection, version resolution)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Firmware Selection**: release lines, SoC checks, upgrades, downgrade guard, and automatic update policy" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Total: 93 frontend unit tests**" >> $GITHUB_STEP_SUMMARY
+          echo "**Unit tests and production build are required gates.**" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "_Note: Integration tests require running firmware and are executed manually_" >> $GITHUB_STEP_SUMMARY
