@@ -156,6 +156,11 @@ raise SystemExit('Forbidden git operation in policy test')
         self.assertIn('MAX_FIRMWARE="${{ needs.build.outputs.max_firmware }}"', remote_script)
         self.assertIn('PUBLISH_ARGS+=(--max-firmware "$MAX_FIRMWARE")', remote_script)
 
+    def test_external_spa_publish_does_not_require_firmware_bootstrap_pages(self):
+        document = workflow("deploy.yml")
+        names = {selected.get("name") for selected in document["jobs"]["build"]["steps"]}
+        self.assertNotIn("Copy bootstrap HTML files into dist/spa", names)
+
     def test_publisher_requires_immutable_pin(self):
         document = workflow("deploy.yml")
         selected = step(document, "publish", "Validate publisher pin")
