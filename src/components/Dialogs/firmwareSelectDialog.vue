@@ -2,7 +2,7 @@
   <q-dialog ref="dialogRef" @hide="onDialogHide" persistent>
     <q-card
       class="shadow-4 q-pa-md"
-      style="max-width: 500px; max-height: 640px"
+      style="width: 620px; max-width: 95vw; max-height: 90vh; overflow-y: auto"
     >
       <q-card-section>
         <div class="text-h6">
@@ -49,7 +49,17 @@
 
           <!-- Branch selector -->
           <div class="row q-mb-md">
-            <div class="col-4 q-pr-md">
+            <div class="col-12 col-sm-6 q-pr-sm q-mb-sm">
+              <div class="text-caption">Release line:</div>
+              <mySelect
+                v-model="selectedReleaseLine"
+                :options="availableReleaseLines"
+                emit-value
+                map-options
+                dense
+              />
+            </div>
+            <div class="col-12 col-sm-6 q-pr-sm q-mb-sm">
               <div class="text-caption">Branch:</div>
               <mySelect
                 v-model="selectedBranch"
@@ -75,7 +85,7 @@
             </div>
 
             <!-- Build Type selector -->
-            <div class="col-4 q-pr-md">
+            <div class="col-12 col-sm-6 q-pr-sm q-mb-sm">
               <div class="text-caption">Build Type:</div>
               <mySelect
                 v-model="selectedType"
@@ -91,7 +101,7 @@
             </div>
 
             <!-- Version selector -->
-            <div class="col-4">
+            <div class="col-12 col-sm-6 q-pr-sm q-mb-sm">
               <div class="text-caption">Version:</div>
               <mySelect
                 v-model="selectedVersionId"
@@ -141,6 +151,9 @@
           >
             <div class="text-subtitle2 text-center">Selected Firmware:</div>
             <div>
+              <strong>Release line:</strong> {{ selectedFirmware.release_line }}
+            </div>
+            <div>
               <strong>Branch:</strong> {{ selectedFirmware.branch || "stable" }}
             </div>
             <div><strong>Type:</strong> {{ selectedFirmware.type }}</div>
@@ -174,6 +187,10 @@
 <script>
 import { ref, computed, watch, onMounted } from "vue";
 import { useDialogPluginComponent } from "quasar";
+import {
+  compareFirmwareVersions,
+  firmwareIdentity,
+} from "src/services/firmwareApi.js";
 
 export default {
   name: "FirmwareSelectDialog",
@@ -198,9 +215,39 @@ export default {
       useDialogPluginComponent();
 
     // Selection state - initialize with current values
-    const selectedBranch = ref(props.currentInfo.branch || "stable");
+    const installed = firmwareIdentity(
+      props.currentInfo.app?.git_version || props.currentInfo.git_version,
+    );
+    const selectedReleaseLine = ref(installed.release_line);
+    const selectedBranch = ref(installed.stage);
     const selectedType = ref(props.currentInfo.app?.build_type || "release");
     const selectedVersionId = ref(null);
+    const availableReleaseLines = computed(() =>
+      [
+        ...new Set(
+          props.firmwareOptions
+            .filter((entry) => entry.type === selectedType.value)
+            .map((entry) => entry.release_line),
+        ),
+      ]
+        .sort((left, right) =>
+          left.localeCompare(right, undefined, { numeric: true }),
+        )
+        .map((value) => ({ label: value, value })),
+    );
+    watch([selectedReleaseLine, selectedType], () => {
+      selectedVersionId.value = null;
+      if (
+        !props.firmwareOptions.some(
+          (entry) =>
+            entry.release_line === selectedReleaseLine.value &&
+            entry.type === selectedType.value &&
+            entry.stage === selectedBranch.value,
+        )
+      ) {
+        selectedBranch.value = null;
+      }
+    });
 
     // Color helper for branches - defined before it's used
     const getBranchColor = (branch) => {
@@ -237,10 +284,18 @@ export default {
       const branches = [];
       if (props.firmwareOptions && Array.isArray(props.firmwareOptions)) {
         props.firmwareOptions.forEach((fw) => {
-          const branch = fw.branch || "stable";
+          if (
+            fw.release_line !== selectedReleaseLine.value ||
+            fw.type !== selectedType.value
+          )
+            return;
+          const branch = fw.stage;
           if (!branches.some((b) => b.value === branch)) {
             branches.push({
-              label: branch.charAt(0).toUpperCase() + branch.slice(1), // Capitalize
+              label:
+                { develop: "Develop", testing: "Test", prod: "Stable" }[
+                  branch
+                ] || branch,
               value: branch,
               color: getBranchColor(branch),
             });
@@ -260,15 +315,7 @@ export default {
 
     // Available build types for selected branch
     const availableTypes = computed(() => {
-      if (!selectedBranch.value || !props.firmwareOptions) return [];
-
-      const types = [
-        ...new Set(
-          props.firmwareOptions
-            .filter((fw) => (fw.branch || "stable") === selectedBranch.value)
-            .map((fw) => fw.type),
-        ),
-      ];
+      const types = [...new Set(props.firmwareOptions.map((fw) => fw.type))];
 
       return types
         .map((type) => ({
@@ -299,7 +346,8 @@ export default {
       const result = props.firmwareOptions
         .filter(
           (fw) =>
-            (fw.branch || "stable") === selectedBranch.value &&
+            fw.release_line === selectedReleaseLine.value &&
+            fw.stage === selectedBranch.value &&
             fw.type === selectedType.value,
         )
         .map((fw, index) => ({
@@ -308,11 +356,7 @@ export default {
           id: fw.id || `${fw.soc}_${fw.type}_${fw.fw_version}_${index}`,
           date: fw.date,
           fw: fw,
-        }))
-        .sort((a, b) => {
-          // Sort by version in descending order (newest first)
-          return b.value.localeCompare(a.value, undefined, { numeric: true });
-        });
+        }));
 
       console.log("DEBUG: Available versions:", result);
       return result;
@@ -369,22 +413,8 @@ export default {
     // Safely handle type selection when branch changes
     watch(selectedBranch, (newBranch) => {
       if (!newBranch) {
-        selectedType.value = null;
         selectedVersionId.value = null;
         return;
-      }
-
-      if (availableTypes.value.length > 0) {
-        // Try to maintain current build type if available
-        const currentType = props.currentInfo.build_type;
-        if (availableTypes.value.some((t) => t.value === currentType)) {
-          selectedType.value = currentType;
-        } else {
-          // Default to first type (usually 'release')
-          selectedType.value = availableTypes.value[0].value;
-        }
-      } else {
-        selectedType.value = null;
       }
 
       // Reset version when branch changes
@@ -398,12 +428,7 @@ export default {
         return;
       }
 
-      if (availableVersions.value.length > 0) {
-        // Always select the newest version (first in the sorted list)
-        selectedVersionId.value = availableVersions.value[0].id;
-      } else {
-        selectedVersionId.value = null;
-      }
+      selectedVersionId.value = null;
     });
 
     // Start the update process
@@ -471,11 +496,13 @@ export default {
     const updateButtonLabel = computed(() => {
       if (!selectedFirmware.value) return "Update";
 
-      const currentVersion = props.currentInfo.git_version;
+      const currentVersion =
+        props.currentInfo.app?.git_version || props.currentInfo.git_version;
       const selectedVersion = selectedFirmware.value.fw_version;
-      const currentBranch = props.currentInfo.branch || "stable";
-      const selectedBranch = selectedFirmware.value.branch || "stable";
-      const currentType = props.currentInfo.build_type;
+      const currentBranch = `${installed.release_line}/${installed.stage}`;
+      const selectedBranch = `${selectedFirmware.value.release_line}/${selectedFirmware.value.stage}`;
+      const currentType =
+        props.currentInfo.app?.build_type || props.currentInfo.build_type;
       const selectedType = selectedFirmware.value.type;
 
       // Check if branch or build type is changing
@@ -484,7 +511,7 @@ export default {
       }
 
       // Check if downgrading version
-      const versionComparison = compareVersions(
+      const versionComparison = compareFirmwareVersions(
         selectedVersion,
         currentVersion,
       );
@@ -515,6 +542,8 @@ export default {
       dialogRef,
       onDialogHide,
       onDialogCancel,
+      selectedReleaseLine,
+      availableReleaseLines,
       selectedBranch,
       selectedType,
       selectedVersionId,
