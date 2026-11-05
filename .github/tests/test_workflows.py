@@ -161,6 +161,26 @@ raise SystemExit('Forbidden git operation in policy test')
         names = {selected.get("name") for selected in document["jobs"]["build"]["steps"]}
         self.assertNotIn("Copy bootstrap HTML files into dist/spa", names)
 
+    def test_controller_ota_staging_excludes_build_metadata(self):
+        document = workflow("deploy.yml")
+        payload = ("index.html.gz", "assets/app.js.gz", "assets/style.css.gz", "icons/iconsSprite.svg.gz")
+        for filename in (*payload, "VERSION", "config/pinconfig.json", "icons/favicon.ico"):
+            target = self.directory / "dist/spa" / filename
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(b"asset")
+        selected = step(document, "publish", "Prepare controller OTA bundle")
+        self.execute(selected)
+        output = self.directory / "controller-ota"
+        actual = {asset.relative_to(output).as_posix() for asset in output.rglob("*") if asset.is_file()}
+        self.assertEqual(actual, set(payload))
+        deployment = step(document, "publish", "Deploy webapp to lightinator.de")["run"]
+        self.assertIn("cp -r controller-ota/.", deployment)
+        self.assertNotIn("cp -r dist/spa/.", deployment)
+        checksums = step(document, "publish", "Compute MD5 checksums for webapp files")["run"]
+        self.assertIn("find controller-ota -type f", checksums)
+        (self.directory / "dist/spa/assets/vendor.js.gz").write_bytes(b"extra chunk")
+        self.execute(selected, success=False)
+
     def test_publisher_requires_immutable_pin(self):
         document = workflow("deploy.yml")
         selected = step(document, "publish", "Validate publisher pin")

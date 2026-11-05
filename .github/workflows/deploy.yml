@@ -300,6 +300,29 @@ jobs:
             exit 1
           fi
 
+      - name: Prepare controller OTA bundle
+        run: |
+          mkdir -p controller-ota
+          while IFS= read -r -d '' file; do
+            rel_path="${file#dist/spa/}"
+            mkdir -p "controller-ota/$(dirname "$rel_path")"
+            cp "$file" "controller-ota/$rel_path"
+          done < <(find dist/spa -type f -name "*.gz" -print0)
+          node --input-type=module <<'JS'
+          import assert from "node:assert/strict";
+          import { readdirSync, statSync } from "node:fs";
+
+          const files = readdirSync("controller-ota", { recursive: true })
+            .filter(file => statSync(`controller-ota/${file}`).isFile())
+            .sort();
+          console.log(JSON.stringify(files, null, 2));
+          assert.equal(files.length, 4, "Expected exactly four controller OTA files");
+          assert.equal(files.filter(file => file.endsWith(".js.gz")).length, 1);
+          assert.equal(files.filter(file => file.endsWith(".css.gz")).length, 1);
+          assert(files.includes("index.html.gz"));
+          assert(files.includes("icons/iconsSprite.svg.gz"));
+          JS
+
       - name: Compute MD5 checksums for webapp files
         id: compute_md5
         run: |
@@ -307,7 +330,7 @@ jobs:
           FILES_JSON="["
           first=true
           while IFS= read -r -d '' file; do
-            rel_path="${file#dist/spa/}"
+            rel_path="${file#controller-ota/}"
             md5=$(md5sum "$file" | awk '{print $1}')
             if [ "$first" = "true" ]; then
               first=false
@@ -315,7 +338,7 @@ jobs:
               FILES_JSON+=","
             fi
             FILES_JSON+="{\"path\":\"${rel_path}\",\"md5\":\"${md5}\"}"
-          done < <(find dist/spa -type f -name "*.gz" -print0 | sort -z)
+          done < <(find controller-ota -type f -name "*.gz" -print0 | sort -z)
           FILES_JSON+="]"
           echo "Computed $(echo "$FILES_JSON" | python3 -c 'import sys,json; print(len(json.load(sys.stdin)))') files"
           FILES_JSON_B64=$(echo "$FILES_JSON" | base64 -w 0)
@@ -350,7 +373,7 @@ jobs:
 
           # Prepare staging area
           mkdir -p staging/download/webui/$BRANCH/$VERSION
-          cp -r dist/spa/. staging/download/webui/$BRANCH/$VERSION/
+          cp -r controller-ota/. staging/download/webui/$BRANCH/$VERSION/
           PUBLISHER_DIR="publisher-webapp-${{ github.run_id }}-${{ github.run_attempt }}"
           mkdir -p "staging/$PUBLISHER_DIR"
           cp distribution_publisher/manage_version.py "staging/$PUBLISHER_DIR/manage_version-${{ github.run_id }}-${{ github.run_attempt }}.py"
