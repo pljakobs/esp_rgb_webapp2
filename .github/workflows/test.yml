@@ -37,9 +37,27 @@ jobs:
           src/services/__tests__/syncService.spec.js
           src/services/__tests__/firmwareApi.spec.js
           src/components/Dialogs/firmwareSelectDialog.spec.js
+          src/composables/useLocale.spec.js
 
       - name: Build production frontend
         run: npm run build
+
+      - name: Verify four-file OTA bundle
+        run: |
+          node --input-type=module <<'JS'
+          import assert from "node:assert/strict";
+          import { readdirSync } from "node:fs";
+
+          const files = readdirSync("dist/spa", { recursive: true })
+            .filter(file => file.endsWith(".gz"))
+            .sort();
+          console.log(JSON.stringify(files, null, 2));
+          assert.equal(files.length, 4, "Expected exactly four OTA files");
+          assert.equal(files.filter(file => file.endsWith(".js.gz")).length, 1);
+          assert.equal(files.filter(file => file.endsWith(".css.gz")).length, 1);
+          assert(files.includes("index.html.gz"));
+          assert(files.includes("icons/iconsSprite.svg.gz"));
+          JS
 
       - name: Test summary
         if: always()
@@ -52,6 +70,7 @@ jobs:
           echo "- **Data Store**: 31 tests (state management, CRUD operations, error recovery)" >> $GITHUB_STEP_SUMMARY
           echo "- **Sync Service**: 35 tests (multi-controller sync, data collection, version resolution)" >> $GITHUB_STEP_SUMMARY
           echo "- **Firmware Selection**: release lines, SoC checks, upgrades, downgrade guard, and automatic update policy" >> $GITHUB_STEP_SUMMARY
+          echo "- **Bundling**: all locales bundled, exactly four OTA files" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Unit tests and production build are required gates.**" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
