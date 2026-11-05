@@ -46,7 +46,14 @@ import FirmwareSelectDialog from "src/components/Dialogs/firmwareSelectDialog.vu
 import FirmwareUpdateProgressDialog from "src/components/Dialogs/firmwareUpdateProgressDialog.vue";
 import ControllerSelectionDialog from "src/components/Dialogs/ControllerSelectionDialog.vue";
 import svgIcon from "src/components/svgIcon.vue";
-import { ensureFirmwareTransition, fetchFirmwareVersions, findAutomaticFirmwareUpdate, firmwareIdentity, isAutomaticFirmwareCandidate, revalidateFirmware } from "src/services/firmwareApi.js";
+import {
+  ensureFirmwareTransition,
+  fetchFirmwareVersions,
+  findAutomaticFirmwareUpdate,
+  firmwareIdentity,
+  isAutomaticFirmwareCandidate,
+  revalidateFirmware,
+} from "src/services/firmwareApi.js";
 
 export default {
   components: {
@@ -318,7 +325,10 @@ export default {
     const fetchFirmware = async () => {
       console.log("Fetching firmware from:", otaUrl.value);
       try {
-        availableFirmware.value = await fetchFirmwareVersions(otaUrl.value, infoData.data.device?.soc);
+        availableFirmware.value = await fetchFirmwareVersions(
+          otaUrl.value,
+          infoData.data.device?.soc,
+        );
         firmware.value = availableFirmware.value;
         const installed = infoData.data.app || {};
         const identity = firmwareIdentity(installed.git_version);
@@ -425,19 +435,34 @@ export default {
       automatic = false,
     ) => {
       try {
-        selectedFirmware = await revalidateFirmware(otaUrl.value, selectedFirmware);
-        const installedInfo = !automatic && controller.id === controllersStore.currentController.id
-          ? infoData.data : await fetchControllerInfo(controller, 2000);
-        if (installedInfo.device?.soc?.toLowerCase() !== selectedFirmware.soc?.toLowerCase()) {
-          throw new Error("Selected firmware does not match the controller SoC");
+        selectedFirmware = await revalidateFirmware(
+          otaUrl.value,
+          selectedFirmware,
+        );
+        const installedInfo =
+          !automatic && controller.id === controllersStore.currentController.id
+            ? infoData.data
+            : await fetchControllerInfo(controller, 2000);
+        if (
+          installedInfo.device?.soc?.toLowerCase() !==
+          selectedFirmware.soc?.toLowerCase()
+        ) {
+          throw new Error(
+            "Selected firmware does not match the controller SoC",
+          );
         }
         if (automatic) {
           if (!isAutomaticFirmwareCandidate(selectedFirmware, installedInfo)) {
-            throw new Error("Controller channel changed or no newer release remains; automatic update cancelled");
+            throw new Error(
+              "Controller channel changed or no newer release remains; automatic update cancelled",
+            );
           }
         }
-        await ensureFirmwareTransition(otaUrl.value, selectedFirmware,
-          installedInfo.app?.git_version, installedInfo.app?.webapp_version);
+        await ensureFirmwareTransition(
+          otaUrl.value,
+          selectedFirmware,
+          installedInfo.app?.git_version,
+        );
         console.log(
           "Updating controller:",
           controller.hostname,
@@ -1166,7 +1191,10 @@ export default {
                 );
 
                 // Find matching firmware with branch consideration
-                const automaticSelection = await findAutomaticFirmwareUpdate(otaUrl.value, controllerInfo);
+                const automaticSelection = await findAutomaticFirmwareUpdate(
+                  otaUrl.value,
+                  controllerInfo,
+                );
                 const matchingFirmware = automaticSelection.firmware;
 
                 if (!matchingFirmware) {

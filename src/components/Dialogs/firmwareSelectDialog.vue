@@ -51,8 +51,13 @@
           <div class="row q-mb-md">
             <div class="col-12 col-sm-6 q-pr-sm q-mb-sm">
               <div class="text-caption">Release line:</div>
-              <mySelect v-model="selectedReleaseLine" :options="availableReleaseLines"
-                emit-value map-options dense />
+              <mySelect
+                v-model="selectedReleaseLine"
+                :options="availableReleaseLines"
+                emit-value
+                map-options
+                dense
+              />
             </div>
             <div class="col-12 col-sm-6 q-pr-sm q-mb-sm">
               <div class="text-caption">Branch:</div>
@@ -145,7 +150,9 @@
             class="selected-firmware q-pa-sm q-mt-md rounded-borders"
           >
             <div class="text-subtitle2 text-center">Selected Firmware:</div>
-            <div><strong>Release line:</strong> {{ selectedFirmware.release_line }}</div>
+            <div>
+              <strong>Release line:</strong> {{ selectedFirmware.release_line }}
+            </div>
             <div>
               <strong>Branch:</strong> {{ selectedFirmware.branch || "stable" }}
             </div>
@@ -180,7 +187,10 @@
 <script>
 import { ref, computed, watch, onMounted } from "vue";
 import { useDialogPluginComponent } from "quasar";
-import { compareFirmwareVersions, firmwareIdentity } from "src/services/firmwareApi.js";
+import {
+  compareFirmwareVersions,
+  firmwareIdentity,
+} from "src/services/firmwareApi.js";
 
 export default {
   name: "FirmwareSelectDialog",
@@ -205,20 +215,36 @@ export default {
       useDialogPluginComponent();
 
     // Selection state - initialize with current values
-    const installed = firmwareIdentity(props.currentInfo.app?.git_version || props.currentInfo.git_version);
+    const installed = firmwareIdentity(
+      props.currentInfo.app?.git_version || props.currentInfo.git_version,
+    );
     const selectedReleaseLine = ref(installed.release_line);
     const selectedBranch = ref(installed.stage);
     const selectedType = ref(props.currentInfo.app?.build_type || "release");
     const selectedVersionId = ref(null);
-    const availableReleaseLines = computed(() => [...new Set(props.firmwareOptions
-      .filter((entry) => entry.type === selectedType.value)
-      .map((entry) => entry.release_line))]
-      .sort((left, right) => left.localeCompare(right, undefined, { numeric: true }))
-      .map((value) => ({ label: value, value })));
+    const availableReleaseLines = computed(() =>
+      [
+        ...new Set(
+          props.firmwareOptions
+            .filter((entry) => entry.type === selectedType.value)
+            .map((entry) => entry.release_line),
+        ),
+      ]
+        .sort((left, right) =>
+          left.localeCompare(right, undefined, { numeric: true }),
+        )
+        .map((value) => ({ label: value, value })),
+    );
     watch([selectedReleaseLine, selectedType], () => {
       selectedVersionId.value = null;
-      if (!props.firmwareOptions.some((entry) => entry.release_line === selectedReleaseLine.value &&
-        entry.type === selectedType.value && entry.stage === selectedBranch.value)) {
+      if (
+        !props.firmwareOptions.some(
+          (entry) =>
+            entry.release_line === selectedReleaseLine.value &&
+            entry.type === selectedType.value &&
+            entry.stage === selectedBranch.value,
+        )
+      ) {
         selectedBranch.value = null;
       }
     });
@@ -258,11 +284,18 @@ export default {
       const branches = [];
       if (props.firmwareOptions && Array.isArray(props.firmwareOptions)) {
         props.firmwareOptions.forEach((fw) => {
-          if (fw.release_line !== selectedReleaseLine.value || fw.type !== selectedType.value) return;
+          if (
+            fw.release_line !== selectedReleaseLine.value ||
+            fw.type !== selectedType.value
+          )
+            return;
           const branch = fw.stage;
           if (!branches.some((b) => b.value === branch)) {
             branches.push({
-              label: { develop: "Develop", testing: "Test", prod: "Stable" }[branch] || branch,
+              label:
+                { develop: "Develop", testing: "Test", prod: "Stable" }[
+                  branch
+                ] || branch,
               value: branch,
               color: getBranchColor(branch),
             });
@@ -282,12 +315,7 @@ export default {
 
     // Available build types for selected branch
     const availableTypes = computed(() => {
-      const types = [
-        ...new Set(
-          props.firmwareOptions
-            .map((fw) => fw.type),
-        ),
-      ];
+      const types = [...new Set(props.firmwareOptions.map((fw) => fw.type))];
 
       return types
         .map((type) => ({
@@ -468,11 +496,13 @@ export default {
     const updateButtonLabel = computed(() => {
       if (!selectedFirmware.value) return "Update";
 
-      const currentVersion = props.currentInfo.app?.git_version || props.currentInfo.git_version;
+      const currentVersion =
+        props.currentInfo.app?.git_version || props.currentInfo.git_version;
       const selectedVersion = selectedFirmware.value.fw_version;
       const currentBranch = `${installed.release_line}/${installed.stage}`;
       const selectedBranch = `${selectedFirmware.value.release_line}/${selectedFirmware.value.stage}`;
-      const currentType = props.currentInfo.app?.build_type || props.currentInfo.build_type;
+      const currentType =
+        props.currentInfo.app?.build_type || props.currentInfo.build_type;
       const selectedType = selectedFirmware.value.type;
 
       // Check if branch or build type is changing

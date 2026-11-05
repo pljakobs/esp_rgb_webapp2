@@ -4,21 +4,26 @@ on:
   workflow_run:
     workflows: ["Frontend Tests"]
     types: [completed]
-    branches: [experimental, experimental-externalUI, develop, testing, stable]
+    branches: [experimental, develop, testing, stable, '5.0/**', '5.1/**']
 
   workflow_dispatch:
     inputs:
       branch:
         description: 'Branch to build'
         required: true
-        default: 'develop'
+        default: '5.0/develop'
         type: choice
         options:
+          - 5.0/develop
+          - 5.0/testing
+          - 5.0/prod
+          - 5.1/develop
+          - 5.1/testing
+          - 5.1/prod
           - stable
           - testing
           - develop
           - experimental
-          - experimental-externalUI
 
 permissions:
   contents: write
@@ -33,12 +38,12 @@ jobs:
     if: ${{ github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push' && github.event.workflow_run.head_repository.full_name == github.repository) }}
     outputs:
       version: ${{ steps.create_version.outputs.version }}
-      branch: ${{ steps.get_branch.outputs.branch }}
+      branch: ${{ steps.resolve_release.outputs.release_ref }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
         with:
-          ref: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.branch || github.event.workflow_run.head_branch }}
+          ref: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.branch || github.event.workflow_run.head_sha }}
           token: ${{ secrets.GH_PAT }}
 
       - name: Set up Node.js
@@ -52,19 +57,52 @@ jobs:
       # Generate version information
       - name: Get branch name
         id: get_branch
-        run: echo "branch=$(git rev-parse --abbrev-ref HEAD)" >> $GITHUB_OUTPUT
+        env:
+          CI_EVENT_NAME: ${{ github.event_name }}
+          CI_INPUT_BRANCH: ${{ github.event.inputs.branch }}
+          CI_RUN_BRANCH: ${{ github.event.workflow_run.head_branch }}
+        run: |
+          if [[ "$CI_EVENT_NAME" == "workflow_dispatch" ]]; then
+            echo "branch=$CI_INPUT_BRANCH" >> "$GITHUB_OUTPUT"
+          else
+            echo "branch=$CI_RUN_BRANCH" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Resolve release line and stage
+        id: resolve_release
+        env:
+          CI_SOURCE_BRANCH: ${{ steps.get_branch.outputs.branch }}
+        run: |
+          case "$CI_SOURCE_BRANCH" in
+            5.0/develop|develop) RELEASE_LINE="5.0"; STAGE="develop" ;;
+            5.0/testing|testing) RELEASE_LINE="5.0"; STAGE="testing" ;;
+            5.0/prod|stable) RELEASE_LINE="5.0"; STAGE="prod" ;;
+            5.1/develop|experimental) RELEASE_LINE="5.1"; STAGE="develop" ;;
+            5.1/testing) RELEASE_LINE="5.1"; STAGE="testing" ;;
+            5.1/prod) RELEASE_LINE="5.1"; STAGE="prod" ;;
+            *) echo "Unsupported webapp release ref: $CI_SOURCE_BRANCH" >&2; exit 1 ;;
+          esac
+          RELEASE_REF="$RELEASE_LINE/$STAGE"
+          echo "release_line=$RELEASE_LINE" >> "$GITHUB_OUTPUT"
+          echo "stage=$STAGE" >> "$GITHUB_OUTPUT"
+          echo "release_ref=$RELEASE_REF" >> "$GITHUB_OUTPUT"
 
       - name: Create version file
         id: create_version
+        env:
+          CI_BUILD_NUMBER: ${{ github.run_number }}
+          CI_RELEASE_LINE: ${{ steps.resolve_release.outputs.release_line }}
+          CI_RELEASE_STAGE: ${{ steps.resolve_release.outputs.stage }}
+          CI_RELEASE_REF: ${{ steps.resolve_release.outputs.release_ref }}
         run: |
-          BUILD_NUM=${{ github.run_number }}
-          BRANCH=${{ steps.get_branch.outputs.branch }}
-          VERSION="V5.0-${BUILD_NUM}-${BRANCH}"
+          BUILD_NUM="$CI_BUILD_NUMBER"
+          BRANCH="$CI_RELEASE_REF"
+          VERSION="V${CI_RELEASE_LINE}-${BUILD_NUM}-${CI_RELEASE_STAGE}"
           BUILD_DATE=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
 
           # Generate version.js file with actual values
           sed -i "s/__APP_VERSION__/${VERSION}/g" src/version.js
-          sed -i "s/__APP_BRANCH__/${BRANCH}/g" src/version.js
+          sed -i "s|__APP_BRANCH__|${BRANCH}|g" src/version.js
           sed -i "s/__BUILD_NUMBER__/${BUILD_NUM}/g" src/version.js
           sed -i "s/__BUILD_DATE__/${BUILD_DATE}/g" src/version.js
 
@@ -113,7 +151,7 @@ jobs:
 
       - name: Create download page
         run: |
-          BRANCH=${{ steps.get_branch.outputs.branch }}
+          BRANCH="${{ steps.resolve_release.outputs.release_ref }}"
           mkdir -p gh-pages-content
           VERSION="${{ steps.create_version.outputs.version }}"
           BUILD_DATE=$(date)
@@ -136,7 +174,7 @@ jobs:
 
       - name: Publish branch artifacts to gh-pages
         run: |
-          BRANCH="${{ steps.get_branch.outputs.branch }}"
+          BRANCH="${{ steps.resolve_release.outputs.release_ref }}"
           PUBLISH_DIR="$RUNNER_TEMP/gh-pages-worktree"
 
           git config user.name "github-actions[bot]"
@@ -348,7 +386,7 @@ jobs:
           export VERSION_DB_PATH="${VERSION_DB_PATH:-/home/github-deploy/lightinator-server/firmware.db}"
 
           case "$BRANCH" in
-            stable|testing)
+            */prod|*/testing|stable|testing)
               WEBAPP_TYPE="release"
               ;;
             *)
