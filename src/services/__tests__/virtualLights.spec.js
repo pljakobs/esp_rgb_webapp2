@@ -1,9 +1,17 @@
-import { describe, it, expect } from "vitest";
+import { afterEach, beforeEach, describe, it, expect, vi } from "vitest";
+import { createPinia, setActivePinia } from "pinia";
+import { infoDataStore } from "src/stores/infoDataStore";
 import { LIGHT_CHANNELS, supportsVirtualLights, lightProfile, createLight, validateLightConfiguration } from "../virtualLights.js";
 
 const light = (overrides = {}) => ({ id: "light-a", index: 0, name: "Desk", type: "RGB", pins: [1, 2, 3], is_default: true, ...overrides });
 
 describe("Virtual-light firmware profile", () => {
+  beforeEach(() => {
+    setActivePinia(createPinia());
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
   it("uses only the supported 5.1 firmware line", () => {
     expect(supportsVirtualLights("V5.1.0-6-develop")).toBe(true);
     expect(supportsVirtualLights("V5.1-418-develop")).toBe(true);
@@ -19,6 +27,21 @@ describe("Virtual-light firmware profile", () => {
   it("creates a fresh identity without renumbering existing lights", () => {
     expect(createLight([light({ index: 7 })], "fresh-id")).toMatchObject({ id: "fresh-id", index: 8, is_default: false });
     expect(createLight([], "first").is_default).toBe(true);
+  });
+  it.each([
+    { device: { deviceid: "controller-123" } },
+    { deviceid: "controller-123" },
+  ])("creates device-prefixed IDs over HTTP without randomUUID (%j)", (info) => {
+    infoDataStore().data = info;
+    vi.stubGlobal("crypto", {});
+
+    const first = createLight([]);
+    const second = createLight([first]);
+
+    expect(first).toMatchObject({ index: 0, is_default: true });
+    expect(second).toMatchObject({ index: 1, is_default: false });
+    expect(first.id).toMatch(/^controller-123-\d{9}$/);
+    expect(second.id).toMatch(/^controller-123-\d{9}$/);
   });
 });
 

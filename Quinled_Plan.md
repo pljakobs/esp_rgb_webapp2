@@ -435,6 +435,8 @@ The selected board snapshot accompanies this assignment in persistence; omitted
 here for readability. `light0` is an immutable ID, not an array index. Renaming
 or deleting another light must not change it. Display `Light0 / R` or a friendly
 name; persist light ID and canonical role separately, not a combined string.
+New lights use the frontend's shared `makeID()` helper (device ID plus random
+local suffix), so creation also works over plain HTTP without `crypto.randomUUID()`.
 Derive the inverse per-pin view from `lights[].outputs`; do not store a second
 writable assignment list.
 

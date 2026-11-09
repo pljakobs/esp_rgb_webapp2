@@ -1,3 +1,5 @@
+import { makeID } from "src/services/tools";
+
 export const LIGHT_CHANNELS = Object.freeze({
   RGB: ["r", "g", "b"],
   RGBWW: ["r", "g", "b", "ww"],
@@ -23,7 +25,7 @@ export function lightProfile(light) {
   };
 }
 
-export function createLight(lights, id = crypto.randomUUID()) {
+export function createLight(lights, id = makeID()) {
   const index = Math.max(-1, ...lights.map((light) => light.index)) + 1;
   if (index >= 65535) throw new Error("No unused light index available.");
   return {
