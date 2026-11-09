@@ -117,7 +117,7 @@
 import { ref, computed, watch } from "vue";
 import svgIcon from "src/components/svgIcon.vue";
 import materialIconsRaw from "@quasar/extras/material-symbols-outlined/icons.json";
-import fontAwesomeIconsRaw from "@quasar/extras/fontawesome-v6/icons.json";
+import fontAwesomeIconsRaw from "@quasar/extras/fontawesome-v7/icons.json";
 
 export default {
   name: "MaterialIconBrowser",
@@ -183,7 +183,7 @@ export default {
 
         return {
           name: snake,
-          url: `https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6/svgs/solid/${snake}.svg`,
+          url: `https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@7/svgs/solid/${snake}.svg`,
         };
       });
 
