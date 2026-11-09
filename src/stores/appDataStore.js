@@ -99,7 +99,7 @@ export const useAppDataStore = defineStore("appData", {
   },
 
   actions: {
-    async fetchData() {
+    async fetchData({ replace = false } = {}) {
       try {
         this.storeStatus = storeStatus.store.LOADING;
         const { jsonData } = await apiService.getData();
@@ -111,7 +111,7 @@ export const useAppDataStore = defineStore("appData", {
 
         // Merge fetched data with local data based on timestamps instead of blindly overwriting
         // This preserves optimistic updates and prevents race conditions when switching controllers
-        if (this.data && (this.data.presets || this.data.controllers)) {
+        if (!replace && this.data && (this.data.presets || this.data.controllers)) {
           console.log("Merging fetched data with local data...");
 
           // Helper for timestamp comparison and merging

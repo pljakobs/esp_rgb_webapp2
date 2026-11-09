@@ -16,6 +16,7 @@ export const useVirtualLightsStore = defineStore("virtualLights", {
   state: () => ({
     controllerIp: null,
     firmwareVersion: null,
+    deviceSoc: null,
     configuration: null,
     catalog: null,
     selectedId: null,
@@ -33,6 +34,10 @@ export const useVirtualLightsStore = defineStore("virtualLights", {
       return this.controllerIp === useControllersStore().currentController?.ip_address && supportsVirtualLights(this.firmwareVersion);
     },
     lights: (state) => state.configuration?.lights ?? [],
+    compatibleBoards: (state) => {
+      const soc = state.deviceSoc?.toLowerCase();
+      return state.catalog?.boards?.filter((board) => board.soc?.toLowerCase() === soc) ?? [];
+    },
     selectedLight() { return this.lights.find((light) => light.id === this.selectedId) ?? null; },
     profile() { return lightProfile(this.selectedLight); },
   },
@@ -61,6 +66,7 @@ export const useVirtualLightsStore = defineStore("virtualLights", {
       ++this.colorToken;
       this.controllerIp = controller.ip_address;
       this.firmwareVersion = null;
+      this.deviceSoc = null;
       this.configuration = null;
       this.catalog = null;
       this.selectedId = selectedId;
@@ -75,6 +81,7 @@ export const useVirtualLightsStore = defineStore("virtualLights", {
         const info = unwrap(await apiService.getInfo(controller));
         if (!current()) return;
         this.firmwareVersion = info?.app?.git_version ?? info?.git_version;
+        this.deviceSoc = info?.device?.soc ?? info?.soc ?? null;
         if (!supportsVirtualLights(this.firmwareVersion)) return;
         const config = unwrap(await apiService.getConfig(controller));
         if (!current()) return;
@@ -136,7 +143,9 @@ export const useVirtualLightsStore = defineStore("virtualLights", {
       const token = this.loadToken;
       const original = JSON.stringify(this.configuration);
       const candidate = clone(configuration);
-      const board = this.catalog?.boards?.find((entry) => entry.id === candidate.board_id && entry.revision === candidate.board_revision);
+      if (!this.deviceSoc) throw new Error("Controller SoC is unavailable.");
+      candidate.soc = this.deviceSoc;
+      const board = this.compatibleBoards.find((entry) => entry.id === candidate.board_id && entry.revision === candidate.board_revision);
       const errors = validateLightConfiguration(candidate, board);
       if (errors.length) throw new Error(errors.join("\n"));
       this.saving = true;

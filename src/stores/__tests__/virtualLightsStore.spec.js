@@ -16,13 +16,28 @@ beforeEach(() => {
   setActivePinia(createPinia());
   vi.resetAllMocks();
   mocks.controllers = reactive({ currentController: { ip_address: "192.168.29.69" } });
-  mocks.info = reactive({ data: { app: { git_version: "V5.1.0-6-develop" } } });
-  mocks.api.getInfo.mockResolvedValue(response({ app: { git_version: "V5.1.0-6-develop" } }));
+  mocks.info = reactive({ data: { device: { soc: "esp32" }, app: { git_version: "V5.1.0-6-develop" } } });
+  mocks.api.getInfo.mockResolvedValue(response({ device: { soc: "esp32" }, app: { git_version: "V5.1.0-6-develop" } }));
   mocks.api.getConfig.mockImplementation(async () => response({ hardware: { configuration: configuration() } }));
   mocks.api.fetchApi.mockImplementation(async (endpoint) => response(endpoint === "catalog" ? { boards: [], templates: [] } : { raw: [0] }));
 });
 
 describe("Controller-scoped virtual lights", () => {
+  it("filters board choices by the reported SoC rather than stale configuration", async () => {
+    mocks.api.fetchApi.mockResolvedValue(response({
+      boards: [
+        { id: "mini", name: "QuinLED An-Penta-Mini", soc: "esp32c3", revision: 1 },
+        { id: "deca", name: "QuinLED An-Penta-Deca", soc: "esp32", revision: 1 },
+      ],
+      templates: [],
+    }));
+    const store = useVirtualLightsStore();
+    await store.load();
+    expect(store.configuration.soc).toBe("esp32c3");
+    expect(store.deviceSoc).toBe("esp32");
+    expect(store.compatibleBoards.map((board) => board.id)).toEqual(["deca"]);
+  });
+
   const twoLights = () => ({
     ...configuration(),
     lights: [
@@ -54,7 +69,7 @@ describe("Controller-scoped virtual lights", () => {
     expect(mocks.api.getConfig).not.toHaveBeenCalled();
     expect(mocks.api.fetchApi).not.toHaveBeenCalled();
 
-    const updatedInfo = { app: { git_version: "V5.1.0-7-develop" } };
+    const updatedInfo = { device: { soc: "esp32" }, app: { git_version: "V5.1.0-7-develop" } };
     mocks.api.getInfo.mockResolvedValue(response(updatedInfo));
     mocks.info.data = updatedInfo;
     await flushPromises();
@@ -149,7 +164,7 @@ describe("Controller-scoped virtual lights", () => {
     draft.lights[0].name = "Renamed";
     mocks.api.getConfig.mockResolvedValueOnce(response({ hardware: { configuration: configuration() } })).mockResolvedValueOnce(response({ hardware: { configuration: { ...draft, revision: 1 } } }));
     await store.apply(draft);
-    expect(mocks.api.fetchApi).toHaveBeenCalledWith("config", { ip_address: "192.168.29.69" }, expect.objectContaining({ atomic: true, body: { hardware: { configuration: { ...draft, revision: 1 } } } }));
+    expect(mocks.api.fetchApi).toHaveBeenCalledWith("config", { ip_address: "192.168.29.69" }, expect.objectContaining({ atomic: true, body: { hardware: { configuration: { ...draft, soc: "esp32", revision: 1 } } } }));
     expect(store.configuration.lights[0].name).toBe("Renamed");
     expect(draft.revision).toBe(0);
   });

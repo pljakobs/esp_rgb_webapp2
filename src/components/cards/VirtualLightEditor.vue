@@ -62,8 +62,8 @@ const dirty = computed(() => JSON.stringify(draft.value) !== JSON.stringify(ligh
 const selectedLight = computed(() => draft.value?.lights.find((light) => light.id === selectedId.value));
 const defaultId = computed(() => draft.value?.lights.find((light) => light.is_default)?.id);
 const lightOptions = computed(() => draft.value?.lights.map((light) => ({ label: light.name || light.id, value: light.id })) ?? []);
-const boardOptions = computed(() => [{ label: "Custom GPIOs", value: "" }, ...(lights.catalog?.boards?.filter((entry) => entry.soc === draft.value?.soc).map((entry) => ({ label: `${entry.name} (rev ${entry.revision})`, value: entry.id })) ?? [])]);
-const board = computed(() => lights.catalog?.boards?.find((entry) => entry.id === draft.value?.board_id && entry.revision === draft.value?.board_revision));
+const boardOptions = computed(() => [{ label: "Custom GPIOs", value: "" }, ...(lights.compatibleBoards ?? []).map((entry) => ({ label: `${entry.name} (rev ${entry.revision})`, value: entry.id }))]);
+const board = computed(() => lights.compatibleBoards?.find((entry) => entry.id === draft.value?.board_id && entry.revision === draft.value?.board_revision));
 const validationErrors = computed(() => validationAttempted.value && draft.value ? validateLightConfiguration(draft.value, board.value) : []);
 const channels = computed(() => LIGHT_CHANNELS[selectedLight.value?.type] ?? []);
 const pinOptions = (index) => {
@@ -79,9 +79,10 @@ const pinOptions = (index) => {
   return (board.value?.implemented_pins ?? []).filter((pin) => pin.allowed_functions?.includes("light.pwm")).map((pin) => ({ label: `${pin.label || pin.id} (GPIO ${pin.gpio})`, value: pin.gpio, disable: reservations.includes(pin.gpio) }));
 };
 const changeBoard = (id) => {
-  const entry = lights.catalog?.boards?.find((entry) => entry.id === id && entry.soc === draft.value.soc);
+  const entry = lights.compatibleBoards?.find((entry) => entry.id === id);
   draft.value.board_id = id ?? "";
   draft.value.board_revision = entry?.revision ?? 0;
+  draft.value.soc = lights.deviceSoc;
 };
 const addLight = () => {
   try {

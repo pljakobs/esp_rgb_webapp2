@@ -19,10 +19,7 @@ export const useColorDataStore = defineStore("colorDataStore", {
   actions: {
     async fetchData() {
       console.log("colorDataStore before fetch:", this);
-      // Only set LOADING on initial fetch; preserve status during polling updates
-      if (this.isInitialLoad) {
-        this.status = storeStatus.LOADING;
-      }
+      this.status = storeStatus.LOADING;
 
       try {
         const { jsonData, error } = await apiService.getColorData();

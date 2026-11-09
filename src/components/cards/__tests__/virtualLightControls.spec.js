@@ -52,7 +52,15 @@ const global = {
 
 beforeEach(() => {
   vi.useFakeTimers();
-  mocks.lights = reactive({ enabled: false, loading: false, start: vi.fn() });
+  mocks.lights = reactive({
+    enabled: false,
+    loading: false,
+    deviceSoc: "esp32c3",
+    get compatibleBoards() {
+      return this.catalog?.boards ?? [];
+    },
+    start: vi.fn(),
+  });
   vi.clearAllMocks();
   mocks.fetchApi.mockResolvedValue({ jsonData: { raw: [500] }, error: null });
 });
