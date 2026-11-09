@@ -1,6 +1,7 @@
 <template>
   <TransitionModeCard />
   <ColorModelCard @update:color-model="handleColorModelUpdate" />
+  <ControllerConfigCard v-if="!lights.loading" :key="lights.controllerIp" :pwm-only="lights.enabled" />
   <WhiteBalanceCard v-if="supportsColorTemp" />
 </template>
 
@@ -10,15 +11,20 @@ import { configDataStore } from "src/stores/configDataStore";
 import TransitionModeCard from "src/components/cards/TransitionModeCard.vue";
 import ColorModelCard from "src/components/cards/ColorModelCard.vue";
 import WhiteBalanceCard from "src/components/cards/WhiteBalanceCard.vue";
+import ControllerConfigCard from "src/components/cards/ControllerConfigCard.vue";
+import { useVirtualLightsStore } from "src/stores/virtualLightsStore";
 
 export default {
   components: {
     TransitionModeCard,
     ColorModelCard,
     WhiteBalanceCard,
+    ControllerConfigCard,
   },
   setup() {
     const configData = configDataStore();
+    const lights = useVirtualLightsStore();
+    lights.start();
 
     const colorMode = ref(configData.data.color.color_mode || 0);
 
@@ -57,6 +63,7 @@ export default {
     });
 
     return {
+      lights,
       colorMode,
       TransitionModeCard,
       ColorModelCard,

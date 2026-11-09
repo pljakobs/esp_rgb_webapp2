@@ -123,6 +123,9 @@
     }
   },
   "color": {
+    "brightness": "Brillo",
+    "colorTemperature": "Temperatura de color",
+    "tunableWhite": "Blanco ajustable",
     "saveAs": "Guardar como preset {model}",
     "presetName": "Nombre del preset",
     "favorites": "Favoritos",
@@ -233,7 +236,7 @@
       "resetChanges": "Restablecer todos los cambios"
     },
     "colorModel": {
-      "title": "Color",
+      "title": "Configuración de luces",
       "colorModel": "Modelo de color"
     },
     "firmwareUpdate": {

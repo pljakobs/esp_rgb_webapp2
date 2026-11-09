@@ -32,7 +32,7 @@ const sleep = (ms) =>
   new Promise((resolve) => setTimeout(resolve, Math.max(ms, 0)));
 
 export default async function initializeStores(options = {}) {
-  const { force = false } = options;
+  const { force = false, refreshControllers = force } = options;
 
   if (initPromise) {
     return initPromise;
@@ -92,7 +92,7 @@ export default async function initializeStores(options = {}) {
         return;
       }
 
-      const shouldFetchControllers = force || !controllersLoaded;
+      const shouldFetchControllers = refreshControllers || !controllersLoaded;
       if (shouldFetchControllers) {
         console.log("Fetching controllers data (force:", force, ")");
         await controllers.fetchData();
@@ -111,7 +111,8 @@ export default async function initializeStores(options = {}) {
       }
 
       const controllerKey = `${activeController.hostname}|${activeController.ip_address}`;
-      if (controllerKey !== lastControllerKey) {
+      const controllerChanged = controllerKey !== lastControllerKey;
+      if (controllerChanged) {
         console.log("Controller changed, resetting store caches");
         lastControllerKey = controllerKey;
         Object.keys(storeCacheKeys).forEach((key) => {
@@ -155,7 +156,7 @@ export default async function initializeStores(options = {}) {
         {
           key: "appData",
           store: appDataStore,
-          fetch: () => appDataStore.fetchData(),
+          fetch: () => appDataStore.fetchData({ replace: controllerChanged }),
         },
       ];
 
@@ -180,6 +181,10 @@ export default async function initializeStores(options = {}) {
 
       if (isStale()) {
         return;
+      }
+
+      if (infoStore.status === storeStatus.READY && infoStore.data?.runtime) {
+        runtimeHistoryStore.runtime = infoStore.data.runtime;
       }
 
       appDataStore.watchForSync();

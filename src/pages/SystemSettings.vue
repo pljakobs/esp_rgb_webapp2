@@ -7,7 +7,6 @@
       <FirmwareUpdateCard />
       <WebappUpdateCard />
       <HostnameCard />
-      <ControllerConfigCard />
       <SaveRestoreConfig />
       <DebugFunctionCard v-if="infoData.data?.app?.build_type === 'debug'" />
       <LogViewerCard v-if="infoData.data?.app?.build_type === 'debug'" />
@@ -21,7 +20,6 @@ import InformationCard from "src/components/cards/InformationCard.vue";
 import FirmwareUpdateCard from "src/components/cards/FirmwareUpdateCard.vue";
 import WebappUpdateCard from "src/components/cards/WebappUpdateCard.vue";
 import LogViewerCard from "src/components/cards/LogViewerCard.vue";
-import ControllerConfigCard from "src/components/cards/ControllerConfigCard.vue";
 import SaveRestoreConfig from "src/components/SaveRestoreConfig.vue";
 import DebugFunctionCard from "src/components/cards/DebugFunctionCard.vue";
 import HostnameCard from "src/components/cards/HostnameCard.vue";
@@ -31,7 +29,6 @@ export default {
     InformationCard,
     FirmwareUpdateCard,
     WebappUpdateCard,
-    ControllerConfigCard,
     DebugFunctionCard,
     SaveRestoreConfig,
     LogViewerCard,

@@ -123,6 +123,9 @@
     }
   },
   "color": {
+    "brightness": "Helligkeit",
+    "colorTemperature": "Farbtemperatur",
+    "tunableWhite": "Weißlicht",
     "saveAs": "Als {model}-Preset speichern",
     "presetName": "Preset-Name",
     "favorites": "Favoriten",
@@ -233,7 +236,7 @@
       "resetChanges": "Alle Änderungen zurücksetzen"
     },
     "colorModel": {
-      "title": "Farbe",
+      "title": "Leuchtenkonfiguration",
       "colorModel": "Farbmodell"
     },
     "firmwareUpdate": {

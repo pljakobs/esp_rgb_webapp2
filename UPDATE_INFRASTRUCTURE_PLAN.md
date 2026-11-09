@@ -1,7 +1,8 @@
 # Version-Aware Update Infrastructure Plan
 
-Status: production read-only discovery deployed; client/CI and device firmware
-qualification remain open. Scope corrected and verified 2026-11-04.
+Status: production discovery/publication deployed; single-device upgrade completed
+(user-confirmed), HA client policy released, fleet pending, storage/recovery
+qualification deferred. Publication/diagnostic paths are verified. Updated 2026-11-05.
 Priority: M1 in [MASTER_PLAN.md](MASTER_PLAN.md), before versioned-line cutover.
 
 ## Active Publishing Decision
@@ -20,62 +21,86 @@ on the local test instance. HTTP upload/promotion instructions elsewhere in this
 document are deferred design, not requirements for this rollout. Existing staged
 publication code is retained for later security hardening, not enabled for users.
 
+## Current Upgrade and Close-Out Policy (2026-11-05)
+
+Manual upgrades to newer firmware lines require a compatible SoC and unchanged
+eligible artifacts, not an installed bridge or source-line qualification. The
+minimum API contract is currently shared. Cross-line downgrades are guarded while
+ConfigDB schema compatibility is investigated. Automatic firmware updates stay on
+the installed line/stage/build type; webapps follow the firmware line and stage.
+There is no independent webapp selector or mandatory transition negotiation.
+This does not require separate frontend forks: the webapp stays unified and its
+current source branches/build triggers are unchanged. Only firmware unversioned
+source refs are being retired from build configuration; legacy download/API
+compatibility and default-branch workflow hosting remain intact.
+
+The single-device 5.0 to 5.1 flow is user-confirmed complete. Mixed-device fleet
+testing is pending. Storage/reserve measurement and interrupted-install/recovery
+qualification are explicitly deferred, not silently counted as passed. HA policy
+is released as v0.1.27 with 13 isolated tests; testing the full lifecycle in a
+running HA instance remains separate. Current publication/diagnostic rollout
+evidence is tracked in [MASTER_PLAN.md](MASTER_PLAN.md#close-out-decisions-2026-11-05).
+
+The actual controller manifest must contain exactly four runtime gzip files:
+HTML, one JS including all locales, one CSS and the icon sprite. Publisher staging
+must exclude VERSION, pin configuration, favicon and other build metadata; checking
+only the gzip count inside a larger deployed directory is insufficient.
+
 ## Implementation Status (2026-11-03)
 
 `[x]` records local implementation with focused test evidence. It does not mean
 deployed, compatible with every historical installation, or ready for cutover.
 
 - [x] Server: additive SQLite firmware identity/integrity fields; version-aware
-  firmware options, versions, latest, numeric line ordering, and ESP8266 exclusion.
+      firmware options, versions, latest, numeric line ordering, and ESP8266 exclusion.
 - [x] Server: legacy-shaped webapp latest manifest and v2 webapp options/versions/
-  latest, including capability, firmware/API range, and asset-size filtering.
-- [x] Server: cross-line transition planner requiring explicit source-line approval
-  and an installed bridge declared compatible with both firmware versions.
-- [x] Server: staged webapp archive validation and immutable bridge publication;
-  malformed or changed uploads leave the previous bridge available.
+      latest, including capability, firmware/API range, and asset-size filtering.
+- [x] Manual upgrades no longer require source-line qualification or installed
+  bridge verification; separate cross-line downgrade review remains.
+- [x] Deferred HTTP upload implementation validates immutable webapp archives;
+  malformed or changed uploads preserve existing bundles. Not an M1 gate.
 - [x] Frontend: API service with legacy-API fallback, normalized historical identities,
-  release-line/stage/type selection, SemVer ordering, and stale-selection handling.
-- [x] Frontend: per-device fleet candidate resolution, artifact revalidation, and
-  bridge-first checks before a cross-line OTA request. Same-line updates do not
-  depend on the new transition endpoint.
+      release-line/stage/type selection, SemVer ordering, and stale-selection handling.
+- [x] Frontend: per-device fleet candidate resolution and artifact revalidation;
+  manual upward line changes do not depend on a transition endpoint.
 - [x] Home Assistant: line-aware discovery/preferences and pre-install artifact/
-  bridge checks; isolated identity/client/transition tests pass.
+  target checks; compatible upgrades need no bridge. Released as v0.1.27.
 - [x] Integrate the M1 adapters with `feature/multi-product-ota-releases`, including
-  published-release discovery, deterministic legacy projection, non-destructive
-  import, old-publisher coexistence, and signed cross-line policy handling.
+      published-release discovery, deterministic legacy projection, non-destructive
+      import and old-publisher coexistence. Signed lifecycle work remains deferred.
 - [x] Run an isolated loopback server with a temporary database and verify the
-  actual frontend and HA discovery clients; publishing requests are rejected.
+      actual frontend and HA discovery clients; publishing requests are rejected.
 - [x] Adapt `manage_version.py` for direct database publishing while preserving
-  the secured transport and compatible CI command interface.
+      the secured transport and compatible CI command interface.
 - [x] Upload per-run publisher bundles from a pinned, tested distribution-server
-  revision in both CI publishers; verify the SQLite contract and preserve SSH/rsync.
-- [ ] Publish the reviewed commit and set `DISTRIBUTION_PUBLISHER_SHA` in both
-  repositories; branch names and unset pins are rejected before checkout/publishing.
+      revision in both CI publishers; verify the SQLite contract and preserve SSH/rsync.
+- [x] Publish the reviewed commit and set `DISTRIBUTION_PUBLISHER_SHA` in both
+      repositories; branch names and unset pins are rejected before checkout/publishing.
 - [ ] Deploy the compatible server/schema before those workflows and qualify actual server
-  database ownership, asset roots, concurrent publishers, and completed artifact sets.
+      database ownership, asset roots, concurrent publishers, and completed artifact sets.
 - [x] Remove obsolete frontend catalogue merging and all broad fleet update
-  fallbacks; both update flows use API discovery rather than the JSON projection.
+      fallbacks; both update flows use API discovery rather than the JSON projection.
 - [x] Test Update All against mixed SoCs/build types, unchanged/older candidates,
-  unknown identities, historical aliases and a competing `5.1/testing` release
-  while the controller remains pinned to `5.0/testing`. Check again before OTA.
-- [ ] Complete browser/fleet/device integration tests; unit tests do not flash devices.
+      unknown identities, historical aliases and a competing `5.1/testing` release
+      while the controller remains pinned to `5.0/testing`. Check again before OTA.
+- [x] Single-device 5.0 to 5.1 flow (user-confirmed on 2026-11-05).
+- [ ] Complete mixed-device/fleet integration tests; unit tests do not flash devices.
 - [ ] Fully qualify HA options migration and install lifecycle in Home Assistant.
-- [ ] Complete structured firmware identity/capability/asset-budget discovery and
-  independent device-side webapp update preferences/negotiation.
+- [ ] Confirm remaining deployed identity and per-line webapp selection paths;
+  independent frontend preferences/negotiation are not part of this close-out.
 - [ ] Complete production DTO/OpenAPI qualification, reviewed legacy-record backfill,
-  alias policy, signed/publication metadata integration, catalogue projection, and
-  whole-release artifact-completeness gates. Integrated signed releases use
-  release/artifact/channel identities; imported records use namespaced legacy IDs.
+      alias policy, signed/publication metadata integration, catalogue projection, and
+      whole-release artifact-completeness gates. Integrated signed releases use
+      release/artifact/channel identities; imported records use namespaced legacy IDs.
 - [ ] Deploy and shadow-test the actual server; qualify existing download paths and
-  the legacy `/api/webapp/latest` behavior against deployed controllers.
-- [ ] Publish verified bridge artifacts and qualified migration policies, retain
-  last-compatible feeds, and prove that every maintained installed pair has a
-  reachable update path before retiring any endpoint or artifact.
-- [ ] Measure safe filesystem/staging budgets, test mixed firmware/frontend pairs,
-  and exercise interrupted updates, reboot verification, rollback, and recovery
-  on ESP8266, ESP32, and ESP32-C3 hardware.
+      the legacy `/api/webapp/latest` behavior against deployed controllers.
+- [ ] Retain compatible feeds and verify old-client discovery/update paths before
+  retiring any endpoint or artifact; no mandatory bridge publication.
+- [ ] Deferred: measure safe filesystem/staging budgets, test mixed firmware/frontend pairs,
+      and exercise interrupted updates, reboot verification, rollback, and recovery
+      on ESP8266, ESP32, and ESP32-C3 hardware.
 - [ ] Integrate CI identity/publication and diagnostic lookup, then satisfy M1 gates
-  before M2 branch/dependency cutover.
+      before M2 branch/dependency cutover.
 
 ### Verification Evidence
 
@@ -160,15 +185,15 @@ binary URL for a heterogeneous fleet. Home Assistant uses the same server contra
 
 ## Identity and Terminology
 
-| Field | Meaning | Example |
-| --- | --- | --- |
-| `release_line` | Numeric major/minor policy and selector | `5.1` |
-| `stage` | Canonical promotion stage | `develop`, `testing`, `prod` |
-| `build_type` | Firmware build variant | `debug`, `release` |
-| `version` | Full release version, including prerelease where applicable | `5.1.0-dev.42` |
-| `source_ref` | Git provenance, not a discovery field | `5.1/develop` |
-| `release_id` | Immutable release/manifest identity | Opaque server identifier |
-| `artifact_key` | Transport-safe CI key, not public branch identity | `5.1-develop` |
+| Field          | Meaning                                                     | Example                      |
+| -------------- | ----------------------------------------------------------- | ---------------------------- |
+| `release_line` | Numeric major/minor policy and selector                     | `5.1`                        |
+| `stage`        | Canonical promotion stage                                   | `develop`, `testing`, `prod` |
+| `build_type`   | Firmware build variant                                      | `debug`, `release`           |
+| `version`      | Full release version, including prerelease where applicable | `5.1.0-dev.42`               |
+| `source_ref`   | Git provenance, not a discovery field                       | `5.1/develop`                |
+| `release_id`   | Immutable release/manifest identity                         | Opaque server identifier     |
+| `artifact_key` | Transport-safe CI key, not public branch identity           | `5.1-develop`                |
 
 For now, UI labels `test` and `stable` map to existing canonical stages `testing`
 and `prod`. This avoids silently renaming the agreed Git stages. Normalize input
@@ -223,15 +248,15 @@ New wire contract: `/api/v2`, implemented locally at the endpoints below.
 The table describes the target contract; remaining DTO/qualification work is
 listed above. These routes have not been verified on the deployed service.
 
-| Endpoint | Required Behavior |
-| --- | --- |
-| `GET /api/v2/firmware/options` | Given controller target/installed context and any selected filters, return eligible release lines, stages, build types, defaults, and migration warnings. |
-| `GET /api/v2/firmware/versions` | Require `soc`, `release_line`, `stage`, `build_type`; return compatible releases in explicit version order, with stable IDs and artifact metadata. |
-| `GET /api/v2/firmware/latest` | Same constraints; return one eligible release or explicit no-match, never a global latest. |
-| `GET /api/v2/firmware/transition` | Implemented locally: report ready, bridge-required, or blocked for an installed identity and target ID; same-line updates remain available. |
-| `GET /api/v2/webapp/options` | Return eligible frontend releases/stages for the device API/capabilities and asset budget, independently of firmware source branch. |
-| `GET /api/v2/webapp/versions` | Return qualified frontend releases and package metadata for the supplied device context. |
-| `GET /api/v2/webapp/latest` | Return the newest compatible frontend in its separately selected stage/track, or explicit no-match. |
+| Endpoint                          | Required Behavior                                                                                                                                         |
+| --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /api/v2/firmware/options`    | Given controller target/installed context and any selected filters, return eligible release lines, stages, build types, defaults, and migration warnings. |
+| `GET /api/v2/firmware/versions`   | Require `soc`, `release_line`, `stage`, `build_type`; return compatible releases in explicit version order, with stable IDs and artifact metadata.        |
+| `GET /api/v2/firmware/latest`     | Same constraints; return one eligible release or explicit no-match, never a global latest.                                                                |
+| `GET /api/v2/firmware/transition` | Legacy-compatible optional endpoint: upward line changes are ready for a matching target; cross-line downgrades require ConfigDB review. Clients need not call it for upgrades. |
+| `GET /api/v2/webapp/options`      | Return eligible frontend stages within the installed firmware release line, subject to API/capability and asset constraints. |
+| `GET /api/v2/webapp/versions`     | Return qualified frontend releases and package metadata for the supplied device context.                                                                  |
+| `GET /api/v2/webapp/latest`       | Return the newest compatible frontend in the firmware release line and stage, or explicit no-match. |
 
 Example firmware query:
 
@@ -241,8 +266,8 @@ Example firmware query:
 
 Responses carry the explicit identity fields above, compatibility results, and
 artifact URLs/checksums/sizes; clients consume the returned URLs without rebuilding
-paths. Option results must distinguish a hardware-eligible line from an actually
-qualified migration from the current configuration. Return lists as empty when
+paths. Option results express hardware-eligible lines without a separate upgrade
+qualification requirement. Return lists as empty when
 no releases match, `404` for latest with no candidate, and a validation error for
 invalid filter combinations. Define concrete DTOs/OpenAPI and fixture examples
 before implementation. Reuse shared validation across upload and discovery.
@@ -262,27 +287,25 @@ Server-side filtering does not replace client/device validation.
   feed. Do not silently redirect installed 5.0 ESP32 devices to 5.1. Handle
   `experimental` through reviewed historical mapping, not a universal alias rule.
 - Verify the deployed server revision and routing: firmware currently calls
-  `/api/webapp/latest`; its compatible adapter is now implemented and unit-tested
-  locally. Deployed behavior still needs qualification before publishing a bridge
-  firmware that depends on it.
+  `/api/webapp/latest`; its compatible adapter is implemented and deployed.
+  Legacy and canonical 5.0 aliases were verified against the four-file manifest.
 - Old clients without enough context receive only qualified legacy-compatible
   records. Unknown compatibility means no automatic migration, not an assumption
   that a higher numeric firmware version is safe.
 
 ## Update Consumers and CI
 
-- Firmware info/ConfigDB: add structured identity and optional frontend update
-  preferences without changing legacy field meanings. Publish actual API/build
-  capabilities and asset budget; retain a verified fallback for older controllers.
+- Firmware info/ConfigDB: retain verifiable installed identity without changing
+  legacy field meanings. Optional richer capability/budget metadata is additive;
+  independent frontend update preferences are not an upgrade prerequisite.
 - Webapp: replace branch string splitting and static catalogue merging with the
   selector contract and explicit selected IDs. Keep adapters for supported old
   firmware/server combinations, and update single-device and fleet flows together.
 - Home Assistant: use the same dimensions in options/update entities, migrate
   saved branch preferences, and preserve entity identity. Do not interpret
   `5.1-develop` as a canonical branch or an automatically approved line change.
-- Firmware webapp OTA: replace branch extraction/fallback to `experimental` with
-  explicit compatibility and frontend preferences. Negotiate response support;
-  retain bridge behavior for older servers and test Host without a hard-coded feed.
+- Firmware webapp OTA: retain compatible legacy response handling and select the
+  newest compatible bundle within the installed firmware line and stage.
 - Binary OTA: reuse the existing transfer/partition machinery where compatible;
   validate candidate metadata/format before flashing. Preserve watchdog, progress,
   inactive-partition checks, reboot verification, and failure recovery.
@@ -293,13 +316,11 @@ Server-side filtering does not replace client/device validation.
 
 ## Next-Generation Web Frontend
 
-Prefer one frontend codebase and one qualified capability-aware asset bundle
-initially, not a mandatory 5.0/5.1 frontend fork. Firmware lines and frontend
-release versions are independent; do not require matching major/minor numbers or
-mirror firmware source branches just to select a compatible UI. Webapp development
-branches may differ temporarily, but a common frontend should support both APIs
-where qualified. Split frontend maintenance tracks only for a real compatibility
-or measured storage reason.
+Prefer shared frontend code and selectively activated functionality, with justified
+line-specific differences where useful. Maintained webapp feeds follow firmware
+line and stage; this does not imply a breaking API difference or require separate
+configuration ecosystems. A minimum API contract, currently shared, determines
+functional compatibility rather than a mandatory bridge/qualification mechanism.
 
 - New virtual-light/pin/button views are enabled only by advertised capabilities.
   Also gate store initialization, subscriptions, routes, and outbound commands:
@@ -307,13 +328,10 @@ or measured storage reason.
 - ESP8266 and older firmware retain the single-light experience. Absence of a
   capability means unsupported; infer legacy capabilities only through verified
   fixtures/version mappings, not merely SoC or a guessed version threshold.
-- Separate firmware and frontend update preferences. Selecting 5.1 firmware must
-  not force an experimental frontend. Select a newer stable shared frontend if it
-  satisfies the target API, and retain a last compatible legacy frontend.
-- Validate updates in both directions. If target firmware is unsupported by the
-  installed frontend, use a qualified bridge frontend first. Block automatic
-  migration when there is no compatible pair or safe update order; test rollback
-  and persistent-schema compatibility as well as forward installation.
+- Webapp updates stay within the installed firmware line and stage, without a
+  separate selector. Compatible manual firmware upgrades remain possible.
+- Investigate ConfigDB schema compatibility before allowing cross-line downgrades;
+  keep this review separate from forward upgrade eligibility.
 - Treat equal nominal flash capacity as a constraint, not extra headroom on ESP32.
   Measure the actual filesystem partition budget, free bytes, file count/metadata,
   and the installer's staging/replacement behavior on both targets. Preserve room
@@ -334,10 +352,10 @@ or measured storage reason.
    Capture fixtures from deployed server/controllers and back up current catalogue.
 2. Add additive DB migration, upload validation, v2 discovery/options, and legacy
    projections. Test in staging and shadow-compare old results; do not cut over refs.
-3. Add structured discovery metadata and bridge-capable frontend/HA/updater clients.
+3. Add structured discovery metadata and compatible frontend/HA/updater clients.
    Qualify both naming schemes and the existing binary/webapp installation paths.
-4. Measure the shared frontend package and safe install budget; qualify a frontend
-   supporting legacy and proposed next-generation APIs or record explicit blockers.
+4. Enforce the four-file runtime payload. Detailed installed/staging reserve
+  measurement and recovery qualification are deferred by the close-out decision.
 5. Exercise the complete staged chain with representative artifacts for both lines,
    then perform M2's branch/dependency/CI cutover. Enable publishing/migration only
    after the production compatibility adapters and clients are ready.
@@ -346,9 +364,9 @@ M1 acceptance covers API option filtering, `5.9` versus `5.10`, prerelease/final
 ordering, legacy aliases, old saved preferences, future release-line discovery,
 no cross-line automatic updates, ESP8266 rejection of 5.1, and per-device fleet
 resolution. Test incomplete publication, changed checksums, absent capabilities,
-no-match/error/offline behavior, obsolete cached selections, and bridge update order.
-Run binary and asset OTA tests on representative ESP8266/ESP32/C3 devices, including
-insufficient flash, interrupted installs, reboot identity checks, and recovery.
+no-match/error/offline behavior and obsolete cached selections. Single-device OTA
+is user-confirmed complete; fleet testing remains pending. Insufficient flash,
+interrupted installs and recovery qualification are deferred, not marked passed.
 CI and log lookup must retain consistent identity through every step.
 
 M1 is complete only with evidence for the full chain, not because selectors render

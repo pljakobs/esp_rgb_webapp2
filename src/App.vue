@@ -20,21 +20,38 @@ export default defineComponent({
       const controllers = useControllersStore();
       const $q = useQuasar(); // Get Quasar's global instance
       let initInFlight = false;
+      let initRequested = false;
+      let forceInitRequested = false;
+      let refreshControllersRequested = false;
+      let initPromise = null;
       let controllerLoadRequest = 0;
 
       console.log("controllers:", controllers);
       console.log("webhost override target:", localhost);
 
-      const runInitializeStores = async () => {
-        if (initInFlight) {
-          return;
-        }
+      const runInitializeStores = (options = {}) => {
+        initRequested = true;
+        forceInitRequested ||= options.force === true;
+        refreshControllersRequested ||= options.refreshControllers === true;
+        if (initInFlight) return initPromise;
+
         initInFlight = true;
-        try {
-          await initializeStores();
-        } finally {
-          initInFlight = false;
-        }
+        initPromise = (async () => {
+          try {
+            while (initRequested) {
+              initRequested = false;
+              const force = forceInitRequested;
+              const refreshControllers = refreshControllersRequested;
+              forceInitRequested = false;
+              refreshControllersRequested = false;
+              await initializeStores({ force, refreshControllers });
+            }
+          } finally {
+            initInFlight = false;
+            initPromise = null;
+          }
+        })();
+        return initPromise;
       };
 
       watch(
@@ -53,7 +70,10 @@ export default defineComponent({
             );
             controllers.isControllerLoading = true;
             try {
-              await runInitializeStores();
+              await runInitializeStores({
+                force: true,
+                refreshControllers: false,
+              });
             } finally {
               if (loadRequest === controllerLoadRequest) {
                 controllers.isControllerLoading = false;

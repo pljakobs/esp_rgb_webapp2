@@ -140,6 +140,12 @@ raise SystemExit('Forbidden git operation in policy test')
                 self.assertIn(f"{expected_version} {release_ref} 42 ", target.read_text())
                 self.assertNotIn("__APP_", target.read_text())
 
+    def test_external_spa_publish_does_not_require_firmware_bootstrap_pages(self):
+        document = workflow("deploy.yml")
+        commands = "\n".join(selected.get("run", "") for selected in document["jobs"]["build"]["steps"])
+        self.assertNotIn("captive.html", commands)
+        self.assertNotIn("updating.html", commands)
+
     def test_publisher_requires_immutable_pin(self):
         document = workflow("deploy.yml")
         selected = step(document, "publish", "Validate publisher pin")

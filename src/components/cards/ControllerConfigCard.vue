@@ -1,5 +1,5 @@
 <template>
-  <MyCard :title="$t('cards.controllerConfig.title')" icon="memory_outlined">
+  <MyCard :title="pwmOnly ? 'Controller PWM' : $t('cards.controllerConfig.title')" icon="memory_outlined">
     <q-card-section>
       <div class="text-caption q-mb-md text-orange">
         Controller configuration changes require a restart to take effect. Make
@@ -8,6 +8,7 @@
       </div>
 
       <!-- Pin Configuration Section -->
+      <template v-if="!pwmOnly">
       <div class="text-h6 q-mb-md">Pin Configuration</div>
       <div class="row items-center q-mb-md">
         <mySelect
@@ -45,6 +46,7 @@
 
       <q-toggle v-model="showPinDetails" label="Show Pin Details" />
       <data-table v-if="showPinDetails" :items="formattedPinConfigData" />
+      </template>
 
       <!-- PWM Configuration Section (only for non-ESP8266) -->
       <div
@@ -325,7 +327,10 @@ export default {
     MyCard,
     DataTable,
   },
-  setup() {
+  props: {
+    pwmOnly: { type: Boolean, default: false },
+  },
+  setup(props) {
     const $q = useQuasar();
     const configData = configDataStore();
     const infoData = infoDataStore();
@@ -392,8 +397,8 @@ export default {
     // Check if there are any changes
     const hasAnyChanges = computed(() => {
       const pinConfigChanged =
-        localCurrentPinConfigName.value !== originalValues.pinConfigName ||
-        activePinConfigModified.value;
+        !props.pwmOnly && (localCurrentPinConfigName.value !== originalValues.pinConfigName ||
+        activePinConfigModified.value);
 
       // Only check PWM changes if PWM is supported
       const isPwmSupported =
@@ -469,7 +474,7 @@ export default {
       const updates = {};
 
       // Prepare pin configuration changes
-      if (localCurrentPinConfigName.value !== originalValues.pinConfigName) {
+      if (!props.pwmOnly && localCurrentPinConfigName.value !== originalValues.pinConfigName) {
         const currentConfig = compatiblePinConfigs.value.find(
           (config) => config.name === localCurrentPinConfigName.value,
         );
@@ -534,7 +539,7 @@ export default {
       if (Object.keys(updates).length > 0) {
         // Use atomic update if available, otherwise fall back to individual updates
         if (configData.updateMultipleData) {
-          configData.updateMultipleData(updates, true);
+          await configData.updateMultipleData(updates, true);
         } else {
           // Fallback to individual updates for backward compatibility
           Object.entries(updates).forEach(([path, value]) => {
@@ -699,6 +704,7 @@ export default {
 
     // Load both local and remote pin configs on mount
     const loadPinConfigData = async () => {
+      if (props.pwmOnly) return;
       await fetchRemotePinConfigs();
       getPinConfigNames();
       getCurrentPinConfig();
@@ -833,12 +839,14 @@ export default {
     });
 
     watch(localCurrentPinConfigName, () => {
+      if (props.pwmOnly) return;
       getCurrentPinConfig();
     });
 
     watch(
       () => infoData.data.device.soc,
       () => {
+        if (props.pwmOnly) return;
         if (infoData.data.device.soc) {
           getPinConfigNames();
           getCurrentPinConfig();

@@ -203,6 +203,26 @@ describe("AppDataStore", () => {
       expect(apiService.getData).toHaveBeenCalled();
     });
 
+    it("replaces data when reloading after a controller switch", async () => {
+      store.data.presets = [{ id: "old-controller-preset", name: "Old" }];
+      const newControllerData = {
+        presets: [{ id: "new-controller-preset", name: "New" }],
+        scenes: [],
+        groups: [],
+        controllers: [],
+        "last-color": {},
+        "sync-lock": null,
+      };
+      apiService.getData.mockResolvedValueOnce({
+        jsonData: newControllerData,
+        error: null,
+      });
+
+      await store.fetchData({ replace: true });
+
+      expect(store.data).toEqual(newControllerData);
+    });
+
     it("should handle fetch errors", async () => {
       apiService.getData.mockResolvedValueOnce({
         jsonData: null,
