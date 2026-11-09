@@ -123,6 +123,9 @@
     }
   },
   "color": {
+    "brightness": "Φωτεινότητα",
+    "colorTemperature": "Θερμοκρασία χρώματος",
+    "tunableWhite": "Ρυθμιζόμενο λευκό",
     "saveAs": "Αποθήκευση ως προεπιλογή {model}",
     "presetName": "Όνομα προεπιλογής",
     "favorites": "Αγαπημένα",
@@ -233,7 +236,7 @@
       "resetChanges": "Επαναφορά όλων των αλλαγών"
     },
     "colorModel": {
-      "title": "Χρώμα",
+      "title": "Διαμόρφωση φωτιστικών",
       "colorModel": "Χρωματικό μοντέλο"
     },
     "firmwareUpdate": {

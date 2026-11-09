@@ -123,6 +123,9 @@
     }
   },
   "color": {
+    "brightness": "Brightness",
+    "colorTemperature": "Color temperature",
+    "tunableWhite": "Tunable white",
     "saveAs": "Save as {model} preset",
     "presetName": "Preset name",
     "favorites": "Favorites",
@@ -233,7 +236,7 @@
       "resetChanges": "Reset All Changes"
     },
     "colorModel": {
-      "title": "Color",
+      "title": "Lights configuration",
       "colorModel": "Color Model"
     },
     "firmwareUpdate": {

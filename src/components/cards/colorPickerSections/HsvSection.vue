@@ -2,12 +2,17 @@
   <q-scroll-area :style="{ height: isDialog ? dialogHeight : cardHeight }">
     <q-card-section class="flex justify-center no-padding">
       <q-color
+        v-if="!profile || profile.rgb"
         v-model="internalColor"
         format-model="hex"
         no-header
         no-footer
         class="scaled-color"
       />
+      <div v-else class="full-width q-px-lg q-pt-md">
+        <div class="text-caption text-grey-7">{{ $t('color.brightness') }}</div>
+        <q-slider v-model="brightness" :aria-label="$t('color.brightness')" :min="0" :max="100" :step="0.1" label />
+      </div>
     </q-card-section>
 
     <!-- Added CT Slider Section -->
@@ -16,23 +21,24 @@
       style="max-width: 300px; margin: 0 auto"
       v-if="supportsColorTemp"
     >
-      <div class="text-caption text-grey-7 q-mb-xs">Color Temperature</div>
+      <div class="text-caption text-grey-7 q-mb-xs">{{ $t('color.colorTemperature') }}</div>
       <div class="row items-center no-wrap">
-        <svgIcon name="thermostat" class="q-mr-sm text-grey-7" />
+        <svgIcon name="lightbulb_outlined" class="q-mr-sm text-grey-7" />
         <q-slider
           v-model="ct"
+          :aria-label="$t('color.colorTemperature')"
           :min="minCt"
           :max="maxCt"
           label
           color="orange"
           class="col"
         >
-          <q-tooltip>Color Temperature</q-tooltip>
+          <q-tooltip>{{ $t('color.colorTemperature') }}</q-tooltip>
         </q-slider>
       </div>
     </q-card-section>
 
-    <q-card-section class="flex justify-center" v-if="!isDialog">
+    <q-card-section class="flex justify-center" v-if="!isDialog && !profile">
       <q-btn flat color="primary" @click="onAddPreset">
         <template v-slot:default>
           <svgIcon name="star_outlined" />
@@ -53,6 +59,7 @@ const { hexToRgb, rgbToHsv, rgbToHex, hsvToRgb } = colors;
 
 export default {
   props: {
+    profile: { type: Object, default: null },
     modelValue: {
       type: Object,
       default: () => ({ hsv: { h: 0, s: 0, v: 0 }, ct: 0 }),
@@ -74,10 +81,12 @@ export default {
   setup(props, { emit }) {
     const internalColor = ref("#000000");
     const ct = ref(0);
+    const brightness = ref(0);
     const colorStore = useColorDataStore();
     const configData = configDataStore();
 
     const minCt = computed(() => {
+      if (props.profile) return props.profile.colortemp.ww;
       // Defaults if parsing fails
       try {
         return configData.data.color.colortemp.ww || 2500;
@@ -87,6 +96,7 @@ export default {
     });
 
     const maxCt = computed(() => {
+      if (props.profile) return props.profile.colortemp.cw;
       try {
         return configData.data.color.colortemp.cw || 9000;
       } catch {
@@ -95,7 +105,7 @@ export default {
     });
 
     const supportsColorTemp = computed(
-      () => configData.hasColorTemperatureSupport,
+      () => props.profile ? props.profile.ct : configData.hasColorTemperatureSupport,
     );
     // Flag to prevent emitting during prop updates from websocket events
     const updatingFromProps = ref(false);
@@ -109,8 +119,11 @@ export default {
 
         try {
           if (newValue?.hsv) {
+            brightness.value = newValue.hsv.v ?? 0;
             const rgb = hsvToRgb(newValue.hsv);
             internalColor.value = rgbToHex(rgb);
+          } else if (props.profile?.channels.length === 1 && Array.isArray(newValue?.raw)) {
+            brightness.value = (newValue.raw[0] ?? 0) * 100 / 1023;
           }
           if (newValue?.hsv?.ct !== undefined) {
             ct.value = newValue.hsv.ct;
@@ -132,8 +145,13 @@ export default {
       // Only emit if not updating from props and not from websocket
       if (!updatingFromProps.value && colorStore.change_by !== "websocket") {
         try {
+          if (props.profile?.channels.length === 1 && Array.isArray(props.modelValue.raw)) {
+            emit("update:modelValue", { raw: [Math.round(brightness.value * 1023 / 100)] });
+            return;
+          }
           const rgb = hexToRgb(internalColor.value);
           let hsv = rgbToHsv(rgb);
+          if (props.profile && !props.profile.rgb) hsv = { h: 0, s: 0, v: brightness.value };
 
           // Round values to 1 decimal place instead of 2
           hsv = {
@@ -153,6 +171,7 @@ export default {
     // Watch for changes in the color picker or CT slider
     watch(internalColor, emitUpdate);
     watch(ct, emitUpdate);
+    watch(brightness, emitUpdate);
 
     const onAddPreset = () => {
       // Get the current HSV value and emit it for preset creation
@@ -172,6 +191,7 @@ export default {
 
     return {
       internalColor,
+      brightness,
       ct,
       minCt,
       maxCt,

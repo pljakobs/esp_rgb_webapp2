@@ -1,5 +1,5 @@
 {
-  "version": 24,
+  "version": 25,
   "available_pins": [
     {
       "soc": "esp8266",
@@ -125,8 +125,21 @@
         { "name": "LED11", "pin": "13" },
         { "name": "LED12", "pin": "12" },
         { "name": "LED13", "pin": "15" },
-        { "name": "LED14", "pin": "14" },
+        { "name": "LED14", "pin": "4" },
         { "name": "LED15", "pin": "2" }
+      ]
+    },
+    {
+      "name": "QuinLED An-Penta",
+      "soc": "esp32c3",
+      "model": "rgbww",
+      "clear_pin": "",
+      "channels": [
+        { "name": "red", "pin": "5" },
+        { "name": "green", "pin": "4" },
+        { "name": "blue", "pin": "1" },
+        { "name": "warmwhite", "pin": "0" },
+        { "name": "coldwhite", "pin": "3" }
       ]
     }
   ]

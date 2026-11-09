@@ -1,6 +1,8 @@
 # QuinLED Hardware and Named Pin Assignment Plan
 
 Status: proposed, planning only. No runtime configuration changes in this document.
+Updated: 2026-11-05. The storage proposal below refines M3/M4, not their
+implementation status or the current M1 execution scope.
 
 Cross-project delivery order and release-stage implementation are tracked in
 [MASTER_PLAN.md](MASTER_PLAN.md). This document owns the detailed hardware plan.
@@ -93,7 +95,7 @@ verify its electrical behavior before enabling it as a normal button.
 Default color suggestions, not mandatory output roles:
 
 - Mini/Plus: L1=CW, L2=WW, L3=B, L4=G, L5=R.
-- Deca: each consecutive group of five is R, G, B, WW, CW.
+- Deca: L1 to L5 are R, G, B, WW, CW. rest is uncommitted
 
 These are wiring templates, not proof of PWM allocation feasibility. With the
 current Esp32HardwarePwm constraint, channels belonging to one backend light
@@ -154,8 +156,8 @@ Separate three concepts:
    electrical capabilities, restrictions, and reserved/default use. Light-output
    terminals remain PWM outputs; naming flexibility does not make them general I/O.
 2. **Virtual light definition:** stable light ID, type (single-channel dimmer,
-  tunable white, RGB, RGBW, RGBWW), and the logical functions required by that
-  type. Internal PWM groups need not match its public light identity.
+   tunable white, RGB, RGBW, RGBWW), and the logical functions required by that
+   type. Internal PWM groups need not match its public light identity.
 3. **Assignment:** bind each light function to a board pin ID, resolving to a
    GPIO only after board and capability validation. Store button bindings and
    I2C bus configuration separately, sharing the same resource ownership rules.
@@ -196,13 +198,351 @@ I2C bus may serve multiple addressed devices through that one owner.
 
 ### Shared Catalogue and Legacy Compatibility
 
-Maintain one configuration/catalogue ecosystem rather than separate 5.0 and 5.1
-forks. Keep legacy entries and payloads usable unchanged by older firmware.
-Extend only entries targeting 5.1 controllers with named resources and virtual
-light assignments; select them by supported schema/API capabilities, not SoC alone.
-If older readers reject unknown fields, provide a filtered legacy projection
-from the same source catalogue rather than requiring them to parse 5.1 entries.
-Do not rewrite ESP8266 or installed 5.0 ESP32/C3 configurations into the new schema.
+The advanced app-config schema belongs exclusively to the 5.1 codebase. Do not
+backport its schema, parser, resource model or virtual-light configuration to 5.0.
+Keep one capability-aware client ecosystem, but distinct versioned storage
+contracts: 5.0 continues using the normal `pinconfig.json` and existing ConfigDB
+schema. QuinLED entries there are simple fixed single-light RGBWW configurations.
+Keep existing URLs and embedded `config/pinconfig.json` legacy-shaped; publish
+the advanced catalogue at a separate explicit path.
+
+5.1 may optionally retain or expose a compatible 5.0 representation. This is a
+5.1-side compatibility decision, not a requirement for 5.0 to consume advanced
+catalogues or projected virtual-light configurations. Generating legacy presets
+from shared pinout data is optional tooling, not a runtime dependency. Select
+client behavior by supported API capabilities, not SoC alone. Never rewrite
+installed 5.0 configurations into the advanced schema.
+
+## Storage and API Contract Proposal (2026-11-05)
+
+### Evidence and Implementation Boundary
+
+The master plan assigns runtime/resource allocation to M3, assignment editors to
+M4, and button actions/I2C activation to M5. This document already had board tables
+and a conceptual model; neither those nor M1 work establish multilight support.
+Inspection of the current workspace checkout found:
+
+- [public/config/pinconfig.json](public/config/pinconfig.json) is revision 25,
+  without a schema version. GPIOs mix integers and strings; disabled clear pins
+  use an empty string. ESP32/C3 global lists omit documented board resources.
+- [ControllerConfigCard.vue](src/components/cards/ControllerConfigCard.vue)
+  fetches remote profiles, matches by name, and lets remote entries replace local
+  entries. It copies catalogue data into device storage and writes
+  `general.channels`, but the inspected boot loader reads the selected
+  `hardware.pinconfigs[].channels` instead.
+- [pinConfigDialog.vue](src/components/Dialogs/pinConfigDialog.vue) uses
+  `clearPin`, while the catalogue/schema use `clear_pin`. Its original-value
+  handling also treats GPIO0 as falsy. Normalize these explicitly.
+- [application.cpp](../esp_rgbww_firmware/app/application.cpp) imports a newer
+  embedded catalogue into ConfigDB on startup. Reset setup reads `clear_pin`
+  from the selected hardware profile, not `general`. Store mutation alone is
+  not proof that wiring survives reboot.
+- [ledctrl.cpp](../esp_rgbww_firmware/app/ledctrl.cpp) resolves five recognized
+  color names into one `PinConfig`; `isPinValid()` checks only a SoC list.
+  [ledctrl.h](../esp_rgbww_firmware/include/ledctrl.h) derives `APPLedCtrl` from
+  one RGBWWLed instance. This is not a virtual-light registry.
+- [app-config.cfgdb](../esp_rgbww_firmware/app-config.cfgdb) owns typed hardware
+  profiles. Do not edit generated outputs. Recheck the target 5.0/5.1 worktrees
+  before implementation: this is checkout evidence, not a claim about all refs
+  or deployed devices.
+
+Design boundary: named inventory and virtual-light assignments change only 5.1.
+The discriminating legacy check is an ordinary QuinLED RGBWW preset loaded through
+the unchanged 5.0 ConfigDB path, rebooted and verified by its LED/reset loaders.
+It must work without the advanced catalogue or any new schema/parser support.
+
+### Four Configuration Layers (5.1 Only)
+
+The advanced schema separates four layers:
+
+| Layer | Scope | Purpose |
+| ----- | ----- | ------- |
+| `available_pins` | SoC | GPIO capabilities and restrictions: input/output, PWM, strapping, input-only and reserved uses |
+| `implemented_pins` | Board/module type and revision | Physically exposed/wired GPIOs, including lighting outputs, SDA, SCL and buttons; terminal IDs, labels and board-specific restrictions |
+| `templates` | Board type | Built-in offline starting assignments, optionally supplemented by downloaded templates |
+| `configuration` | Individual device | Selected board, stable light IDs, light types, actual assignments and system/peripheral uses |
+
+Board restrictions narrow SoC capabilities; they cannot grant missing capabilities.
+Templates never overwrite active configuration. The existing 5.0 field named
+`available_pins` remains its plain GPIO list, not this richer capability model.
+Package the four layers in these versioned objects:
+
+1. **Catalogue:** `schema_version` describes syntax; `version` remains the
+   monotonically increasing catalogue revision. `boards` contains inventories;
+   `templates` contains optional assignment suggestions, not wiring facts.
+2. **Board profile:** stable `id`, immutable `revision`, SoC/module variant,
+    sources, physical `implemented_pins`, and peripheral reservation groups. Pins have IDs,
+   integer GPIOs, labels/aliases, allowed functions and electrical/boot constraints.
+   A profile revision must not silently change GPIO meaning.
+3. **Active configuration:** its own schema/configuration revisions, selected
+  board snapshot, `lights`, `system`, `buttons` and `buses`. Persist the selected
+  board's operational inventory and actual assignments, not a copy of the full
+  remote catalogue. Built-in templates remain available separately from this
+  active snapshot. Both initial setup and subsequent boot must work offline.
+
+### Built-In Templates and Offline Setup
+
+In the 5.1 `app-config.cfgdb`, define `hardware.templates` with a bounded set of
+built-in schema defaults, analogous to the existing pinconfig catalogue mechanism.
+The firmware image must supply these defaults without GitHub, an upstream network,
+or a previously installed webapp cache. Template choice remains optional; template
+availability at first installation is required. Do not put hardware templates in
+`app-data.cfgdb` alongside user color presets/scenes.
+
+Each template has a stable ID/revision, compatible board ID/revision, light types
+and function-to-implemented-pin assignments. Ship the corresponding SoC capability
+and board inventories with the firmware as well; built-in templates cannot depend
+on downloading the definitions needed to resolve or validate them. Offer only
+templates supported by the actual build's qualified PWM/resource limits.
+
+The client reads built-in templates from the device for offline first-run setup.
+Downloaded catalogues may supplement them after validation, but are never a
+prerequisite. Applying a template copies its settings into
+`hardware.configuration`, creating stable device light IDs; later catalogue or
+template updates do not alter active wiring. Keep built-in defaults recoverable
+after factory reset and test generator/default loading on a blank filesystem.
+Verify ConfigDB's generated array defaults and memory/storage cost during
+implementation rather than assuming schema defaults alone populate the runtime.
+
+Proposed schema homes are `schema/pinconfig-v2.schema.json` in the webapp and a
+reusable hardware-assignment definition in firmware ConfigDB schema sources.
+These are implementation deliverables, not existing files. Use JSON Schema for
+shape and semantic validation for ownership/hardware constraints. Catalogue,
+active-config and API-contract versions are independent.
+
+Illustrative catalogue fragment (one output plus SDA/SCL and buttons; the remaining
+lighting outputs are omitted, so this is not a complete board profile):
+
+```json
+{
+  "schema_version": 2,
+  "version": 26,
+  "boards": [
+    {
+      "id": "quinled-an-penta-mini",
+      "revision": 1,
+      "soc": "esp32c3",
+      "qualification": "pending",
+      "implemented_pins": [
+        {
+          "id": "L1",
+          "gpio": 5,
+          "label": "L1",
+          "aliases": ["LED_1"],
+          "allowed_functions": ["light.pwm"],
+          "restrictions": []
+        },
+        {
+          "id": "I2C_SDA",
+          "gpio": 6,
+          "label": "I2C SDA",
+          "allowed_functions": ["i2c.sda"]
+        },
+        {
+          "id": "I2C_SCL",
+          "gpio": 7,
+          "label": "I2C SCL",
+          "allowed_functions": ["i2c.scl"]
+        },
+        {
+          "id": "Button_1",
+          "gpio": 2,
+          "label": "Button 1",
+          "allowed_functions": ["button.input", "system.clear_config"],
+          "active_low": true,
+          "external_pull": "up",
+          "hardware_debounce": true,
+          "restrictions": ["strapping"]
+        },
+        {
+          "id": "Button_2",
+          "gpio": 8,
+          "label": "Button 2",
+          "allowed_functions": ["button.input", "system.clear_config"],
+          "active_low": true,
+          "external_pull": "up",
+          "hardware_debounce": true,
+          "restrictions": ["strapping"]
+        },
+        {
+          "id": "Button_3",
+          "gpio": 9,
+          "label": "Button 3",
+          "allowed_functions": ["button.input", "system.clear_config"],
+          "active_low": true,
+          "external_pull": "up",
+          "hardware_debounce": true,
+          "restrictions": ["strapping", "low_at_boot_enters_bootloader"]
+        }
+      ]
+    }
+  ],
+  "templates": []
+}
+```
+
+SDA, SCL and every physical button belong in `implemented_pins`, not solely in
+templates or action settings. These entries are mandatory board knowledge in
+5.1 even before bus drivers/button actions are enabled. Persist their operational
+GPIO mappings, electrical properties and restrictions in the selected-board
+snapshot. Enumerating `system.clear_config` as eligible does not assign that
+destructive function; it requires explicit configuration and ownership checks.
+
+Full profiles declare all outputs and board-specific extras from the verified
+table above. A generic/custom board declares verified exposed pins
+for its actual module, never every pin of an SoC. Legacy `available_pins` is not
+the v2 authority. Physical availability and legal use differ: an output MOSFET
+terminal cannot become a button merely because the GPIO supports input mode.
+
+Illustrative active assignment fragment for a confirmed Mini profile:
+
+```json
+{
+  "schema_version": 2,
+  "revision": 1,
+  "board": { "id": "quinled-an-penta-mini", "revision": 1 },
+  "lights": [
+    {
+      "id": "light0",
+      "name": "Main",
+      "type": "rgbww",
+      "outputs": {
+        "red": "L5",
+        "green": "L4",
+        "blue": "L3",
+        "warmwhite": "L2",
+        "coldwhite": "L1"
+      }
+    }
+  ],
+  "system": { "clear_config_pin": null },
+  "buttons": [
+    { "id": "button0", "pin": "Button_1", "enabled": false }
+  ],
+  "buses": [
+    {
+      "id": "i2c0",
+      "type": "i2c",
+      "sda": "I2C_SDA",
+      "scl": "I2C_SCL",
+      "enabled": false
+    }
+  ]
+}
+```
+
+The selected board snapshot accompanies this assignment in persistence; omitted
+here for readability. `light0` is an immutable ID, not an array index. Renaming
+or deleting another light must not change it. Display `Light0 / R` or a friendly
+name; persist light ID and canonical role separately, not a combined string.
+Derive the inverse per-pin view from `lights[].outputs`; do not store a second
+writable assignment list.
+
+Bus configuration references the implemented SDA/SCL pin IDs as a pair; enabled
+I2C requires both roles, distinct GPIOs, and one shared bus owner. Button
+configuration references implemented input IDs and later adds supported actions.
+Unused buttons can remain unconfigured; their physical inventory is still known.
+Disabled entries above describe intended settings but do not initialize drivers.
+Validate SDA/SCL and button bindings against the same ownership rules as lights
+and clear/reset, retaining board-imposed reservations even while disabled.
+
+Canonical roles are `red`, `green`, `blue`, `warmwhite`, `coldwhite`;
+R/G/B/WW/CW are labels. Define `rgbww` as RGB plus both whites (legacy UI calls
+this RGBWWCW). Other types are `dimmer`, `tunable_white`, `rgb`, `rgbw`; agree the
+dimmer `brightness` role and RGBW white-role selection in one shared required-role
+table. Missing outputs are absent, not GPIO0 or an empty string. `null` disables
+optional system functions; translate to legacy `-1` only at the legacy boundary.
+
+`system.clear_config_pin` references an eligible pin ID. It is not hardware
+EN/reset or an ordinary button action. Preserve recovery semantics when importing
+legacy wiring. Do not assign destructive clear behavior to QuinLED buttons by
+default. Represent button inputs/bus reservations now, but activate actions/drivers
+only with M5 capabilities. Keep dedicated peripheral terminals unavailable for
+incompatible uses even when disabled.
+
+### Unchanged 5.0 Contract and Optional 5.1 Compatibility
+
+5.0 uses the normal `pinconfig.json`: `available_pins` remains a SoC GPIO list;
+`pinconfigs` contains existing-style profiles with `name`, `soc`, `model`,
+`clear_pin` and fixed color/GPIO `channels`. QuinLED profiles expose one RGBWW
+light, not named-resource assignments or multiple virtual lights. Deca presets
+may select an explicit group of five outputs; other outputs remain unused.
+
+- Both old and new clients connected to 5.0 use this existing contract. No v2
+  parsing, assignment projection or schema migration is required on that device.
+- Preserve existing profile names and installed mappings, including reversed
+  Mini colors. Offer corrected/new presets explicitly without silently rewiring
+  active configurations or overwriting custom profiles.
+- Do not add every board GPIO to the legacy output list: input-only pins must
+  not become selectable PWM outputs. Verify simple presets against existing
+  GPIO validation and reset semantics before publication.
+- The advanced schema must not replace the catalogue at a legacy URL/embedded
+  path. A 5.0 boot/configuration flow must not depend on v2 availability.
+
+Optionally, 5.1 may preserve a legacy-shaped representation or compatibility API
+for a designated supported single light. Decide and test its semantics in 5.1;
+never implicitly flatten several lights. Any explicit export or firmware downgrade
+requires a separate backed-up migration with loss-of-function warnings. Neither
+this optional compatibility view nor advanced schema parsing is backported to 5.0.
+
+### Firmware API and Runtime Changes
+
+Propose capability keys `hardware.assignments.v2`, `hardware.named_pins`,
+`lights.multiple`, `buttons.actions` and `buses.i2c`; agree final names in the API
+contract. Report real light/PWM limits, supported types, schema versions and
+reservations. Missing capability means legacy behavior even on ESP32/C3, without
+requiring a capability backport to 5.0.
+
+Add whole-configuration validate/apply operations through the existing API/schema
+workflow. Requests carry expected configuration revision, selected board snapshot
+and assignments. Firmware-owned GPIO/peripheral restrictions remain authoritative:
+client metadata cannot grant access to flash, USB, Ethernet or input-only pins.
+Return field-scoped errors, resolved GPIOs and resource allocation. Agree route/RPC
+names against the actual 5.1 API rather than assuming a second transport.
+
+Reject duplicate GPIO ownership across aliases, duplicate light IDs, missing
+roles, unknown pins, stale revisions, unsupported functions and PWM exhaustion.
+Plan allocation before commit; validate and apply the same normalized object.
+Do not assume generic chunked ConfigDB writes are atomic across these fields.
+Initially persist/reboot as one validated operation; keep outputs safe and retain
+the last known good snapshot after interrupted writes or initialization failure.
+
+Replace the singleton assumption with a bounded stable-ID registry, one RGBWWLed
+instance per virtual light, and shared pin/PWM allocation. Keep state, calibration
+and transitions per light; direct old single-light APIs to an explicit primary
+light. Backend split groups remain one public light. Timer-block proposals above
+are qualification hypotheses, not a guarantee of fifteen usable outputs.
+Inspect pinned RGBWWLed 0.11.0 and Esp32HardwarePwm allocation/timer sharing and
+callback teardown before advertising limits. GPIO count is not backend capacity.
+
+### Implementation Slices and Gates
+
+| Slice                | Owning changes                                                                                               | Gate before proceeding                                                                                  |
+| -------------------- | ------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------- |
+| 1: Contract/fixtures | 5.1 catalogue/configuration schemas, built-in hardware.templates defaults and normalizer; shared role/capability definitions | Official board tables; four-layer validation; blank-filesystem offline template setup/reset; no advanced schema changes in 5.0 |
+| 2: Legacy presets | Normal pinconfig.json QuinLED RGBWW entries; existing client path | Unchanged 5.0 schema/parser; custom wiring preserved; boot/reset readback without v2 |
+| 3: M3 runtime/API    | ConfigDB sources, board resolver, light registry, allocator and validated transaction; regenerate API/schema | Host ownership/migration/failure tests; ESP32/C3 builds; measured PWM limits; no ESP8266 5.1            |
+| 4: M4 clients        | Shared assignment service; controller editor, first-run flow and HA configuration/entities                   | Mixed-version tests; no v2 writes to 5.0; stable IDs; remote-update previews                            |
+| 5: M5 activation     | Button/system actions and I2C through common resource validation                                             | Conflict, recovery, event and concurrent peripheral/PWM hardware tests                                  |
+
+5.1 webapp editors and first-run setup consume one normalizer/resolver service
+instead of duplicating fetching/mapping. Keep catalogue cache separate
+from active config, key by stable board ID/revision, and make revision adoption
+explicit. Do not copy the full catalogue to each controller. Update
+[configDataStore.js](src/stores/configDataStore.js) and
+[api.js](src/services/api.js) for negotiated payloads, acknowledgement and validated
+transactions as needed. Home Assistant uses the same firmware contract; extend
+[firmware_api.py](../Lightinator_HA_module/custom_components/esp_rgbww/firmware_api.py),
+flows, coordinator and entity identities, not an independent GPIO authority.
+
+Qualification matrix: old/new clients against unchanged 5.0 and capable
+5.1; embedded/remote/offline catalogues; all 5.0 SoCs and both 5.1 SoCs. Include
+numeric strings, GPIO0, null/empty/-1 reset values, duplicate Deca pins, mixed light
+types, rename, customization, unknown schema, stale revision, malformed/oversize
+input, reset conflicts, power loss and failed-apply rollback. Verify per-light
+commands/state/presets/MQTT/HA IDs and timer allocation with concurrent transitions,
+not only configuration save. Physical revision and heap/PWM qualification remain
+required, not implied by these examples.
 
 ## Necessary Changes
 
@@ -287,20 +627,20 @@ Do not rewrite ESP8266 or installed 5.0 ESP32/C3 configurations into the new sch
 ## Migration and Delivery Order
 
 1. Reconcile version/stage branch names and complete CI/distribution/updater
-  readiness for the 5.0 legacy and 5.1 ESP32/C3-only lines before branch migration.
+   readiness for the 5.0 legacy and 5.1 ESP32/C3-only lines before branch migration.
 2. Add catalogue/schema validation and fixtures; correct source mappings in a
    reviewed new profile revision. Do not silently rewire an active legacy profile.
-3. Extend only 5.1-targeted catalogue entries with stable board identities and
-  named resources. Preserve transitional fixed mappings and legacy payloads;
-  allow a single-light projection to the five legacy color/GPIO fields only
-  when unambiguous. Never flatten multiple virtual lights into a legacy payload.
+3. Publish the advanced catalogue separately for 5.1. Keep normal pinconfig.json
+  QuinLED RGBWW presets at existing embedded/remote paths for unchanged 5.0.
+  Preserve installed wiring and custom profiles. Any legacy-compatible view
+  in 5.1 is optional and must never implicitly flatten multiple lights.
 4. Implement resource ownership, timer-block-aware PWM allocation, and RGBWWLed
-  split-group coordination with the multichannel runtime/API. Then enable
-  virtual-light creation and pin assignment in both clients by capability.
+   split-group coordination with the multichannel runtime/API. Then enable
+   virtual-light creation and pin assignment in both clients by capability.
 5. Add configurable button actions and I2C configuration after firmware support;
    reserve these pins from the outset even when the features are unavailable.
 6. Record I2C peripheral and addressable-library feasibility results before
-  separately planning selected expansion features or digital-controller support.
+   separately planning selected expansion features or digital-controller support.
 7. Qualify Mini, Deca, and Plus on hardware and update dependent integrations.
 
 Migration must preserve explicit existing wiring, clear-pin semantics, and custom
@@ -336,8 +676,9 @@ profile; provide an explicit versioned upgrade with rollback/backup instead.
   conflicts, without claiming Ethernet itself is implemented by this work.
 - Legacy firmware, ESP8266, first-run setup, custom board profiles, and API clients
   retain their supported single-light behavior. New fields/capabilities are tested
-  across mixed firmware/webapp versions; only 5.1-targeted entries gain the new
-  schema, and legacy readers receive compatible catalogue entries/projections.
+  across mixed firmware/webapp versions; only capable firmware receives v2
+  device payloads, and 5.0 retains its normal pinconfig.json RGBWW presets and
+  unchanged schema/parser.
 - Before implementation, confirm supported board revisions, Deca Button_4 behavior,
   PWM backend limits, the legacy `QuinLED An-Penta` identity, and the final shared
   multichannel schema/API. These are qualification gates, not inferred guarantees.

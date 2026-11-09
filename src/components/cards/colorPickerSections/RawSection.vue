@@ -14,7 +14,7 @@
       />
     </q-card-section>
 
-    <q-card-section class="flex justify-center" v-if="!isDialog">
+    <q-card-section class="flex justify-center" v-if="!isDialog && !profile">
       <q-btn flat color="primary" @click="onAddPreset">
         <template v-slot:default>
           <svgIcon name="star_outlined" />
@@ -36,6 +36,7 @@ export default {
     ColorSlider,
   },
   props: {
+    profile: { type: Object, default: null },
     modelValue: {
       type: Object,
       default: () => ({ raw: { r: 0, g: 0, b: 0, ww: 0, cw: 0 } }),
@@ -79,7 +80,7 @@ export default {
           // Set flag to prevent emitting
           updatingFromProps.value = true;
 
-          internalRaw.value = { ...newValue.raw };
+          internalRaw.value = Array.isArray(newValue.raw) ? [...newValue.raw] : { ...newValue.raw };
 
           // Reset flag after DOM update
           setTimeout(() => {
@@ -90,7 +91,16 @@ export default {
       { immediate: true, deep: true },
     );
 
-    const colorSliders = computed(() => [
+    const colorSliders = computed(() => {
+      if (props.profile && !props.profile.rgb) {
+        return props.profile.channels.map((channel, index) => ({
+          key: index,
+          label: channel === "ww" ? t("colorSliders.warmWhite") : channel === "cw" ? t("colorSliders.coldWhite") : t("color.brightness"),
+          model: internalRaw.value[index] ?? 0,
+          min: 0, max: 1023, color: channel === "ww" ? "yellow" : channel === "cw" ? "cyan" : "grey",
+        }));
+      }
+      return [
       {
         key: "r",
         label: t("colorSliders.red"),
@@ -131,15 +141,19 @@ export default {
         max: 1023,
         color: "cyan",
       },
-    ]);
+      ].filter((slider) => !props.profile || props.profile.channels.includes(slider.key));
+    });
 
     const updateColorSlider = (slider, value) => {
       // Only process updates if not updating from props and not from websocket
       if (!updatingFromProps.value && colorStore.change_by !== "websocket") {
         const rawColorKey = slider.key;
-        if (rawColorKey) {
+        if (rawColorKey !== undefined) {
+          if (props.profile && !props.profile.rgb && !Array.isArray(internalRaw.value)) {
+            internalRaw.value = props.profile.channels.map(() => null);
+          }
           internalRaw.value[rawColorKey] = value;
-          emit("update:modelValue", { raw: { ...internalRaw.value } });
+          emit("update:modelValue", { raw: Array.isArray(internalRaw.value) ? [...internalRaw.value] : { ...internalRaw.value } });
         }
       }
     };

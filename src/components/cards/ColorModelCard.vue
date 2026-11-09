@@ -1,6 +1,8 @@
 <template>
   <MyCard icon="palette_outlined" :title="$t('cards.colorModel.title')">
-    <q-card-section>
+    <q-card-section v-if="lights.loading && !lights.firmwareVersion"><q-linear-progress indeterminate /></q-card-section>
+    <VirtualLightEditor v-else-if="lights.enabled" />
+    <q-card-section v-else>
       <div class="text-h6 col-auto self-center q-gutter-md">
         <mySelect
           v-model="colorModel"
@@ -12,7 +14,7 @@
         </mySelect>
       </div>
     </q-card-section>
-    <q-card-section style="width: 80%">
+    <q-card-section v-if="!lights.enabled && !lights.loading" style="width: 80%">
       <ColorSlider
         v-for="colorSlider in colorSliders"
         :key="colorSlider.label"
@@ -28,21 +30,26 @@
 </template>
 
 <script>
-import { ref, watch, computed, onMounted } from "vue";
+import { ref, watch, computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { configDataStore } from "src/stores/configDataStore";
 import ColorSlider from "src/components/ColorSlider.vue";
 import MyCard from "src/components/myCard.vue";
+import VirtualLightEditor from "./VirtualLightEditor.vue";
+import { useVirtualLightsStore } from "src/stores/virtualLightsStore";
 
 export default {
   components: {
     MyCard,
     ColorSlider,
+    VirtualLightEditor,
   },
   emits: ["update:colorModel"],
   setup(props, { emit }) {
     const { t } = useI18n();
     const configData = configDataStore();
+    const lights = useVirtualLightsStore();
+    lights.start();
 
     const colorModel = ref("");
     const defaultColorOptions = ["RGB", "RGBWW", "RGBCW", "RGBWWCW"];
@@ -105,24 +112,17 @@ export default {
     };
 
     const emitColorModel = (newColorModel) => {
+      if (lights.enabled || lights.loading) return;
       const modelIndex = colorOptions.value.indexOf(newColorModel);
       configData.updateData("color.outputmode", modelIndex);
       colorModel.value = newColorModel; // Ensure the ref is updated
       emit("update:colorModel", modelIndex);
     };
 
-    watch(colorModel, (newColorModel, oldColorModel) => {
-      console.log(
-        `Selected color model changed from ${oldColorModel} to ${newColorModel}`,
-      );
-      emitColorModel(newColorModel);
-    });
-
-    // Initialize values from configDataStore when the component is mounted
-    onMounted(() => {
+    watch(() => [configData.data.general?.supported_color_models, configData.data.color?.color_mode], () => {
       // Initialize colorOptions and colorModel
       colorOptions.value =
-        configData.data.general?.supported_color_models.length > 0
+        configData.data.general?.supported_color_models?.length > 0
           ? configData.data.general.supported_color_models
           : defaultColorOptions;
       const colorModelIndex = configData.data.color.color_mode;
@@ -132,9 +132,10 @@ export default {
         console.error(`Invalid color.color_mode: ${colorModelIndex}`);
         colorModel.value = colorOptions.value[0]; // Default to the first option
       }
-    });
+    }, { immediate: true });
 
     return {
+      lights,
       colorModel,
       colorOptions,
       colorSliders,

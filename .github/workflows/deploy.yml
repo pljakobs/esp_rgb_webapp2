@@ -4,14 +4,14 @@ on:
   workflow_run:
     workflows: ["Frontend Tests"]
     types: [completed]
-    branches: [experimental, develop, testing, stable, '5.0/**', '5.1/**']
+    branches: [experimental, develop, testing, stable, "5.0/**", "5.1/**"]
 
   workflow_dispatch:
     inputs:
       branch:
-        description: 'Branch to build'
+        description: "Branch to build"
         required: true
-        default: '5.0/develop'
+        default: "5.0/develop"
         type: choice
         options:
           - 5.0/develop
@@ -119,14 +119,6 @@ jobs:
 
       - name: Run gzipSPA.sh
         run: ./gzipSPA.sh
-
-      - name: Copy bootstrap HTML files into dist/spa
-        run: |
-          # captive.html and updating.html live at the repo root (not built by Quasar).
-          # Copy them into dist/spa/ so they are included in the spa-files.zip artifact
-          # and available for firmware builds that embed them as FSTR flash strings.
-          cp captive.html dist/spa/captive.html
-          cp updating.html dist/spa/updating.html
 
       - name: Generate icon list
         run: node generate_icon_list.js > ./fileList.h
@@ -452,5 +444,3 @@ jobs:
             echo "ERROR: No webapp files found on remote after deployment"
             exit 1
           fi
-
-
