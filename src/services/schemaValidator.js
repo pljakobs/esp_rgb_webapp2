@@ -2,6 +2,7 @@
  * Schema validator for firmware data structures
  * Based on app-data.cfgdb and defs.cfgdb schemas
  */
+import { LIGHT_CHANNELS } from "./virtualLights";
 
 /**
  * Validates and coerces a preset to match the firmware schema
@@ -23,7 +24,32 @@ export function validatePreset(preset) {
   if (!validated.id || typeof validated.id !== "string") {
     throw new Error("Preset must have a string id");
   }
-  if (!validated.color || typeof validated.color !== "object") {
+  if (validated.raw_channels !== undefined && !Array.isArray(validated.raw_channels)) {
+    throw new Error("Preset raw_channels must be an array");
+  }
+  if (validated.light_favorites !== undefined) {
+    if (
+      !Array.isArray(validated.light_favorites) ||
+      validated.light_favorites.some((item) =>
+        !item || typeof item.light_id !== "string" || !item.light_id ||
+        typeof item.favorite !== "boolean"
+      )
+    ) {
+      throw new Error("Preset light_favorites must contain light_id and boolean favorite overrides");
+    }
+    validated.light_favorites = validated.light_favorites.map((item) => ({ ...item }));
+  }
+  const indexed = Array.isArray(validated.raw_channels) && validated.raw_channels.length > 0;
+  if (indexed) {
+    if (
+      validated.raw_channels.length !== LIGHT_CHANNELS[validated.light_type]?.length ||
+      validated.raw_channels.some((value) => !Number.isInteger(value) || value < 0 || value > 1023)
+    ) {
+      throw new Error("Indexed RAW preset requires a matching light_type and integer channel values from 0 to 1023");
+    }
+    validated.raw_channels = [...validated.raw_channels];
+  }
+  if (!indexed && (!validated.color || typeof validated.color !== "object")) {
     throw new Error("Preset must have a color object");
   }
 
@@ -39,7 +65,9 @@ export function validatePreset(preset) {
   }
 
   // Validate color structure
-  if (validated.color.hsv) {
+  if (indexed) {
+    return validated;
+  } else if (validated.color.hsv) {
     validated.color.hsv = validateHSV(validated.color.hsv);
   } else if (validated.color.raw) {
     validated.color.raw = validateRaw(validated.color.raw);

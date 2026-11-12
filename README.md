@@ -74,6 +74,24 @@ As I said above, one of the appeals of Quasar is that it allows to build native 
 
 [ ] implemenat a "boost" mode where white can be boosted to 300% using RGB WW and CW together
 
+### Per-light preset swatches
+
+On 5.1, select a light on the colour card and open **Presets**. The controller's
+catalog is shared, but **Star / Unstar** selects favourites only for that light.
+**Save swatch** stores its current colour without overwriting an existing name.
+The **Favorites** tab applies those saved colours to the selected UUID, resolving
+its current index first. Single-channel lights retain both preset tabs.
+
+Use firmware advertising `/info.rgbww.preset_light_favorites: true` to save these
+selections. Older 5.1 builds show an upgrade error; 5.0 keeps its existing
+controller favourites. Unqualified legacy favourites initially appear on the
+default 5.1 light only. Membership changes are read back before being shown as
+saved. Indexed RAW presets require a matching light profile; HSV temperature and
+brightness are preserved. Removing a star does not delete the controller preset.
+
+The same stored favourites power the Lightinator Home Assistant dashboard swatch
+card. Presets are not replicated by scene/group synchronization.
+
 ### Scene synchronization
 
 Opening the frontend or switching controllers only loads data; it no longer

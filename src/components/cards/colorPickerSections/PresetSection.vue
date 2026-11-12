@@ -154,7 +154,8 @@ export default {
 
     const activePresets = computed(() => {
       try {
-        const presets = appData.data.presets || [];
+        // Indexed RAW presets require the per-light picker and cannot be scene references yet.
+        const presets = (appData.data.presets || []).filter((preset) => !preset.raw_channels?.length);
         return presets;
       } catch (error) {
         console.error("Error computing activePresets:", error);

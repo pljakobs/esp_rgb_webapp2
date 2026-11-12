@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
   color: { change_by: null },
   config: { data: { general: { supported_color_models: ["RGB", "RGBWW"] }, color: { color_mode: 0, brightness: { red: 100, green: 100, blue: 100, ww: 100 }, colortemp: { ww: 2700, cw: 6000 } }, hardware: { pwm: { timer: { frequency: 1000, resolution: 10 }, spreadSpectrum: { mode: "ON", width: 15, subsampling: 4 }, phaseShift: { mode: "ON" } } } }, updateData: vi.fn(), updateMultipleData: vi.fn() },
   lights: { enabled: false, loading: false, start: vi.fn() },
+  presets: { favorites: [], presets: [] },
   restart: vi.fn(),
   fetchApi: vi.fn(),
 }));
@@ -14,6 +15,7 @@ vi.mock("src/stores/colorDataStore", () => ({ useColorDataStore: () => mocks.col
 vi.mock("src/stores/configDataStore", () => ({ configDataStore: () => mocks.config }));
 vi.mock("src/stores/virtualLightsStore", () => ({ useVirtualLightsStore: () => mocks.lights }));
 vi.mock("src/stores/appDataStore", () => ({ useAppDataStore: () => ({ data: { presets: [], scenes: [] } }) }));
+vi.mock("src/stores/lightPresetsStore", () => ({ useLightPresetsStore: () => mocks.presets }));
 vi.mock("src/services/api", () => ({ apiService: { fetchApi: mocks.fetchApi } }));
 vi.mock("vue-i18n", () => ({ useI18n: () => ({ t: (key) => key }) }));
 vi.mock("src/stores/infoDataStore", () => ({ infoDataStore: () => ({ data: { device: { soc: "esp32c3" } } }) }));
@@ -41,7 +43,7 @@ const global = {
     QBtn: { template: "<button><slot /></button>" },
     QCarousel: { template: "<div><slot /></div>" },
     QCarouselSlide: { template: "<div><slot /></div>" },
-    HsvSection: true, RawSection: true,
+    HsvSection: true, RawSection: true, LightPresetSection: true,
     QDialog: { template: "<div><slot /></div>", methods: { hide() {}, show() {} } },
     QCard: { template: "<div><slot /></div>" },
     QToolbar: { template: "<div><slot /></div>" },
@@ -61,6 +63,7 @@ beforeEach(() => {
     },
     start: vi.fn(),
   });
+  mocks.presets = reactive({ favorites: [], presets: [] });
   vi.clearAllMocks();
   mocks.fetchApi.mockResolvedValue({ jsonData: { raw: [500] }, error: null });
 });
@@ -75,13 +78,27 @@ describe("Profile-specific color controls", () => {
     });
   };
 
-  it.each(["SINGLE", "WW", "CW"])("hides mode tabs and RAW for %s and resets a previous RAW selection", async (type) => {
+  it("keeps the preset page open when starring and falls back there after the last unstar", async () => {
+    setLight("WWCW");
+    const wrapper = mount(ColorPickerCard, { global });
+    wrapper.vm.carouselPage = "presets";
+    mocks.presets.favorites = [{ id: "p" }];
+    await wrapper.vm.$nextTick();
+    expect(wrapper.vm.carouselPage).toBe("presets");
+    wrapper.vm.carouselPage = "favorites";
+    mocks.presets.favorites = [];
+    await wrapper.vm.$nextTick();
+    expect(wrapper.vm.carouselPage).toBe("presets");
+    wrapper.unmount();
+  });
+
+  it.each(["SINGLE", "WW", "CW"])("keeps presets but hides RAW for %s and resets a previous RAW selection", async (type) => {
     setLight("RGB");
     const wrapper = mount(ColorPickerCard, { global });
     wrapper.vm.carouselPage = "raw";
     setLight(type);
     await wrapper.vm.$nextTick();
-    expect(wrapper.findComponent({ name: "QBtnGroup" }).exists()).toBe(false);
+    expect(wrapper.text()).toContain("Presets");
     expect(wrapper.findComponent(RawSection).exists()).toBe(false);
     expect(wrapper.findComponent(HsvSection).exists()).toBe(true);
     expect(wrapper.vm.carouselPage).toBe("hsv");

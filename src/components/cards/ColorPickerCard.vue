@@ -8,10 +8,10 @@
       <div v-if="!lights.loading && !lights.lights.length" class="text-grey-7 q-mt-sm">No lights configured</div>
     </q-card-section>
     <template v-if="!lights.loading && (!lights.enabled || lights.selectedLight)">
-    <q-card-section v-if="!singleChannel" class="row justify-center no-padding">
+    <q-card-section class="row justify-center no-padding">
       <q-btn-group class="btn-group w-100">
         <q-btn
-          v-if="hasFavorites && !lights.enabled"
+          v-if="hasFavorites"
           name="Favorites"
           :color="carouselPage === 'favorites' ? 'secondary' : 'primary'"
           class="equal-btn"
@@ -36,6 +36,7 @@
           </template>
         </q-btn>
         <q-btn
+          v-if="!singleChannel"
           name="raw"
           :color="carouselPage === 'raw' ? 'secondary' : 'primary'"
           class="equal-btn"
@@ -48,7 +49,6 @@
           </template>
         </q-btn>
         <q-btn
-          v-if="!lights.enabled"
           name="presets"
           :color="carouselPage === 'presets' ? 'secondary' : 'primary'"
           class="equal-btn"
@@ -65,8 +65,10 @@
     <q-separator v-if="!singleChannel" />
     <q-card-section class="color-picker-body" :style="{ height: cardHeight, pointerEvents: lights.colorLoading || lights.saving || lights.error ? 'none' : undefined, opacity: lights.colorLoading || lights.saving ? 0.5 : 1 }">
       <q-carousel v-model="carouselPage" animated :style="{ height: '100%' }">
-        <q-carousel-slide v-if="hasFavorites && !lights.enabled" name="favorites">
+        <q-carousel-slide v-if="hasFavorites" name="favorites">
+          <LightPresetSection v-if="lights.enabled" favorites-only />
           <favoriteSection
+            v-else
             :card-height="cardHeight"
             @update:model-value="handleColorChange"
           />
@@ -91,8 +93,9 @@
             @add-preset="openAddPresetDialog"
           />
         </q-carousel-slide>
-        <q-carousel-slide v-if="!lights.enabled" name="presets">
-          <PresetSection @update:model-value="handleColorChange" />
+        <q-carousel-slide name="presets">
+          <LightPresetSection v-if="lights.enabled" />
+          <PresetSection v-else @update:model-value="handleColorChange" />
         </q-carousel-slide>
       </q-carousel>
     </q-card-section>
@@ -105,7 +108,7 @@ import { ref, watch, computed, onMounted } from "vue";
 import { useAppDataStore } from "src/stores/appDataStore";
 import { storeStatus } from "src/stores/storeConstants";
 import { useColorDataStore } from "src/stores/colorDataStore";
-import { Dialog } from "quasar";
+import { Dialog, Notify } from "quasar";
 import favoriteSection from "src/components/cards/colorPickerSections/favoriteSection.vue";
 import HsvSection from "src/components/cards/colorPickerSections/HsvSection.vue";
 import RawSection from "src/components/cards/colorPickerSections/RawSection.vue";
@@ -114,6 +117,8 @@ import MyCard from "src/components/myCard.vue";
 import addPresetDialog from "src/components/Dialogs/addPresetDialog.vue";
 import deleteItemDialog from "src/components/Dialogs/deleteItemDialog.vue";
 import { useVirtualLightsStore } from "src/stores/virtualLightsStore";
+import { useLightPresetsStore } from "src/stores/lightPresetsStore";
+import LightPresetSection from "./colorPickerSections/LightPresetSection.vue";
 
 import { savePreset, deletePreset } from "src/services/saveDelete";
 
@@ -125,6 +130,7 @@ export default {
     HsvSection,
     RawSection,
     PresetSection,
+    LightPresetSection,
   },
   props: {
     icon: {
@@ -145,6 +151,7 @@ export default {
     const appData = useAppDataStore();
     const colorStore = useColorDataStore();
     const lights = useVirtualLightsStore();
+    const lightPresets = useLightPresetsStore();
     lights.start();
     const singleChannel = computed(() => lights.enabled && lights.profile.channels.length === 1);
     const tunableWhite = computed(() => lights.enabled && !lights.profile.rgb && lights.profile.ct);
@@ -183,14 +190,20 @@ export default {
 
     const hasFavorites = computed(
       () =>
-        appData.data.presets.some((preset) => preset.favorite) ||
-        appData.data.scenes.some((scene) => scene.favorite),
+        lights.enabled ? lightPresets.favorites.length > 0 :
+          appData.data.presets.some((preset) => preset.favorite) ||
+          appData.data.scenes.some((scene) => scene.favorite),
     );
 
     watch(
       () => hasFavorites.value,
       (newVal) => {
-        if (newVal && !lights.enabled) {
+        if (lights.enabled) {
+          if (!newVal && carouselPage.value === "favorites")
+            carouselPage.value = "presets";
+          return;
+        }
+        if (newVal) {
           carouselPage.value = "favorites";
         } else {
           carouselPage.value = "hsv";
@@ -235,6 +248,11 @@ export default {
     };
 
     const openAddPresetDialog = (presetData) => {
+      if (lights.enabled) {
+        carouselPage.value = "presets";
+        Notify.create({ type: "info", message: "Enter a name on the Presets page to save this light's current colour." });
+        return;
+      }
       console.log("Opening add preset dialog with:", presetData);
 
       // Create a reference to track if an abort was requested
