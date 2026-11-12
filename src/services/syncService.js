@@ -248,6 +248,14 @@ export class SyncService {
     this.isCurrentlySyncing = true;
 
     try {
+      return await this._collectConsolidatedView(progressCallback);
+    } finally {
+      this.isCurrentlySyncing = false;
+    }
+  }
+
+  async _collectConsolidatedView(progressCallback) {
+    try {
       // Fetch the list of all hosts from the /hosts endpoint
       console.log("📋 Fetching list of hosts from /hosts endpoint");
       const { jsonData: hostsResponse, error: hostsError } =
@@ -268,18 +276,7 @@ export class SyncService {
       // Get current controller ID to ensure it's always included
       const currentControllerId = await this.getCurrentControllerId();
 
-      // Filter to only reachable hosts with IP addresses
-      // For collection: only visible=true controllers
-      // For pushing: visible=true + current controller (even if invisible)
-      const reachableControllers = hostsData
-        .filter((h) => h.id && h.ip_address && h.visible === true)
-        .map((h) => ({
-          id: h.id,
-          hostname: h.hostname || h.id,
-          ip_address: h.ip_address,
-        }));
-
-      // Build list of controllers to push to (includes current controller even if invisible)
+      // Read every potential write target before deciding between updates and inserts.
       const pushTargets = hostsData
         .filter(
           (h) =>
@@ -292,6 +289,7 @@ export class SyncService {
           hostname: h.hostname || h.id,
           ip_address: h.ip_address,
         }));
+      const reachableControllers = pushTargets;
 
       if (reachableControllers.length === 0) {
         console.error("❌ No reachable controllers found");
@@ -301,11 +299,6 @@ export class SyncService {
       console.log(
         `🔄 Collecting data from ${reachableControllers.length} controllers`,
       );
-      if (pushTargets.length > reachableControllers.length) {
-        console.log(
-          `📤 Will push to ${pushTargets.length} controllers (including current invisible controller)`,
-        );
-      }
 
       // Collect all data from all controllers
       const allData = {
@@ -317,7 +310,7 @@ export class SyncService {
 
       // Track which IDs already exist on each controller so the push phase
       // can update existing items with [id=X] and only append truly new ones.
-      const controllerDataMap = new Map(); // controller.id → { sceneIds, groupIds }
+      const controllerDataMap = new Map();
 
       let completed = 0;
       const total = reachableControllers.length;
@@ -343,7 +336,10 @@ export class SyncService {
                 `⚠️ Failed to fetch from ${controller.hostname}: ${error.message || error}`,
               );
             }
-          } else if (jsonData) {
+          } else if (
+            Array.isArray(jsonData?.scenes) &&
+            Array.isArray(jsonData?.groups)
+          ) {
             this.collectDataFromController(jsonData, allData);
             // Record which IDs this controller already has so we can route
             // updates vs. inserts precisely during the push phase.
@@ -358,7 +354,11 @@ export class SyncService {
                   .filter((g) => g.id)
                   .map((g) => String(g.id)),
               ),
+              scenes: jsonData.scenes || [],
+              groups: jsonData.groups || [],
             });
+          } else {
+            console.warn(`Missing scene/group arrays in data from ${controller.hostname}`);
           }
 
           completed++;
@@ -389,10 +389,7 @@ export class SyncService {
         `📊 Consolidated view: ${consolidated.presets.length} presets, ${consolidated.scenes.length} scenes, ${consolidated.groups.length} groups`,
       );
 
-      // Return consolidated data and both controller lists
-      // - reachableControllers: used for collection (visible only)
-      // - pushTargets: used for pushing (visible + current controller)
-      // - controllerDataMap: per-controller ID sets for smart push routing
+      // Include snapshots so the write phase can skip unchanged objects.
       return {
         data: consolidated,
         controllers: reachableControllers,
@@ -402,8 +399,6 @@ export class SyncService {
     } catch (error) {
       console.error("❌ Error during data collection:", error);
       return null;
-    } finally {
-      this.isCurrentlySyncing = false;
     }
   }
 
@@ -488,54 +483,13 @@ export class SyncService {
 
   /**
    * Merge two scenes with the same ID
-   * - Takes the newest non-empty name
-   * - Merges items arrays, deduplicating by ID and taking newest version
+   * Select the newest complete revision; merging steps resurrects removals.
    * @param {Object} existing - Existing scene in map
    * @param {Object} newScene - New scene to merge
    * @returns {Object} Merged scene
    */
   mergeScenes(existing, newScene) {
-    const merged = { ...existing };
-
-    // Take newest non-empty name
-    if (newScene.name && newScene.name !== "") {
-      if (!existing.name || existing.name === "" || newScene.ts > existing.ts) {
-        merged.name = newScene.name;
-      }
-    }
-
-    // Use the newest timestamp
-    if (newScene.ts > existing.ts) {
-      merged.ts = newScene.ts;
-    }
-
-    // Merge items arrays
-    if (Array.isArray(newScene.items) && Array.isArray(existing.items)) {
-      const itemMap = new Map();
-
-      // Add existing items
-      existing.items.forEach((item) => {
-        if (item.id) {
-          itemMap.set(item.id, item);
-        }
-      });
-
-      // Add/update with new items (newer items override by same ID)
-      newScene.items.forEach((item) => {
-        if (item.id) {
-          const existingItem = itemMap.get(item.id);
-          if (!existingItem || newScene.ts > existing.ts) {
-            itemMap.set(item.id, item);
-          }
-        }
-      });
-
-      merged.items = Array.from(itemMap.values());
-    } else if (Array.isArray(newScene.items)) {
-      merged.items = [...newScene.items];
-    }
-
-    return merged;
+    return { ...(newScene.ts > existing.ts ? newScene : existing) };
   }
 
   normalizeSceneForSync(scene) {
@@ -554,6 +508,13 @@ export class SyncService {
         }
 
         const normalizedSetting = { ...setting };
+        if (normalizedSetting.light === -1) delete normalizedSetting.light;
+        if (
+          normalizedSetting.light_id === null ||
+          normalizedSetting.light_id === ""
+        ) {
+          delete normalizedSetting.light_id;
+        }
         if (
           normalizedSetting.transition &&
           typeof normalizedSetting.transition === "object"
@@ -588,8 +549,9 @@ export class SyncService {
   }
 
   normalizeColorForSync(color) {
-    if (color.Preset && typeof color.Preset.id === "string") {
-      return { id: color.Preset.id };
+    if (typeof color.id === "string" && !color.Preset) {
+      const { id, ...properties } = color;
+      return { ...properties, Preset: { id } };
     }
     return color;
   }
@@ -731,10 +693,23 @@ export class SyncService {
    * @returns {Promise<boolean>} True if sync successful
    */
   async synchronizeData(progressCallback) {
+    if (this.isCurrentlySyncing) {
+      console.warn("Synchronization already in progress");
+      return false;
+    }
+    this.isCurrentlySyncing = true;
+    try {
+      return await this._synchronizeCollectedData(progressCallback);
+    } finally {
+      this.isCurrentlySyncing = false;
+    }
+  }
+
+  async _synchronizeCollectedData(progressCallback) {
     console.log("🔄 Starting synchronization");
 
     // Phase 1: Get consolidated view (includes controller list)
-    const result = await this.getConsolidatedView(progressCallback);
+    const result = await this._collectConsolidatedView(progressCallback);
     if (!result) {
       console.error("❌ Failed to get consolidated view");
       return false;
@@ -742,7 +717,6 @@ export class SyncService {
 
     const {
       data: consolidated,
-      controllers: reachableControllers,
       pushTargets,
       controllerDataMap,
     } = result;
@@ -757,13 +731,14 @@ export class SyncService {
 
     for (const controller of pushTargets) {
       try {
-        // Determine which items already exist on this controller.
-        // If we never fetched from this controller (e.g. the invisible current
-        // controller), treat all items as new so they get appended.
-        const known = controllerDataMap.get(controller.id) ?? {
-          sceneIds: new Set(),
-          groupIds: new Set(),
-        };
+        const known = controllerDataMap.get(controller.id);
+        if (!known) {
+          console.error(
+            `Skipping ${controller.hostname}: collection failed; refusing blind inserts`,
+          );
+          failureCount++;
+          continue;
+        }
 
         // Build a single smart payload:
         //  - items that exist on the controller  → "key[id=X]": item  (update)
@@ -774,7 +749,15 @@ export class SyncService {
         const newScenes = [];
         for (const scene of consolidated.scenes) {
           if (known.sceneIds.has(String(scene.id))) {
-            payload[`scenes[id=${scene.id}]`] = scene;
+            const existing = known.scenes.filter(
+              (item) => String(item.id) === String(scene.id),
+            );
+            if (
+              existing.length !== 1 ||
+              this._compareArrays([scene], existing, "id")
+            ) {
+              payload[`scenes[id=${scene.id}]`] = scene;
+            }
           } else {
             newScenes.push(scene);
           }
@@ -784,7 +767,15 @@ export class SyncService {
         const newGroups = [];
         for (const group of consolidated.groups) {
           if (known.groupIds.has(String(group.id))) {
-            payload[`groups[id=${group.id}]`] = group;
+            const existing = known.groups.filter(
+              (item) => String(item.id) === String(group.id),
+            );
+            if (
+              existing.length !== 1 ||
+              this._compareArrays([group], existing, "id")
+            ) {
+              payload[`groups[id=${group.id}]`] = group;
+            }
           } else {
             newGroups.push(group);
           }
@@ -797,23 +788,25 @@ export class SyncService {
           continue;
         }
 
-        const updateCount =
-          consolidated.scenes.length -
-          newScenes.length +
-          (consolidated.groups.length - newGroups.length);
+        const updateCount = Object.keys(payload).filter((key) =>
+          key.includes("[id="),
+        ).length;
         const insertCount = newScenes.length + newGroups.length;
         console.log(
           `📤 Pushing to ${controller.hostname}: ${updateCount} update(s), ${insertCount} insert(s)`,
         );
 
-        const { error } = await apiService.updateDataOnController(
+        const { error, jsonData } = await apiService.updateDataOnController(
           controller.ip_address,
           payload,
           { timeout: 8000 },
         );
 
-        if (error) {
-          console.error(`❌ Failed to push to ${controller.hostname}:`, error);
+        if (error || jsonData?.success === false) {
+          console.error(
+            `❌ Failed to push to ${controller.hostname}:`,
+            error || jsonData,
+          );
           failureCount++;
         } else {
           console.log(`✅ Successfully pushed to ${controller.hostname}`);
@@ -973,11 +966,15 @@ export class SyncService {
    * @returns {String|null} Description of mismatch, or null if arrays match
    */
   _compareArrays(expected, actual, keyField) {
-    // For distributed convergence we only require that all expected items
-    // exist and are at least as new as the consolidated version. We ignore
-    // extra items because controllers may temporarily retain stale data.
     const expectedMap = this._toNewestByIdMap(expected, keyField);
     const actualMap = this._toNewestByIdMap(actual, keyField);
+
+    if (actual.length !== actualMap.size) {
+      return "Duplicate or invalid items in controller data";
+    }
+    if (actualMap.size > expectedMap.size) {
+      return "Unexpected items in controller data";
+    }
 
     for (const [id, expectedItem] of expectedMap.entries()) {
       if (!actualMap.has(id)) {
@@ -985,17 +982,30 @@ export class SyncService {
       }
 
       const actualItem = actualMap.get(id);
-      const expectedTs = Number(expectedItem?.ts || 0);
-      const actualTs = Number(actualItem?.ts || 0);
-
-      if (Number.isFinite(expectedTs) && Number.isFinite(actualTs)) {
-        if (actualTs < expectedTs) {
-          return `Stale item ${keyField}=${id}: expected ts>=${expectedTs}, got ${actualTs}`;
-        }
+      if (this._canonicalItem(expectedItem) !== this._canonicalItem(actualItem)) {
+        return `Content mismatch for ${keyField}=${id}; recollect before retrying`;
       }
     }
 
     return null;
+  }
+
+  _canonicalItem(item) {
+    const normalized = Array.isArray(item.settings)
+      ? this.normalizeSceneForSync(item)
+      : this.normalizeGroupForSync(item);
+    const sortKeys = (value) => {
+      if (Array.isArray(value)) return value.map(sortKeys);
+      if (value && typeof value === "object") {
+        return Object.fromEntries(
+          Object.keys(value)
+            .sort()
+            .map((key) => [key, sortKeys(value[key])]),
+        );
+      }
+      return value;
+    };
+    return JSON.stringify(sortKeys(normalized));
   }
 
   _toNewestByIdMap(items, keyField) {

@@ -186,8 +186,6 @@ export default async function initializeStores(options = {}) {
       if (infoStore.status === storeStatus.READY && infoStore.data?.runtime) {
         runtimeHistoryStore.runtime = infoStore.data.runtime;
       }
-
-      appDataStore.watchForSync();
     } catch (error) {
       console.error("error initializing stores:", error);
     }

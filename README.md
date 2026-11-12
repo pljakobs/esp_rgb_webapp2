@@ -74,6 +74,25 @@ As I said above, one of the appeals of Quasar is that it allows to build native 
 
 [ ] implemenat a "boost" mode where white can be boosted to 300% using RGB WW and CW together
 
+### Scene synchronization
+
+Opening the frontend or switching controllers only loads data; it no longer
+replicates scenes and groups automatically. Use **Sync scenes and groups** on
+the scenes card to reconcile reachable controllers explicitly. Presets remain
+controller-local.
+
+Synchronization selects the newest complete scene revision (including its
+settings, transitions, and optional step-level `light` / `light_id` targets).
+It skips unchanged objects, refuses blind inserts when a controller could not
+be read, and verifies content rather than timestamps alone. A failed or partial
+sync can be retried manually.
+
+Deletion tombstones are not implemented yet: an offline controller retaining a
+deleted object can still reintroduce it during manual synchronization. Avoid
+reconciling stale replicas until they have also had the object removed.
+Target persistence does not yet add multi-light scene playback, a new editor,
+or queue-depth-aware animation feeding.
+
 #### Phase 3: make better use of the existing hardware
 It has always bugged me that, with all it's flexibility, the controllers are limited to a few very basic modes:
 - RGB (only uses three outputs combined)

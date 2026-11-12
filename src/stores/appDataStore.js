@@ -1,4 +1,3 @@
-import { watch } from "vue";
 import { defineStore } from "pinia";
 import { useControllersStore } from "src/stores/controllersStore";
 import { storeStatus } from "src/stores/storeConstants";
@@ -72,7 +71,6 @@ export const useAppDataStore = defineStore("appData", {
     storeStatus: storeStatus.store.IDLE,
     syncStatus: storeStatus.sync.NOT_STARTED,
     abortSaveOperation: false,
-    syncWatchInitialized: false,
   }),
 
   getters: {
@@ -201,79 +199,6 @@ export const useAppDataStore = defineStore("appData", {
       } catch (error) {
         console.error("Failed to fetch app data:", error);
         this.storeStatus = storeStatus.store.ERROR;
-      }
-    },
-
-    watchForSync() {
-      const controllers = useControllersStore();
-
-      const maybeStartSync = () => {
-        // Simple condition: store is ready and sync not completed or running
-        if (
-          controllers.storeStatus === storeStatus.store.READY &&
-          this.storeStatus === storeStatus.store.READY &&
-          this.syncStatus !== storeStatus.sync.COMPLETED &&
-          this.syncStatus !== storeStatus.sync.RUNNING
-        ) {
-          console.log(
-            "Controllers ready, starting one-time synchronization...",
-          );
-          this.synchronizeAllData((completed, total) => {
-            console.log(`Sync progress: ${completed}/${total}`);
-          });
-        } else {
-          console.log(
-            `Sync check: controllers=${controllers.storeStatus}, app=${this.storeStatus}, sync=${this.syncStatus} - no sync needed`,
-          );
-        }
-      };
-
-      if (!this.syncWatchInitialized) {
-        // Only watch for controllers becoming ready, not all status changes
-        const stopControllersWatch = watch(
-          () => controllers.storeStatus,
-          (newStatus, oldStatus) => {
-            if (
-              newStatus === storeStatus.store.READY &&
-              oldStatus !== storeStatus.store.READY
-            ) {
-              console.log("Controllers store became ready, checking sync...");
-              maybeStartSync();
-            }
-          },
-        );
-
-        // Only watch for this store becoming ready, not all status changes
-        const stopSelfWatch = watch(
-          () => this.storeStatus,
-          (newStatus, oldStatus) => {
-            if (
-              newStatus === storeStatus.store.READY &&
-              oldStatus !== storeStatus.store.READY
-            ) {
-              console.log("AppData store became ready, checking sync...");
-              maybeStartSync();
-            }
-          },
-        );
-
-        this._syncWatchStops = [stopControllersWatch, stopSelfWatch];
-        // NOTE: These watchers are intentionally kept alive for the full lifetime
-        // of the store. They monitor both stores becoming READY and trigger the
-        // one-time synchronization. Stopping them early would prevent re-sync
-        // if the store is re-initialized. If the store is ever explicitly torn
-        // down, call each fn in this._syncWatchStops to avoid watcher leaks.
-        this.syncWatchInitialized = true;
-      }
-
-      // Only trigger initial sync if both are ready and we haven't synced
-      if (
-        controllers.storeStatus === storeStatus.store.READY &&
-        this.storeStatus === storeStatus.store.READY &&
-        this.syncStatus !== storeStatus.sync.COMPLETED &&
-        this.syncStatus !== storeStatus.sync.RUNNING
-      ) {
-        maybeStartSync();
       }
     },
 
@@ -1517,15 +1442,10 @@ export const useAppDataStore = defineStore("appData", {
     },
 
     async synchronizeAllData(progressCallback) {
-      // Check if we're already syncing or have completed sync
+      // Manual synchronization can be repeated after data changes.
       if (this.syncStatus === storeStatus.sync.RUNNING) {
         console.log("🔄 Synchronization already in progress, skipping");
         return false;
-      }
-
-      if (this.syncStatus === storeStatus.sync.COMPLETED) {
-        console.log("✅ Synchronization already completed, skipping");
-        return true;
       }
 
       console.log("🔄 Starting simplified synchronization...");
@@ -1536,10 +1456,13 @@ export const useAppDataStore = defineStore("appData", {
         const success = await syncService.synchronizeData(progressCallback);
 
         if (success) {
-          console.log("✅ Sync completed successfully");
-          this.syncStatus = storeStatus.sync.COMPLETED;
           // Refresh local data after sync
           await this.fetchData();
+          if (this.storeStatus !== storeStatus.store.READY) {
+            throw new Error("Synchronization completed, but refreshing controller data failed");
+          }
+          console.log("✅ Sync completed successfully");
+          this.syncStatus = storeStatus.sync.COMPLETED;
           return true;
         } else {
           console.error("❌ Sync failed");

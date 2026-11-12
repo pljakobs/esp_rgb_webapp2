@@ -109,6 +109,22 @@ export function validateScene(scene) {
     // Coerce pos to integer
     validatedSetting.pos = Math.floor(Number(validatedSetting.pos) || 0);
 
+    if (
+      validatedSetting.light !== undefined &&
+      (!Number.isInteger(validatedSetting.light) ||
+        validatedSetting.light < -1 ||
+        validatedSetting.light > 65535)
+    ) {
+      throw new Error("Scene setting light must be an integer from -1 to 65535");
+    }
+    if (
+      validatedSetting.light_id !== undefined &&
+      validatedSetting.light_id !== null &&
+      typeof validatedSetting.light_id !== "string"
+    ) {
+      throw new Error("Scene setting light_id must be a string or null");
+    }
+
     // Validate transition if present
     if (validatedSetting.transition) {
       validatedSetting.transition = validateTransition(
@@ -118,20 +134,20 @@ export function validateScene(scene) {
 
     // Validate color
     if (validatedSetting.color) {
+      validatedSetting.color = { ...validatedSetting.color };
       if (validatedSetting.color.Preset) {
-        // Normalize legacy wrapper to cfgdb oneOf Preset shape: { id: "..." }
         if (
           !validatedSetting.color.Preset.id ||
           typeof validatedSetting.color.Preset.id !== "string"
         ) {
           throw new Error("Preset reference must have string id");
         }
-        validatedSetting.color = { id: validatedSetting.color.Preset.id };
       } else if (
         validatedSetting.color.id &&
         typeof validatedSetting.color.id === "string"
       ) {
-        validatedSetting.color = { id: validatedSetting.color.id };
+        const { id, ...properties } = validatedSetting.color;
+        validatedSetting.color = { ...properties, Preset: { id } };
       } else if (validatedSetting.color.hsv) {
         validatedSetting.color.hsv = validateHSV(validatedSetting.color.hsv);
       } else if (validatedSetting.color.raw) {

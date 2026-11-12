@@ -229,15 +229,12 @@
     </q-card-section>
 
     <!-- Sync and Log Controls -->
-    <q-card-section
-      class="q-pt-none"
-      v-if="infoData.data?.build_type === 'debug'"
-    >
+    <q-card-section class="q-pt-none">
       <div class="row q-gutter-sm">
         <q-btn flat color="secondary" @click="runSync" :loading="syncRunning">
           <template v-slot:default>
             <svgIcon name="sync" />
-            <span>Sync</span>
+            <span>Sync scenes and groups</span>
           </template>
         </q-btn>
         <q-btn flat color="accent" @click="downloadLog" :disable="!logCaptured">
@@ -246,6 +243,9 @@
             <span>Download Log</span>
           </template>
         </q-btn>
+      </div>
+      <div class="text-caption q-mt-sm">
+        Sync merges stored objects. Stale controllers can restore deleted scenes or groups.
       </div>
     </q-card-section>
   </MyCard>
@@ -257,8 +257,6 @@ import { Dialog, colors, Notify } from "quasar";
 import { useAppDataStore } from "src/stores/appDataStore";
 import { useControllersStore } from "src/stores/controllersStore";
 import { useScenesStore } from "src/stores/scenesStore";
-import { infoDataStore } from "src/stores/infoDataStore";
-import { syncService } from "src/services/syncService.js";
 import { storeStatus } from "src/stores/storeConstants";
 import MyCard from "src/components/myCard.vue";
 import sceneDialog from "src/components/Dialogs/sceneDialog.vue";
@@ -278,7 +276,6 @@ export default {
     const appData = useAppDataStore();
     const controllersStore = useControllersStore();
     const scenesStore = useScenesStore();
-    const infoData = infoDataStore();
 
     // Console logger state
     const syncRunning = ref(false);
@@ -308,7 +305,10 @@ export default {
 
     // Computed property to enhance group nodes with resolved controller icons
     const enhancedGroupNodes = computed(() => {
-      if (!scenesStore.groupNodes || appData.status !== storeStatus.READY) {
+      if (
+        !scenesStore.groupNodes ||
+        appData.storeStatus !== storeStatus.store.READY
+      ) {
         return scenesStore.groupNodes || [];
       }
 
@@ -572,7 +572,7 @@ export default {
       );
 
       // Check if appData store is ready before proceeding
-      if (appData.status !== storeStatus.READY) {
+      if (appData.storeStatus !== storeStatus.store.READY) {
         console.log("AppData store not ready yet, using default icon");
         return "lightbulb_outlined";
       }
@@ -684,8 +684,8 @@ export default {
       initConsoleLogger();
 
       try {
-        console.log("🔄 Starting sync via syncService...");
-        const result = await syncService.synchronizeData();
+        console.log("Starting manual scene and group synchronization");
+        const result = await appData.synchronizeAllData();
 
         if (result) {
           Notify.create({
@@ -753,7 +753,6 @@ export default {
       enhancedGroupNodes,
       expandedNodes: computed(() => scenesStore.expandedNodes),
       debugStatus: computed(() => scenesStore.debugStatus),
-      infoData,
 
       // Console logger state
       syncRunning,
