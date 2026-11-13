@@ -63,7 +63,12 @@ const selectedLight = computed(() => draft.value?.lights.find((light) => light.i
 const defaultId = computed(() => draft.value?.lights.find((light) => light.is_default)?.id);
 const lightOptions = computed(() => draft.value?.lights.map((light) => ({ label: light.name || light.id, value: light.id })) ?? []);
 const boardOptions = computed(() => [{ label: "Custom GPIOs", value: "" }, ...(lights.compatibleBoards ?? []).map((entry) => ({ label: `${entry.name} (rev ${entry.revision})`, value: entry.id }))]);
-const board = computed(() => lights.compatibleBoards?.find((entry) => entry.id === draft.value?.board_id && entry.revision === draft.value?.board_revision));
+const board = computed(() => {
+  const saved = draft.value?.board_profile;
+  return saved?.id === draft.value?.board_id && saved?.revision === draft.value?.board_revision
+    ? saved
+    : lights.compatibleBoards?.find((entry) => entry.id === draft.value?.board_id && entry.revision === draft.value?.board_revision);
+});
 const validationErrors = computed(() => validationAttempted.value && draft.value ? validateLightConfiguration(draft.value, board.value) : []);
 const channels = computed(() => LIGHT_CHANNELS[selectedLight.value?.type] ?? []);
 const pinOptions = (index) => {
@@ -83,6 +88,8 @@ const changeBoard = (id) => {
   draft.value.board_id = id ?? "";
   draft.value.board_revision = entry?.revision ?? 0;
   draft.value.soc = lights.deviceSoc;
+  draft.value.board_profile = entry ? JSON.parse(JSON.stringify(entry))
+    : { id: "", revision: 1, name: "", soc: lights.deviceSoc, implemented_pins: [], reserved_gpios: [] };
 };
 const addLight = () => {
   try {

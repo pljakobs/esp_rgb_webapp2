@@ -74,6 +74,15 @@ As I said above, one of the appeals of Quasar is that it allows to build native 
 
 [ ] implemenat a "boost" mode where white can be boosted to 300% using RGB WW and CW together
 
+### Selected board configuration (5.1)
+
+Selecting a board in the light editor copies its full catalog profile into
+`hardware.configuration.board_profile` when Apply is confirmed. The board ID,
+revision and SoC accompany the snapshot; light edits preserve it. Firmware
+initializes board PWM outputs from ConfigDB, without reading the catalog.
+Existing configurations without a snapshot need the board selected and applied
+again. This does not remap light GPIOs or install a template.
+
 ### Per-light preset swatches
 
 On 5.1, select a light on the colour card and open **Presets**. The controller's

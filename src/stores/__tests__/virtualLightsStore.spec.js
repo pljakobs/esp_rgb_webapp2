@@ -23,6 +23,46 @@ beforeEach(() => {
 });
 
 describe("Controller-scoped virtual lights", () => {
+  const boardProfile = () => ({
+    id: "deca", revision: 1, name: "Deca", soc: "esp32", reserved_gpios: [18],
+    implemented_pins: [{ id: "output", label: "Output", gpio: 5, allowed_functions: ["light.pwm"] }],
+  });
+
+  it("persists the selected catalog profile with the configuration", async () => {
+    const board = boardProfile();
+    mocks.api.fetchApi.mockImplementation(async (endpoint) => response(endpoint === "catalog" ? { boards: [board] } : { success: true }));
+    const store = useVirtualLightsStore();
+    await store.load();
+    const draft = { ...configuration(), board_id: board.id, board_revision: board.revision };
+    mocks.api.getConfig.mockResolvedValueOnce(response({ hardware: { configuration: configuration() } }))
+      .mockResolvedValueOnce(response({ hardware: { configuration: { ...draft, soc: "esp32", revision: 1, board_profile: board } } }));
+    await store.apply(draft);
+    expect(mocks.api.fetchApi).toHaveBeenCalledWith("config", expect.anything(),
+      expect.objectContaining({ body: { hardware: { configuration: expect.objectContaining({ board_profile: board }) } } }));
+    expect(store.configuration.board_profile).toEqual(board);
+  });
+
+  it("preserves the saved profile when editing lights even if the catalog changes", async () => {
+    const board = boardProfile();
+    const original = { ...configuration(), soc: "esp32", board_id: board.id, board_revision: board.revision, board_profile: board };
+    mocks.api.getConfig.mockResolvedValue(response({ hardware: { configuration: original } }));
+    const store = useVirtualLightsStore();
+    await store.load();
+    const draft = JSON.parse(JSON.stringify(original));
+    draft.lights[0].name = "Renamed";
+    await store.apply(draft);
+    expect(mocks.api.fetchApi).toHaveBeenCalledWith("config", expect.anything(),
+      expect.objectContaining({ body: { hardware: { configuration: expect.objectContaining({ board_profile: board }) } } }));
+    expect(original.lights[0].name).toBe("Desk");
+  });
+
+  it("rejects a selected board without a matching profile", async () => {
+    const store = useVirtualLightsStore();
+    await store.load();
+    await expect(store.apply({ ...configuration(), board_id: "missing", board_revision: 1 })).rejects.toThrow("profile is unavailable");
+    expect(mocks.api.fetchApi).not.toHaveBeenCalledWith("config", expect.anything(), expect.anything());
+  });
+
   it("filters board choices by the reported SoC rather than stale configuration", async () => {
     mocks.api.fetchApi.mockResolvedValue(response({
       boards: [

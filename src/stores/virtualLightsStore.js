@@ -145,7 +145,12 @@ export const useVirtualLightsStore = defineStore("virtualLights", {
       const candidate = clone(configuration);
       if (!this.deviceSoc) throw new Error("Controller SoC is unavailable.");
       candidate.soc = this.deviceSoc;
-      const board = this.compatibleBoards.find((entry) => entry.id === candidate.board_id && entry.revision === candidate.board_revision);
+      const savedBoard = candidate.board_profile;
+      const board = savedBoard?.id === candidate.board_id && savedBoard?.revision === candidate.board_revision && savedBoard?.soc === candidate.soc
+        ? savedBoard
+        : this.compatibleBoards.find((entry) => entry.id === candidate.board_id && entry.revision === candidate.board_revision);
+      if (candidate.board_id && !board) throw new Error("Selected board profile is unavailable. Select the board again.");
+      if (board) candidate.board_profile = clone(board);
       const errors = validateLightConfiguration(candidate, board);
       if (errors.length) throw new Error(errors.join("\n"));
       this.saving = true;
