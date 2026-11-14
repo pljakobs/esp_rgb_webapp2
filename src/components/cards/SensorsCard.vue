@@ -180,9 +180,22 @@
             @click="measure(sensor)"
           />
             <q-expansion-item
-              :label="t('sensors.configuration')"
-              class="q-mt-md"
+            class="q-mt-md"
+            expand-icon-class="hidden"
             >
+            <template #header="{ expanded: configurationExpanded }">
+              <q-item-section>
+                <q-item-label>{{ t("sensors.configuration") }}</q-item-label>
+              </q-item-section>
+              <q-item-section side>
+                <svgIcon
+                  name="arrow_drop_down"
+                  :class="{
+                    'configuration-expanded': configurationExpanded,
+                  }"
+                />
+              </q-item-section>
+            </template>
             <q-form class="q-gutter-sm" @submit="save(sensor)">
               <q-toggle
                 v-model="sensor.draft.enabled"
@@ -255,11 +268,16 @@ const expanded = computed(() => !collapsed.value);
 const tab = ref("current-1");
 const { sensors, loading, reload, save, measure } = useSensors(expanded);
 const visibleSensors = computed(() =>
-  sensors.filter((sensor) => sensor.supported === true),
+  sensors.filter(
+    (sensor) => sensor.supported === true && sensor.config?.available === true,
+  ),
 );
 const sensorStatusMessage = computed(() => {
   const error = sensors.find((sensor) => sensor.error)?.error;
-  return error || t("sensors.unsupported");
+  if (error) return error;
+  return sensors.some((sensor) => sensor.supported === true)
+    ? t("sensors.unavailable")
+    : t("sensors.unsupported");
 });
 watch(
   visibleSensors,
@@ -323,5 +341,9 @@ function validField(value, { min, max, step }) {
 }
 .reading-point {
   fill: var(--q-primary);
+}
+.configuration-expanded {
+  transform: rotate(180deg);
+  transition: transform 0.4s ease;
 }
 </style>
