@@ -1,41 +1,46 @@
 <template>
-  <q-scroll-area :style="{ height: isDialog ? dialogHeight : cardHeight }">
+  <component :is="scrollContainer" :style="scrollStyle">
     <q-card-section class="flex justify-center no-padding">
       <q-color
         v-if="!profile || profile.rgb"
-        v-model="internalColor"
+        :model-value="internalColor"
         format-model="hex"
         no-header
         no-footer
         class="scaled-color"
+        @update:model-value="updateColor"
       />
-      <div v-else class="full-width q-px-lg q-pt-md">
-        <div class="text-caption text-grey-7">{{ $t('color.brightness') }}</div>
-        <q-slider v-model="brightness" :aria-label="$t('color.brightness')" :min="0" :max="100" :step="0.1" label />
-      </div>
+      <LightControlSlider
+        :model-value="brightness"
+        :label="$t('color.brightness')"
+        :display-value="`${Math.round(brightness)}%`"
+        :min="0"
+        :max="100"
+        :step="0.1"
+        @update:model-value="updateBrightness"
+      >
+        <template #action>
+          <q-toggle
+            v-if="showPower"
+            :model-value="powerOn"
+            :disable="powerBusy || powerOn === null"
+            :aria-label="$t('color.power')"
+            @update:model-value="$emit('update:power', $event)"
+          />
+        </template>
+      </LightControlSlider>
     </q-card-section>
 
-    <!-- Added CT Slider Section -->
-    <q-card-section
-      class="q-px-lg q-pt-md"
-      style="max-width: 300px; margin: 0 auto"
-      v-if="supportsColorTemp"
-    >
-      <div class="text-caption text-grey-7 q-mb-xs">{{ $t('color.colorTemperature') }}</div>
-      <div class="row items-center no-wrap">
-        <svgIcon name="lightbulb_outlined" class="q-mr-sm text-grey-7" />
-        <q-slider
-          v-model="ct"
-          :aria-label="$t('color.colorTemperature')"
-          :min="minCt"
-          :max="maxCt"
-          label
-          color="orange"
-          class="col"
-        >
-          <q-tooltip>{{ $t('color.colorTemperature') }}</q-tooltip>
-        </q-slider>
-      </div>
+    <q-card-section v-if="supportsColorTemp" class="q-pa-none">
+      <LightControlSlider
+        :model-value="ct"
+        :label="$t('color.colorTemperature')"
+        :display-value="`${Math.round(ct)} K`"
+        :min="minCt"
+        :max="maxCt"
+        temperature
+        @update:model-value="updateTemperature"
+      />
     </q-card-section>
 
     <q-card-section class="flex justify-center" v-if="!isDialog && !profile">
@@ -46,20 +51,25 @@
         </template>
       </q-btn>
     </q-card-section>
-  </q-scroll-area>
+  </component>
 </template>
 
 <script>
 import { ref, watch, computed } from "vue";
-import { colors } from "quasar";
+import { colors, QScrollArea } from "quasar";
 import { useColorDataStore } from "src/stores/colorDataStore";
 import { configDataStore } from "src/stores/configDataStore";
+import LightControlSlider from "src/components/LightControlSlider.vue";
 
 const { hexToRgb, rgbToHsv, rgbToHex, hsvToRgb } = colors;
 
 export default {
+  components: { LightControlSlider },
   props: {
     profile: { type: Object, default: null },
+    showPower: { type: Boolean, default: false },
+    powerOn: { type: Boolean, default: null },
+    powerBusy: { type: Boolean, default: false },
     modelValue: {
       type: Object,
       default: () => ({ hsv: { h: 0, s: 0, v: 0 }, ct: 0 }),
@@ -77,13 +87,16 @@ export default {
       default: "280px",
     },
   },
-  emits: ["update:modelValue", "add-preset"],
+  emits: ["update:modelValue", "update:power", "add-preset"],
   setup(props, { emit }) {
     const internalColor = ref("#000000");
     const ct = ref(0);
     const brightness = ref(0);
+    const currentHsv = ref({ h: 0, s: 0, v: 0 });
     const colorStore = useColorDataStore();
     const configData = configDataStore();
+    const scrollContainer = computed(() => !props.isDialog && props.cardHeight === "auto" ? "div" : QScrollArea);
+    const scrollStyle = computed(() => scrollContainer.value === "div" ? undefined : { height: props.isDialog ? props.dialogHeight : props.cardHeight });
 
     const minCt = computed(() => {
       if (props.profile) return props.profile.colortemp.ww;
@@ -120,13 +133,18 @@ export default {
         try {
           if (newValue?.hsv) {
             brightness.value = newValue.hsv.v ?? 0;
+            currentHsv.value = {
+              h: newValue.hsv.h ?? 0,
+              s: newValue.hsv.s ?? 0,
+              v: brightness.value,
+            };
             const rgb = hsvToRgb(newValue.hsv);
             internalColor.value = rgbToHex(rgb);
           } else if (props.profile?.channels.length === 1 && Array.isArray(newValue?.raw)) {
             brightness.value = (newValue.raw[0] ?? 0) * 100 / 1023;
           }
           if (newValue?.hsv?.ct !== undefined) {
-            ct.value = newValue.hsv.ct;
+            ct.value = Math.max(minCt.value, Math.min(maxCt.value, newValue.hsv.ct));
           }
         } catch (error) {
           console.log("Error processing updates from props:", error);
@@ -149,29 +167,43 @@ export default {
             emit("update:modelValue", { raw: [Math.round(brightness.value * 1023 / 100)] });
             return;
           }
-          const rgb = hexToRgb(internalColor.value);
-          let hsv = rgbToHsv(rgb);
-          if (props.profile && !props.profile.rgb) hsv = { h: 0, s: 0, v: brightness.value };
+          const hsv = props.profile && !props.profile.rgb
+            ? { h: 0, s: 0, v: brightness.value }
+            : currentHsv.value;
 
           // Round values to 1 decimal place instead of 2
-          hsv = {
+          const roundedHsv = {
             h: Math.round(hsv.h * 10) / 10,
             s: Math.round(hsv.s * 10) / 10,
             v: Math.round(hsv.v * 10) / 10,
           };
 
           // Emit the new color value include ct
-          emit("update:modelValue", { hsv, ct: ct.value });
+          emit("update:modelValue", { hsv: roundedHsv, ct: ct.value });
         } catch (error) {
           console.log("Error in color/ct watcher:", error);
         }
       }
     };
 
-    // Watch for changes in the color picker or CT slider
-    watch(internalColor, emitUpdate);
-    watch(ct, emitUpdate);
-    watch(brightness, emitUpdate);
+    const updateColor = (value) => {
+      internalColor.value = value;
+      currentHsv.value = rgbToHsv(hexToRgb(value));
+      brightness.value = currentHsv.value.v;
+      emitUpdate();
+    };
+    const updateBrightness = (value) => {
+      brightness.value = value;
+      if (!props.profile || props.profile.rgb) {
+        currentHsv.value = { ...currentHsv.value, v: value };
+        internalColor.value = rgbToHex(hsvToRgb(currentHsv.value));
+      }
+      emitUpdate();
+    };
+    const updateTemperature = (value) => {
+      ct.value = value;
+      emitUpdate();
+    };
 
     const onAddPreset = () => {
       // Get the current HSV value and emit it for preset creation
@@ -197,6 +229,11 @@ export default {
       maxCt,
       onAddPreset,
       supportsColorTemp,
+      updateColor,
+      updateBrightness,
+      updateTemperature,
+      scrollContainer,
+      scrollStyle,
     };
   },
 };
@@ -210,6 +247,14 @@ export default {
 .scaled-color {
   width: 150%;
   height: 150%;
+}
+.scaled-color :deep(.q-color-picker__hue .q-slider__track) {
+  height: 28px !important;
+  border-radius: 14px;
+}
+.scaled-color :deep(.q-color-picker__hue .q-slider__inner),
+.scaled-color :deep(.q-color-picker__hue .q-slider__selection) {
+  border-radius: 14px;
 }
 .hsv-section {
   display: flex;

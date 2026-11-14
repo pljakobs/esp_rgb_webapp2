@@ -1,6 +1,6 @@
 <template>
   <div class="interaction-page">
-    <ColorPicker card-height="80vh" />
+    <ColorPicker />
     <q-dialog v-model="showDialog">
       <q-card
         class="shadow-4 col-auto fit q-gutter-md q-pa-md"

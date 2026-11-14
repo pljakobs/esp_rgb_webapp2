@@ -23,6 +23,7 @@ export const useVirtualLightsStore = defineStore("virtualLights", {
     color: {},
     loading: false,
     colorLoading: false,
+    powerSaving: false,
     saving: false,
     error: null,
     loadToken: 0,
@@ -40,6 +41,15 @@ export const useVirtualLightsStore = defineStore("virtualLights", {
     },
     selectedLight() { return this.lights.find((light) => light.id === this.selectedId) ?? null; },
     profile() { return lightProfile(this.selectedLight); },
+    isOn: (state) => {
+      if (typeof state.color?.hsv?.v === "number") return state.color.hsv.v > 0;
+      const raw = state.color?.raw;
+      if (raw && typeof raw === "object") {
+        const values = Object.values(raw).filter((value) => typeof value === "number");
+        if (values.length) return values.some((value) => value > 0);
+      }
+      return null;
+    },
   },
   actions: {
     start() {
@@ -74,6 +84,7 @@ export const useVirtualLightsStore = defineStore("virtualLights", {
       this.error = null;
       this.loading = true;
       this.saving = false;
+      this.powerSaving = false;
       this.colorLoading = false;
       const current = () => token === this.loadToken && controller.ip_address === useControllersStore().currentController?.ip_address;
       try {
@@ -125,7 +136,7 @@ export const useVirtualLightsStore = defineStore("virtualLights", {
     },
     async sendColor(color) {
       const light = this.selectedLight;
-      if (!this.enabled || !light || this.loading || this.colorLoading || this.saving) return;
+      if (!this.enabled || !light || this.loading || this.colorLoading || this.saving || this.powerSaving) return;
       const controller = { ...useControllersStore().currentController };
       const token = this.loadToken;
       const body = clone(color);
@@ -135,6 +146,23 @@ export const useVirtualLightsStore = defineStore("virtualLights", {
         if (token === this.loadToken && this.selectedId === light.id && this.enabled) await this.fetchColor();
       } catch (error) {
         if (token === this.loadToken && this.enabled) this.error = error.message;
+      }
+    },
+    async setPower(on) {
+      const light = this.selectedLight;
+      if (!this.enabled || !light || this.loading || this.colorLoading || this.saving || this.powerSaving) return;
+      const controller = { ...useControllersStore().currentController };
+      const token = this.loadToken;
+      this.powerSaving = true;
+      this.error = null;
+      try {
+        const command = on ? apiService.setOn : apiService.setOff;
+        unwrap(await command.call(apiService, { light: light.index, light_id: light.id }, controller));
+        if (token === this.loadToken && this.selectedId === light.id && this.enabled) await this.fetchColor();
+      } catch (error) {
+        if (token === this.loadToken && this.selectedId === light.id && this.enabled) this.error = error.message;
+      } finally {
+        if (token === this.loadToken) this.powerSaving = false;
       }
     },
     async apply(configuration) {
