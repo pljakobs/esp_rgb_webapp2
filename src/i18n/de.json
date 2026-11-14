@@ -156,6 +156,7 @@
     "brightness": "Helligkeit",
     "colorTemperature": "Farbtemperatur",
     "tunableWhite": "Weißlicht",
+    "power": "Licht ein- oder ausschalten",
     "saveAs": "Als {model}-Preset speichern",
     "presetName": "Preset-Name",
     "favorites": "Favoriten",

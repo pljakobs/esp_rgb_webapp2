@@ -3,7 +3,7 @@ import { createPinia, setActivePinia } from "pinia";
 import { effectScope, reactive } from "vue";
 import { flushPromises } from "@vue/test-utils";
 
-const mocks = vi.hoisted(() => ({ controllers: { currentController: { ip_address: "192.168.29.69" } }, info: { data: null }, api: { getInfo: vi.fn(), getConfig: vi.fn(), fetchApi: vi.fn() } }));
+const mocks = vi.hoisted(() => ({ controllers: { currentController: { ip_address: "192.168.29.69" } }, info: { data: null }, api: { getInfo: vi.fn(), getConfig: vi.fn(), fetchApi: vi.fn(), setOn: vi.fn(), setOff: vi.fn() } }));
 vi.mock("../controllersStore", () => ({ useControllersStore: () => mocks.controllers }));
 vi.mock("../infoDataStore", () => ({ infoDataStore: () => mocks.info }));
 vi.mock("src/services/api", () => ({ apiService: mocks.api }));
@@ -23,6 +23,74 @@ beforeEach(() => {
 });
 
 describe("Controller-scoped virtual lights", () => {
+  it("derives power state from HSV and indexed or named raw output", () => {
+    const store = useVirtualLightsStore();
+    expect(store.isOn).toBeNull();
+    store.color = { hsv: { v: 0 } };
+    expect(store.isOn).toBe(false);
+    store.color = { hsv: { v: 0.1 } };
+    expect(store.isOn).toBe(true);
+    store.color = { raw: [0, 3] };
+    expect(store.isOn).toBe(true);
+    store.color = { raw: { r: 0, ww: 0 } };
+    expect(store.isOn).toBe(false);
+  });
+
+  it("sends selected-light power commands and reads back the controller state", async () => {
+    const store = useVirtualLightsStore();
+    await store.load();
+    mocks.api.setOn.mockResolvedValue(response({ success: true }));
+    mocks.api.fetchApi.mockResolvedValue(response({ raw: [255] }));
+    await store.setPower(true);
+    expect(mocks.api.setOn).toHaveBeenCalledWith(
+      { light: 3, light_id: "desk" }, { ip_address: "192.168.29.69" },
+    );
+    expect(store.isOn).toBe(true);
+    mocks.api.setOff.mockResolvedValue(response({ success: true }));
+    mocks.api.fetchApi.mockResolvedValue(response({ raw: [0] }));
+    await store.setPower(false);
+    expect(mocks.api.setOff).toHaveBeenCalledWith(
+      { light: 3, light_id: "desk" }, { ip_address: "192.168.29.69" },
+    );
+    expect(store.isOn).toBe(false);
+  });
+
+  it("surfaces power command failures without changing the displayed state", async () => {
+    const store = useVirtualLightsStore();
+    await store.load();
+    mocks.api.setOn.mockResolvedValue({ jsonData: null, error: { message: "Unavailable" } });
+    await store.setPower(true);
+    expect(store.error).toBe("Unavailable");
+    expect(store.isOn).toBe(false);
+    expect(store.powerSaving).toBe(false);
+  });
+
+  it("does not apply an old light's power response to a newly selected light", async () => {
+    let resolveOn;
+    mocks.api.getConfig.mockResolvedValue(response({
+      hardware: {
+        configuration: {
+          ...configuration(),
+          lights: [
+            ...configuration().lights,
+            { id: "other", index: 4, name: "Other", type: "SINGLE", pins: [4] },
+          ],
+        },
+      },
+    }));
+    mocks.api.setOn.mockReturnValue(new Promise((resolve) => { resolveOn = resolve; }));
+    const store = useVirtualLightsStore();
+    await store.load();
+    const pending = store.setPower(true);
+    await store.selectLight("other");
+    mocks.api.fetchApi.mockClear();
+    resolveOn(response({ success: true }));
+    await pending;
+    expect(store.selectedId).toBe("other");
+    expect(mocks.api.fetchApi).not.toHaveBeenCalled();
+    expect(store.powerSaving).toBe(false);
+  });
+
   const boardProfile = () => ({
     id: "deca", revision: 1, name: "Deca", soc: "esp32", reserved_gpios: [18],
     implemented_pins: [{ id: "output", label: "Output", gpio: 5, allowed_functions: ["light.pwm"] }],

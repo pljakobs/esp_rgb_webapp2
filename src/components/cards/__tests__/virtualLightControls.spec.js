@@ -42,8 +42,8 @@ const global = {
     QExpansionItem: { template: "<div><slot /></div>" }, QTooltip: true,
     QBtnGroup: { template: "<div><slot /></div>" },
     QBtn: { template: "<button><slot /></button>" },
-    QCarousel: { template: "<div><slot /></div>" },
-    QCarouselSlide: { template: "<div><slot /></div>" },
+    QTabPanels: { template: "<div><slot /></div>" },
+    QTabPanel: { template: "<div><slot /></div>" },
     HsvSection: true, RawSection: true, LightPresetSection: true,
     QDialog: { template: "<div><slot /></div>", methods: { hide() {}, show() {} } },
     QCard: { template: "<div><slot /></div>" },
@@ -78,6 +78,65 @@ describe("Profile-specific color controls", () => {
       profile: lightProfile(light), color: { hsv: { h: 0, s: 0, v: 50, ct: 2700 } },
     });
   };
+
+  it("uses content-sized controls in the card while retaining scrolling for dialogs", () => {
+    setLight("WWCW");
+    const card = mount(ColorPickerCard, { global });
+    expect(card.findComponent(HsvSection).props("cardHeight")).toBe("auto");
+    expect(card.findComponent(RawSection).props("cardHeight")).toBe("auto");
+    const controls = mount(HsvSection, { global, props: { profile: lightProfile({ type: "WWCW" }), cardHeight: "auto" } });
+    expect(controls.vm.scrollContainer).toBe("div");
+    const dialog = mount(HsvSection, { global, props: { profile: lightProfile({ type: "WWCW" }), isDialog: true, cardHeight: "auto", dialogHeight: "280px" } });
+    expect(dialog.vm.scrollContainer).not.toBe("div");
+    expect(dialog.vm.scrollStyle).toEqual({ height: "280px" });
+    card.unmount();
+    controls.unmount();
+    dialog.unmount();
+  });
+
+  it("shows brightness, temperature and an accessible selected-light power control", async () => {
+    const wrapper = mount(HsvSection, {
+      global,
+      props: {
+        profile: lightProfile({ type: "WWCW" }),
+        modelValue: { hsv: { h: 0, s: 0, v: 24.5, ct: 4000 } },
+        showPower: true,
+        powerOn: true,
+      },
+    });
+    expect(wrapper.text()).toContain("25%");
+    expect(wrapper.text()).toContain("4000 K");
+    expect(wrapper.text()).toContain("colorSliders.warmWhite");
+    expect(wrapper.text()).toContain("colorSliders.coldWhite");
+    const toggle = wrapper.findComponent({ name: "QToggle" });
+    expect(toggle.attributes("aria-label")).toBe("color.power");
+    toggle.vm.$emit("update:modelValue", false);
+    expect(wrapper.emitted("update:power")).toEqual([[false]]);
+    wrapper.unmount();
+  });
+
+  it("keeps the existing temperature when changing brightness and sends temperature changes", async () => {
+    const wrapper = mount(HsvSection, {
+      global,
+      props: {
+        profile: lightProfile({ type: "WWCW" }),
+        modelValue: { hsv: { h: 0, s: 0, v: 50, ct: 4000 } },
+      },
+    });
+    await vi.runAllTimersAsync();
+    const sliders = wrapper.findAllComponents({ name: "QSlider" });
+    sliders[0].vm.$emit("update:modelValue", 60);
+    await wrapper.vm.$nextTick();
+    expect(wrapper.emitted("update:modelValue").at(-1)).toEqual([
+      { hsv: { h: 0, s: 0, v: 60 }, ct: 4000 },
+    ]);
+    sliders[1].vm.$emit("update:modelValue", 5000);
+    await wrapper.vm.$nextTick();
+    expect(wrapper.emitted("update:modelValue").at(-1)).toEqual([
+      { hsv: { h: 0, s: 0, v: 60 }, ct: 5000 },
+    ]);
+    wrapper.unmount();
+  });
 
   it("keeps the preset page open when starring and falls back there after the last unstar", async () => {
     setLight("WWCW");
@@ -259,9 +318,62 @@ describe("Profile-specific color controls", () => {
     expect(wrapper.findComponent({ name: "QColor" }).exists()).toBe(false);
     expect(wrapper.vm.brightness).toBe(100);
     await vi.runAllTimersAsync();
-    wrapper.vm.brightness = 0;
+    wrapper.findComponent({ name: "QSlider" }).vm.$emit("update:modelValue", 0);
     await wrapper.vm.$nextTick();
     expect(wrapper.emitted("update:modelValue")[0]).toEqual([{ raw: [0] }]);
+    wrapper.unmount();
+  });
+  it.each(["RGB", "RGBWW", "RGBCW", "RGBWWCW"])("shows the shared brightness control and preserves RGB hue for %s", async (type) => {
+    const wrapper = mount(HsvSection, {
+      global,
+      props: {
+        profile: lightProfile({ type }),
+        modelValue: { hsv: { h: 120, s: 80, v: 50, ct: 4000 } },
+        showPower: true,
+        powerOn: true,
+      },
+    });
+    await vi.runAllTimersAsync();
+    const sliders = wrapper.findAllComponents({ name: "QSlider" });
+    expect(sliders).toHaveLength(type === "RGBWWCW" ? 2 : 1);
+    expect(wrapper.findComponent({ name: "QToggle" }).exists()).toBe(true);
+    sliders[0].vm.$emit("update:modelValue", 0);
+    expect(wrapper.emitted("update:modelValue").at(-1)).toEqual([
+      { hsv: { h: 120, s: 80, v: 0 }, ct: 4000 },
+    ]);
+    sliders[0].vm.$emit("update:modelValue", 60);
+    expect(wrapper.emitted("update:modelValue").at(-1)).toEqual([
+      { hsv: { h: 120, s: 80, v: 60 }, ct: 4000 },
+    ]);
+    wrapper.unmount();
+  });
+  it.each(["WWCW", "RGB", "RGBWW", "RGBCW", "RGBWWCW"])("uses shared value-first sliders for %s RAW channels", (type) => {
+    const profile = lightProfile({ type });
+    const raw = profile.rgb ? { r: 12, g: 34, b: 56, ww: 78, cw: 90 } : [12, 34];
+    const wrapper = mount(RawSection, { global, props: { profile, modelValue: { raw } } });
+    const sliders = wrapper.findAllComponents({ name: "QSlider" });
+    expect(sliders).toHaveLength(profile.channels.length);
+    expect(wrapper.text()).toContain("12");
+    expect(sliders[0].attributes("aria-label")).toBe(
+      profile.rgb ? "colorSliders.red" : "colorSliders.warmWhite",
+    );
+    expect(sliders[0].attributes("track-size")).toBe("28px");
+    wrapper.unmount();
+  });
+  it("shows a single selected-light power switch on the RAW page", () => {
+    const wrapper = mount(RawSection, {
+      global,
+      props: {
+        profile: lightProfile({ type: "RGBWWCW" }),
+        modelValue: { raw: { r: 12, g: 34, b: 56, ww: 78, cw: 90 } },
+        showPower: true,
+        powerOn: true,
+      },
+    });
+    const switches = wrapper.findAllComponents({ name: "QToggle" });
+    expect(switches).toHaveLength(1);
+    switches[0].vm.$emit("update:modelValue", false);
+    expect(wrapper.emitted("update:power")).toEqual([[false]]);
     wrapper.unmount();
   });
   it("does not write legacy color mode during card initialization", () => {

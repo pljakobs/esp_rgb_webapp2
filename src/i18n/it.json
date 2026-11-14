@@ -126,6 +126,7 @@
     "brightness": "Luminosità",
     "colorTemperature": "Temperatura di colore",
     "tunableWhite": "Bianco regolabile",
+    "power": "Accendi o spegni la luce",
     "saveAs": "Salva come preset {model}",
     "presetName": "Nome preset",
     "favorites": "Preferiti",

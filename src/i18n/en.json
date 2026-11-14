@@ -156,6 +156,7 @@
     "brightness": "Brightness",
     "colorTemperature": "Color temperature",
     "tunableWhite": "Tunable white",
+    "power": "Light power",
     "saveAs": "Save as {model} preset",
     "presetName": "Preset name",
     "favorites": "Favorites",

@@ -63,41 +63,49 @@
       </q-btn-group>
     </q-card-section>
     <q-separator v-if="!singleChannel" />
-    <q-card-section class="color-picker-body" :style="{ height: cardHeight, pointerEvents: lights.colorLoading || lights.saving || lights.error ? 'none' : undefined, opacity: lights.colorLoading || lights.saving ? 0.5 : 1 }">
-      <q-carousel v-model="carouselPage" animated :style="{ height: '100%' }">
-        <q-carousel-slide v-if="hasFavorites" name="favorites">
+    <q-card-section class="color-picker-body" :style="{ pointerEvents: lights.colorLoading || lights.saving || lights.powerSaving || lights.error ? 'none' : undefined, opacity: lights.colorLoading || lights.saving || lights.powerSaving ? 0.5 : 1 }">
+      <q-tab-panels v-model="carouselPage" animated>
+        <q-tab-panel v-if="hasFavorites" name="favorites">
           <LightPresetSection v-if="lights.enabled" favorites-only />
           <favoriteSection
             v-else
             :card-height="cardHeight"
             @update:model-value="handleColorChange"
           />
-        </q-carousel-slide>
-        <q-carousel-slide name="hsv">
+        </q-tab-panel>
+        <q-tab-panel name="hsv">
           <HsvSection
             :key="lights.enabled ? lights.selectedId + lights.selectedLight.type : 'legacy-hsv'"
             :profile="lights.enabled ? lights.profile : null"
-            :card-height="cardHeight"
+            :show-power="lights.enabled"
+            :power-on="lights.isOn"
+            :power-busy="lights.powerSaving || lights.colorLoading"
+            card-height="auto"
             :model-value="colorValue"
             @update:model-value="handleColorChange"
+            @update:power="lights.setPower($event)"
             @add-preset="openAddPresetDialog"
           />
-        </q-carousel-slide>
-        <q-carousel-slide v-if="!singleChannel" name="raw">
+        </q-tab-panel>
+        <q-tab-panel v-if="!singleChannel" name="raw">
           <RawSection
             :key="lights.enabled ? lights.selectedId + lights.selectedLight.type : 'legacy-raw'"
             :profile="lights.enabled ? lights.profile : null"
-            :card-height="cardHeight"
+            :show-power="lights.enabled"
+            :power-on="lights.isOn"
+            :power-busy="lights.powerSaving || lights.colorLoading"
+            card-height="auto"
             :model-value="colorValue"
             @update:model-value="handleColorChange"
+            @update:power="lights.setPower($event)"
             @add-preset="openAddPresetDialog"
           />
-        </q-carousel-slide>
-        <q-carousel-slide name="presets">
+        </q-tab-panel>
+        <q-tab-panel name="presets">
           <LightPresetSection v-if="lights.enabled" />
-          <PresetSection v-else @update:model-value="handleColorChange" />
-        </q-carousel-slide>
-      </q-carousel>
+          <PresetSection v-else :card-height="cardHeight" @update:model-value="handleColorChange" />
+        </q-tab-panel>
+      </q-tab-panels>
     </q-card-section>
     </template>
   </MyCard>
@@ -143,7 +151,7 @@ export default {
     },
     cardHeight: {
       type: String,
-      default: "600px",
+      default: "min(420px, 60vh)",
     },
   },
   setup() {
@@ -446,12 +454,17 @@ export default {
   width: 100%;
 }
 
+.color-picker-body {
+  max-height: 65vh;
+  overflow-y: auto;
+}
+
 @media (max-width: 600px) {
   .color-picker-body {
     padding: 0 !important;
   }
 
-  .color-picker-body :deep(.q-carousel__slide) {
+  .color-picker-body :deep(.q-tab-panel) {
     padding: 0 !important;
   }
 }
