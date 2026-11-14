@@ -1,4 +1,34 @@
 {
+  "sensors": {
+    "title": "Sensoren",
+    "current": "Strom (INA219)",
+    "spectral": "Spektrum (AS7341)",
+    "available": "Sensor erkannt",
+    "unavailable": "Sensor deaktiviert oder nicht erkannt",
+    "unsupported": "Sensor-Erweiterung fehlt in dieser Firmware oder ihre Konfigurations-API ist nicht verfügbar.",
+    "noReading": "Kein gültiger Messwert",
+    "measuring": "Messung läuft...",
+    "brightness": "Clear-Helligkeit (erste / zweite Aufnahme)",
+    "counts": "ADC-Zählwerte",
+    "age": "Alter des Messwerts: {seconds} s",
+    "currentGraph": "Stromverlauf in Ampere",
+    "spectrumGraph": "Interpoliertes sichtbares Spektrum in ADC-Zählwerten",
+    "spectrumNote": "Unkalibrierte Zählwerte bei acht nominellen Wellenlängen. Die Kurve ist eine visuelle Interpolation, kein kalibriertes Spektrum und keine Lux-Messung.",
+    "measure": "Spektrum messen",
+    "configuration": "Sensorkonfiguration",
+    "enabled": "Aktiviert",
+    "invalid": "Zahl innerhalb des zulässigen Bereichs eingeben",
+    "refresh": "Sensoren aktualisieren",
+    "intervalNote": "Das AS7341-Intervall wird nur gespeichert; Messungen werden manuell gestartet. Gain ist ein Registerindex (0 = 0,5x, 1 = 1x, ..., 10 = 512x).",
+    "fields": {
+      "address": "I2C-Adresse (dezimal, 64-79)",
+      "shunt_ohms": "Shunt-Widerstand (Ohm)",
+      "interval_ms": "Intervall (ms)",
+      "atime": "Integration ATIME (0-255)",
+      "astep": "Integration ASTEP (0-65535)",
+      "gain": "Gain-Registerindex (0-10)"
+    }
+  },
   "common": {
     "cancel": "Abbrechen",
     "save": "Speichern",

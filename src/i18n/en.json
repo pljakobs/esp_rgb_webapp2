@@ -1,4 +1,34 @@
 {
+  "sensors": {
+    "title": "Sensors",
+    "current": "Current (INA219)",
+    "spectral": "Spectrum (AS7341)",
+    "available": "Sensor detected",
+    "unavailable": "Sensor disabled or not detected",
+    "unsupported": "Sensor extension is not included in this firmware, or its configuration API is unavailable.",
+    "noReading": "No valid reading",
+    "measuring": "Measuring...",
+    "brightness": "Clear brightness (low / high acquisition)",
+    "counts": "ADC counts",
+    "age": "Reading age: {seconds} s",
+    "currentGraph": "Current history in amperes",
+    "spectrumGraph": "Interpolated visible spectrum in raw ADC counts",
+    "spectrumNote": "Uncalibrated counts at eight nominal wavelengths. The fitted curve is a visual interpolation, not a calibrated spectrum or lux measurement.",
+    "measure": "Measure spectrum",
+    "configuration": "Sensor configuration",
+    "enabled": "Enabled",
+    "invalid": "Enter a number within the permitted range",
+    "refresh": "Refresh sensors",
+    "intervalNote": "AS7341 interval is reserved and stored only; measurements are started manually. Gain is a register index (0 = 0.5x, 1 = 1x, ..., 10 = 512x).",
+    "fields": {
+      "address": "I2C address (decimal, 64-79)",
+      "shunt_ohms": "Shunt resistance (ohms)",
+      "interval_ms": "Interval (ms)",
+      "atime": "Integration ATIME (0-255)",
+      "astep": "Integration ASTEP (0-65535)",
+      "gain": "Gain register index (0-10)"
+    }
+  },
   "common": {
     "cancel": "Cancel",
     "save": "Save",

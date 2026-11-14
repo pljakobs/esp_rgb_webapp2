@@ -1,6 +1,7 @@
 <template>
   <div class="interaction-page">
     <ColorPicker card-height="80vh" />
+    <SensorsCard />
     <q-dialog v-model="showDialog">
       <q-card
         class="shadow-4 col-auto fit q-gutter-md q-pa-md"
@@ -34,10 +35,12 @@
 import { ref } from "vue";
 import { useI18n } from "vue-i18n";
 import ColorPicker from "src/components/cards/ColorPickerCard.vue";
+import SensorsCard from "src/components/cards/SensorsCard.vue";
 
 export default {
   components: {
     ColorPicker,
+    SensorsCard,
   },
   setup() {
     const { t } = useI18n();
@@ -68,5 +71,6 @@ export default {
   flex-direction: column;
   align-items: stretch;
   justify-content: flex-start;
+  gap: 16px;
 }
 </style>

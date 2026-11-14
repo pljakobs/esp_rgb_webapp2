@@ -83,6 +83,29 @@ initializes board PWM outputs from ConfigDB, without reading the catalog.
 Existing configurations without a snapshot need the board selected and applied
 again. This does not remap light GPIOs or install a template.
 
+### Sensors
+
+The Color page includes a Sensors card with Current (INA219) and Spectrum
+(AS7341) tabs; it is also available, initially collapsed, in System settings.
+Each tab exposes the extension's persistent configuration, including enable,
+integration/gain or shunt/address settings. Configuration stays editable when
+the sensor is disconnected or disabled. Older firmware without these APIs
+shows an unsupported-extension message without affecting light controls.
+
+The current tab shows signed amperes, voltage and power, with a timestamped
+history graph (up to 120 polled samples while the card is open, refreshed every
+two seconds). Invalid readings create gaps, not zeroes. Switching controllers,
+closing the card or refreshing clears the local history.
+
+Use **Measure spectrum** to acquire the eight AS7341 visible channels. The
+graph interpolates through their nominal centers (415, 445, 480, 515, 555, 590,
+630 and 680 nm) without overshoot. Clear brightness and NIR counts from both
+acquisitions are displayed separately. These are uncalibrated ADC counts,
+not lux or spectral power; the curve is a visualization of the measurements,
+not a calibrated spectral reconstruction. AS7341 `interval_ms` is stored but
+does not enable periodic acquisition. Gain is a register index, not a direct
+multiplier. Configuration writes during acquisition are rejected by firmware.
+
 ### Per-light preset swatches
 
 On 5.1, select a light on the colour card and open **Presets**. The controller's

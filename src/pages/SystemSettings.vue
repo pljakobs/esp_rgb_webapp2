@@ -7,6 +7,7 @@
       <FirmwareUpdateCard />
       <WebappUpdateCard />
       <HostnameCard />
+      <SensorsCard initially-collapsed />
       <SaveRestoreConfig />
       <DebugFunctionCard v-if="infoData.data?.app?.build_type === 'debug'" />
       <LogViewerCard v-if="infoData.data?.app?.build_type === 'debug'" />
@@ -23,6 +24,7 @@ import LogViewerCard from "src/components/cards/LogViewerCard.vue";
 import SaveRestoreConfig from "src/components/SaveRestoreConfig.vue";
 import DebugFunctionCard from "src/components/cards/DebugFunctionCard.vue";
 import HostnameCard from "src/components/cards/HostnameCard.vue";
+import SensorsCard from "src/components/cards/SensorsCard.vue";
 
 export default {
   components: {
@@ -33,6 +35,7 @@ export default {
     SaveRestoreConfig,
     LogViewerCard,
     HostnameCard,
+    SensorsCard,
   },
   setup() {
     const infoData = infoDataStore();
