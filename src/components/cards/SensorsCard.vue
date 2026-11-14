@@ -6,9 +6,17 @@
     @update:collapsed="collapsed = $event"
   >
     <q-linear-progress v-if="loading" indeterminate />
+    <q-banner
+      v-if="!loading && !visibleSensors.length"
+      class="bg-warning text-black"
+      role="status"
+    >
+      {{ sensorStatusMessage }}
+    </q-banner>
+    <template v-if="visibleSensors.length">
     <q-tabs v-model="tab" dense align="left">
       <q-tab
-        v-for="sensor in sensors"
+          v-for="sensor in visibleSensors"
         :key="sensor.id"
         :name="sensor.id"
         :label="t(`sensors.${sensor.name}`)"
@@ -16,19 +24,13 @@
     </q-tabs>
     <q-tab-panels v-model="tab" animated>
       <q-tab-panel
-        v-for="sensor in sensors"
+          v-for="sensor in visibleSensors"
         :key="sensor.id"
         :name="sensor.id"
         class="q-pa-none q-pt-md"
       >
         <q-banner
-          v-if="sensor.supported === false"
-          class="bg-warning text-black"
-        >
-          {{ t("sensors.unsupported") }}
-        </q-banner>
-        <q-banner
-          v-else-if="sensor.actionError || sensor.error"
+            v-if="sensor.actionError || sensor.error"
           class="bg-negative text-white"
           role="alert"
         >
@@ -168,6 +170,8 @@
             v-if="sensor.name === 'spectral'"
             :label="t('sensors.measure')"
             :disable="
+                sensor.supported !== true ||
+                sensor.config?.extension_id !== sensor.id ||
               !sensor.config.available ||
               sensor.saving ||
               sensor.reading?.state === 'measuring'
@@ -175,7 +179,10 @@
             color="primary"
             @click="measure(sensor)"
           />
-          <q-expansion-item :label="t('sensors.configuration')" class="q-mt-md">
+            <q-expansion-item
+              :label="t('sensors.configuration')"
+              class="q-mt-md"
+            >
             <q-form class="q-gutter-sm" @submit="save(sensor)">
               <q-toggle
                 v-model="sensor.draft.enabled"
@@ -193,7 +200,8 @@
                 :step="field.step"
                 :disable="sensor.saving"
                 :rules="[
-                  (value) => validField(value, field) || t('sensors.invalid'),
+                    (value) =>
+                      validField(value, field) || t('sensors.invalid'),
                 ]"
               />
               <div v-if="sensor.name === 'spectral'" class="text-caption">
@@ -205,6 +213,8 @@
                 color="primary"
                 :loading="sensor.saving"
                 :disable="
+                    sensor.supported !== true ||
+                    sensor.config?.extension_id !== sensor.id ||
                   !validSettings(sensor, sensor.draft) ||
                   sensor.reading?.state === 'measuring'
                 "
@@ -220,11 +230,12 @@
       :disable="loading || sensors.some((sensor) => sensor.saving)"
       @click="reload"
     />
+    </template>
   </MyCard>
 </template>
 
 <script setup>
-import { computed, ref, useId } from "vue";
+import { computed, ref, useId, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import MyCard from "src/components/myCard.vue";
 import { useSensors } from "src/composables/useSensors";
@@ -243,6 +254,22 @@ const collapsed = ref(props.initiallyCollapsed);
 const expanded = computed(() => !collapsed.value);
 const tab = ref("current-1");
 const { sensors, loading, reload, save, measure } = useSensors(expanded);
+const visibleSensors = computed(() =>
+  sensors.filter((sensor) => sensor.supported === true),
+);
+const sensorStatusMessage = computed(() => {
+  const error = sensors.find((sensor) => sensor.error)?.error;
+  return error || t("sensors.unsupported");
+});
+watch(
+  visibleSensors,
+  (available) => {
+    if (available.length && !available.some((sensor) => sensor.id === tab.value)) {
+      tab.value = available[0].id;
+    }
+  },
+  { immediate: true },
+);
 const gradientId = `spectrum-${useId().replace(/:/g, "")}`;
 const currentGraph = computed(() => graphGeometry(sensors[0].history));
 const spectrumGraph = computed(() =>

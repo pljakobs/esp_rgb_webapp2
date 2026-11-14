@@ -34,7 +34,11 @@ describe("Sensors card visualization", () => {
       sensors: reactive(
         sensorDefinitions.map((definition) => ({
           ...definition,
-          config: { enabled: true, available: true },
+          config: {
+            extension_id: definition.id,
+            enabled: true,
+            available: true,
+          },
           draft: {},
           supported: true,
           saving: false,
@@ -131,6 +135,19 @@ describe("Sensors card visualization", () => {
       );
       wrapper.unmount();
     });
+  });
+
+  it("hides controls until the controller reports the sensor capability", async () => {
+    state.sensors.forEach((sensor) => {
+      sensor.supported = false;
+      sensor.config = null;
+    });
+    const wrapper = render();
+    await flushPromises();
+    expect(wrapper.findAll('[role="tab"]')).toHaveLength(0);
+    expect(wrapper.findAll("input")).toHaveLength(0);
+    expect(wrapper.text()).toContain("Sensor extension is not included");
+    wrapper.unmount();
   });
 
   it("renders all eight measured points, brightness and the fitted spectrum in its tab", async () => {

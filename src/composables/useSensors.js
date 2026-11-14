@@ -123,6 +123,9 @@ export function useSensors(expanded) {
     sensor.saving = true;
     sensor.actionError = "";
     try {
+      if (sensor.supported !== true || sensor.config?.extension_id !== sensor.id) {
+        throw new Error("Sensor configuration is not supported by this controller.");
+      }
       const payload = settingsPayload(sensor, sensor.draft);
       const config = await sensorRequest(
         sensor.id,
@@ -147,6 +150,13 @@ export function useSensors(expanded) {
     sensor.saving = true;
     sensor.actionError = "";
     try {
+      if (
+        sensor.supported !== true ||
+        sensor.config?.extension_id !== sensor.id ||
+        !sensor.config.available
+      ) {
+        throw new Error("Spectral measurement is not available on this controller.");
+      }
       await sensorRequest(
         sensor.id,
         "start_measurement",
