@@ -10,6 +10,7 @@ const mocks = vi.hoisted(() => ({
   presets: { favorites: [], presets: [] },
   restart: vi.fn(),
   fetchApi: vi.fn(),
+  dialog: vi.fn(),
 }));
 vi.mock("src/stores/colorDataStore", () => ({ useColorDataStore: () => mocks.color }));
 vi.mock("src/stores/configDataStore", () => ({ configDataStore: () => mocks.config }));
@@ -20,7 +21,7 @@ vi.mock("src/services/api", () => ({ apiService: { fetchApi: mocks.fetchApi } })
 vi.mock("vue-i18n", () => ({ useI18n: () => ({ t: (key) => key }) }));
 vi.mock("src/stores/infoDataStore", () => ({ infoDataStore: () => ({ data: { device: { soc: "esp32c3" } } }) }));
 vi.mock("src/services/systemCommands.js", () => ({ default: { restartController: mocks.restart } }));
-vi.mock("quasar", async (importOriginal) => ({ ...(await importOriginal()), useQuasar: () => ({ notify: vi.fn() }) }));
+vi.mock("quasar", async (importOriginal) => ({ ...(await importOriginal()), Dialog: { create: mocks.dialog }, useQuasar: () => ({ notify: vi.fn() }) }));
 import RawSection from "../colorPickerSections/RawSection.vue";
 import HsvSection from "../colorPickerSections/HsvSection.vue";
 import ColorModelCard from "../ColorModelCard.vue";
@@ -179,6 +180,47 @@ describe("Profile-specific color controls", () => {
     wrapper.unmount();
     delete mocks.lights.configuration;
     delete mocks.lights.catalog;
+  });
+
+  it("explains occupied Deca outputs and allows reuse after deleting their lights", async () => {
+    const gpios = [27, 26, 25, 23, 22, 21, 19, 18, 17, 14, 13, 12, 5, 4, 2];
+    mocks.lights.configuration = {
+      soc: "esp32", board_id: "deca", board_revision: 1,
+      lights: gpios.map((gpio, index) => ({
+        id: `led-${index + 1}`, index, name: `LED ${index + 1}`,
+        type: "SINGLE", pins: [gpio], is_default: index === 0,
+      })),
+    };
+    mocks.lights.catalog = { boards: [{ id: "deca", revision: 1, implemented_pins: gpios.map((gpio, index) => ({
+      id: `L${index + 1}`, gpio, allowed_functions: ["light.pwm"],
+    })) }] };
+    mocks.lights.apply = vi.fn().mockResolvedValue();
+    mocks.dialog.mockImplementation(() => ({ onOk: (callback) => callback() }));
+    const wrapper = mount(VirtualLightEditor, { global: { ...global, stubs: { ...global.stubs, QRadio: true, QBanner: { template: "<div><slot /></div>" } } } });
+    const select = (label) => wrapper.findAllComponents({ name: "MySelect" }).find((item) => item.attributes("label") === label);
+    select("Color model").vm.$emit("update:modelValue", "RGBWW");
+    await wrapper.vm.$nextTick();
+    expect(wrapper.text()).toContain("GPIOs assigned to other lights are unavailable");
+    expect(wrapper.vm.pinOptions(0).find((option) => option.value === 26)).toMatchObject({ disable: true, label: "L2 (GPIO 26) - assigned to LED 2" });
+    for (const id of ["led-2", "led-3", "led-4"]) {
+      select("Light").vm.$emit("update:modelValue", id);
+      await wrapper.vm.$nextTick();
+      await wrapper.find('button[aria-label="Delete light"]').trigger("click");
+    }
+    select("Light").vm.$emit("update:modelValue", "led-1");
+    await wrapper.vm.$nextTick();
+    expect(wrapper.vm.pinOptions(1).find((option) => option.value === 26).disable).toBe(false);
+    for (const [label, gpio] of [["R GPIO", 27], ["G GPIO", 26], ["B GPIO", 25], ["WW GPIO", 23]]) {
+      select(label).vm.$emit("update:modelValue", gpio);
+      await wrapper.vm.$nextTick();
+    }
+    await wrapper.find('button[label="Apply"]').trigger("click");
+    await flushPromises();
+    expect(mocks.lights.apply).toHaveBeenCalledWith(expect.objectContaining({
+      lights: expect.arrayContaining([expect.objectContaining({ id: "led-1", type: "RGBWW", pins: [27, 26, 25, 23] })]),
+    }));
+    expect(mocks.lights.configuration.lights).toHaveLength(15);
+    wrapper.unmount();
   });
 
   it("keeps legacy RAW controls when no profile is supplied", () => {

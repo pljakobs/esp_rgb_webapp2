@@ -17,6 +17,9 @@
         <q-input v-model="selectedLight.name" outlined dense label="Light name" maxlength="64" :disable="lights.saving" />
         <mySelect :model-value="selectedLight.type" :options="Object.keys(LIGHT_CHANNELS)" outlined dense label="Color model" :disable="lights.saving" @update:model-value="changeModel" />
         <q-radio :model-value="defaultId" :val="selectedLight.id" label="Default light" :disable="lights.saving" @update:model-value="setDefault" />
+        <div v-if="hasOtherLightAssignments" class="text-caption text-grey-8">
+          GPIOs assigned to other lights are unavailable. To reuse one, select and delete its light, then return here and assign the GPIO. Changes take effect only after Apply; select a default light if needed.
+        </div>
         <div class="pin-grid">
           <div v-for="(channel, index) in channels" :key="channel">
             <mySelect v-if="board" v-model="selectedLight.pins[index]" :options="pinOptions(index)" emit-value map-options outlined dense :label="channel.toUpperCase() + ' GPIO'" :disable="lights.saving" />
@@ -71,17 +74,22 @@ const board = computed(() => {
 });
 const validationErrors = computed(() => validationAttempted.value && draft.value ? validateLightConfiguration(draft.value, board.value) : []);
 const channels = computed(() => LIGHT_CHANNELS[selectedLight.value?.type] ?? []);
+const otherLights = computed(() => draft.value?.lights.filter((light) => light.id !== selectedId.value) ?? []);
+const hasOtherLightAssignments = computed(() => otherLights.value.some((light) => light.pins.some(Number.isInteger)));
 const pinOptions = (index) => {
-  const otherLights = draft.value.lights.filter((light) => light.id !== selectedId.value).flatMap((light) => light.pins);
   const reservations = [
     ...(board.value?.reserved_gpios ?? []),
     ...(draft.value.buttons ?? []).map((button) => button.pin),
     ...(draft.value.buses ?? []).flatMap((bus) => [bus.sda, bus.scl]),
     ...(draft.value.system?.clear_config_enabled ? [draft.value.system.clear_config_pin] : []),
     ...selectedLight.value.pins.filter((pin, position) => position !== index),
-    ...otherLights,
+    ...otherLights.value.flatMap((light) => light.pins),
   ];
-  return (board.value?.implemented_pins ?? []).filter((pin) => pin.allowed_functions?.includes("light.pwm")).map((pin) => ({ label: `${pin.label || pin.id} (GPIO ${pin.gpio})`, value: pin.gpio, disable: reservations.includes(pin.gpio) }));
+  return (board.value?.implemented_pins ?? []).filter((pin) => pin.allowed_functions?.includes("light.pwm")).map((pin) => {
+    const owner = otherLights.value.find((light) => light.pins.includes(pin.gpio));
+    const label = `${pin.label || pin.id} (GPIO ${pin.gpio})`;
+    return { label: owner ? `${label} - assigned to ${owner.name || owner.id}` : label, value: pin.gpio, disable: reservations.includes(pin.gpio) };
+  });
 };
 const changeBoard = (id) => {
   const entry = lights.compatibleBoards?.find((entry) => entry.id === id);
@@ -116,7 +124,6 @@ const changeModel = (type) => {
   target.pins = LIGHT_CHANNELS[type].map((channel) => target.pins[previous.indexOf(channel)] ?? null);
   target.type = type;
 };
-const setPin = (index, value) => { selectedLight.value.pins[index] = value === "" || value === null ? null : Number(value); };
 const apply = () => {
   validationAttempted.value = true;
   error.value = null;

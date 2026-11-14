@@ -7,7 +7,7 @@ import { supportsVirtualLights, lightProfile, validateLightConfiguration } from 
 
 const clone = (value) => JSON.parse(JSON.stringify(value));
 const unwrap = ({ jsonData, error }) => {
-  if (error) throw new Error(error.message || "Controller request failed.");
+  if (error) throw new Error(typeof jsonData?.error === "string" && jsonData.error ? jsonData.error : error.message || "Controller request failed.");
   if (jsonData?.success === false) throw new Error(jsonData.error || "Controller rejected the request.");
   return jsonData;
 };
@@ -165,9 +165,12 @@ export const useVirtualLightsStore = defineStore("virtualLights", {
         if (token !== this.loadToken || !this.enabled) return;
         if (!Array.isArray(readback?.hardware?.configuration?.lights)) throw new Error("Configuration readback failed.");
         this.configuration = readback.hardware.configuration;
+        this.error = null;
         if (!this.lights.some((light) => light.id === this.selectedId)) {
           this.selectedId = null;
           this.color = {};
+        } else {
+          await this.fetchColor();
         }
       } finally {
         if (token === this.loadToken) {

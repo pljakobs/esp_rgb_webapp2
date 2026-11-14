@@ -83,6 +83,11 @@ initializes board PWM outputs from ConfigDB, without reading the catalog.
 Existing configurations without a snapshot need the board selected and applied
 again. This does not remap light GPIOs or install a template.
 
+GPIOs already assigned to another light cannot be reused until that light is
+deleted or reassigned in the editor. The GPIO menu identifies the owning light;
+edit all affected lights before applying the configuration. If the default
+light is deleted, select another default before applying.
+
 ### Sensors
 
 The Color page includes a Sensors card with Current (INA219) and Spectrum
