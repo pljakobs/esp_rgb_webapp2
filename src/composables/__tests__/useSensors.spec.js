@@ -137,6 +137,31 @@ describe("sensor polling lifecycle", () => {
     expect(sensorRequest).toHaveBeenCalledTimes(2);
   });
 
+  it("does not write or start measurements without a reported extension capability", async () => {
+    const vm = await start();
+    const current = vm.sensors[0];
+    current.supported = false;
+    await vm.save(current);
+    expect(sensorRequest).not.toHaveBeenCalledWith(
+      "current-1",
+      "config",
+      expect.anything(),
+      expect.anything(),
+    );
+    expect(current.actionError).toContain("not supported");
+
+    const spectrum = vm.sensors[1];
+    spectrum.supported = false;
+    await vm.measure(spectrum);
+    expect(sensorRequest).not.toHaveBeenCalledWith(
+      "spectrum-1",
+      "start_measurement",
+      expect.anything(),
+      expect.anything(),
+    );
+    expect(spectrum.actionError).toContain("not available");
+  });
+
   it("keeps disconnected settings editable without overwriting unsaved drafts", async () => {
     sensorRequest.mockImplementation(async (id) => ({
       ...(id === "current-1" ? currentConfig : spectrumConfig),

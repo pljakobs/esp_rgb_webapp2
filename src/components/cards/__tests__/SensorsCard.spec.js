@@ -14,6 +14,8 @@ import {
   QForm,
   QBtn,
   QExpansionItem,
+  QItemSection,
+  QItemLabel,
   QLinearProgress,
 } from "quasar/dist/quasar.client.js";
 import SensorsCard from "../SensorsCard.vue";
@@ -34,7 +36,11 @@ describe("Sensors card visualization", () => {
       sensors: reactive(
         sensorDefinitions.map((definition) => ({
           ...definition,
-          config: { enabled: true, available: true },
+          config: {
+            extension_id: definition.id,
+            enabled: true,
+            available: true,
+          },
           draft: {},
           supported: true,
           saving: false,
@@ -100,6 +106,8 @@ describe("Sensors card visualization", () => {
                 QForm,
                 QBtn,
                 QExpansionItem,
+                QItemSection,
+                QItemLabel,
                 QLinearProgress,
               },
             },
@@ -110,7 +118,13 @@ describe("Sensors card visualization", () => {
             messages: { en: translations },
           }),
         ],
-        stubs: { transition: true },
+        stubs: {
+          transition: true,
+          svgIcon: {
+            props: ["name"],
+            template: '<span :data-svg-icon="name" />',
+          },
+        },
       },
     });
   }
@@ -131,6 +145,31 @@ describe("Sensors card visualization", () => {
       );
       wrapper.unmount();
     });
+  });
+
+  it("hides controls until the controller reports the sensor capability", async () => {
+    state.sensors.forEach((sensor) => {
+      sensor.supported = false;
+      sensor.config = null;
+    });
+    const wrapper = render();
+    await flushPromises();
+    expect(wrapper.findAll('[role="tab"]')).toHaveLength(0);
+    expect(wrapper.findAll("input")).toHaveLength(0);
+    expect(wrapper.text()).toContain("Sensor extension is not included");
+    wrapper.unmount();
+  });
+
+  it("only displays sensors reported available by their capability", async () => {
+    state.sensors[0].config.available = false;
+    const wrapper = render();
+    await flushPromises();
+    expect(wrapper.findAll('[role="tab"]')).toHaveLength(1);
+    expect(wrapper.find('[data-testid="current-value"]').exists()).toBe(false);
+    expect(wrapper.find('[data-svg-icon="arrow_drop_down"]').exists()).toBe(
+      true,
+    );
+    wrapper.unmount();
   });
 
   it("renders all eight measured points, brightness and the fitted spectrum in its tab", async () => {

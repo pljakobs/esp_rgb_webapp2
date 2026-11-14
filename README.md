@@ -90,12 +90,12 @@ light is deleted, select another default before applying.
 
 ### Sensors
 
-The Color page includes a Sensors card with Current (INA219) and Spectrum
-(AS7341) tabs; it is also available, initially collapsed, in System settings.
-Each tab exposes the extension's persistent configuration, including enable,
-integration/gain or shunt/address settings. Configuration stays editable when
-the sensor is disconnected or disabled. Older firmware without these APIs
-shows an unsupported-extension message without affecting light controls.
+System settings includes an initially collapsed Sensors card. It shows the
+Current (INA219) and Spectrum (AS7341) tabs only when their capability reports
+the sensor as available. Each tab exposes the extension's persistent
+configuration, including enable, integration/gain or shunt/address settings.
+Older firmware without these APIs shows an unsupported-extension message
+without affecting light controls.
 
 The current tab shows signed amperes, voltage and power, with a timestamped
 history graph (up to 120 polled samples while the card is open, refreshed every

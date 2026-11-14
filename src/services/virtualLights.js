@@ -41,6 +41,9 @@ export function createLight(lights, id = makeID()) {
 export function validateLightConfiguration(configuration, board = null) {
   const errors = [];
   const lights = configuration.lights ?? [];
+  if (lights.length && !board) {
+    errors.push("Select a board profile before configuring PWM lights.");
+  }
   const claimed = new Set(board?.reserved_gpios ?? []);
   const ids = new Set();
   const indexes = new Set();

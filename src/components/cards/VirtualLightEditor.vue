@@ -5,7 +5,7 @@
     <template v-if="draft">
       <div class="row items-center q-gutter-sm q-mb-md">
         <mySelect v-model="selectedId" :options="lightOptions" emit-value map-options outlined dense label="Light" class="col" :disable="lights.saving" />
-        <q-btn flat round :disable="lights.saving || draft.lights.length >= 16" aria-label="Add light" @click="addLight">
+        <q-btn flat round :disable="lights.saving || !board || draft.lights.length >= 16" aria-label="Add light" @click="addLight">
           <svgIcon name="add" /><q-tooltip>Add light</q-tooltip>
         </q-btn>
         <q-btn flat round :disable="!selectedLight || lights.saving" aria-label="Delete light" @click="deleteLight">
@@ -13,6 +13,9 @@
         </q-btn>
       </div>
       <mySelect v-model="draft.board_id" :options="boardOptions" emit-value map-options outlined dense label="Board" class="q-mb-md" :disable="lights.saving" @update:model-value="changeBoard" />
+      <q-banner v-if="!board" class="bg-warning text-black q-mb-md">
+        Select a board profile before configuring PWM lights.
+      </q-banner>
       <div v-if="selectedLight" class="q-gutter-y-md">
         <q-input v-model="selectedLight.name" outlined dense label="Light name" maxlength="64" :disable="lights.saving" />
         <mySelect :model-value="selectedLight.type" :options="Object.keys(LIGHT_CHANNELS)" outlined dense label="Color model" :disable="lights.saving" @update:model-value="changeModel" />
@@ -22,8 +25,7 @@
         </div>
         <div class="pin-grid">
           <div v-for="(channel, index) in channels" :key="channel">
-            <mySelect v-if="board" v-model="selectedLight.pins[index]" :options="pinOptions(index)" emit-value map-options outlined dense :label="channel.toUpperCase() + ' GPIO'" :disable="lights.saving" />
-            <q-input v-else :model-value="selectedLight.pins[index]" type="number" min="0" max="255" step="1" outlined dense :label="channel.toUpperCase() + ' GPIO'" :disable="lights.saving" @update:model-value="setPin(index, $event)" />
+            <mySelect v-model="selectedLight.pins[index]" :options="pinOptions(index)" emit-value map-options outlined dense :label="channel.toUpperCase() + ' GPIO'" :disable="lights.saving" />
           </div>
         </div>
       </div>
@@ -65,7 +67,7 @@ const dirty = computed(() => JSON.stringify(draft.value) !== JSON.stringify(ligh
 const selectedLight = computed(() => draft.value?.lights.find((light) => light.id === selectedId.value));
 const defaultId = computed(() => draft.value?.lights.find((light) => light.is_default)?.id);
 const lightOptions = computed(() => draft.value?.lights.map((light) => ({ label: light.name || light.id, value: light.id })) ?? []);
-const boardOptions = computed(() => [{ label: "Custom GPIOs", value: "" }, ...(lights.compatibleBoards ?? []).map((entry) => ({ label: `${entry.name} (rev ${entry.revision})`, value: entry.id }))]);
+const boardOptions = computed(() => (lights.compatibleBoards ?? []).map((entry) => ({ label: `${entry.name} (rev ${entry.revision})`, value: entry.id })));
 const board = computed(() => {
   const saved = draft.value?.board_profile;
   return saved?.id === draft.value?.board_id && saved?.revision === draft.value?.board_revision

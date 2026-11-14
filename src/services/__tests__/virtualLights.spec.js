@@ -48,7 +48,13 @@ describe("Virtual-light firmware profile", () => {
 describe("Whole-assignment validation", () => {
   it("allows an empty configuration and a valid light", () => {
     expect(validateLightConfiguration({ lights: [] })).toEqual([]);
-    expect(validateLightConfiguration({ lights: [light()] })).toEqual([]);
+    expect(validateLightConfiguration({ lights: [light()] })).toContain(
+      "Select a board profile before configuring PWM lights.",
+    );
+    expect(validateLightConfiguration(
+      { lights: [light()] },
+      { implemented_pins: [1, 2, 3].map((gpio) => ({ gpio, allowed_functions: ["light.pwm"] })) },
+    )).toEqual([]);
   });
   it("rejects missing/default duplicates and duplicate identity", () => {
     expect(validateLightConfiguration({ lights: [light({ is_default: false })] })).toContain("Select exactly one default light.");

@@ -1,7 +1,7 @@
 # Lightinator Cross-Project Master Plan
 
-Status: M3 is reported implemented by the user on 2026-11-08; M4a has an initial local virtual-light WebUI implementation, with device qualification and broader client work pending. M2 development-line cutover is implemented and remaining M2 items are non-blocking backlog. M1 fleet/HA qualification remains open; storage/recovery qualification is deferred.
-Updated: 2026-11-08.
+Status: M2 and M3 are done per user decision on 2026-11-14. M4 is awaiting review across the unified webapp and Home Assistant. M5 requires design work. M6 remains open until all other milestones are complete. M1 fleet/HA qualification remains open; storage/recovery qualification is deferred.
+Updated: 2026-11-14.
 
 This document coordinates work across the workspace. It owns delivery order,
 cross-project dependencies, and acceptance gates. Linked plans own their detailed
@@ -54,11 +54,11 @@ The complete update chain must support these dimensions before branch cutover.
 | Milestone | Outcome                                                                                                                                                              | Depends On                                             | Status                                                             |
 | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ | ------------------------------------------------------------------ |
 | M1        | Version-aware publication, server discovery/options, updater clients, legacy adapters, and compatible frontend delivery. Storage/recovery qualification is deferred. | None                                                   | Close-out: fleet pending; publication hardening in rollout         |
-| M2        | Versioned development-line cutover, exact RGBWWLed pins, correct CI matrices; qualify contracts for next-generation runtime work.                                    | M1 readiness gates; CI preparation can proceed earlier | Development-line cutover implemented; follow-ups in backlog        |
-| M3        | 5.1 hardware/light schemas, built-in offline templates, validated assignments, multiple virtual lights and resource-aware PWM allocation.                            | M1, M2 contract baseline                               | Implemented per user update; qualification evidence tracked separately |
-| M4        | Offline board/template setup, named-pin and virtual-light management in the unified webapp and Home Assistant.                                                       | M3 API/runtime; catalogue design can proceed earlier   | M4a initial local WebUI; device qualification and further work pending |
-| M5        | Activate configurable button actions and I2C buses using the definitions and reservations established in M3.                                                         | M3, M4 resource model                                  | Partial input/I2C groundwork; configurable actions planned         |
-| M6        | Qualified firmware/webapp/integration releases and diagnostic lookup.                                                                                                | Acceptance gates for the features being shipped        | Planned                                                            |
+| M2        | Versioned development-line cutover, exact RGBWWLed pins, correct CI matrices; qualify contracts for next-generation runtime work.                                    | M1 readiness gates; CI preparation can proceed earlier | Done (user decision, 2026-11-14)                                    |
+| M3        | 5.1 hardware/light schemas, built-in offline templates, validated assignments, multiple virtual lights and resource-aware PWM allocation.                            | M1, M2 contract baseline                               | Done (user decision, 2026-11-14)                                    |
+| M4        | Offline board/template setup, named-pin and virtual-light management in the unified webapp and Home Assistant.                                                       | M3 API/runtime; catalogue design can proceed earlier   | Awaiting review                                                    |
+| M5        | Activate configurable button actions and I2C buses using the definitions and reservations established in M3.                                                         | M3, M4 resource model                                  | Design work required                                               |
+| M6        | Qualified firmware/webapp/integration releases and diagnostic lookup.                                                                                                | Completion of M1-M5 and applicable acceptance gates    | Open until all other milestones are complete                       |
 
 Peripheral and addressable-library investigations can run independently. Their
 implementation is not a prerequisite for analog lighting or M1. Full distribution
@@ -203,6 +203,9 @@ successful builds. The detailed plan defines policy, rollout, and test coverage.
 
 ## M2: Versioned Release Stages
 
+Status: **Done**, per user decision on 2026-11-14. Retained backlog and release
+qualification notes below do not reopen M2 or claim fresh verification.
+
 ### Development-Line Implementation Status
 
 The current build and release procedure is documented in
@@ -221,7 +224,7 @@ not qualify production promotion or the remaining fleet/HA/recovery flows.
 - [x] Implement versioned triggers, line-specific matrices and version counters,
       component version checks, external SPA delivery, and the pinned publisher.
 
-### M2 Backlog (Non-Blocking for M3)
+### Retained Follow-Ups (Not M2 Completion Gates)
 
 Decision on 2026-11-05: retain the following items as backlog and proceed with M3.
 They are not marked completed or freshly verified. Production promotion and
@@ -272,27 +275,30 @@ qualified release, not rebuilt artifacts.
 
 | Workstream                                            | Detailed Plan / Reference                                                                                                                                                                                                  | Coordination Requirement                                                                                                                    |
 | ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| Release lines and independent API-compatible releases | Firmware [branches.md](../esp_rgbww_firmware/branches.md)                                                                                                                                                                  | This master plan fixes the immediate exact component pins and development mappings; keep policy synchronized.                               |
-| ConfigDB migration                                    | [JSON migration](../esp_rgbww_firmware/CONFIGDB_JSON_MIGRATION_PLAN.md), [inbound JSON](../esp_rgbww_firmware/CONFIGDB_JSON_INBOUND_PLAN.md), [JSON-RPC messages](../esp_rgbww_firmware/CONFIGDB_JSONRPC_MESSAGES_PLAN.md) | Verify completed work before scheduling gaps; establish one shared contract for both clients.                                               |
-| Firmware API design                                   | [apiClass_plan.md](../esp_rgbww_firmware/apiClass_plan.md), [API_SCHEMA.md](../esp_rgbww_firmware/API_SCHEMA.md)                                                                                                           | Reconcile existing proposals with the actual schema/runtime before extending per-light configuration and commands.                          |
+| Release lines and independent API-compatible releases | Firmware [README](../esp_rgbww_firmware/README.md)                                                                                                                                                                         | This master plan fixes the immediate exact component pins and development mappings; keep policy synchronized.                               |
+| ConfigDB migration and firmware API                   | Firmware [API_SCHEMA.md](../esp_rgbww_firmware/API_SCHEMA.md), [FIRMWARE_ARCHITECTURE.md](../esp_rgbww_firmware/FIRMWARE_ARCHITECTURE.md)                                                                                | The current schema and runtime are authoritative; historical migration sketches are not current implementation guidance.                    |
 | QuinLED and multiple lights                           | [Quinled_Plan.md](Quinled_Plan.md)                                                                                                                                                                                         | M3/M4 share stable light IDs, named resources, capability gates, and legacy catalogue compatibility.                                        |
-| Host/build qualification                              | [CONTAINERIZED_HOST_CI_PLAN.md](../esp_rgbww_firmware/CONTAINERIZED_HOST_CI_PLAN.md)                                                                                                                                       | Reuse existing checks; Host is a test target, not a supported OTA SoC.                                                                      |
-| Update infrastructure and shared frontend             | [UPDATE_INFRASTRUCTURE_PLAN.md](UPDATE_INFRASTRUCTURE_PLAN.md), [firmware_update_api_plan.md](firmware_update_api_plan.md), [hybrid delivery proposal](plan-hybridWebappDelivery.prompt.md)                                | M1 owns the new contract, legacy adapters, client migration, and measured frontend budget. Older API sketches are not the current contract. |
+| Host/build qualification                              | Firmware [HOST_EMULATOR_TESTS.md](../esp_rgbww_firmware/HOST_EMULATOR_TESTS.md)                                                                                                                                             | Reuse existing checks; Host is a test target, not a supported OTA SoC.                                                                      |
+| Update infrastructure and shared frontend             | [UPDATE_INFRASTRUCTURE_PLAN.md](UPDATE_INFRASTRUCTURE_PLAN.md)                                                                                                                                                             | M1 owns the current contract, legacy adapters, client migration and measured frontend budget.                                               |
 | Distribution service                                  | [plan.md](../lightinator_server/plan.md), [backend_Migration.md](../lightinator_server/backend_Migration.md)                                                                                                               | Explicit line/stage discovery is M1; full product-aware catalogue modernization remains separately scoped.                                  |
 | Home Assistant integration                            | [README.md](../Lightinator_HA_module/README.md)                                                                                                                                                                            | Track implementation against shared M2-M5 contracts; this reference is not a separate implementation plan.                                  |
 | Diagnostic service                                    | [FIRMWARE_AGNOSTIC_PLAN.md](../lightinator-log-service/FIRMWARE_AGNOSTIC_PLAN.md), [CRASH_REPORT_MODULE_PLAN.md](../lightinator-log-service/CRASH_REPORT_MODULE_PLAN.md)                                                   | Preserve unambiguous product/version/target identity for artifact and symbol lookup.                                                        |
 
 ### M3: Firmware Schema and Runtime Foundations
 
+Status: **Done**, per user decision on 2026-11-14. Historical checklists below
+are retained as evidence and review context, not current milestone blockers.
+Final cross-project and hardware qualification remains tracked under M6.
+
 Detailed design:
 [Quinled_Plan.md](Quinled_Plan.md#storage-and-api-contract-proposal-2026-11-05).
 The firmware implementation is reported implemented by the user on 2026-11-08.
-The draft [PR #167](https://github.com/pljakobs/esp_rgbww_firmware/pull/167)
+The merged [PR #167](https://github.com/pljakobs/esp_rgbww_firmware/pull/167)
 evidence and open-gate lists dated 2026-11-07 below are historical snapshots;
 they are not a current audit. Implementation does not itself establish physical
 hardware qualification. M4a uses the current OpenAPI and referenced schemas.
 
-#### Current Implementation and Open Gates (2026-11-07)
+#### Historical Implementation and Open Gates (2026-11-07)
 
 - The draft implements a separate SoC pin-capability ConfigDB, a versioned
   embedded gzip catalogue with `/catalog` readback, numeric-GPIO assignments,
@@ -317,10 +323,11 @@ hardware qualification. M4a uses the current OpenAPI and referenced schemas.
   `0.11.0`. Reconcile exact dependency provenance and the M2 release-pin policy
   before promotion; the version string alone does not establish the commit.
 
-#### M3 Implementation Checklist
+#### Historical M3 Implementation Checklist (2026-11-07)
 
-Checked items are implemented in draft PR #167, not merged or hardware-qualified.
-The open gates above and below remain requirements for M3 completion.
+This checklist records the draft state of the subsequently merged PR #167.
+Unchecked items are historical review leads, not an assertion of current missing
+implementation and not blockers to the agreed M3 completion status.
 
 - [x] Seed separate SoC GPIO capabilities and provide the embedded, versioned
   hardware catalogue through `/catalog`.
@@ -410,7 +417,7 @@ default availability, rejected writes preserving both persisted and active wirin
 Host checks and ESP32/C3 builds. GPIO count alone does not establish usable PWM
 capacity.
 
-#### Client and Scene Compatibility Contract
+#### Client Compatibility and Future Scene Considerations
 
 - Each client must discover the current controller's advertised API version and
   feature capabilities, then choose its supported request/schema profile per
@@ -425,6 +432,11 @@ capacity.
   or writes. Keep safe legacy operations available where compatibility is known.
   Define supported API versions, unknown-version behavior and schema evolution
   independently of firmware version and update-channel selection.
+- **Future consideration — scene design remains open.** Per-setting light-target
+  resolution during scene execution and safe storage/synchronization across mixed
+  firmware versions are unresolved design questions, not M4 acceptance criteria.
+  The representation and safeguards below are proposals only; defer scene
+  execution and synchronization changes until the design is agreed.
 - Proposed additive scene representation: keep `controller_id` unchanged and
   add an optional structured `light_id` field to each scene setting, rather than
   encoding both identifiers into `controller_id`. Missing `light_id` means the
@@ -437,9 +449,9 @@ capacity.
   including legacy devices. Before enabling new fields, prove old ConfigDB and
   clients preserve them through read/write and synchronization, or design a
   versioned storage/projection strategy that cannot lose or misapply explicit
-  targets. Until then, block unsafe saves/sync rather than stripping the field or
-  sending targeted commands to a default light. Keep old scenes usable without
-  implicitly rewriting them; preserve mixed legacy and multilight scene behavior.
+  targets. Decide an interim save/sync policy before implementation; do not strip
+  explicit targets or silently route them to a default light. Preserve existing
+  legacy behavior until the mixed-version contract is agreed.
 - Extend the authoritative AppData/transport schemas, generated projections,
   clients and shared fixtures together once the representation and storage
   strategy are agreed. Test old/new reader-writer round trips, mixed fleets,
@@ -447,6 +459,12 @@ capacity.
   per-light queues, offline controllers and partial failures.
 
 ### M4: Offline Setup and Assignment Clients
+
+Status: **Awaiting review**, per user decision on 2026-11-14. Review the current
+webapp and Home Assistant implementations against the acceptance criteria below;
+historical implementation snapshots do not establish the current gap list.
+Webapp delivery includes merged PR #297; Home Assistant now includes virtual-light
+entities, light management, hardware configuration and per-light preset controls.
 
 Delivery priority: M4a (webapp) follows integrated M3; M4b (Home Assistant) may
 follow later. Each client has its own acceptance gate against the shared API.
@@ -594,28 +612,63 @@ testing, and test setup alone does not authorize flashing or destructive resets.
   groups, presets and scene editing/execution as appropriate.
 
 M4 gates: offline first-run/template application, restart/readback, mixed 5.0/5.1
-client tests, API negotiation and per-light capability handling, lossless scene
-round trips, stable per-light commands/state/preset targets, and no advanced
-payloads sent to 5.0. No separate required 5.1 webapp fork is introduced.
+client tests, API negotiation and per-light capability handling, stable per-light
+command/state routing, and no advanced payloads sent to 5.0. Scene target
+execution and mixed-version scene storage/synchronization are future design work,
+not M4 gates. No separate required 5.1 webapp fork is introduced.
 
 ### M5: Button Actions and I2C Activation
+
+Status: **Design work required**, per user decision on 2026-11-14. Agree the
+button action/event contract, I2C/peripheral lifecycle and shared client controls
+before treating the implementation proposals below as an approved design.
 
 M3's draft already initializes configured I2C and polls/debounces button inputs;
 this is not qualification of button actions or hardware behavior. Complete typed
 button actions and I2C configuration using the persisted pin definitions and
 ownership model. Configure SDA/SCL as a bus pair; qualify shared bus
 initialization independently of later peripheral drivers. Add supported
-button light/preset/command/MQTT actions and Home Assistant state/events, with
+button actions and Home Assistant events according to the design direction below, with
 debounce, recovery semantics and conflict checks. Add corresponding client
 controls through the same API. OLED/sensor drivers and addressable LED support
 remain investigation-led additions, not implied by an enabled I2C bus.
 
+#### Button Action Design Direction (2026-11-14)
+
+Button configuration should support a flexible choice of typed actions rather
+than hard-code every press as a light toggle.
+
+| Action | Intended behavior | Design status |
+| ------ | ----------------- | ------------- |
+| Light on/off | Switch a configured target light on or off; the simplest local action. | Proposed; explicit on/off versus toggle and target selection still need definition. |
+| Button-pressed event | Emit a simple "button X pressed" notification over both WebSocket and MQTT for a home automation system to interpret. The event identifies the originating controller and button rather than prescribing an automation. | Proposed; wire payload, MQTT topic and delivery semantics remain to be designed. |
+| Run an animation | Execute a configured animation when the button is pressed. | **TBD** pending animation redesign and the local-versus-swarm execution decision. |
+
+For animation execution, distinguish a local controller reading the animation
+structure and executing its commands from a swarm execution in which the
+controller sends commands to other controllers. Neither mode is approved yet;
+do not implement animation button bindings before resolving that contract.
+
+Further design decisions include whether a press selects one action or can
+combine actions, supported press gestures, and stable target identity/error
+handling. Do not infer multi-action lists, long/double presses or animation
+execution from the flexibility requirement alone. Keep destructive clear/reset
+behavior separate from ordinary button actions.
+
 - [x] Implement configured I2C initialization and debounced button polling in
   draft PR #167; physical behavior remains unqualified.
+- [ ] Design the typed button actions and shared WebSocket/MQTT pressed-event
+  contract; resolve on/off semantics, target selection and action composition.
+- [ ] TBD: resolve animation redesign and local-versus-swarm execution before
+  specifying animation button bindings.
 - [ ] Implement and qualify configurable actions, events, client controls and
   concurrent peripheral behavior.
 
 ### M6: Feature Qualification and Release
+
+Status: **Open until all other milestones are complete**, per user decision on
+2026-11-14. Completion requires M1-M5 to be closed and the applicable qualification
+and release evidence below; M2/M3 completion does not itself close M6.
 
 Qualify the shipped M3-M5 subset on Mini, Deca and Plus board revisions: offline
 installation/reset, migration and restart persistence, safe reassignment/failure
@@ -642,10 +695,9 @@ M1 follow-ups remain separate.
   checklist. Mark partial implementation explicitly and distinguish local from deployed.
 - Resolve conflicts between linked plans here, then update the owning detailed plan;
   do not let contradictory branch names or SoC policies persist across documents.
-- Next execution scope is M4a virtual-light WebUI adaptation against the implemented
-  M3 contract, alongside the agreed client/scene compatibility contract. Verify
-  runtime capability support before activating advanced client paths; track
-  firmware/hardware qualification evidence separately.
-  M2 follow-ups are non-blocking backlog; M1 qualification and deferred recovery
-  work remain tracked separately. M4/M5 follow their stated dependencies. Full
-  distribution redesign remains separate.
+- Next execution scope is review of M4 across the unified webapp and Home
+  Assistant, plus design work for M5. M2 and M3 are done; retained historical
+  checklists and follow-ups do not reopen them. M1 qualification and deferred
+  recovery work remain tracked separately. M6 stays open until all other
+  milestones are complete and its own acceptance gates are satisfied.
+  Full distribution redesign remains separate.
