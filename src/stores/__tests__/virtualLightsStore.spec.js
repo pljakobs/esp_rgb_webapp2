@@ -190,21 +190,42 @@ describe("Controller-scoped virtual lights", () => {
   it("preserves active assignments on rejected writes", async () => {
     const store = useVirtualLightsStore();
     await store.load();
-    const draft = configuration();
+    const board = boardProfile();
+    store.catalog.boards = [board];
+    const draft = { ...configuration(), board_id: board.id, board_revision: board.revision };
     draft.lights[0].name = "Renamed";
     mocks.api.fetchApi.mockResolvedValue({ error: { message: "Rejected" } });
     await expect(store.apply(draft)).rejects.toThrow("Rejected");
     expect(store.configuration.lights[0].name).toBe("Desk");
     expect(store.saving).toBe(false);
   });
+  it("shows the firmware error on failed color reads and refreshes it after applying", async () => {
+    const store = useVirtualLightsStore();
+    mocks.api.fetchApi.mockImplementation(async (endpoint) => endpoint === "catalog"
+      ? response({ boards: [], templates: [] })
+      : { jsonData: { error: "Configured light is not initialized" }, error: { message: "HTTP 400" } });
+    await store.load();
+    expect(store.error).toBe("Configured light is not initialized");
+    const board = boardProfile();
+    store.catalog.boards = [board];
+    const draft = { ...configuration(), board_id: board.id, board_revision: board.revision, lights: [{ ...configuration().lights[0], name: "Renamed" }] };
+    mocks.api.getConfig.mockResolvedValueOnce(response({ hardware: { configuration: configuration() } }))
+      .mockResolvedValueOnce(response({ hardware: { configuration: draft } }));
+    mocks.api.fetchApi.mockResolvedValue(response({ raw: [0] }));
+    await store.apply(draft);
+    expect(store.error).toBeNull();
+    expect(store.color).toEqual({ raw: [0] });
+  });
   it("submits one candidate and adopts readback only after acceptance", async () => {
     const store = useVirtualLightsStore();
     await store.load();
-    const draft = configuration();
+    const board = boardProfile();
+    store.catalog.boards = [board];
+    const draft = { ...configuration(), board_id: board.id, board_revision: board.revision };
     draft.lights[0].name = "Renamed";
     mocks.api.getConfig.mockResolvedValueOnce(response({ hardware: { configuration: configuration() } })).mockResolvedValueOnce(response({ hardware: { configuration: { ...draft, revision: 1 } } }));
     await store.apply(draft);
-    expect(mocks.api.fetchApi).toHaveBeenCalledWith("config", { ip_address: "192.168.29.69" }, expect.objectContaining({ atomic: true, body: { hardware: { configuration: { ...draft, soc: "esp32", revision: 1 } } } }));
+    expect(mocks.api.fetchApi).toHaveBeenCalledWith("config", { ip_address: "192.168.29.69" }, expect.objectContaining({ atomic: true, body: { hardware: { configuration: { ...draft, soc: "esp32", revision: 1, board_profile: board } } } }));
     expect(store.configuration.lights[0].name).toBe("Renamed");
     expect(draft.revision).toBe(0);
   });
