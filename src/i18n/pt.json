@@ -1,4 +1,34 @@
 {
+  "sensors": {
+    "title": "Sensores",
+    "current": "Corrente (INA219)",
+    "spectral": "Espectro (AS7341)",
+    "available": "Sensor detetado",
+    "unavailable": "Sensor desativado ou não detetado",
+    "unsupported": "A extensão do sensor não está incluída neste firmware ou a respetiva API de configuração não está disponível.",
+    "noReading": "Nenhuma leitura válida",
+    "measuring": "A medir...",
+    "brightness": "Brilho do canal Clear (aquisição baixa / alta)",
+    "counts": "Contagens ADC",
+    "age": "Idade da leitura: {seconds} s",
+    "currentGraph": "Histórico da corrente em amperes",
+    "spectrumGraph": "Espetro visível interpolado em contagens ADC não processadas",
+    "spectrumNote": "Contagens não calibradas em oito comprimentos de onda nominais. A curva ajustada é uma interpolação visual, não um espetro calibrado nem uma medição de lux.",
+    "measure": "Medir espetro",
+    "configuration": "Configuração do sensor",
+    "enabled": "Ativado",
+    "invalid": "Introduza um número dentro do intervalo permitido",
+    "refresh": "Atualizar sensores",
+    "intervalNote": "O intervalo do AS7341 está reservado e é apenas guardado; as medições são iniciadas manualmente. O ganho é um índice de registo (0 = 0,5x, 1 = 1x, ..., 10 = 512x).",
+    "fields": {
+      "address": "Endereço I2C (decimal, 64-79)",
+      "shunt_ohms": "Resistência do shunt (ohms)",
+      "interval_ms": "Intervalo (ms)",
+      "atime": "Integração ATIME (0-255)",
+      "astep": "Integração ASTEP (0-65535)",
+      "gain": "Índice do registo de ganho (0-10)"
+    }
+  },
   "common": {
     "cancel": "Cancelar",
     "save": "Salvar",
@@ -72,7 +102,7 @@
   "setup": {
     "deviceSetup": "Configuração do dispositivo",
     "steps": {
-      "hostname": "Hostname",
+      "hostname": "Nome do anfitrião",
       "pinConfig": "Configuração de pinos",
       "colorModel": "Modelo de cor",
       "telemetry": "Telemetria",
@@ -81,7 +111,7 @@
     "hostnameStep": {
       "title": "Definir hostname do dispositivo",
       "subtitle": "Escolha um nome único para identificar este dispositivo na rede",
-      "label": "Hostname",
+      "label": "Nome do anfitrião",
       "required": "Hostname obrigatório",
       "hint": "O hostname será usado para acessar o dispositivo na rede local"
     },
@@ -113,7 +143,7 @@
     },
     "completeStep": {
       "title": "Configuração concluída",
-      "hostname": "Hostname",
+      "hostname": "Nome do anfitrião",
       "pinConfiguration": "Configuração de pinos",
       "colorModel": "Modelo de cor",
       "restarting": "Configuração salva. O dispositivo está reiniciando...",
@@ -123,10 +153,14 @@
     }
   },
   "color": {
+    "brightness": "Brilho",
+    "colorTemperature": "Temperatura de cor",
+    "tunableWhite": "Branco ajustável",
+    "power": "Ligar ou desligar a luz",
     "saveAs": "Salvar como preset {model}",
     "presetName": "Nome do preset",
     "favorites": "Favoritos",
-    "presets": "Presets"
+    "presets": "Predefinições"
   },
   "colorSliders": {
     "red": "Vermelho",
@@ -233,7 +267,7 @@
       "resetChanges": "Redefinir todas as alterações"
     },
     "colorModel": {
-      "title": "Cor",
+      "title": "Configuração das luzes",
       "colorModel": "Modelo de cor"
     },
     "firmwareUpdate": {
@@ -279,7 +313,7 @@
     },
     "hostname": {
       "title": "Hostname e ícone",
-      "hostname": "Hostname",
+      "hostname": "Nome do anfitrião",
       "allowWebIcons": "Permitir ícones web (Google Fonts)",
       "allowWebIconsTooltip": "Quando habilitado, você pode selecionar ícones do Google Fonts, com possível envio de dados ao Google.",
       "controllerIcon": "Ícone do controlador",
@@ -316,10 +350,12 @@
     "webappUpdate": {
       "title": "Atualização webapp",
       "autoUpdate": "Atualização automática webapp",
-      "description": "Quando habilitado, verifica nova webapp a cada conexão Wi-Fi.",
+      "description": "Quando ativado, procura uma nova webapp a cada ligação Wi-Fi. Desative para atualizar apenas mediante pedido manual. Se a webapp estiver em falta, será sempre transferida, independentemente desta definição.",
       "checkWebapp": "Verificar webapp",
       "checking": "Verificando atualização webapp...",
       "checkStarted": "Verificação iniciada",
+      "fileListTitle": "Ficheiros",
+      "pendingFile": "Ficheiro pendente {index}",
       "filesProgress": "{done} / {total} arquivos",
       "retryingBusy": "Dispositivo ocupado, nova tentativa em {seconds}s... ({attempt}/{maxRetries})",
       "alreadyUpToDate": "Já atualizado{version}",

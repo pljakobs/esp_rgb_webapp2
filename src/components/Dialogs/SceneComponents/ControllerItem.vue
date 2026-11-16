@@ -138,37 +138,6 @@ import SceneSettingItem from "./SceneSettingItem.vue";
 export default {
   name: "ControllerItem",
   components: {
-    // no draggable
-    methods: {
-      moveUp(idx) {
-        if (idx > 0) {
-          // Create a new array copy for reactivity
-          const newSettings = this.settings.slice();
-          const temp = newSettings[idx - 1];
-          newSettings[idx - 1] = newSettings[idx];
-          newSettings[idx] = temp;
-          // Update positions
-          newSettings.forEach((setting, i) => {
-            setting.pos = i;
-          });
-          this.$emit("update-positions", newSettings);
-        }
-      },
-      moveDown(idx) {
-        if (idx < this.settings.length - 1) {
-          // Create a new array copy for reactivity
-          const newSettings = this.settings.slice();
-          const temp = newSettings[idx + 1];
-          newSettings[idx + 1] = newSettings[idx];
-          newSettings[idx] = temp;
-          // Update positions
-          newSettings.forEach((setting, i) => {
-            setting.pos = i;
-          });
-          this.$emit("update-positions", newSettings);
-        }
-      },
-    },
     ColorDisplayBadge,
     SceneSettingItem,
   },

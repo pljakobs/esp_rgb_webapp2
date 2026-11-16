@@ -21,6 +21,8 @@
 </template>
 
 <script>
+import { ref, watch } from "vue";
+
 export default {
   name: "MyCard",
   props: {
@@ -38,28 +40,22 @@ export default {
     },
   },
   emits: ["update:collapsed"],
-  data() {
-    return {
-      isCollapsed: this.collapsed, // Initialize from prop
-    };
-  },
-  watch: {
-    collapsed(newVal) {
-      // Update internal state when prop changes
-      this.isCollapsed = newVal;
-    },
-  },
-  computed: {
-    iconColor() {
-      return this.$q.dark.isActive ? "white" : "black";
-    },
-  },
-  methods: {
-    toggleCollapse() {
-      this.isCollapsed = !this.isCollapsed;
-      // Emit the change to parent
-      this.$emit("update:collapsed", this.isCollapsed);
-    },
+  setup(props, { emit }) {
+    const isCollapsed = ref(props.collapsed);
+
+    watch(
+      () => props.collapsed,
+      (collapsed) => {
+        isCollapsed.value = collapsed;
+      },
+    );
+
+    function toggleCollapse() {
+      isCollapsed.value = !isCollapsed.value;
+      emit("update:collapsed", isCollapsed.value);
+    }
+
+    return { isCollapsed, toggleCollapse };
   },
 };
 </script>

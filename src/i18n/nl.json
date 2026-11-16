@@ -1,0 +1,421 @@
+{
+  "sensors": {
+    "title": "Sensoren",
+    "current": "Stroom (INA219)",
+    "spectral": "Spectrum (AS7341)",
+    "available": "Sensor gedetecteerd",
+    "unavailable": "Sensor uitgeschakeld of niet gedetecteerd",
+    "unsupported": "De sensoruitbreiding is niet opgenomen in deze firmware of de configuratie-API is niet beschikbaar.",
+    "noReading": "Geen geldige meting",
+    "measuring": "Meten...",
+    "brightness": "Helderheid (Clear, lage / hoge meting)",
+    "counts": "ADC-tellingen",
+    "age": "Leeftijd meting: {seconds} s",
+    "currentGraph": "Stroomgeschiedenis in ampère",
+    "spectrumGraph": "Geïnterpoleerd zichtbaar spectrum in ruwe ADC-tellingen",
+    "spectrumNote": "Ongekalibreerde tellingen bij acht nominale golflengten. De passende curve is een visuele interpolatie, geen gekalibreerd spectrum of luxmeting.",
+    "measure": "Spectrum meten",
+    "configuration": "Sensorconfiguratie",
+    "enabled": "Ingeschakeld",
+    "invalid": "Voer een getal binnen het toegestane bereik in",
+    "refresh": "Sensoren vernieuwen",
+    "intervalNote": "Het AS7341-interval is gereserveerd en wordt alleen opgeslagen; metingen worden handmatig gestart. Versterking is een registerindex (0 = 0,5x, 1 = 1x, ..., 10 = 512x).",
+    "fields": {
+      "address": "I2C-adres (decimaal, 64-79)",
+      "shunt_ohms": "Shuntweerstand (ohm)",
+      "interval_ms": "Interval (ms)",
+      "atime": "Integratie-ATIME (0-255)",
+      "astep": "Integratie-ASTEP (0-65535)",
+      "gain": "Versterkingsregisterindex (0-10)"
+    }
+  },
+  "common": {
+    "cancel": "Annuleren",
+    "save": "Opslaan",
+    "back": "Terug",
+    "next": "Volgende",
+    "finish": "Voltooien",
+    "yes": "Ja",
+    "no": "Nee",
+    "apply": "Toepassen",
+    "delete": "Verwijderen",
+    "edit": "Bewerken",
+    "add": "Toevoegen",
+    "close": "Sluiten",
+    "connect": "Verbinden",
+    "language": "Taal",
+    "goHome": "Naar startpagina",
+    "darkMode": "Donkere modus",
+    "showDetails": "Details weergeven",
+    "hideDetails": "Details verbergen"
+  },
+  "auth": {
+    "title": "Verificatie vereist",
+    "subtitle": "Voor deze controller is een wachtwoord nodig om door te gaan.",
+    "password": "Wachtwoord",
+    "rememberMe": "Aangemeld blijven",
+    "login": "Aanmelden",
+    "cancel": "Annuleren"
+  },
+  "layout": {
+    "loading": "laden vanaf",
+    "configuration": "Configuratie:",
+    "information": "Informatie:",
+    "colors": "Kleuren:",
+    "presetsAndScenes": "Voorinstellingen en scènes:",
+    "synching": "synchroniseren",
+    "lightinator": "Lightinator 5",
+    "selectController": "Selecteer een controller",
+    "wsTooltip": "toont de status van de WebSocket-verbinding met de geselecteerde controller"
+  },
+  "nav": {
+    "mainMenu": "hoofdmenu",
+    "color": "Kleur",
+    "colorCaption": "Stel de huidige uitvoerkleur in",
+    "groupsAndScenes": "Groepen en scènes",
+    "groupsAndScenesCaption": "configureer groepen controllers en scènes",
+    "colorSettings": "Kleurinstellingen",
+    "colorSettingsCaption": "configureer het kleurmodel en de overgangsmodus",
+    "networkSettings": "Netwerkinstellingen",
+    "networkSettingsCaption": "Configureer het netwerk, MQTT en telemetrie",
+    "systemSettings": "Systeeminstellingen",
+    "systemSettingsCaption": "configureer pinnen, hostnaam en pictogram, werk de firmware bij en maak een back-up of herstel instellingen",
+    "networkInit": "Netwerk instellen",
+    "networkInitCaption": "maak verbinding met een wifi-netwerk of verbreek de verbinding",
+    "test": "test",
+    "testCaption": "speeltuin voor ontwikkelaars"
+  },
+  "discovery": {
+    "title": "Controller zoeken",
+    "subtitle": "Scannen van het lokale netwerk naar ESP RGBWW-controllers...",
+    "noNetwork": "Geen netwerkverbinding. Maak verbinding met wifi en probeer het opnieuw.",
+    "scanning": "{count} controller(s) gevonden...",
+    "availableControllers": "Beschikbare controllers:",
+    "firmware": "Firmware: {version}",
+    "noControllersFound": "Geen controllers gevonden op het netwerk.",
+    "scanAgain": "Opnieuw scannen",
+    "manualEntry": "Handmatig invoeren",
+    "enterControllerIp": "Voer het IP-adres van de controller in",
+    "ipAddress": "IP-adres",
+    "ipPlaceholder": "192.168.1.100"
+  },
+  "setup": {
+    "deviceSetup": "Apparaat instellen",
+    "steps": {
+      "hostname": "Hostnaam",
+      "pinConfig": "Pinconfiguratie",
+      "colorModel": "Kleurmodel",
+      "telemetry": "Telemetrie",
+      "complete": "Voltooien"
+    },
+    "hostnameStep": {
+      "title": "Apparaathostnaam instellen",
+      "subtitle": "Kies een unieke naam om dit apparaat op het netwerk te herkennen",
+      "label": "Hostnaam",
+      "required": "Hostnaam is verplicht",
+      "hint": "Met de hostnaam krijgt u toegang tot het apparaat op uw lokale netwerk"
+    },
+    "pinConfigStep": {
+      "title": "Apparaatpinnen configureren",
+      "subtitle": "Selecteer een pinconfiguratie voor uw {soc}-apparaat",
+      "noConfigTitle": "Geen standaardpinconfiguratie beschikbaar",
+      "noConfigBody": "Er zijn geen vooraf geconfigureerde pinindelingen beschikbaar voor uw {soc}-apparaat. U kunt doorgaan met instellen en de pinnen later handmatig configureren in de hoofdinterface.",
+      "noConfigCaption": "De pinconfiguratie kan na het instellen worden aangepast.",
+      "pinConfigLabel": "Pinconfiguratie",
+      "selectedConfigDetails": "Details van geselecteerde configuratie:",
+      "pin": "Pin {number}"
+    },
+    "colorModelStep": {
+      "title": "Kleurmodel configureren",
+      "subtitle": "Selecteer het kleurmodel en pas de kleurkanalen aan",
+      "colorModelLabel": "Kleurmodel"
+    },
+    "telemetryStep": {
+      "title": "Telemetrie",
+      "statsTitle": "Anonieme statistieken",
+      "statsBody": "Anonieme statistieken naar de ontwikkelaar laten verzenden? Dit helpt de firmware te verbeteren.",
+      "logTitle": "Logboekregistratie op afstand",
+      "logBody": "Debuglogboeken naar de geconfigureerde telemetrieserver verzenden?",
+      "changeNote": "U kunt deze instellingen altijd wijzigen via Netwerkinstellingen > Telemetrie.",
+      "dataNote": "Deze build verzendt elke 30 seconden de volgende gegevens:",
+      "showDetails": "Details weergeven",
+      "hideDetails": "Details verbergen"
+    },
+    "completeStep": {
+      "title": "Instellen voltooid",
+      "hostname": "Hostnaam",
+      "pinConfiguration": "Pinconfiguratie",
+      "colorModel": "Kleurmodel",
+      "restarting": "Configuratie opgeslagen. Het apparaat wordt opnieuw gestart...",
+      "reconnecting": "Opnieuw verbinden over {seconds} seconden",
+      "saved": "Configuratie opgeslagen!",
+      "goToDashboard": "Naar dashboard"
+    }
+  },
+  "color": {
+    "brightness": "Helderheid",
+    "colorTemperature": "Kleurtemperatuur",
+    "tunableWhite": "Instelbaar wit",
+    "power": "Lichtvermogen",
+    "saveAs": "Opslaan als {model}-voorinstelling",
+    "presetName": "Naam van voorinstelling",
+    "favorites": "Favorieten",
+    "presets": "Voorinstellingen"
+  },
+  "colorSliders": {
+    "red": "Rood",
+    "green": "Groen",
+    "blue": "Blauw",
+    "warmWhite": "Warm wit",
+    "coldWhite": "Koel wit"
+  },
+  "cards": {
+    "connection": {
+      "title": "Verbinding",
+      "ssid": "SSID:",
+      "macAddress": "MAC-adres:",
+      "dhcp": "DHCP:",
+      "ipAddress": "IP-adres:",
+      "ipNetmask": "IP-netmasker:",
+      "ipGateway": "IP-gateway:"
+    },
+    "security": {
+      "title": "API-wachtwoordbeveiliging",
+      "description": "Vereis een wachtwoord voor API-toegang tot deze controller (HTTP en WebSocket).",
+      "enable": "Wachtwoordbeveiliging inschakelen",
+      "password": "Wachtwoord",
+      "passwordHint": "Voer een nieuw wachtwoord in en klik op Wachtwoord instellen",
+      "setPassword": "Wachtwoord instellen",
+      "clearPassword": "Wachtwoord wissen"
+    },
+    "ipSettings": {
+      "title": "IP-instellingen",
+      "description": "IP-instellingen worden pas van kracht na een herstart. De controller wordt automatisch opnieuw gestart als u iets wijzigt.",
+      "useDhcp": "DHCP gebruiken",
+      "ipAddress": "IP-adres",
+      "ipNetmask": "IP-netmasker",
+      "ipGateway": "IP-gateway",
+      "gatewayRangeError": "Gateway valt niet binnen het geconfigureerde netwerkbereik",
+      "applyAndRestart": "Toepassen en opnieuw starten"
+    },
+    "mqtt": {
+      "title": "MQTT-instellingen",
+      "description": "MQTT-instellingen worden pas van kracht na een herstart. De controller wordt automatisch opnieuw gestart als u iets wijzigt.",
+      "enableMqtt": "MQTT inschakelen",
+      "serverConfig": "MQTT-serverconfiguratie",
+      "server": "MQTT-server",
+      "port": "Poort",
+      "topic": "Onderwerp",
+      "username": "MQTT-gebruikersnaam",
+      "password": "MQTT-wachtwoord",
+      "passwordHint": "Wachtwoord met schakelaar",
+      "haIntegration": "Home Assistant-integratie",
+      "enableHa": "Home Assistant-integratie inschakelen",
+      "discoveryPrefix": "Detectieprefix",
+      "discoveryPrefixHint": "MQTT-onderwerpprefix voor detectie",
+      "nodeId": "Node-ID",
+      "nodeIdHint": "Unieke aanduiding voor dit apparaat (standaard de naam van de controller)",
+      "sync": "Synchronisatie",
+      "primary": "Primair",
+      "secondary": "Secundair",
+      "clock": "Klok",
+      "cmd": "CMD",
+      "color": "Kleur"
+    },
+    "telemetry": {
+      "title": "Telemetrie",
+      "statsLabel": "Telemetriestatistieken",
+      "statsIntro": "Telemetrie is standaard ingeschakeld in debug-builds en standaard uitgeschakeld in release-builds.",
+      "statsStickyNote": "Let op: zodra dit hier is ingeschakeld, wordt het bij een update naar een release-build niet weer uitgeschakeld.",
+      "statsDescription": "Als telemetrie is ingeschakeld, worden statistieken naar de ingestelde URL verzonden. Deze gegevens bevatten geanonimiseerde gebruiksstatistieken om de firmware te helpen verbeteren.",
+      "logLabel": "Telemetrielogboek",
+      "logDescription": "Als dit is ingeschakeld, worden telemetrielogboeken naar de ingestelde URL verzonden. Deze logboekgegevens helpen bij het opsporen van fouten en het verbeteren van de firmware.",
+      "url": "Telemetrie-URL",
+      "user": "Telemetriegebruiker",
+      "password": "Telemetrie-wachtwoord",
+      "showDetails": "Details weergeven",
+      "hideDetails": "Details verbergen",
+      "dataNote": "Deze build verzendt elke 30 seconden de volgende gegevens:"
+    },
+    "rsyslog": {
+      "title": "Rsyslog-instellingen",
+      "description": "Configureer UDP-doorschakeling van apparaatlogboeken via rsyslog. Wijzigingen worden na een herstart toegepast.",
+      "enable": "Rsyslog inschakelen",
+      "target": "Doel",
+      "host": "Rsyslog-host",
+      "port": "Poort",
+      "autoConfigNote": "Automatische configuratie wordt ingesteld in Logboekweergave. Pas dit hier handmatig aan indien nodig."
+    },
+    "controllerConfig": {
+      "title": "Controllerconfiguratie",
+      "pinConfig": "Pinconfiguratie",
+      "pinConfigLabel": "Pinconfiguratie",
+      "editConfig": "Huidige configuratie bewerken",
+      "addConfig": "Nieuwe configuratie toevoegen",
+      "pwmConfig": "PWM-configuratie",
+      "timerSettings": "Timerinstellingen",
+      "speedMode": "Snelheidsmodus",
+      "timerNumber": "Timernummer",
+      "frequency": "Frequentie (Hz)",
+      "resolutionBits": "Resolutiebits",
+      "spreadSpectrum": "Spread-spectruminstellingen",
+      "spreadSpectrumMode": "Spread-spectrummodus",
+      "width": "Breedte (%)",
+      "subsampling": "Onderbemonstering",
+      "phaseShift": "Faseverschuivingsinstellingen",
+      "phaseShiftMode": "Faseverschuivingsmodus",
+      "resetChanges": "Alle wijzigingen ongedaan maken"
+    },
+    "colorModel": {
+      "title": "Lichtconfiguratie",
+      "colorModel": "Kleurmodel"
+    },
+    "firmwareUpdate": {
+      "title": "Firmware bijwerken",
+      "otaUrl": "OTA-URL",
+      "otaUrlHint": "URL van de firmware-updateserver",
+      "checkFirmware": "Firmware controleren",
+      "updateAll": "Alles bijwerken",
+      "reachabilityTitle": "Overzicht van bereikbaarheid controllers:",
+      "detected": "Gedetecteerd (bereikbaar): {available} van {total} bekende controllers.",
+      "temporarilyUnavailable": "{count} controller(s) tijdelijk onbeschikbaar na 3 pingpogingen.",
+      "unreachableVisible": "{count} controllers worden als zichtbaar maar onbereikbaar gemarkeerd.",
+      "reachableNotVisible": "{count} controllers worden niet als zichtbaar gemarkeerd maar zijn wel bereikbaar.",
+      "excluded": "{count} controllers uitgesloten (onbereikbaar):",
+      "updating": "{count} controllers bijwerken",
+      "success": "Geslaagd",
+      "failed": "Mislukt",
+      "skipped": "Overgeslagen",
+      "progress": "Voortgang",
+      "controllerStatus": "Controllerstatus",
+      "waiting": "Wachten",
+      "complete": "Bijwerken voltooid!"
+    },
+    "scenes": {
+      "title": "Scènes",
+      "takeSnapshot": "Momentopname van scène maken",
+      "editScene": "Scène bewerken",
+      "deleteScene": "Scène verwijderen",
+      "editGroup": "Groep bewerken",
+      "deleteGroup": "Groep verwijderen",
+      "noScenes": "Geen scènes beschikbaar",
+      "addGroup": "Groep toevoegen",
+      "addScene": "Scène toevoegen",
+      "sync": "Synchroniseren",
+      "downloadLog": "Logboek downloaden"
+    },
+    "groups": {
+      "title": "Groepen",
+      "processing": "Verwerken...",
+      "editGroup": "Groep bewerken",
+      "deleteGroup": "Groep verwijderen",
+      "addGroup": "Groep toevoegen"
+    },
+    "hostname": {
+      "title": "Hostnaam en pictogram",
+      "hostname": "Hostnaam",
+      "allowWebIcons": "Webpictogrammen toestaan (Google Fonts)",
+      "allowWebIconsTooltip": "Als dit is ingeschakeld, kunt u pictogrammen uit de Google Fonts-bibliotheek selecteren. Hierbij kunnen gegevens naar Google worden verzonden (IP-adres, browser, verwijzende pagina enz.).",
+      "controllerIcon": "Controllerpictogram",
+      "changeIcon": "Pictogram wijzigen",
+      "enableWebIconsTooltip": "Schakel 'Webpictogrammen toestaan' in om Google Fonts te doorzoeken",
+      "browseMaterialIcons": "Material Design-pictogrammen doorzoeken"
+    },
+    "information": {
+      "title": "Informatie"
+    },
+    "whiteBalance": {
+      "title": "Witbalans",
+      "selectColorTemperature": "Kleurtemperatuur selecteren",
+      "warmWhite": "Warm wit",
+      "coldWhite": "Koel wit"
+    },
+    "transitionMode": {
+      "title": "Overgangsmodus",
+      "modeLabel": "Overgangsmodus",
+      "options": {
+        "normal": "Normaal",
+        "spektrum": "Spektrum",
+        "rainbow": "Regenboog"
+      },
+      "gains": {
+        "red": "Rood",
+        "yellow": "Geel",
+        "green": "Groen",
+        "cyan": "Cyaan",
+        "blue": "Blauw",
+        "magenta": "Magenta"
+      }
+    },
+    "webappUpdate": {
+      "title": "Webapp bijwerken",
+      "autoUpdate": "Webapp automatisch bijwerken",
+      "description": "Controleer bij elke wifi-verbinding op een nieuwe webapp. Schakel dit uit om alleen handmatig op updates te controleren. Een ontbrekende webapp wordt altijd opgehaald, ongeacht deze instelling.",
+      "checkWebapp": "Webapp controleren",
+      "checking": "Controleren op webapp-update...",
+      "checkStarted": "Controle gestart",
+      "fileListTitle": "Bestanden",
+      "pendingFile": "In afwachting: bestand {index}",
+      "filesProgress": "{done} / {total} bestanden",
+      "retryingBusy": "Apparaat bezet, opnieuw proberen over {seconds}s... ({attempt}/{maxRetries})",
+      "alreadyUpToDate": "Al bijgewerkt{version}",
+      "updatedTo": "Bijgewerkt naar {version}",
+      "errorPrefix": "Fout: {error}",
+      "states": {
+        "idle": "Inactief",
+        "queryingApi": "Controleren op updates...",
+        "downloading": "Downloaden...",
+        "activating": "Activeren..."
+      },
+      "errors": {
+        "saveEnabled": "Instelling voor webapp-updates opslaan mislukt: {error}",
+        "deviceBusyMaxRetries": "Apparaat bezet (429), gestopt na {retries} nieuwe pogingen",
+        "checkFailed": "Controleren op webapp is mislukt: {error}"
+      }
+    },
+    "logViewer": {
+      "title": "Logboekweergave"
+    },
+    "debugFunctions": {
+      "title": "Debugfuncties"
+    }
+  },
+  "telemetryTable": {
+    "columns": {
+      "field": "Veld",
+      "description": "Beschrijving",
+      "when": "Wanneer"
+    },
+    "when": {
+      "always": "altijd",
+      "afterUnexpectedReboot": "na onverwachte herstart",
+      "afterExceptionReboot": "na herstart door uitzondering"
+    },
+    "fields": {
+      "id": "chip-ID van deze controller",
+      "time": "huidige Unix-tijd (als NTP is geconfigureerd)",
+      "uptime": "huidige uptime in seconden",
+      "ip": "huidig IP-adres",
+      "freeHeap": "huidig vrij heapgeheugen in bytes",
+      "minimumfreeHeapRuntime": "laagste hoeveelheid vrij heapgeheugen sinds het opstarten",
+      "minimumfreeHeap10min": "laagste hoeveelheid vrij heapgeheugen in het huidige venster van 10 minuten",
+      "heapLowErrUptime": "aantal heapwaarschuwingen sinds het opstarten",
+      "heapLowErr10min": "aantal heapwaarschuwingen in het huidige venster van 10 minuten",
+      "firmware": "huidige firmwareversie",
+      "build": "firmware-buildtype",
+      "soc": "type systeem-op-een-chip",
+      "neighbours": "aantal zichtbare apparaten in de buurt",
+      "mdnsReceived": "aantal ontvangen mDNS-pakketten",
+      "mdnsReplies": "aantal beantwoorde mDNS-pakketten",
+      "rebootNumber": "permanente herstartteller",
+      "rebootReason": "reden voor reset",
+      "rebootExccause": "register met oorzaak van uitzondering",
+      "rebootEpc": "momentopname van programmateller bij herstart",
+      "rebootExcvaddr": "foutadres bij uitzondering",
+      "rebootDepc": "programmateller voor terugkeer uit uitzondering"
+    }
+  },
+  "errors": {
+    "notFound": "Oeps. Hier is niets te vinden..."
+  }
+}

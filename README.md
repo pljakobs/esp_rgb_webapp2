@@ -15,6 +15,13 @@ This way, we will finally be able to break out of the lock in to fhem that the h
 
 So my current plan of action is to re-implement and re-build the UI using Quasar / vue and extend from there.
 
+### Vue build configuration
+
+Components use Vue's Composition API. Keep `build.vueOptionsAPI: false` in
+`quasar.config.js` so production builds omit the unused Options API runtime.
+Use refs, computed values, watchers and lifecycle hooks inside `setup()` or
+`<script setup>`, not Options API state or hooks.
+
 ### Project phases
 #### Phase 1: reimplement the currently existing
 *The biggest driver to reimplement the UI is the fact that I have changed the underlying structure such that an OTA now only uses a single image rather than a separate app and spiffs image (the webapp is 
@@ -73,6 +80,88 @@ As I said above, one of the appeals of Quasar is that it allows to build native 
 [x] mDNS for UI Access (accessing lightinator.local or so)
 
 [ ] implemenat a "boost" mode where white can be boosted to 300% using RGB WW and CW together
+
+### Light controls
+
+The Lights configuration card sizes itself to the active controls rather than
+the viewport, with scrolling for taller content. Brightness, temperature and
+RAW channels use value-first sliders; temperature has a warm-to-cold gradient.
+On 5.1 controllers, the power switch targets the selected light and reads its
+state back from the controller. Color-picker dialogs retain bounded scrolling.
+
+### Selected board configuration (5.1)
+
+Selecting a board in the light editor copies its full catalog profile into
+`hardware.configuration.board_profile` when Apply is confirmed. The board ID,
+revision and SoC accompany the snapshot; light edits preserve it. Firmware
+initializes board PWM outputs from ConfigDB, without reading the catalog.
+Existing configurations without a snapshot need the board selected and applied
+again. This does not remap light GPIOs or install a template.
+
+GPIOs already assigned to another light cannot be reused until that light is
+deleted or reassigned in the editor. The GPIO menu identifies the owning light;
+edit all affected lights before applying the configuration. If the default
+light is deleted, select another default before applying.
+
+### Sensors
+
+System settings includes an initially collapsed Sensors card. It shows the
+Current (INA219) and Spectrum (AS7341) tabs only when their capability reports
+the sensor as available. Each tab exposes the extension's persistent
+configuration, including enable, integration/gain or shunt/address settings.
+Older firmware without these APIs shows an unsupported-extension message
+without affecting light controls.
+
+The current tab shows signed amperes, voltage and power, with a timestamped
+history graph (up to 120 polled samples while the card is open, refreshed every
+two seconds). Invalid readings create gaps, not zeroes. Switching controllers,
+closing the card or refreshing clears the local history.
+
+Use **Measure spectrum** to acquire the eight AS7341 visible channels. The
+graph interpolates through their nominal centers (415, 445, 480, 515, 555, 590,
+630 and 680 nm) without overshoot. Clear brightness and NIR counts from both
+acquisitions are displayed separately. These are uncalibrated ADC counts,
+not lux or spectral power; the curve is a visualization of the measurements,
+not a calibrated spectral reconstruction. AS7341 `interval_ms` is stored but
+does not enable periodic acquisition. Gain is a register index, not a direct
+multiplier. Configuration writes during acquisition are rejected by firmware.
+
+### Per-light preset swatches
+
+On 5.1, select a light on the colour card and open **Presets**. The controller's
+catalog is shared, but **Star / Unstar** selects favourites only for that light.
+**Save swatch** stores its current colour without overwriting an existing name.
+The **Favorites** tab applies those saved colours to the selected UUID, resolving
+its current index first. Single-channel lights retain both preset tabs.
+
+Use firmware advertising `/info.rgbww.preset_light_favorites: true` to save these
+selections. Older 5.1 builds show an upgrade error; 5.0 keeps its existing
+controller favourites. Unqualified legacy favourites initially appear on the
+default 5.1 light only. Membership changes are read back before being shown as
+saved. Indexed RAW presets require a matching light profile; HSV temperature and
+brightness are preserved. Removing a star does not delete the controller preset.
+
+The same stored favourites power the Lightinator Home Assistant dashboard swatch
+card. Presets are not replicated by scene/group synchronization.
+
+### Scene synchronization
+
+Opening the frontend or switching controllers only loads data; it no longer
+replicates scenes and groups automatically. Use **Sync scenes and groups** on
+the scenes card to reconcile reachable controllers explicitly. Presets remain
+controller-local.
+
+Synchronization selects the newest complete scene revision (including its
+settings, transitions, and optional step-level `light` / `light_id` targets).
+It skips unchanged objects, refuses blind inserts when a controller could not
+be read, and verifies content rather than timestamps alone. A failed or partial
+sync can be retried manually.
+
+Deletion tombstones are not implemented yet: an offline controller retaining a
+deleted object can still reintroduce it during manual synchronization. Avoid
+reconciling stale replicas until they have also had the object removed.
+Target persistence does not yet add multi-light scene playback, a new editor,
+or queue-depth-aware animation feeding.
 
 #### Phase 3: make better use of the existing hardware
 It has always bugged me that, with all it's flexibility, the controllers are limited to a few very basic modes:

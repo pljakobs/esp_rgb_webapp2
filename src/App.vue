@@ -3,7 +3,7 @@
 </template>
 
 <script>
-import { onMounted, watch, defineComponent } from "vue";
+import { onMounted, onErrorCaptured, watch, defineComponent } from "vue";
 import { useControllersStore } from "src/stores/controllersStore";
 import { localhost } from "src/stores/storeConstants";
 import initializeStores from "src/services/initializeStores";
@@ -19,27 +19,57 @@ export default defineComponent({
     try {
       const controllers = useControllersStore();
       const $q = useQuasar(); // Get Quasar's global instance
-      let initInFlight = null;
-      let initPending = false;
+
+      watch(
+        () => $q.dark.isActive,
+        (isDark) => {
+          document.documentElement.setAttribute(
+            "data-theme",
+            isDark ? "dark" : "light",
+          );
+        },
+        { immediate: true },
+      );
+
+      onErrorCaptured((err, vm) => {
+        console.error(`Error in component: ${vm.$options.name}`);
+        console.error(err);
+        return false;
+      });
+
+      let initInFlight = false;
+      let initRequested = false;
+      let forceInitRequested = false;
+      let refreshControllersRequested = false;
+      let initPromise = null;
       let controllerLoadRequest = 0;
 
       console.log("controllers:", controllers);
       console.log("webhost override target:", localhost);
 
-      const runInitializeStores = () => {
-        if (initInFlight) {
-          initPending = true;
-          return initInFlight;
-        }
-        initInFlight = (async () => {
-          do {
-            initPending = false;
-            await initializeStores();
-          } while (initPending);
-        })().finally(() => {
-          initInFlight = null;
-        });
-        return initInFlight;
+      const runInitializeStores = (options = {}) => {
+        initRequested = true;
+        forceInitRequested ||= options.force === true;
+        refreshControllersRequested ||= options.refreshControllers === true;
+        if (initInFlight) return initPromise;
+
+        initInFlight = true;
+        initPromise = (async () => {
+          try {
+            while (initRequested) {
+              initRequested = false;
+              const force = forceInitRequested;
+              const refreshControllers = refreshControllersRequested;
+              forceInitRequested = false;
+              refreshControllersRequested = false;
+              await initializeStores({ force, refreshControllers });
+            }
+          } finally {
+            initInFlight = false;
+            initPromise = null;
+          }
+        })();
+        return initPromise;
       };
 
       watch(
@@ -58,7 +88,10 @@ export default defineComponent({
             );
             controllers.isControllerLoading = true;
             try {
-              await runInitializeStores();
+              await runInitializeStores({
+                force: true,
+                refreshControllers: false,
+              });
             } finally {
               if (loadRequest === controllerLoadRequest) {
                 controllers.isControllerLoading = false;
@@ -103,22 +136,6 @@ export default defineComponent({
     } catch (error) {
       console.error("Error in setup function:", error);
     }
-  },
-  watch: {
-    "$q.dark.isActive": {
-      handler(isDark) {
-        document.documentElement.setAttribute(
-          "data-theme",
-          isDark ? "dark" : "light",
-        );
-      },
-      immediate: true,
-    },
-  },
-  errorCaptured(err, vm, info) {
-    console.error(`Error in component: ${vm.$options.name}`);
-    console.error(err);
-    return false; // Prevent the error from propagating further
   },
 });
 </script>

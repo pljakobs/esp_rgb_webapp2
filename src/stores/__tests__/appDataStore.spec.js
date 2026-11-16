@@ -20,6 +20,7 @@ vi.mock("../storeConstants.js", () => ({
       NOT_STARTED: "sync-not-started",
       RUNNING: "sync-running",
       COMPLETED: "sync-completed",
+      FAILED: "sync-failed",
       ERROR: "sync-error",
     },
   },
@@ -136,7 +137,6 @@ describe("AppDataStore", () => {
       expect(store.storeStatus).toBe(storeStatus.store.IDLE);
       expect(store.syncStatus).toBe(storeStatus.sync.NOT_STARTED);
       expect(store.abortSaveOperation).toBe(false);
-      expect(store.syncWatchInitialized).toBe(false);
     });
 
     it("should have correct initial getters", () => {
@@ -148,6 +148,36 @@ describe("AppDataStore", () => {
     it("should map LOADING store status", () => {
       store.storeStatus = storeStatus.store.LOADING;
       expect(store.status).toBe(storeStatus.LOADING);
+    });
+
+    describe("Manual synchronization", () => {
+      it("allows another sync after a completed one and refreshes local data", async () => {
+        store.syncStatus = storeStatus.sync.COMPLETED;
+        store.storeStatus = storeStatus.store.READY;
+        const synchronize = vi.spyOn(syncService, "synchronizeData").mockResolvedValue(true);
+        const refresh = vi.spyOn(store, "fetchData").mockResolvedValue();
+        try {
+          expect(await store.synchronizeAllData()).toBe(true);
+          expect(await store.synchronizeAllData()).toBe(true);
+          expect(synchronize).toHaveBeenCalledTimes(2);
+          expect(refresh).toHaveBeenCalledTimes(2);
+        } finally {
+          synchronize.mockRestore();
+          refresh.mockRestore();
+        }
+      });
+
+      it("reports failure when the current controller cannot be refreshed after sync", async () => {
+        const synchronize = vi.spyOn(syncService, "synchronizeData").mockResolvedValue(true);
+        apiService.getData.mockResolvedValue({ jsonData: null });
+        try {
+          expect(await store.synchronizeAllData()).toBe(false);
+          expect(store.syncStatus).toBe(storeStatus.sync.FAILED);
+          expect(store.storeStatus).toBe(storeStatus.store.ERROR);
+        } finally {
+          synchronize.mockRestore();
+        }
+      });
     });
 
     it("should map ERROR store status", () => {
@@ -201,6 +231,26 @@ describe("AppDataStore", () => {
       expect(store.data.presets).toEqual(mockData.presets);
       expect(store.data["last-color"]).toEqual(mockData["last-color"]);
       expect(apiService.getData).toHaveBeenCalled();
+    });
+
+    it("replaces data when reloading after a controller switch", async () => {
+      store.data.presets = [{ id: "old-controller-preset", name: "Old" }];
+      const newControllerData = {
+        presets: [{ id: "new-controller-preset", name: "New" }],
+        scenes: [],
+        groups: [],
+        controllers: [],
+        "last-color": {},
+        "sync-lock": null,
+      };
+      apiService.getData.mockResolvedValueOnce({
+        jsonData: newControllerData,
+        error: null,
+      });
+
+      await store.fetchData({ replace: true });
+
+      expect(store.data).toEqual(newControllerData);
     });
 
     it("should handle fetch errors", async () => {
