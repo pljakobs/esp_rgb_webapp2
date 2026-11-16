@@ -1,5 +1,17 @@
 ## esp rgb web frontent rewrite
 
+### Home controller URL parameter
+
+To load the WebUI from a different controller while connecting to the original
+controller, use `?home=192.168.1.15` or `?home=lamp.local` before the hash
+route, for example `http://ui-controller/?home=lamp.local#/ColorPage`.
+The value is an IPv4 address or hostname, not a URL or port. Invalid values
+stop startup instead of selecting the UI host. The original controller must be
+reachable by the browser and permit cross-origin API access; existing
+HTTP/WebSocket and browser mixed-content restrictions still apply. The
+parameter selects the initial home controller; it does not implement a
+firmware redirect.
+
 <img align="right" width="96" height="96" src="icons-src/lightinator_controller_dark.svg" alt="Lightinator controller icon">
 
 ### Reason
@@ -185,4 +197,3 @@ What I'm imagining is a way to tell the controller
 
 and from then on, you could use those defined lights as if they were separate controllers (albeit they will need to be handled differently on the API as they will live on the same IP address).
 All that I have described so far as Phase 3 is, of course, something that has to be implemented on the firmware first, but once that has been done, it will need the corresponding UI extensions as well, hence why I'm describing it here.
-
