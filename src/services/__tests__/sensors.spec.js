@@ -3,6 +3,7 @@ import { apiService } from "../api.js";
 import {
   sensorDefinitions,
   sensorRequest,
+  supportsSensorExtensions,
   settingsPayload,
   validSettings,
   spectralCurve,
@@ -14,6 +15,16 @@ vi.mock("../api.js", () => ({ apiService: { fetchApi: vi.fn() } }));
 
 describe("sensor API and visualization", () => {
   beforeEach(() => vi.clearAllMocks());
+
+  it.each([
+    ["V5.0-417-develop", false],
+    ["V5.1.0-6-develop", true],
+    ["v5.1.0", true],
+    ["V5.10.0", false],
+    [undefined, false],
+  ])("detects sensor firmware support for %s", (version, supported) => {
+    expect(supportsSensorExtensions(version)).toBe(supported);
+  });
 
   it("uses the authenticated shared API and strips status fields from config writes", async () => {
     const draft = {
