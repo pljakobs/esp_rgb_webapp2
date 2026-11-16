@@ -24,9 +24,9 @@
       "address": "I2C-Adresse (dezimal, 64-79)",
       "shunt_ohms": "Shunt-Widerstand (Ohm)",
       "interval_ms": "Intervall (ms)",
-      "atime": "Integration ATIME (0-255)",
-      "astep": "Integration ASTEP (0-65535)",
-      "gain": "Gain-Registerindex (0-10)"
+      "atime": "Integrationszeit ATIME (0-255)",
+      "astep": "Integrationsschritte ASTEP (0-65535)",
+      "gain": "Verstärkungsregisterindex (0-10)"
     }
   },
   "common": {
@@ -160,7 +160,7 @@
     "saveAs": "Als {model}-Preset speichern",
     "presetName": "Preset-Name",
     "favorites": "Favoriten",
-    "presets": "Presets"
+    "presets": "Voreinstellungen"
   },
   "colorSliders": {
     "red": "Rot",
@@ -261,7 +261,7 @@
       "spreadSpectrum": "Spread-Spectrum-Einstellungen",
       "spreadSpectrumMode": "Spread-Spectrum-Modus",
       "width": "Breite (%)",
-      "subsampling": "Subsampling",
+      "subsampling": "Unterabtastung",
       "phaseShift": "Phasenverschiebungs-Einstellungen",
       "phaseShiftMode": "Phasenverschiebungsmodus",
       "resetChanges": "Alle Änderungen zurücksetzen"
@@ -354,6 +354,8 @@
       "checkWebapp": "Webapp prüfen",
       "checking": "Prüfe auf Webapp-Update...",
       "checkStarted": "Prüfung gestartet",
+      "fileListTitle": "Dateien",
+      "pendingFile": "Ausstehende Datei {index}",
       "filesProgress": "{done} / {total} Dateien",
       "retryingBusy": "Gerät beschäftigt, erneuter Versuch in {seconds}s... ({attempt}/{maxRetries})",
       "alreadyUpToDate": "Bereits aktuell{version}",
@@ -372,7 +374,7 @@
       }
     },
     "logViewer": {
-      "title": "Log Viewer"
+      "title": "Protokollanzeige"
     },
     "debugFunctions": {
       "title": "Debug-Funktionen"

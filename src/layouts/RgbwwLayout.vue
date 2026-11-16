@@ -406,6 +406,7 @@ export default defineComponent({
         { label: "Deutsch", value: "de" },
         { label: "Français", value: "fr" },
         { label: "Italiano", value: "it" },
+        { label: "Nederlands", value: "nl" },
         { label: "Português", value: "pt" },
         { label: "Español", value: "es" },
         { label: "Ελληνικά", value: "el" },

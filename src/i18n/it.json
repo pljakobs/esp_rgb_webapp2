@@ -1,4 +1,34 @@
 {
+  "sensors": {
+    "title": "Sensori",
+    "current": "Corrente (INA219)",
+    "spectral": "Spettro (AS7341)",
+    "available": "Sensore rilevato",
+    "unavailable": "Sensore disattivato o non rilevato",
+    "unsupported": "L’estensione del sensore non è inclusa in questo firmware oppure la relativa API di configurazione non è disponibile.",
+    "noReading": "Nessuna lettura valida",
+    "measuring": "Misurazione in corso...",
+    "brightness": "Luminosità del canale Clear (acquisizione bassa / alta)",
+    "counts": "Conteggi ADC",
+    "age": "Età della lettura: {seconds} s",
+    "currentGraph": "Storico della corrente in ampere",
+    "spectrumGraph": "Spettro visibile interpolato in conteggi ADC grezzi",
+    "spectrumNote": "Conteggi non calibrati a otto lunghezze d’onda nominali. La curva adattata è un’interpolazione visiva, non uno spettro calibrato né una misura in lux.",
+    "measure": "Misura spettro",
+    "configuration": "Configurazione del sensore",
+    "enabled": "Abilitato",
+    "invalid": "Inserisci un numero nell’intervallo consentito",
+    "refresh": "Aggiorna sensori",
+    "intervalNote": "L’intervallo dell’AS7341 è riservato e viene solo memorizzato; le misurazioni vengono avviate manualmente. Il guadagno è un indice di registro (0 = 0,5x, 1 = 1x, ..., 10 = 512x).",
+    "fields": {
+      "address": "Indirizzo I2C (decimale, 64-79)",
+      "shunt_ohms": "Resistenza dello shunt (ohm)",
+      "interval_ms": "Intervallo (ms)",
+      "atime": "Integrazione ATIME (0-255)",
+      "astep": "Integrazione ASTEP (0-65535)",
+      "gain": "Indice del registro di guadagno (0-10)"
+    }
+  },
   "common": {
     "cancel": "Annulla",
     "save": "Salva",
@@ -52,7 +82,7 @@
     "systemSettingsCaption": "configura pin, hostname e icona, aggiorna firmware, backup e ripristino impostazioni",
     "networkInit": "Inizializzazione rete",
     "networkInitCaption": "collegati o disconnettiti da una rete Wi-Fi",
-    "test": "test",
+    "test": "Prova",
     "testCaption": "area di prova sviluppatore"
   },
   "discovery": {
@@ -72,7 +102,7 @@
   "setup": {
     "deviceSetup": "Configurazione dispositivo",
     "steps": {
-      "hostname": "Hostname",
+      "hostname": "Nome host",
       "pinConfig": "Config pin",
       "colorModel": "Modello colore",
       "telemetry": "Telemetria",
@@ -81,7 +111,7 @@
     "hostnameStep": {
       "title": "Imposta hostname del dispositivo",
       "subtitle": "Scegli un nome univoco per identificare questo dispositivo nella rete",
-      "label": "Hostname",
+      "label": "Nome host",
       "required": "Hostname obbligatorio",
       "hint": "L'hostname verrà usato per accedere al dispositivo nella rete locale"
     },
@@ -113,7 +143,7 @@
     },
     "completeStep": {
       "title": "Configurazione completata",
-      "hostname": "Hostname",
+      "hostname": "Nome host",
       "pinConfiguration": "Configurazione pin",
       "colorModel": "Modello colore",
       "restarting": "Configurazione salvata. Il dispositivo si riavvia...",
@@ -175,7 +205,7 @@
       "serverConfig": "Configurazione server MQTT",
       "server": "Server MQTT",
       "port": "Porta",
-      "topic": "Topic",
+      "topic": "Argomento",
       "username": "Utente MQTT",
       "password": "Password MQTT",
       "passwordHint": "Password con toggle",
@@ -188,7 +218,7 @@
       "sync": "Sincronizzazione",
       "primary": "Primario",
       "secondary": "Secondario",
-      "clock": "Clock",
+      "clock": "Orologio",
       "cmd": "CMD",
       "color": "Colore"
     },
@@ -283,7 +313,7 @@
     },
     "hostname": {
       "title": "Hostname e icona",
-      "hostname": "Hostname",
+      "hostname": "Nome host",
       "allowWebIcons": "Consenti icone web (Google Fonts)",
       "allowWebIconsTooltip": "Quando abilitato puoi scegliere icone da Google Fonts, con possibile invio di dati a Google.",
       "controllerIcon": "Icona controller",
@@ -320,10 +350,12 @@
     "webappUpdate": {
       "title": "Aggiornamento webapp",
       "autoUpdate": "Aggiornamento automatico webapp",
-      "description": "Se abilitato, controlla una nuova webapp a ogni connessione Wi-Fi. Disabilita per aggiornare solo manualmente.",
+      "description": "Se abilitato, cerca una nuova webapp a ogni connessione Wi-Fi. Disabilita per aggiornare solo su richiesta manuale. Se la webapp non è presente, viene sempre scaricata indipendentemente da questa impostazione.",
       "checkWebapp": "Controlla webapp",
       "checking": "Controllo aggiornamento webapp...",
       "checkStarted": "Controllo avviato",
+      "fileListTitle": "File",
+      "pendingFile": "File in attesa {index}",
       "filesProgress": "{done} / {total} file",
       "retryingBusy": "Dispositivo occupato, nuovo tentativo tra {seconds}s... ({attempt}/{maxRetries})",
       "alreadyUpToDate": "Già aggiornato{version}",
