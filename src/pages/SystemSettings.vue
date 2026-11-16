@@ -4,7 +4,8 @@
       <InformationCard :collapsed="false" />
     </div>
     <div class="cards-column">
-      <FirmwareUpdateCard />
+      <DemoFirmwareUpdateCard v-if="demoMode" />
+      <FirmwareUpdateCard v-else />
       <WebappUpdateCard />
       <HostnameCard />
       <SensorsCard initially-collapsed />
@@ -19,6 +20,8 @@
 import { infoDataStore } from "src/stores/infoDataStore";
 import InformationCard from "src/components/cards/InformationCard.vue";
 import FirmwareUpdateCard from "src/components/cards/FirmwareUpdateCard.vue";
+import DemoFirmwareUpdateCard from "src/components/cards/DemoFirmwareUpdateCard.vue";
+import { isDemoMode } from "src/services/demoMode";
 import WebappUpdateCard from "src/components/cards/WebappUpdateCard.vue";
 import LogViewerCard from "src/components/cards/LogViewerCard.vue";
 import SaveRestoreConfig from "src/components/SaveRestoreConfig.vue";
@@ -30,6 +33,7 @@ export default {
   components: {
     InformationCard,
     FirmwareUpdateCard,
+    DemoFirmwareUpdateCard,
     WebappUpdateCard,
     DebugFunctionCard,
     SaveRestoreConfig,
@@ -42,6 +46,7 @@ export default {
 
     return {
       infoData,
+      demoMode: isDemoMode(),
     };
   },
 };

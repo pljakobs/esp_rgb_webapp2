@@ -1,4 +1,15 @@
 {
+  "demo": {
+    "banner": "Mode démo : toutes les modifications sont simulées et réinitialisées au rechargement. Aucun appareil réel n'est affecté.",
+    "reset": "Réinitialiser la démo",
+    "simulated": "Contrôleur simulé",
+    "firmwareDescription": "Mise à jour du firmware simulée. Aucun firmware n'est téléchargé ni installé.",
+    "checkFirmware": "Vérifier le firmware",
+    "firmwareAvailable": "Une mise à jour simulée vers V5.1-2-develop est disponible.",
+    "installFirmware": "Installer la mise à jour simulée",
+    "firmwareInstalled": "Mise à jour simulée terminée.",
+    "firmwareCurrent": "Firmware simulé : {version}"
+  },
   "sensors": {
     "title": "Capteurs",
     "current": "Courant (INA219)",

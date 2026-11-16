@@ -1,3 +1,4 @@
+import { DEMO_HOST, isDemoMode } from "../services/demoMode";
 import { homeControllerFromLocation } from "../services/homeController";
 
 const localOverrideModules = import.meta.glob("../config/localOverrides.js", {
@@ -10,7 +11,7 @@ const localhostOverride = localOverrides.localhost ?? {};
 
 export const localhost = {
   hostname: localhostOverride.hostname ?? "localhost",
-  ip_address: homeControllerFromLocation(window.location) ?? (import.meta.env.DEV
+  ip_address: isDemoMode() ? DEMO_HOST : homeControllerFromLocation(window.location) ?? (import.meta.env.DEV
     ? (localhostOverride.ip_address ?? "127.0.0.1")
     : window.location.hostname),
 };

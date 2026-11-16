@@ -1,4 +1,5 @@
 import { useI18n } from "vue-i18n";
+import { isDemoMode } from "src/services/demoMode";
 
 export function useLocale() {
   const { locale, availableLocales } = useI18n();
@@ -16,7 +17,7 @@ export function useLocale() {
     }
 
     locale.value = lang;
-    localStorage.setItem("locale", lang);
+    if (!isDemoMode()) localStorage.setItem("locale", lang);
   }
 
   return { locale, setLocale };

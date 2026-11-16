@@ -1,4 +1,15 @@
 {
+  "demo": {
+    "banner": "Demomodus: alle wijzigingen worden gesimuleerd en bij herladen teruggezet. Er wordt geen echt apparaat gewijzigd.",
+    "reset": "Demo resetten",
+    "simulated": "Gesimuleerde controller",
+    "firmwareDescription": "Gesimuleerde firmware-update. Er wordt geen firmware gedownload of geïnstalleerd.",
+    "checkFirmware": "Firmware controleren",
+    "firmwareAvailable": "Er is een gesimuleerde update naar V5.1-2-develop beschikbaar.",
+    "installFirmware": "Gesimuleerde update installeren",
+    "firmwareInstalled": "Gesimuleerde update voltooid.",
+    "firmwareCurrent": "Gesimuleerde firmware: {version}"
+  },
   "sensors": {
     "title": "Sensoren",
     "current": "Stroom (INA219)",

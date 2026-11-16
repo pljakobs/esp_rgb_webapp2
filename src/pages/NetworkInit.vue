@@ -365,6 +365,7 @@ import { configDataStore } from "src/stores/configDataStore";
 import svgIcon from "src/components/svgIcon.vue";
 import ColorSlider from "src/components/ColorSlider.vue";
 import { getTelemetryData } from "src/stores/telemetryData.js";
+import { isDemoMode } from "src/services/demoMode";
 
 export default {
   name: "NetworkSetupWizard",
@@ -595,7 +596,7 @@ export default {
 
         // Pin config change triggers firmware restart automatically
         needsRestart.value =
-          originalPinConfigName.value !== currentPinConfigName.value;
+          !isDemoMode() && originalPinConfigName.value !== currentPinConfigName.value;
 
         setupDone.value = true;
         step.value = 5;

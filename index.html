@@ -2,10 +2,17 @@
 <html>
   <head>
     <title><%= productName %></title>
+    <meta name="lightinator-demo" content="1" />
     <script>
       window.onerror = function (msg, url, line) {
         console.log("CRITICAL BOOT FAILURE: " + msg + "\nURL: " + url);
         // You could even make a fetch call back to Sming to log the error to the Serial console
+        const params = new URLSearchParams(window.location.search);
+        if (String(msg).includes("Invalid home controller address")) {
+          document.body.textContent = "Invalid home controller address in URL. Use an IPv4 address or hostname.";
+          return false;
+        }
+        if (params.get("demo") === "1" || params.has("home")) return false;
         fetch("/system", {
           method: "POST",
           headers: {

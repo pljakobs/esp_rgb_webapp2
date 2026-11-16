@@ -3,6 +3,8 @@ import { useAppDataStore } from "src/stores/appDataStore";
 import { useControllersStore } from "src/stores/controllersStore";
 import { apiService } from "src/services/api";
 import { Notify } from "quasar";
+import { isDemoMode } from "src/services/demoMode";
+import { useVirtualLightsStore } from "src/stores/virtualLightsStore";
 
 /**
  * Creates an AbortController with automatic timeout
@@ -573,6 +575,7 @@ async function applyScene(scene) {
     }
   }
 
+  if (isDemoMode()) await useVirtualLightsStore().fetchColor();
   Notify.create({
     message: `Scene "${scene.name}" applied`,
     color: "positive",
