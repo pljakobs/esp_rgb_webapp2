@@ -8,6 +8,8 @@
 </template>
 
 <script>
+import { ref, computed, onMounted, watch } from "vue";
+
 /**
  * svgIcon Component
  *
@@ -31,7 +33,7 @@ const SPRITE_ELEMENT_ID = "svg-icon-sprite";
 let spriteLoadPromise = null;
 let spriteRetryAllowedAt = 0;
 let spriteRetryWaitPromise = null;
-let spriteForceReloadAttempted = false;  // Prevent cascading forceReload calls
+let spriteForceReloadAttempted = false; // Prevent cascading forceReload calls
 
 function createRetryError(retryAfterMs) {
   const error = new Error("Failed to load sprite: 429");
@@ -77,13 +79,23 @@ function normalizeIconName(name) {
 async function fetchSpriteWithRetry(url, fetchOptions, retriesLeft = 4) {
   const response = await fetch(url, fetchOptions);
   if (response.status === 429 && retriesLeft > 0) {
-    const retryAfter = parseInt(response.headers.get("Retry-After") || "10", 10);
+    const retryAfter = parseInt(
+      response.headers.get("Retry-After") || "10",
+      10,
+    );
     await new Promise((resolve) => setTimeout(resolve, retryAfter * 1000));
-    return fetchSpriteWithRetry(SPRITE_URL, { cache: "reload" }, retriesLeft - 1);
+    return fetchSpriteWithRetry(
+      SPRITE_URL,
+      { cache: "reload" },
+      retriesLeft - 1,
+    );
   }
 
   if (response.status === 429) {
-    const retryAfter = parseInt(response.headers.get("Retry-After") || "10", 10);
+    const retryAfter = parseInt(
+      response.headers.get("Retry-After") || "10",
+      10,
+    );
     throw createRetryError(retryAfter * 1000);
   }
 
@@ -188,79 +200,80 @@ export default {
       default: "lightbulb_outlined",
     },
   },
-  data() {
-    return {
-      svgContent: "",
-      isLoading: false,
-      hasError: false,
-    };
-  },
-  computed: {
-    processedSvgContent() {
+  setup(props) {
+    const svgContent = ref("");
+
+    const isLoading = ref(false);
+
+    const hasError = ref(false);
+
+    const processedSvgContent = computed(() => {
       // Add fill="currentColor" to inherit text color
-      if (this.svgContent) {
-        return this.svgContent.replace("<svg", '<svg fill="currentColor"');
+      if (svgContent.value) {
+        return svgContent.value.replace("<svg", '<svg fill="currentColor"');
       }
       return "";
-    },
-    getIconStyle() {
+    });
+
+    const getIconStyle = computed(() => {
       const style = {};
 
-      if (this.color) {
-        style.color = this.color;
+      if (props.color) {
+        style.color = props.color;
       }
 
-      if (this.size) {
-        style.width = this.size;
-        style.height = this.size;
+      if (props.size) {
+        style.width = props.size;
+        style.height = props.size;
       }
 
-      if (this.isInStepper) {
+      if (props.isInStepper) {
         // Styles for q-stepper compatibility
         style.display = "inline-flex";
         style.alignItems = "center";
         style.justifyContent = "center";
         style.width = "1em";
         style.height = "1em";
-        style.fontSize = this.size || "24px";
+        style.fontSize = props.size || "24px";
       }
 
       // Add opacity during loading
-      if (this.isLoading) {
+      if (isLoading.value) {
         style.opacity = "0.6";
       }
 
       return style;
-    },
-    isWebUrl() {
+    });
+
+    const isWebUrl = computed(() => {
       return (
-        this.name.startsWith("http://") || this.name.startsWith("https://")
+        props.name.startsWith("http://") || props.name.startsWith("https://")
       );
-    },
-    isMaterialIcon() {
+    });
+
+    const isMaterialIcon = computed(() => {
       return (
-        this.name.includes("fonts.gstatic.com") ||
-        this.name.includes("material")
+        props.name.includes("fonts.gstatic.com") ||
+        props.name.includes("material")
       );
-    },
-    // Describes the icon loading strategy for debugging
-    iconStrategy() {
-      if (this.isWebUrl) {
-        return `web → fallback(${this.fallbackIcon})`;
+    });
+
+    const iconStrategy = computed(() => {
+      if (isWebUrl.value) {
+        return `web → fallback(${props.fallbackIcon})`;
       } else {
-        return `local → fallback(${this.fallbackIcon})`;
+        return `local → fallback(${props.fallbackIcon})`;
       }
-    },
-  },
-  methods: {
-    async fetchIcon() {
-      if (this.name === "") {
-        this.svgContent = "";
+    });
+
+    async function fetchIcon() {
+      if (props.name === "") {
+        svgContent.value = "";
         return;
       }
 
-      this.isLoading = true;
-      this.hasError = false;
+      isLoading.value = true;
+      hasError.value = false;
 
       try {
         const configStore = configDataStore();
@@ -268,50 +281,50 @@ export default {
         const allowWebIcons =
           configStore.data?.general?.allow_web_icons !== false;
 
-        if (this.isWebUrl) {
+        if (isWebUrl.value) {
           if (allowWebIcons) {
-            await this.fetchWebIcon();
+            await fetchWebIcon();
           } else {
             // If web icons not allowed, fail immediately to trigger fallback
             throw new Error("Web icons disabled by configuration");
           }
         } else {
-          await this.fetchLocalIcon();
+          await fetchLocalIcon();
         }
       } catch (error) {
         if (
-          !this.isWebUrl ||
+          !isWebUrl.value ||
           error.message !== "Web icons disabled by configuration"
         ) {
           // Only log errors that aren't expected due to configuration
           console.error(
-            `Primary icon failed (${this.isWebUrl ? "web" : "local"}):`,
+            `Primary icon failed (${isWebUrl.value ? "web" : "local"}):`,
             error,
           );
         }
 
-        this.hasError = true;
+        hasError.value = true;
 
         // Try fallback local icon if primary failed
-        if (this.fallbackIcon && this.fallbackIcon !== this.name) {
+        if (props.fallbackIcon && props.fallbackIcon !== props.name) {
           try {
-            await this.fetchLocalIcon(this.fallbackIcon);
+            await fetchLocalIcon(props.fallbackIcon);
           } catch (fallbackError) {
             console.error("Fallback icon also failed:", fallbackError);
           }
         }
       } finally {
-        this.isLoading = false;
+        isLoading.value = false;
       }
-    },
+    }
 
-    async fetchWebIcon() {
+    async function fetchWebIcon() {
       // Create a safer cache key for localStorage
-      const generatedKey = this.generateCacheKey(this.name);
+      const generatedKey = generateCacheKey(props.name);
       const cacheKey = `svg-cache-${generatedKey}`;
 
       // TEMPORARY: Skip cache for corrupted URLs
-      const skipCache = this.name.includes("[object Object]");
+      const skipCache = props.name.includes("[object Object]");
       if (skipCache) {
       }
 
@@ -326,7 +339,7 @@ export default {
             const maxAge = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
 
             if (cacheAge < maxAge) {
-              this.svgContent = cacheData.content;
+              svgContent.value = cacheData.content;
               return;
             } else {
               localStorage.removeItem(cacheKey);
@@ -344,7 +357,7 @@ export default {
       const timeoutId = setTimeout(() => controller.abort(), 5000);
 
       try {
-        const response = await fetch(this.name, {
+        const response = await fetch(props.name, {
           signal: controller.signal,
           mode: "cors",
           headers: {
@@ -356,10 +369,10 @@ export default {
 
         if (!response.ok) {
           // For Material Design icons, try variant fallback on 404
-          if (response.status === 404 && this.isMaterialIcon) {
-            const fallbackUrl = this.tryVariantFallback(this.name);
-            if (fallbackUrl && fallbackUrl !== this.name) {
-              return await this.fetchWebIconWithUrl(fallbackUrl);
+          if (response.status === 404 && isMaterialIcon.value) {
+            const fallbackUrl = tryVariantFallback(props.name);
+            if (fallbackUrl && fallbackUrl !== props.name) {
+              return await fetchWebIconWithUrl(fallbackUrl);
             }
           }
           throw new Error(`HTTP error! status: ${response.status}`);
@@ -372,7 +385,7 @@ export default {
           throw new Error("Response is not SVG content");
         }
 
-        this.svgContent = content;
+        svgContent.value = content;
 
         // Cache the result
         localStorage.setItem(
@@ -386,10 +399,10 @@ export default {
         clearTimeout(timeoutId);
         throw error;
       }
-    },
+    }
 
-    async fetchLocalIcon(iconName = null) {
-      const icon = iconName || this.name;
+    async function fetchLocalIcon(iconName = null) {
+      const icon = iconName || props.name;
       const symbolId = normalizeIconName(icon);
 
       await ensureSpriteLoaded();
@@ -400,7 +413,7 @@ export default {
         // This handles the case where the initial load was in progress
         await ensureSpriteLoaded({ forceReload: true });
         symbol = document.getElementById(symbolId);
-        
+
         if (!symbol) {
           // Icon still not found after reload attempt - use fallback
           const fallbackMappings = {
@@ -417,7 +430,7 @@ export default {
             );
             const fallbackSymbol = document.getElementById(fallbackIcon);
             if (fallbackSymbol) {
-              this.setSvgContentFromSymbol(fallbackSymbol);
+              setSvgContentFromSymbol(fallbackSymbol);
               return;
             }
           }
@@ -425,23 +438,25 @@ export default {
           throw new Error(`Icon not found in sprite: ${symbolId}`);
         }
       }
-      
-      this.setSvgContentFromSymbol(symbol);
-    },
 
-    setSvgContentFromSymbol(symbol) {
+      setSvgContentFromSymbol(symbol);
+    }
+
+    function setSvgContentFromSymbol(symbol) {
       const viewBox = symbol.getAttribute("viewBox") || "0 0 24 24";
       const innerMarkup = symbol.innerHTML || "";
-      this.svgContent = `<svg aria-hidden="true" focusable="false" viewBox="${viewBox}" xmlns="http://www.w3.org/2000/svg">${innerMarkup}</svg>`;
-    },
+      svgContent.value = `<svg aria-hidden="true" focusable="false" viewBox="${viewBox}" xmlns="http://www.w3.org/2000/svg">${innerMarkup}</svg>`;
+    }
 
-    // Helper method to generate Material Design icon URL
-    generateMaterialIconUrl(iconName, variant = "outlined", size = "24px") {
+    function generateMaterialIconUrl(
+      iconName,
+      variant = "outlined",
+      size = "24px",
+    ) {
       return `https://fonts.gstatic.com/s/i/short-term/release/materialsymbols${variant}/${iconName}/default/${size}.svg`;
-    },
+    }
 
-    // Generate a safe cache key from URL
-    generateCacheKey(url) {
+    function generateCacheKey(url) {
       // For Material Design URLs, extract icon name AND variant
       if (url.includes("materialsymbols")) {
         // URL pattern: .../materialsymbols{variant}/{iconName}/default/24px.svg
@@ -475,10 +490,9 @@ export default {
         const key = url.replace(/[^a-zA-Z0-9]/g, "").substring(url.length - 20);
         return key;
       }
-    },
+    }
 
-    // Try to generate a fallback URL with a different variant for Material Design icons
-    tryVariantFallback(originalUrl) {
+    function tryVariantFallback(originalUrl) {
       if (!originalUrl.includes("materialsymbols")) {
         return null;
       }
@@ -513,11 +527,10 @@ export default {
 
       console.log(`Variant fallback: ${currentVariant} → ${fallbackVariant}`);
       return fallbackUrl;
-    },
+    }
 
-    // Separate method to fetch with a specific URL (for fallback)
-    async fetchWebIconWithUrl(url) {
-      const generatedKey = this.generateCacheKey(url);
+    async function fetchWebIconWithUrl(url) {
+      const generatedKey = generateCacheKey(url);
       const cacheKey = `svg-cache-${generatedKey}`;
 
       // Check cache first
@@ -529,7 +542,7 @@ export default {
           const maxAge = 24 * 60 * 60 * 1000; // 24 hours
 
           if (cacheAge < maxAge) {
-            this.svgContent = cacheData.content;
+            svgContent.value = cacheData.content;
             return;
           }
         } catch (e) {
@@ -561,7 +574,7 @@ export default {
           throw new Error("Response is not SVG content");
         }
 
-        this.svgContent = content;
+        svgContent.value = content;
 
         // Cache the result
         localStorage.setItem(
@@ -575,12 +588,11 @@ export default {
         clearTimeout(timeoutId);
         throw error;
       }
-    },
+    }
 
-    // Debug method to inspect cache contents
-    debugCache(url = null) {
-      const targetUrl = url || this.name;
-      const cacheKey = `svg-cache-${this.generateCacheKey(targetUrl)}`;
+    function debugCache(url = null) {
+      const targetUrl = url || props.name;
+      const cacheKey = `svg-cache-${generateCacheKey(targetUrl)}`;
       const cached = localStorage.getItem(cacheKey);
 
       console.log("=== CACHE DEBUG ===");
@@ -603,17 +615,33 @@ export default {
         }
       }
       console.log("===================");
-    },
-  },
-  mounted() {
-    this.fetchIcon();
-  },
-  watch: {
-    name: {
-      handler() {
-        this.fetchIcon();
-      },
-    },
+    }
+
+    onMounted(() => {
+      fetchIcon();
+    });
+
+    watch(() => props.name, fetchIcon);
+
+    return {
+      svgContent,
+      isLoading,
+      hasError,
+      processedSvgContent,
+      getIconStyle,
+      isWebUrl,
+      isMaterialIcon,
+      iconStrategy,
+      fetchIcon,
+      fetchWebIcon,
+      fetchLocalIcon,
+      setSvgContentFromSymbol,
+      generateMaterialIconUrl,
+      generateCacheKey,
+      tryVariantFallback,
+      fetchWebIconWithUrl,
+      debugCache,
+    };
   },
 };
 </script>

@@ -3,7 +3,7 @@
 </template>
 
 <script>
-import { onMounted, watch, defineComponent } from "vue";
+import { onMounted, onErrorCaptured, watch, defineComponent } from "vue";
 import { useControllersStore } from "src/stores/controllersStore";
 import { localhost } from "src/stores/storeConstants";
 import initializeStores from "src/services/initializeStores";
@@ -19,6 +19,24 @@ export default defineComponent({
     try {
       const controllers = useControllersStore();
       const $q = useQuasar(); // Get Quasar's global instance
+
+      watch(
+        () => $q.dark.isActive,
+        (isDark) => {
+          document.documentElement.setAttribute(
+            "data-theme",
+            isDark ? "dark" : "light",
+          );
+        },
+        { immediate: true },
+      );
+
+      onErrorCaptured((err, vm) => {
+        console.error(`Error in component: ${vm.$options.name}`);
+        console.error(err);
+        return false;
+      });
+
       let initInFlight = false;
       let initRequested = false;
       let forceInitRequested = false;
@@ -56,7 +74,7 @@ export default defineComponent({
 
       watch(
         () => controllers.currentController?.ip_address,
-  async (newIp, oldIp) => {
+        async (newIp, oldIp) => {
           // Ignore the first resolution from null/undefined to avoid a second
           // startup initialization burst while the first one is still running.
           if (!oldIp || !newIp) {
@@ -118,22 +136,6 @@ export default defineComponent({
     } catch (error) {
       console.error("Error in setup function:", error);
     }
-  },
-  watch: {
-    "$q.dark.isActive": {
-      handler(isDark) {
-        document.documentElement.setAttribute(
-          "data-theme",
-          isDark ? "dark" : "light",
-        );
-      },
-      immediate: true,
-    },
-  },
-  errorCaptured(err, vm, info) {
-    console.error(`Error in component: ${vm.$options.name}`);
-    console.error(err);
-    return false; // Prevent the error from propagating further
   },
 });
 </script>

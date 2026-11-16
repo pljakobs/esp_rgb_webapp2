@@ -15,6 +15,13 @@ This way, we will finally be able to break out of the lock in to fhem that the h
 
 So my current plan of action is to re-implement and re-build the UI using Quasar / vue and extend from there.
 
+### Vue build configuration
+
+Components use Vue's Composition API. Keep `build.vueOptionsAPI: false` in
+`quasar.config.js` so production builds omit the unused Options API runtime.
+Use refs, computed values, watchers and lifecycle hooks inside `setup()` or
+`<script setup>`, not Options API state or hooks.
+
 ### Project phases
 #### Phase 1: reimplement the currently existing
 *The biggest driver to reimplement the UI is the fact that I have changed the underlying structure such that an OTA now only uses a single image rather than a separate app and spiffs image (the webapp is 
@@ -73,6 +80,14 @@ As I said above, one of the appeals of Quasar is that it allows to build native 
 [x] mDNS for UI Access (accessing lightinator.local or so)
 
 [ ] implemenat a "boost" mode where white can be boosted to 300% using RGB WW and CW together
+
+### Light controls
+
+The Lights configuration card sizes itself to the active controls rather than
+the viewport, with scrolling for taller content. Brightness, temperature and
+RAW channels use value-first sliders; temperature has a warm-to-cold gradient.
+On 5.1 controllers, the power switch targets the selected light and reads its
+state back from the controller. Color-picker dialogs retain bounded scrolling.
 
 ### Selected board configuration (5.1)
 
