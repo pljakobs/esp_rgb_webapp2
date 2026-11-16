@@ -78,6 +78,12 @@
   <div v-else>
     <q-layout view="hHh lpR fFf" class="main-layout">
       <q-header elevated class="bg-primary text-white">
+        <q-banner v-if="demoMode" dense class="bg-warning text-dark">
+          {{ $t("demo.banner") }}
+          <template v-slot:action>
+            <q-btn flat no-caps :label="$t('demo.reset')" @click="resetDemo" />
+          </template>
+        </q-banner>
         <q-toolbar>
           <q-btn
             flat
@@ -339,10 +345,11 @@
       </q-page-container>
       <q-footer class="bg-primary text-white">
         <q-toolbar>
-          <q-btn round class="ws-status-btn" :color="buttonColor">
+          <q-btn v-if="!demoMode" round class="ws-status-btn" :color="buttonColor">
             <svgIcon :name="buttonIconName" size="20px" />
             <q-tooltip>{{ wsTooltipText }}</q-tooltip>
           </q-btn>
+          <span v-else>{{ $t("demo.simulated") }}</span>
         </q-toolbar>
       </q-footer>
     </q-layout>
@@ -376,6 +383,7 @@ import { storeStatus } from "src/stores/storeConstants";
 import useWebSocket, { wsStatus } from "src/services/websocket.js";
 import { useRouter } from "vue-router";
 import { Dark } from "quasar";
+import { isDemoMode } from "src/services/demoMode";
 
 export default defineComponent({
   name: "MainLayout",
@@ -386,6 +394,8 @@ export default defineComponent({
   },
 
   setup() {
+    const demoMode = isDemoMode();
+    const resetDemo = () => window.location.reload();
     console.log("RgbwwLayout.vue setup start");
     const isDarkMode = ref(Dark.isActive);
 
@@ -452,7 +462,7 @@ export default defineComponent({
       const toggleDarkMode = (value) => {
         Dark.set(value);
         console.log("setting dark mode to", value ? "true" : "false");
-        localStorage.setItem("darkMode", value);
+        if (!demoMode) localStorage.setItem("darkMode", value);
         configData.updateData("general.UI.dark_mode", value, true);
         document.documentElement.setAttribute(
           "data-theme",
@@ -461,7 +471,7 @@ export default defineComponent({
       };
 
       // Load user preference from local storage
-      const savedDarkMode = localStorage.getItem("darkMode");
+      const savedDarkMode = demoMode ? null : localStorage.getItem("darkMode");
       if (savedDarkMode !== null) {
         const isDark = savedDarkMode === "true";
         Dark.set(isDark);
@@ -534,6 +544,7 @@ export default defineComponent({
       };
 
       const checkControllerConfigured = () => {
+        if (demoMode) return;
         console.log("infoData.status changed to", infoData.status);
         console.log("check if this is an unconfigured controller");
 
@@ -865,6 +876,8 @@ export default defineComponent({
       };
 
       return {
+        demoMode,
+        resetDemo,
         leftDrawerOpen,
         configData,
         infoData,

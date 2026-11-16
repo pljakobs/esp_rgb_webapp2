@@ -77,7 +77,14 @@ export const useControllersStore = defineStore("controllersStore", {
         if (hostsResponse && Array.isArray(hostsResponse.hosts)) {
           this.data = hostsResponse.hosts;
           // 1. If ip_address is numeric, match and update hostname, set controllers
-          if (/^\d+\.\d+\.\d+\.\d+$/.test(localhost.ip_address)) {
+          const exactMatch = this.data.find(
+            (c) => String(c.ip_address).toLowerCase() === String(localhost.ip_address).toLowerCase(),
+          );
+          if (exactMatch) {
+            localhost.hostname = exactMatch.hostname;
+            this.currentController = exactMatch;
+            this.homeController = exactMatch;
+          } else if (/^\d+\.\d+\.\d+\.\d+$/.test(localhost.ip_address)) {
             const match = this.data.find(
               (c) => String(c.ip_address) === String(localhost.ip_address),
             );

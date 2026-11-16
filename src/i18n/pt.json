@@ -1,4 +1,15 @@
 {
+  "demo": {
+    "banner": "Modo de demonstração: todas as alterações são simuladas e repostas ao recarregar. Nenhum dispositivo real é afetado.",
+    "reset": "Repor demonstração",
+    "simulated": "Controlador simulado",
+    "firmwareDescription": "Atualização de firmware simulada. Nenhum firmware é transferido ou instalado.",
+    "checkFirmware": "Verificar firmware",
+    "firmwareAvailable": "Está disponível uma atualização simulada para V5.1-2-develop.",
+    "installFirmware": "Instalar atualização simulada",
+    "firmwareInstalled": "Atualização simulada concluída.",
+    "firmwareCurrent": "Firmware simulado: {version}"
+  },
   "sensors": {
     "title": "Sensores",
     "current": "Corrente (INA219)",

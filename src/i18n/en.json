@@ -1,4 +1,15 @@
 {
+  "demo": {
+    "banner": "Demo mode: all changes are simulated and reset on reload. No real device is affected.",
+    "reset": "Reset demo",
+    "simulated": "Simulated controller",
+    "firmwareDescription": "Simulated firmware update. No firmware is downloaded or installed.",
+    "checkFirmware": "Check firmware",
+    "firmwareAvailable": "A simulated update to V5.1-2-develop is available.",
+    "installFirmware": "Install simulated update",
+    "firmwareInstalled": "Simulated update completed.",
+    "firmwareCurrent": "Simulated firmware: {version}"
+  },
   "sensors": {
     "title": "Sensors",
     "current": "Current (INA219)",

@@ -1,5 +1,6 @@
 import { reactive, toRefs } from "vue";
 import { useAuthStore } from "src/stores/authStore";
+import { isDemoMode } from "./demoMode";
 
 /**
  * Compute a lowercase-hex SHA-256 digest of `input` using the Web Crypto API.
@@ -125,6 +126,7 @@ export default function useWebSocket() {
   }
 
   function connect(url) {
+    if (isDemoMode()) return false;
     if (url === null || url === undefined) {
       console.log("=> websocket url is null or undefined");
       return false;

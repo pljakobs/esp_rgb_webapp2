@@ -94,6 +94,20 @@ describe("bundled locales", () => {
     expect(fetch).not.toHaveBeenCalled();
   });
 
+  it("does not persist demo language changes", async () => {
+    const originalUrl = window.location.href;
+    try {
+      window.history.replaceState(null, "", "/?demo=1");
+      localStorage.setItem("locale", "en");
+      const global = boot();
+      await useLocale().setLocale("de");
+      expect(global.locale.value).toBe("de");
+      expect(localStorage.getItem("locale")).toBe("en");
+    } finally {
+      window.history.replaceState(null, "", originalUrl);
+    }
+  });
+
   it("falls back to English for unsupported languages", async () => {
     localStorage.setItem("locale", "unknown");
     const global = boot();
