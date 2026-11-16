@@ -1,38 +1,49 @@
 <template>
-  <q-scroll-area :style="{ height: isDialog ? dialogHeight : cardHeight }">
+  <component :is="scrollContainer" :style="scrollStyle">
     <q-card-section class="flex justify-center no-padding">
       <q-color
-        v-model="internalColor"
+        v-if="!profile || profile.rgb"
+        :model-value="internalColor"
         format-model="hex"
         no-header
         no-footer
         class="scaled-color"
+        @update:model-value="updateColor"
+      />
+      <LightControlSlider
+        :model-value="brightness"
+        :label="$t('color.brightness')"
+        :display-value="`${Math.round(brightness)}%`"
+        :min="0"
+        :max="100"
+        :step="0.1"
+        @update:model-value="updateBrightness"
+      >
+        <template #action>
+          <q-toggle
+            v-if="showPower"
+            :model-value="powerOn"
+            :disable="powerBusy || powerOn === null"
+            :aria-label="$t('color.power')"
+            @update:model-value="$emit('update:power', $event)"
+          />
+        </template>
+      </LightControlSlider>
+    </q-card-section>
+
+    <q-card-section v-if="supportsColorTemp" class="q-pa-none">
+      <LightControlSlider
+        :model-value="ct"
+        :label="$t('color.colorTemperature')"
+        :display-value="`${Math.round(ct)} K`"
+        :min="minCt"
+        :max="maxCt"
+        temperature
+        @update:model-value="updateTemperature"
       />
     </q-card-section>
 
-    <!-- Added CT Slider Section -->
-    <q-card-section
-      class="q-px-lg q-pt-md"
-      style="max-width: 300px; margin: 0 auto"
-      v-if="supportsColorTemp"
-    >
-      <div class="text-caption text-grey-7 q-mb-xs">Color Temperature</div>
-      <div class="row items-center no-wrap">
-        <svgIcon name="thermostat" class="q-mr-sm text-grey-7" />
-        <q-slider
-          v-model="ct"
-          :min="minCt"
-          :max="maxCt"
-          label
-          color="orange"
-          class="col"
-        >
-          <q-tooltip>Color Temperature</q-tooltip>
-        </q-slider>
-      </div>
-    </q-card-section>
-
-    <q-card-section class="flex justify-center" v-if="!isDialog">
+    <q-card-section class="flex justify-center" v-if="!isDialog && !profile">
       <q-btn flat color="primary" @click="onAddPreset">
         <template v-slot:default>
           <svgIcon name="star_outlined" />
@@ -40,19 +51,25 @@
         </template>
       </q-btn>
     </q-card-section>
-  </q-scroll-area>
+  </component>
 </template>
 
 <script>
 import { ref, watch, computed } from "vue";
-import { colors } from "quasar";
+import { colors, QScrollArea } from "quasar";
 import { useColorDataStore } from "src/stores/colorDataStore";
 import { configDataStore } from "src/stores/configDataStore";
+import LightControlSlider from "src/components/LightControlSlider.vue";
 
 const { hexToRgb, rgbToHsv, rgbToHex, hsvToRgb } = colors;
 
 export default {
+  components: { LightControlSlider },
   props: {
+    profile: { type: Object, default: null },
+    showPower: { type: Boolean, default: false },
+    powerOn: { type: Boolean, default: null },
+    powerBusy: { type: Boolean, default: false },
     modelValue: {
       type: Object,
       default: () => ({ hsv: { h: 0, s: 0, v: 0 }, ct: 0 }),
@@ -70,14 +87,19 @@ export default {
       default: "280px",
     },
   },
-  emits: ["update:modelValue", "add-preset"],
+  emits: ["update:modelValue", "update:power", "add-preset"],
   setup(props, { emit }) {
     const internalColor = ref("#000000");
     const ct = ref(0);
+    const brightness = ref(0);
+    const currentHsv = ref({ h: 0, s: 0, v: 0 });
     const colorStore = useColorDataStore();
     const configData = configDataStore();
+    const scrollContainer = computed(() => !props.isDialog && props.cardHeight === "auto" ? "div" : QScrollArea);
+    const scrollStyle = computed(() => scrollContainer.value === "div" ? undefined : { height: props.isDialog ? props.dialogHeight : props.cardHeight });
 
     const minCt = computed(() => {
+      if (props.profile) return props.profile.colortemp.ww;
       // Defaults if parsing fails
       try {
         return configData.data.color.colortemp.ww || 2500;
@@ -87,6 +109,7 @@ export default {
     });
 
     const maxCt = computed(() => {
+      if (props.profile) return props.profile.colortemp.cw;
       try {
         return configData.data.color.colortemp.cw || 9000;
       } catch {
@@ -95,7 +118,7 @@ export default {
     });
 
     const supportsColorTemp = computed(
-      () => configData.hasColorTemperatureSupport,
+      () => props.profile ? props.profile.ct : configData.hasColorTemperatureSupport,
     );
     // Flag to prevent emitting during prop updates from websocket events
     const updatingFromProps = ref(false);
@@ -109,11 +132,19 @@ export default {
 
         try {
           if (newValue?.hsv) {
+            brightness.value = newValue.hsv.v ?? 0;
+            currentHsv.value = {
+              h: newValue.hsv.h ?? 0,
+              s: newValue.hsv.s ?? 0,
+              v: brightness.value,
+            };
             const rgb = hsvToRgb(newValue.hsv);
             internalColor.value = rgbToHex(rgb);
+          } else if (props.profile?.channels.length === 1 && Array.isArray(newValue?.raw)) {
+            brightness.value = (newValue.raw[0] ?? 0) * 100 / 1023;
           }
-          if (newValue?.ct !== undefined) {
-            ct.value = newValue.ct;
+          if (newValue?.hsv?.ct !== undefined) {
+            ct.value = Math.max(minCt.value, Math.min(maxCt.value, newValue.hsv.ct));
           }
         } catch (error) {
           console.log("Error processing updates from props:", error);
@@ -132,27 +163,47 @@ export default {
       // Only emit if not updating from props and not from websocket
       if (!updatingFromProps.value && colorStore.change_by !== "websocket") {
         try {
-          const rgb = hexToRgb(internalColor.value);
-          let hsv = rgbToHsv(rgb);
+          if (props.profile?.channels.length === 1 && Array.isArray(props.modelValue.raw)) {
+            emit("update:modelValue", { raw: [Math.round(brightness.value * 1023 / 100)] });
+            return;
+          }
+          const hsv = props.profile && !props.profile.rgb
+            ? { h: 0, s: 0, v: brightness.value }
+            : currentHsv.value;
 
           // Round values to 1 decimal place instead of 2
-          hsv = {
+          const roundedHsv = {
             h: Math.round(hsv.h * 10) / 10,
             s: Math.round(hsv.s * 10) / 10,
             v: Math.round(hsv.v * 10) / 10,
           };
 
           // Emit the new color value include ct
-          emit("update:modelValue", { hsv, ct: ct.value });
+          emit("update:modelValue", { hsv: roundedHsv, ct: ct.value });
         } catch (error) {
           console.log("Error in color/ct watcher:", error);
         }
       }
     };
 
-    // Watch for changes in the color picker or CT slider
-    watch(internalColor, emitUpdate);
-    watch(ct, emitUpdate);
+    const updateColor = (value) => {
+      internalColor.value = value;
+      currentHsv.value = rgbToHsv(hexToRgb(value));
+      brightness.value = currentHsv.value.v;
+      emitUpdate();
+    };
+    const updateBrightness = (value) => {
+      brightness.value = value;
+      if (!props.profile || props.profile.rgb) {
+        currentHsv.value = { ...currentHsv.value, v: value };
+        internalColor.value = rgbToHex(hsvToRgb(currentHsv.value));
+      }
+      emitUpdate();
+    };
+    const updateTemperature = (value) => {
+      ct.value = value;
+      emitUpdate();
+    };
 
     const onAddPreset = () => {
       // Get the current HSV value and emit it for preset creation
@@ -172,11 +223,17 @@ export default {
 
     return {
       internalColor,
+      brightness,
       ct,
       minCt,
       maxCt,
       onAddPreset,
       supportsColorTemp,
+      updateColor,
+      updateBrightness,
+      updateTemperature,
+      scrollContainer,
+      scrollStyle,
     };
   },
 };
@@ -190,6 +247,14 @@ export default {
 .scaled-color {
   width: 150%;
   height: 150%;
+}
+.scaled-color :deep(.q-color-picker__hue .q-slider__track) {
+  height: 28px !important;
+  border-radius: 14px;
+}
+.scaled-color :deep(.q-color-picker__hue .q-slider__inner),
+.scaled-color :deep(.q-color-picker__hue .q-slider__selection) {
+  border-radius: 14px;
 }
 .hsv-section {
   display: flex;

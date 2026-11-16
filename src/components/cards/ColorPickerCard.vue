@@ -1,5 +1,13 @@
 <template>
-  <MyCard :icon="'palette_outlined'" :title="title" :collapsed="false">
+  <MyCard :icon="'palette_outlined'" :title="title || $t('cards.colorModel.title')" :collapsed="false">
+    <q-card-section v-if="lights.loading && !lights.firmwareVersion"><q-linear-progress indeterminate /></q-card-section>
+    <q-card-section v-if="lights.enabled">
+      <mySelect :model-value="lights.selectedId" :options="lightOptions" emit-value map-options outlined dense label="Light" :disable="lights.loading || lights.saving" @update:model-value="lights.selectLight($event)" />
+      <q-linear-progress v-if="lights.loading || lights.colorLoading" indeterminate class="q-mt-sm" />
+      <q-banner v-if="lights.error" class="bg-negative text-white q-mt-sm">{{ lights.error }}</q-banner>
+      <div v-if="!lights.loading && !lights.lights.length" class="text-grey-7 q-mt-sm">No lights configured</div>
+    </q-card-section>
+    <template v-if="!lights.loading && (!lights.enabled || lights.selectedLight)">
     <q-card-section class="row justify-center no-padding">
       <q-btn-group class="btn-group w-100">
         <q-btn
@@ -24,10 +32,11 @@
         >
           <template v-slot:default>
             <svgIcon name="palette_outlined" />
-            <span>HSV</span>
+            <span>{{ tunableWhite ? $t('color.tunableWhite') : 'HSV' }}</span>
           </template>
         </q-btn>
         <q-btn
+          v-if="!singleChannel"
           name="raw"
           :color="carouselPage === 'raw' ? 'secondary' : 'primary'"
           class="equal-btn"
@@ -53,36 +62,52 @@
         </q-btn>
       </q-btn-group>
     </q-card-section>
-    <q-separator />
-    <q-card-section class="color-picker-body" :style="{ height: cardHeight }">
-      <q-carousel v-model="carouselPage" animated :style="{ height: '100%' }">
-        <q-carousel-slide v-if="hasFavorites" name="favorites">
+    <q-separator v-if="!singleChannel" />
+    <q-card-section class="color-picker-body" :style="{ pointerEvents: lights.colorLoading || lights.saving || lights.powerSaving || lights.error ? 'none' : undefined, opacity: lights.colorLoading || lights.saving || lights.powerSaving ? 0.5 : 1 }">
+      <q-tab-panels v-model="carouselPage" animated>
+        <q-tab-panel v-if="hasFavorites" name="favorites">
+          <LightPresetSection v-if="lights.enabled" favorites-only />
           <favoriteSection
+            v-else
             :card-height="cardHeight"
             @update:model-value="handleColorChange"
           />
-        </q-carousel-slide>
-        <q-carousel-slide name="hsv">
+        </q-tab-panel>
+        <q-tab-panel name="hsv">
           <HsvSection
-            :card-height="cardHeight"
+            :key="lights.enabled ? lights.selectedId + lights.selectedLight.type : 'legacy-hsv'"
+            :profile="lights.enabled ? lights.profile : null"
+            :show-power="lights.enabled"
+            :power-on="lights.isOn"
+            :power-busy="lights.powerSaving || lights.colorLoading"
+            card-height="auto"
             :model-value="colorValue"
             @update:model-value="handleColorChange"
+            @update:power="lights.setPower($event)"
             @add-preset="openAddPresetDialog"
           />
-        </q-carousel-slide>
-        <q-carousel-slide name="raw">
+        </q-tab-panel>
+        <q-tab-panel v-if="!singleChannel" name="raw">
           <RawSection
-            :card-height="cardHeight"
+            :key="lights.enabled ? lights.selectedId + lights.selectedLight.type : 'legacy-raw'"
+            :profile="lights.enabled ? lights.profile : null"
+            :show-power="lights.enabled"
+            :power-on="lights.isOn"
+            :power-busy="lights.powerSaving || lights.colorLoading"
+            card-height="auto"
             :model-value="colorValue"
             @update:model-value="handleColorChange"
+            @update:power="lights.setPower($event)"
             @add-preset="openAddPresetDialog"
           />
-        </q-carousel-slide>
-        <q-carousel-slide name="presets">
-          <PresetSection @update:model-value="handleColorChange" />
-        </q-carousel-slide>
-      </q-carousel>
+        </q-tab-panel>
+        <q-tab-panel name="presets">
+          <LightPresetSection v-if="lights.enabled" />
+          <PresetSection v-else :card-height="cardHeight" @update:model-value="handleColorChange" />
+        </q-tab-panel>
+      </q-tab-panels>
     </q-card-section>
+    </template>
   </MyCard>
 </template>
 
@@ -91,7 +116,7 @@ import { ref, watch, computed, onMounted } from "vue";
 import { useAppDataStore } from "src/stores/appDataStore";
 import { storeStatus } from "src/stores/storeConstants";
 import { useColorDataStore } from "src/stores/colorDataStore";
-import { Dialog } from "quasar";
+import { Dialog, Notify } from "quasar";
 import favoriteSection from "src/components/cards/colorPickerSections/favoriteSection.vue";
 import HsvSection from "src/components/cards/colorPickerSections/HsvSection.vue";
 import RawSection from "src/components/cards/colorPickerSections/RawSection.vue";
@@ -99,6 +124,9 @@ import PresetSection from "src/components/cards/colorPickerSections/PresetSectio
 import MyCard from "src/components/myCard.vue";
 import addPresetDialog from "src/components/Dialogs/addPresetDialog.vue";
 import deleteItemDialog from "src/components/Dialogs/deleteItemDialog.vue";
+import { useVirtualLightsStore } from "src/stores/virtualLightsStore";
+import { useLightPresetsStore } from "src/stores/lightPresetsStore";
+import LightPresetSection from "./colorPickerSections/LightPresetSection.vue";
 
 import { savePreset, deletePreset } from "src/services/saveDelete";
 
@@ -110,6 +138,7 @@ export default {
     HsvSection,
     RawSection,
     PresetSection,
+    LightPresetSection,
   },
   props: {
     icon: {
@@ -118,17 +147,25 @@ export default {
     },
     title: {
       type: String,
-      default: "Color Picker",
+      default: "",
     },
     cardHeight: {
       type: String,
-      default: "600px",
+      default: "min(420px, 60vh)",
     },
   },
   setup() {
     const carouselPage = ref("hsv");
     const appData = useAppDataStore();
     const colorStore = useColorDataStore();
+    const lights = useVirtualLightsStore();
+    const lightPresets = useLightPresetsStore();
+    lights.start();
+    const singleChannel = computed(() => lights.enabled && lights.profile.channels.length === 1);
+    const tunableWhite = computed(() => lights.enabled && !lights.profile.rgb && lights.profile.ct);
+    watch(singleChannel, (single) => { if (single) carouselPage.value = "hsv"; });
+    const lightOptions = computed(() => lights.lights.map((light) => ({ label: light.name || light.id, value: light.id })));
+    watch(() => lights.enabled, () => { carouselPage.value = "hsv"; });
 
     // Load preset/scene data on component mount
     onMounted(() => {
@@ -142,12 +179,18 @@ export default {
 
     // Watch for changes in the colorDataStore
     watch(
-      () => colorStore.data,
+      () => lights.enabled ? lights.color : colorStore.data,
       (newValue) => {
+        if (lights.enabled) {
+          colorValue.value = JSON.parse(JSON.stringify(newValue));
+          return;
+        }
         if (newValue.hsv) {
           colorValue.value = { hsv: { ...newValue.hsv } };
         } else if (newValue.raw) {
-          colorValue.value = { raw: { ...newValue.raw } };
+          colorValue.value = { raw: Array.isArray(newValue.raw) ? [...newValue.raw] : { ...newValue.raw } };
+        } else {
+          colorValue.value = {};
         }
       },
       { deep: true, immediate: true },
@@ -155,13 +198,19 @@ export default {
 
     const hasFavorites = computed(
       () =>
-        appData.data.presets.some((preset) => preset.favorite) ||
-        appData.data.scenes.some((scene) => scene.favorite),
+        lights.enabled ? lightPresets.favorites.length > 0 :
+          appData.data.presets.some((preset) => preset.favorite) ||
+          appData.data.scenes.some((scene) => scene.favorite),
     );
 
     watch(
       () => hasFavorites.value,
       (newVal) => {
+        if (lights.enabled) {
+          if (!newVal && carouselPage.value === "favorites")
+            carouselPage.value = "presets";
+          return;
+        }
         if (newVal) {
           carouselPage.value = "favorites";
         } else {
@@ -182,6 +231,12 @@ export default {
 
     // Handle color changes from any section
     const handleColorChange = (newColor) => {
+      if (lights.loading) return;
+      if (lights.enabled) {
+        const payload = newColor.hsv ? { hsv: { ...newColor.hsv, ...(lights.profile.ct && newColor.ct !== undefined ? { ct: newColor.ct } : {}) } } : { raw: newColor.raw };
+        lights.sendColor(payload);
+        return;
+      }
       colorValue.value = newColor;
 
       // Update the global store
@@ -201,6 +256,11 @@ export default {
     };
 
     const openAddPresetDialog = (presetData) => {
+      if (lights.enabled) {
+        carouselPage.value = "presets";
+        Notify.create({ type: "info", message: "Enter a name on the Presets page to save this light's current colour." });
+        return;
+      }
       console.log("Opening add preset dialog with:", presetData);
 
       // Create a reference to track if an abort was requested
@@ -355,6 +415,10 @@ export default {
     }
 
     return {
+      lights,
+      singleChannel,
+      tunableWhite,
+      lightOptions,
       carouselPage,
       presetData: appData,
       storeStatus,
@@ -390,12 +454,17 @@ export default {
   width: 100%;
 }
 
+.color-picker-body {
+  max-height: 65vh;
+  overflow-y: auto;
+}
+
 @media (max-width: 600px) {
   .color-picker-body {
     padding: 0 !important;
   }
 
-  .color-picker-body :deep(.q-carousel__slide) {
+  .color-picker-body :deep(.q-tab-panel) {
     padding: 0 !important;
   }
 }

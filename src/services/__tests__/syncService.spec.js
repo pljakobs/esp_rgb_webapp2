@@ -36,6 +36,7 @@ describe("SyncService", () => {
   let mockControllersStore;
 
   beforeEach(() => {
+    vi.resetAllMocks();
     // Use fake timers for sleep/timeout tests
     vi.useFakeTimers();
 
@@ -73,10 +74,7 @@ describe("SyncService", () => {
     };
     useControllersStore.mockReturnValue(mockControllersStore);
 
-    // Clear all mocks
-    vi.clearAllMocks();
-
-    // Set default mock implementations (after clearAllMocks)
+    // Set default mock implementations after resetting queued responses.
     apiService.getHosts.mockResolvedValue({
       jsonData: {
         hosts: [
@@ -214,6 +212,8 @@ describe("SyncService", () => {
     });
 
     it("should return false if no reachable controllers found", async () => {
+      mockControllersStore.currentController = null;
+      global.window.location.search = "";
       mockControllersStore.data = [
         {
           id: "controller-1",
@@ -760,11 +760,12 @@ describe("SyncService", () => {
       expect(progressCallback).toHaveBeenCalledWith(2, 2);
       // Collection (2) + verification (2) = 4
       expect(apiService.getDataFromController).toHaveBeenCalledTimes(4);
-      expect(apiService.updateDataOnController).toHaveBeenCalledTimes(2);
+      expect(apiService.updateDataOnController).toHaveBeenCalledTimes(1);
     });
 
     it("should handle mixed success and failure scenarios", async () => {
-      // Include a scene so the push payload is non-empty and updateDataOnController is actually called
+      // The successfully read controller is already current; the failed one
+      // must not receive blind inserts.
       apiService.getDataFromController
         // Collection phase
         .mockResolvedValueOnce({
@@ -780,16 +781,6 @@ describe("SyncService", () => {
           error: new Error("Controller offline"),
         });
 
-      apiService.updateDataOnController
-        .mockResolvedValueOnce({
-          jsonData: { success: true },
-          error: null,
-        })
-        .mockResolvedValueOnce({
-          jsonData: null,
-          error: new Error("Failed to push"),
-        });
-
       const syncPromise = syncService.synchronizeData();
 
       // 2 controllers: 1*800ms (collection gap) + 1*500ms (push gap between 2 pushes) = 1300ms
@@ -798,11 +789,11 @@ describe("SyncService", () => {
 
       const result = await syncPromise;
 
-      // Should return false because at least one push failed (verification skipped)
+      // Incomplete collection is a failed sync, even without any writes.
       expect(result).toBe(false);
       // Only collection phase (2), no verification when pushes fail
       expect(apiService.getDataFromController).toHaveBeenCalledTimes(2);
-      expect(apiService.updateDataOnController).toHaveBeenCalledTimes(2);
+      expect(apiService.updateDataOnController).not.toHaveBeenCalled();
     });
   });
 
@@ -1068,7 +1059,7 @@ describe("SyncService", () => {
         expect(consolidated.scenes[0].ts).toBe(2000);
       });
 
-      it("should merge scene items arrays, deduplicating by ID", () => {
+      it("should replace scene items with the newest revision, preserving removals", () => {
         const allData = {
           presets: [],
           scenes: [
@@ -1098,7 +1089,7 @@ describe("SyncService", () => {
         const consolidated = syncService.buildConsolidatedView(allData);
 
         expect(consolidated.scenes).toHaveLength(1);
-        expect(consolidated.scenes[0].items).toHaveLength(3);
+        expect(consolidated.scenes[0].items).toHaveLength(2);
 
         const item1 = consolidated.scenes[0].items.find(
           (i) => i.id === "item1",
@@ -2185,8 +2176,11 @@ describe("SyncService", () => {
 
         expect(result).toBe(true);
 
-        // Verify consolidated data was pushed to all 3 controllers (192.168.29.31, .115, .121)
-        expect(apiService.updateDataOnController).toHaveBeenCalledTimes(3);
+        // The middle controller already has the consolidated data.
+        expect(apiService.updateDataOnController).toHaveBeenCalledTimes(2);
+        expect(apiService.updateDataOnController.mock.calls.map(([ip]) => ip)).toEqual([
+          "192.168.29.31", "192.168.29.121",
+        ]);
 
         // Get the consolidated payload that was pushed
         const pushCall = apiService.updateDataOnController.mock.calls[0];
@@ -2205,59 +2199,32 @@ describe("SyncService", () => {
             .map((k) => p[k]),
           ...(p[`${type}[]`] || []),
         ];
-        const countPayloadItems = (p, type) => getPayloadItems(p, type).length;
 
-        // Should have 4 unique scenes (deduped by ID)
-        // Real data: ctrl-1 (1 scene), ctrl-2 (4 scenes), ctrl-3 (4 duplicate scenes)
-        // After deduplication: 4 unique scenes (Snapshot 19:23:26, An, Aus x2 with different IDs)
+        // The first controller already has one of the four scenes.
         const allPayloadScenes = getPayloadItems(payload, "scenes");
-        expect(allPayloadScenes.length).toBe(4);
+        expect(allPayloadScenes.length).toBe(3);
         expect(allPayloadScenes.every((s) => s.id && s.name)).toBe(true);
 
-        // Should have 9 unique groups (deduped by ID)
-        // Real data: ctrl-1 (1 group: Büro), ctrl-2 (9 groups), ctrl-3 (4 duplicate groups)
-        // After deduplication: 9 unique groups (all from ctrl-2, same IDs/ts as ctrl-3)
+        // Only the eight missing groups are sent, not the existing Büro group.
         const allPayloadGroups = getPayloadItems(payload, "groups");
-        expect(allPayloadGroups.length).toBe(9);
+        expect(allPayloadGroups.length).toBe(8);
         expect(allPayloadGroups.every((g) => g.id && g.name)).toBe(true);
 
         // Verify specific groups exist
         const bueroGroup = allPayloadGroups.find(
           (g) => g.id === "477228760-883885021",
         );
-        expect(bueroGroup).toBeTruthy();
-        expect(bueroGroup.name).toBe("Büro");
+        expect(bueroGroup).toBeUndefined();
 
-        // Verify that ALL controllers received all consolidated items
-        // (payloads differ per controller due to smart update/insert routing,
-        //  but the total item counts must be the same)
-        const payload1 = apiService.updateDataOnController.mock.calls[0][1];
+        // The last controller needs only its five missing groups.
         const payload2 = apiService.updateDataOnController.mock.calls[1][1];
-        const payload3 = apiService.updateDataOnController.mock.calls[2][1];
-
-        // Each controller should receive the same total number of scenes and groups
-        expect(countPayloadItems(payload1, "scenes")).toBe(
-          countPayloadItems(payload2, "scenes"),
-        );
-        expect(countPayloadItems(payload2, "scenes")).toBe(
-          countPayloadItems(payload3, "scenes"),
-        );
-        expect(countPayloadItems(payload1, "groups")).toBe(
-          countPayloadItems(payload2, "groups"),
-        );
-        expect(countPayloadItems(payload2, "groups")).toBe(
-          countPayloadItems(payload3, "groups"),
-        );
+        expect(getPayloadItems(payload2, "scenes")).toHaveLength(0);
+        expect(getPayloadItems(payload2, "groups")).toHaveLength(5);
       });
 
       it("should send consolidated data to fix controller-specific issues", async () => {
-        // This test documents the expected behavior:
-        // The sync service sends the consolidated "truth" to each controller
-        // The controller firmware is responsible for:
-        // 1. Creating missing items (controller lacks a group that exists elsewhere)
-        // 2. Deleting duplicates (controller has two groups with same ID, keeps newest)
-        // 3. Deleting invalid items (nil name or id)
-        // 4. Updating outdated items (controller has old version, another has newer)
+        // Send missing/outdated items only. Verification must report failure
+        // if duplicates or invalid objects remain after writing.
 
         // Reset all mocks to clear any previous test data
         apiService.getHosts.mockReset();
@@ -2394,11 +2361,10 @@ describe("SyncService", () => {
         const result = await syncPromise;
 
         expect(result).toBe(true);
-        expect(apiService.updateDataOnController).toHaveBeenCalledTimes(2);
+        expect(apiService.updateDataOnController).toHaveBeenCalledTimes(1);
 
-        // Get the payloads pushed to both controllers
+        // The second controller is already current and receives no write.
         const payload1 = apiService.updateDataOnController.mock.calls[0][1];
-        const payload2 = apiService.updateDataOnController.mock.calls[1][1];
 
         // Helper: extract all items of a type from a smart push payload.
         // The smart push uses "type[id=X]": item for updates and "type[]": [...] for inserts.
@@ -2410,16 +2376,13 @@ describe("SyncService", () => {
         ];
 
         const groups1 = getItems(payload1, "groups");
-        const groups2 = getItems(payload2, "groups");
 
         // The consolidated data should contain:
         // - 2 groups (group-1 with newest ts=2000, group-2)
         // - group-1 should have the newest version (ts=2000, name "Group One Updated")
         // - Invalid group should be filtered out
         // - Duplicate group-1 should be deduplicated
-        // Both controllers receive all 2 groups (update or insert depending on what they knew)
         expect(groups1.length).toBe(2);
-        expect(groups2.length).toBe(2);
 
         const group1 = groups1.find((g) => g.id === "group-1");
         expect(group1).toBeTruthy();

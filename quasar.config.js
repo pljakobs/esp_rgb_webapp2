@@ -53,6 +53,7 @@ export default configure((/* ctx */) => {
     css: ["app.scss"],
     extras: [],
     build: {
+      vueOptionsAPI: false,
       cssMinify: "esbuild",
       minify: "esbuild",
       target: {

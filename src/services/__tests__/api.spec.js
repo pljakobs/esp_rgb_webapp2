@@ -70,6 +70,15 @@ describe("ApiService", () => {
   });
 
   describe("Constructor and Store Access", () => {
+    it("does not chunk an atomic hardware configuration write", async () => {
+      const direct = vi.spyOn(apiService, "_executeFetchApi").mockResolvedValue({ jsonData: { success: true } });
+      const chunked = vi.spyOn(apiService, "_executeChunkedPost");
+      const controller = mockControllersStore.currentController;
+      await apiService._executeApi("config", controller, { method: "POST", atomic: true, body: { hardware: { configuration: { lights: [] } } } }, 0, 1000);
+      expect(direct).toHaveBeenCalledOnce();
+      expect(chunked).not.toHaveBeenCalled();
+    });
+
     it("should initialize with null controllers store", () => {
       expect(apiService._controllersStore).toBeNull();
     });

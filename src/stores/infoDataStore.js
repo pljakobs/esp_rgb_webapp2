@@ -111,11 +111,7 @@ export const infoDataStore = defineStore("infoDataStore", {
     },
 
     async fetchData() {
-      // Only set LOADING on initial fetch; preserve status during updates
-      const isInitialLoad = this.data === null;
-      if (isInitialLoad) {
-        this.status = storeStatus.LOADING;
-      }
+      this.status = storeStatus.LOADING;
 
       try {
         let infoPayload = await this.fetchDataViaWebSocket();

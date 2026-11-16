@@ -1,4 +1,34 @@
 {
+  "sensors": {
+    "title": "Capteurs",
+    "current": "Courant (INA219)",
+    "spectral": "Spectre (AS7341)",
+    "available": "Capteur détecté",
+    "unavailable": "Capteur désactivé ou non détecté",
+    "unsupported": "L’extension du capteur n’est pas incluse dans ce firmware, ou son API de configuration n’est pas disponible.",
+    "noReading": "Aucune mesure valide",
+    "measuring": "Mesure en cours...",
+    "brightness": "Luminosité du canal Clear (acquisition basse / haute)",
+    "counts": "Comptes ADC",
+    "age": "Âge de la mesure : {seconds} s",
+    "currentGraph": "Historique du courant en ampères",
+    "spectrumGraph": "Spectre visible interpolé en valeurs ADC brutes",
+    "spectrumNote": "Valeurs non étalonnées pour huit longueurs d’onde nominales. La courbe ajustée est une interpolation visuelle, pas un spectre étalonné ni une mesure en lux.",
+    "measure": "Mesurer le spectre",
+    "configuration": "Configuration du capteur",
+    "enabled": "Activé",
+    "invalid": "Saisissez un nombre dans la plage autorisée",
+    "refresh": "Actualiser les capteurs",
+    "intervalNote": "L’intervalle de l’AS7341 est réservé et uniquement enregistré ; les mesures sont lancées manuellement. Le gain est un index de registre (0 = 0,5x, 1 = 1x, ..., 10 = 512x).",
+    "fields": {
+      "address": "Adresse I2C (décimale, 64-79)",
+      "shunt_ohms": "Résistance du shunt (ohms)",
+      "interval_ms": "Intervalle (ms)",
+      "atime": "Intégration ATIME (0-255)",
+      "astep": "Intégration ASTEP (0-65535)",
+      "gain": "Index du registre de gain (0-10)"
+    }
+  },
   "common": {
     "cancel": "Annuler",
     "save": "Enregistrer",
@@ -123,10 +153,14 @@
     }
   },
   "color": {
+    "brightness": "Luminosité",
+    "colorTemperature": "Température de couleur",
+    "tunableWhite": "Blanc réglable",
+    "power": "Allumer ou éteindre la lumière",
     "saveAs": "Enregistrer comme preset {model}",
     "presetName": "Nom du preset",
     "favorites": "Favoris",
-    "presets": "Presets"
+    "presets": "Préréglages"
   },
   "colorSliders": {
     "red": "Rouge",
@@ -233,7 +267,7 @@
       "resetChanges": "Réinitialiser toutes les modifications"
     },
     "colorModel": {
-      "title": "Couleur",
+      "title": "Configuration des lumières",
       "colorModel": "Modèle de couleur"
     },
     "firmwareUpdate": {
@@ -320,6 +354,8 @@
       "checkWebapp": "Vérifier webapp",
       "checking": "Vérification de mise à jour webapp...",
       "checkStarted": "Vérification démarrée",
+      "fileListTitle": "Fichiers",
+      "pendingFile": "Fichier en attente {index}",
       "filesProgress": "{done} / {total} fichiers",
       "retryingBusy": "Appareil occupé, nouvelle tentative dans {seconds}s... ({attempt}/{maxRetries})",
       "alreadyUpToDate": "Déjà à jour{version}",

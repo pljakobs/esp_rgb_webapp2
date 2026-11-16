@@ -502,6 +502,7 @@ export class ApiService {
     const method = (options?.method || "GET").toUpperCase();
     const canChunk =
       method === "POST" &&
+      options?.atomic !== true &&
       this._isChunkableEndpoint(endpoint) &&
       options?.body &&
       typeof options.body === "object";

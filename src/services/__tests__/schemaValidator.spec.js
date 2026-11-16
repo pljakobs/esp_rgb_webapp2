@@ -158,6 +158,38 @@ describe("schemaValidator", () => {
   });
 
   describe("validatePreset", () => {
+    it("validates indexed RAW metadata without a legacy color union", () => {
+      const preset = {
+        id: "raw", name: "Mix", raw_channels: [250, 750], light_type: "WWCW",
+        light_favorites: [{ light_id: "white", favorite: false }],
+      };
+      const result = validatePreset(preset);
+      expect(result.raw_channels).toEqual([250, 750]);
+      expect(result.raw_channels).not.toBe(preset.raw_channels);
+      expect(result.light_favorites).toEqual(preset.light_favorites);
+    });
+
+    it.each([
+      { raw_channels: [250], light_type: "WWCW" },
+      { raw_channels: [250, 750], light_type: "unknown" },
+      { raw_channels: [-1, 750], light_type: "WWCW" },
+      { raw_channels: [250, 1024], light_type: "WWCW" },
+      { raw_channels: [250, 0.5], light_type: "WWCW" },
+      { raw_channels: [250, true], light_type: "WWCW" },
+      { raw_channels: "250,750", light_type: "WWCW" },
+    ])("rejects invalid indexed RAW metadata: %j", (metadata) => {
+      expect(() => validatePreset({ id: "raw", name: "Mix", ...metadata })).toThrow();
+    });
+
+    it.each([null, {}, [{ light_id: "white", favorite: 1 }], [{ favorite: true }]])(
+      "rejects malformed per-light overrides: %j", (light_favorites) => {
+        expect(() => validatePreset({
+          id: "hsv", name: "Color", color: { hsv: { h: 0, s: 0, v: 50 } },
+          light_favorites,
+        })).toThrow("light_favorites");
+      },
+    );
+
     it("should validate a correct preset with HSV color", () => {
       const preset = {
         id: "preset-1",

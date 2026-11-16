@@ -1,29 +1,31 @@
 <template>
-	<MyCard
-		icon="palette_outlined"
-		title="Icon Sprite Browser"
-		v-model:collapsed="isCollapsed"
-	>
-		<div class="q-pa-md">
-			<div v-if="isLoading" class="text-center q-pa-md text-grey-6">
-				Loading icons...
-			</div>
+  <MyCard
+    icon="palette_outlined"
+    title="Icon Sprite Browser"
+    v-model:collapsed="isCollapsed"
+  >
+    <div class="q-pa-md">
+      <div v-if="isLoading" class="text-center q-pa-md text-grey-6">
+        Loading icons...
+      </div>
 
-			<div v-else-if="error" class="text-negative text-center q-pa-md">
-				{{ error }}
-			</div>
+      <div v-else-if="error" class="text-negative text-center q-pa-md">
+        {{ error }}
+      </div>
 
-			<div v-else class="icon-grid" aria-live="polite">
-				<div v-for="icon in icons" :key="icon" class="icon-grid__item">
-					<svgIcon :name="icon" size="36px" />
-					<div class="icon-grid__label">{{ icon }}</div>
-				</div>
-			</div>
-		</div>
-	</MyCard>
+      <div v-else class="icon-grid" aria-live="polite">
+        <div v-for="icon in icons" :key="icon" class="icon-grid__item">
+          <svgIcon :name="icon" size="36px" />
+          <div class="icon-grid__label">{{ icon }}</div>
+        </div>
+      </div>
+    </div>
+  </MyCard>
 </template>
 
 <script>
+import { ref, onMounted } from "vue";
+
 import MyCard from "src/components/myCard.vue";
 
 const SPRITE_URL = "icons/iconsSprite.svg";
@@ -33,136 +35,150 @@ let iconIdsCache = null;
 let iconIdsPromise = null;
 
 export default {
-	name: "IconTestCard",
-	components: {
-		MyCard,
-	},
-	data() {
-		return {
-			icons: [],
-			isLoading: true,
-			error: null,
-			isCollapsed: false,
-			hasLoadedOnce: false,
-		};
-	},
-	mounted() {
-		this.loadIcons();
-	},
-	methods: {
-		async loadIcons() {
-			try {
-					if (!this.hasLoadedOnce) {
-						this.isLoading = true;
-						this.error = null;
+  name: "IconTestCard",
+  components: {
+    MyCard,
+  },
+  setup() {
+    const icons = ref([]);
 
-						const ids = await this.getIconIds();
-						this.icons = ids;
+    const isLoading = ref(true);
 
-						this.hasLoadedOnce = true;
-					}
-			} catch (err) {
-				console.error("Failed to load icon sprite", err);
-				this.error = "Unable to load icon sprite.";
-			} finally {
-					this.isLoading = false;
-			}
-		},
+    const error = ref(null);
 
-			async getIconIds() {
-				if (iconIdsCache && iconIdsCache.length > 0) {
-					return iconIdsCache;
-				}
+    const isCollapsed = ref(false);
 
-				const domIds = this.extractIconIdsFromDom();
-				if (domIds && domIds.length > 0) {
-					iconIdsCache = domIds;
-					return iconIdsCache;
-				}
+    const hasLoadedOnce = ref(false);
 
-				if (!iconIdsPromise) {
-					iconIdsPromise = fetch(SPRITE_URL, { cache: "force-cache" })
-						.then((response) => {
-							if (!response.ok) {
-								throw new Error(`Sprite fetch failed (${response.status})`);
-							}
-							return response.text();
-						})
-						.then((spriteText) => {
-							const ids = this.extractIconIds(spriteText);
-							iconIdsCache = ids;
-							iconIdsPromise = null;
-							return ids;
-						})
-						.catch((error) => {
-							iconIdsPromise = null;
-							throw error;
-						});
-				}
+    async function loadIcons() {
+      try {
+        if (!hasLoadedOnce.value) {
+          isLoading.value = true;
+          error.value = null;
 
-				return iconIdsPromise;
-			},
+          const ids = await getIconIds();
+          icons.value = ids;
 
-			extractIconIdsFromDom() {
-				if (typeof document === "undefined") {
-					return null;
-				}
+          hasLoadedOnce.value = true;
+        }
+      } catch (err) {
+        console.error("Failed to load icon sprite", err);
+        error.value = "Unable to load icon sprite.";
+      } finally {
+        isLoading.value = false;
+      }
+    }
 
-				const sprite = document.getElementById(SPRITE_ELEMENT_ID);
-				if (!sprite) {
-					return null;
-				}
+    async function getIconIds() {
+      if (iconIdsCache && iconIdsCache.length > 0) {
+        return iconIdsCache;
+      }
 
-				const symbols = sprite.querySelectorAll("symbol[id]");
-				return Array.from(symbols)
-					.map((symbol) => symbol.getAttribute("id"))
-					.filter((id) => !!id && !id.startsWith("_"))
-					.sort((a, b) => a.localeCompare(b));
-			},
+      const domIds = extractIconIdsFromDom();
+      if (domIds && domIds.length > 0) {
+        iconIdsCache = domIds;
+        return iconIdsCache;
+      }
 
-		extractIconIds(spriteText) {
-			if (!spriteText) {
-				return [];
-			}
+      if (!iconIdsPromise) {
+        iconIdsPromise = fetch(SPRITE_URL, { cache: "force-cache" })
+          .then((response) => {
+            if (!response.ok) {
+              throw new Error(`Sprite fetch failed (${response.status})`);
+            }
+            return response.text();
+          })
+          .then((spriteText) => {
+            const ids = extractIconIds(spriteText);
+            iconIdsCache = ids;
+            iconIdsPromise = null;
+            return ids;
+          })
+          .catch((error) => {
+            iconIdsPromise = null;
+            throw error;
+          });
+      }
 
-			const parser = new DOMParser();
-			const doc = parser.parseFromString(spriteText, "image/svg+xml");
-			const symbols = doc.querySelectorAll("symbol[id]");
+      return iconIdsPromise;
+    }
 
-			return Array.from(symbols)
-				.map((symbol) => symbol.getAttribute("id"))
-				.filter((id) => !!id && !id.startsWith("_"))
-				.sort((a, b) => a.localeCompare(b));
-		},
-	},
+    function extractIconIdsFromDom() {
+      if (typeof document === "undefined") {
+        return null;
+      }
+
+      const sprite = document.getElementById(SPRITE_ELEMENT_ID);
+      if (!sprite) {
+        return null;
+      }
+
+      const symbols = sprite.querySelectorAll("symbol[id]");
+      return Array.from(symbols)
+        .map((symbol) => symbol.getAttribute("id"))
+        .filter((id) => !!id && !id.startsWith("_"))
+        .sort((a, b) => a.localeCompare(b));
+    }
+
+    function extractIconIds(spriteText) {
+      if (!spriteText) {
+        return [];
+      }
+
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(spriteText, "image/svg+xml");
+      const symbols = doc.querySelectorAll("symbol[id]");
+
+      return Array.from(symbols)
+        .map((symbol) => symbol.getAttribute("id"))
+        .filter((id) => !!id && !id.startsWith("_"))
+        .sort((a, b) => a.localeCompare(b));
+    }
+
+    onMounted(() => {
+      loadIcons();
+    });
+
+    return {
+      icons,
+      isLoading,
+      error,
+      isCollapsed,
+      hasLoadedOnce,
+      loadIcons,
+      getIconIds,
+      extractIconIdsFromDom,
+      extractIconIds,
+    };
+  },
 };
 </script>
 
 <style scoped>
 .icon-grid {
-	display: grid;
-	grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-	gap: 16px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 16px;
 }
 
 .icon-grid__item {
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-	padding: 12px;
-	border-radius: 8px;
-	background-color: rgba(0, 0, 0, 0.04);
-	transition: background-color 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 12px;
+  border-radius: 8px;
+  background-color: rgba(0, 0, 0, 0.04);
+  transition: background-color 0.2s ease;
 }
 
 .icon-grid__item:hover {
-	background-color: rgba(0, 0, 0, 0.08);
+  background-color: rgba(0, 0, 0, 0.08);
 }
 
 .icon-grid__label {
-	margin-top: 8px;
-	font-size: 12px;
-	text-align: center;
-	word-break: break-word;
+  margin-top: 8px;
+  font-size: 12px;
+  text-align: center;
+  word-break: break-word;
 }
 </style>

@@ -1,4 +1,34 @@
 {
+  "sensors": {
+    "title": "Sensores",
+    "current": "Corriente (INA219)",
+    "spectral": "Espectro (AS7341)",
+    "available": "Sensor detectado",
+    "unavailable": "Sensor desactivado o no detectado",
+    "unsupported": "La extensión del sensor no está incluida en este firmware o su API de configuración no está disponible.",
+    "noReading": "No hay una lectura válida",
+    "measuring": "Midiendo...",
+    "brightness": "Brillo del canal Clear (adquisición baja / alta)",
+    "counts": "Recuentos ADC",
+    "age": "Antigüedad de la lectura: {seconds} s",
+    "currentGraph": "Historial de corriente en amperios",
+    "spectrumGraph": "Espectro visible interpolado en recuentos ADC sin procesar",
+    "spectrumNote": "Recuentos sin calibrar en ocho longitudes de onda nominales. La curva ajustada es una interpolación visual, no un espectro calibrado ni una medición de iluminancia.",
+    "measure": "Medir espectro",
+    "configuration": "Configuración del sensor",
+    "enabled": "Activado",
+    "invalid": "Introduce un número dentro del rango permitido",
+    "refresh": "Actualizar sensores",
+    "intervalNote": "El intervalo del AS7341 está reservado y solo se guarda; las mediciones se inician manualmente. La ganancia es un índice de registro (0 = 0,5x, 1 = 1x, ..., 10 = 512x).",
+    "fields": {
+      "address": "Dirección I2C (decimal, 64-79)",
+      "shunt_ohms": "Resistencia de derivación (ohmios)",
+      "interval_ms": "Intervalo (ms)",
+      "atime": "Integración ATIME (0-255)",
+      "astep": "Integración ASTEP (0-65535)",
+      "gain": "Índice del registro de ganancia (0-10)"
+    }
+  },
   "common": {
     "cancel": "Cancelar",
     "save": "Guardar",
@@ -52,7 +82,7 @@
     "systemSettingsCaption": "configurar pines, hostname e icono, actualizar firmware, copia y restauración",
     "networkInit": "Inicialización de red",
     "networkInitCaption": "conectarse o salir de una red Wi-Fi",
-    "test": "test",
+    "test": "Prueba",
     "testCaption": "área de pruebas"
   },
   "discovery": {
@@ -72,7 +102,7 @@
   "setup": {
     "deviceSetup": "Configuración del dispositivo",
     "steps": {
-      "hostname": "Hostname",
+      "hostname": "Nombre de host",
       "pinConfig": "Config. de pines",
       "colorModel": "Modelo de color",
       "telemetry": "Telemetría",
@@ -81,7 +111,7 @@
     "hostnameStep": {
       "title": "Definir hostname del dispositivo",
       "subtitle": "Elige un nombre único para identificar este dispositivo en tu red",
-      "label": "Hostname",
+      "label": "Nombre de host",
       "required": "Hostname obligatorio",
       "hint": "El hostname se usará para acceder al dispositivo en la red local"
     },
@@ -113,7 +143,7 @@
     },
     "completeStep": {
       "title": "Configuración completada",
-      "hostname": "Hostname",
+      "hostname": "Nombre de host",
       "pinConfiguration": "Configuración de pines",
       "colorModel": "Modelo de color",
       "restarting": "Configuración guardada. El dispositivo se está reiniciando...",
@@ -123,10 +153,14 @@
     }
   },
   "color": {
+    "brightness": "Brillo",
+    "colorTemperature": "Temperatura de color",
+    "tunableWhite": "Blanco ajustable",
+    "power": "Encender o apagar la luz",
     "saveAs": "Guardar como preset {model}",
     "presetName": "Nombre del preset",
     "favorites": "Favoritos",
-    "presets": "Presets"
+    "presets": "Preajustes"
   },
   "colorSliders": {
     "red": "Rojo",
@@ -171,7 +205,7 @@
       "serverConfig": "Configuración servidor MQTT",
       "server": "Servidor MQTT",
       "port": "Puerto",
-      "topic": "Topic",
+      "topic": "Tema",
       "username": "Usuario MQTT",
       "password": "Contraseña MQTT",
       "passwordHint": "Contraseña con conmutador",
@@ -233,7 +267,7 @@
       "resetChanges": "Restablecer todos los cambios"
     },
     "colorModel": {
-      "title": "Color",
+      "title": "Configuración de luces",
       "colorModel": "Modelo de color"
     },
     "firmwareUpdate": {
@@ -279,7 +313,7 @@
     },
     "hostname": {
       "title": "Hostname e icono",
-      "hostname": "Hostname",
+      "hostname": "Nombre de host",
       "allowWebIcons": "Permitir iconos web (Google Fonts)",
       "allowWebIconsTooltip": "Si está habilitado, puedes elegir iconos de Google Fonts, con posible envío de datos a Google.",
       "controllerIcon": "Icono del controlador",
@@ -316,10 +350,12 @@
     "webappUpdate": {
       "title": "Actualización webapp",
       "autoUpdate": "Actualización automática webapp",
-      "description": "Si está habilitado, busca nueva webapp en cada conexión Wi-Fi.",
+      "description": "Si está habilitado, busca una nueva webapp en cada conexión Wi-Fi. Desactívalo para actualizar solo cuando se solicite manualmente. Si falta la webapp, siempre se descarga independientemente de este ajuste.",
       "checkWebapp": "Comprobar webapp",
       "checking": "Comprobando actualización webapp...",
       "checkStarted": "Comprobación iniciada",
+      "fileListTitle": "Archivos",
+      "pendingFile": "Archivo pendiente {index}",
       "filesProgress": "{done} / {total} archivos",
       "retryingBusy": "Dispositivo ocupado, reintentando en {seconds}s... ({attempt}/{maxRetries})",
       "alreadyUpToDate": "Ya actualizado{version}",
