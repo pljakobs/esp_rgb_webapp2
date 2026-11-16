@@ -45,7 +45,7 @@ const global = {
     QTabPanels: { template: "<div><slot /></div>" },
     QTabPanel: { template: "<div><slot /></div>" },
     HsvSection: true, RawSection: true, LightPresetSection: true,
-    QDialog: { template: "<div><slot /></div>", methods: { hide() {}, show() {} } },
+    QDialog: { template: "<div><slot /></div>", setup: () => ({ hide() {}, show() {} }) },
     QCard: { template: "<div><slot /></div>" },
     QToolbar: { template: "<div><slot /></div>" },
     QToolbarTitle: { template: "<div><slot /></div>" },
