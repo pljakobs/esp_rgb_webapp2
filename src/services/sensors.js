@@ -24,6 +24,10 @@ export const sensorDefinitions = [
 
 export const wavelengths = [415, 445, 480, 515, 555, 590, 630, 680];
 
+export function supportsSensorExtensions(version) {
+  return /^V?5\.1(?:[.-]|$)/i.test(version ?? "");
+}
+
 export async function sensorRequest(id, resource, controller, body) {
   const result = await apiService.fetchApi(
     `extensions/${id}/${resource}`,

@@ -7,7 +7,7 @@
       <FirmwareUpdateCard />
       <WebappUpdateCard />
       <HostnameCard />
-      <SensorsCard initially-collapsed />
+      <SensorsCard v-if="showSensors" initially-collapsed />
       <SaveRestoreConfig />
       <DebugFunctionCard v-if="infoData.data?.app?.build_type === 'debug'" />
       <LogViewerCard v-if="infoData.data?.app?.build_type === 'debug'" />
@@ -16,7 +16,9 @@
 </template>
 
 <script>
+import { computed } from "vue";
 import { infoDataStore } from "src/stores/infoDataStore";
+import { supportsSensorExtensions } from "src/services/sensors";
 import InformationCard from "src/components/cards/InformationCard.vue";
 import FirmwareUpdateCard from "src/components/cards/FirmwareUpdateCard.vue";
 import WebappUpdateCard from "src/components/cards/WebappUpdateCard.vue";
@@ -39,9 +41,13 @@ export default {
   },
   setup() {
     const infoData = infoDataStore();
+    const showSensors = computed(() =>
+      supportsSensorExtensions(infoData.data?.app?.git_version),
+    );
 
     return {
       infoData,
+      showSensors,
     };
   },
 };
