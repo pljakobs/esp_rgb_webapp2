@@ -75,6 +75,7 @@ describe('sceneDialog serialization', () => {
           'q-scroll-area': true,
           'q-card-section': true,
           'q-tooltip': true,
+          InfoTooltip: true,
           'q-card-actions': true,
           'q-space': true,
           svgIcon: true,

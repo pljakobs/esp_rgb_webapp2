@@ -90,9 +90,9 @@
                   emit-value
                   map-options
                 />
-                <q-tooltip class="custom-tooltip">
+                <InfoTooltip class="custom-tooltip">
                   Only the ESP32 supports high speed mode
-                </q-tooltip>
+                </InfoTooltip>
               </div>
               <div class="col-12 col-md-4">
                 <mySelect
@@ -102,25 +102,34 @@
                   emit-value
                   map-options
                 />
-                <q-tooltip class="custom-tooltip">
+                <InfoTooltip class="custom-tooltip">
                   Select which hardware timer to use for PWM generation. Each
                   timer can be configured independently. This may be used in the
                   future if the firmware supports multiple virtual lights.
-                </q-tooltip>
+                </InfoTooltip>
               </div>
               <div class="col-12 col-md-4">
                 <q-input
                   v-model.number="pwmFrequency"
                   type="number"
                   label="Frequency (Hz)"
+                  :min="pwmFrequencyLimits.min"
+                  :max="pwmFrequencyLimits.max"
+                  :error="!pwmFrequencyValid"
+                  :error-message="`Valid range at ${pwmResolution} bits: ${pwmFrequencyLimits.min}\u2013${pwmFrequencyLimits.max} Hz`"
                 >
-                  <q-tooltip class="custom-tooltip">
+                  <InfoTooltip class="custom-tooltip">
                     Select the PWM base frequency. This controls how fast your
                     LEDs will "flicker". ESP32 hardware (all types) support
-                    values in the kHz range. Depending on your spreadSpectrum
-                    settings, higher values may lead to sluggish response from
-                    the controller due to higher load.
-                  </q-tooltip>
+                    values in the kHz range. The achievable range depends on the
+                    resolution: at {{ pwmResolution }} bits this SoC supports
+                    {{ pwmFrequencyLimits.min }}&ndash;{{
+                      pwmFrequencyLimits.max
+                    }}
+                    Hz. Depending on your spreadSpectrum settings, higher values
+                    may lead to sluggish response from the controller due to
+                    higher load.
+                  </InfoTooltip>
                 </q-input>
               </div>
               <div class="col-12 col-md-4">
@@ -129,15 +138,20 @@
                   type="number"
                   label="Resolution Bits"
                   :min="1"
-                  :max="16"
+                  :max="pwmCaps.maxBits"
+                  :error="!pwmResolutionValid"
+                  :error-message="`This SoC supports 1\u2013${pwmCaps.maxBits} bits`"
                 >
-                  <q-tooltip class="custom-tooltip">
+                  <InfoTooltip class="custom-tooltip">
                     Select the number of bits used for PWM resolution. Higher
                     values allow for finer control of the PWM signal. Note that
-                    higher resolution may limit the maximum achievable
-                    frequency. The default for this firmware is 10bits for 1024
-                    distinct levels. More is not really necessary.
-                  </q-tooltip>
+                    higher resolution limits the maximum achievable frequency
+                    (frequency &times; 2<sup>bits</sup> must not exceed the
+                    {{ pwmCaps.clkHz / 1000000 }} MHz PWM clock). This SoC
+                    supports up to {{ pwmCaps.maxBits }} bits. The default for
+                    this firmware is 10bits for 1024 distinct levels. More is
+                    not really necessary.
+                  </InfoTooltip>
                 </q-input>
               </div>
             </div>
@@ -177,7 +191,7 @@
                   emit-value
                   map-options
                 />
-                <q-tooltip class="custom-tooltip">
+                <InfoTooltip class="custom-tooltip">
                   Spread spectrum reduces EMI (electromagnetic interference) by
                   slightly varying the PWM frequency over time. leave this "ON"
                   to enable this feature. Switching this to "off" will have a
@@ -186,7 +200,7 @@
                   to noise on the 12V power lines which may act as antennas. In
                   extreme cases, it might even lead to the controller being
                   unstable.
-                </q-tooltip>
+                </InfoTooltip>
               </div>
               <div class="col-12 col-md-4">
                 <q-input
@@ -197,11 +211,11 @@
                   :max="100"
                   :disable="pwmSpreadSpectrumMode === 'off'"
                 >
-                  <q-tooltip class="custom-tooltip">
+                  <InfoTooltip class="custom-tooltip">
                     This controls the width of the spread spectrum modulation.
                     The frequency will be smeared out by this many percent above
                     and below the PWM center frequency.
-                  </q-tooltip>
+                  </InfoTooltip>
                 </q-input>
               </div>
               <div class="col-12 col-md-4">
@@ -212,7 +226,7 @@
                   :min="1"
                   :disable="pwmSpreadSpectrumMode === 'off'"
                 >
-                  <q-tooltip class="custom-tooltip">
+                  <InfoTooltip class="custom-tooltip">
                     This controls how often the PWM frequency hops around. The
                     value is in base frequency cycles, so let's say your base
                     frequency is set at 4kHz (4000Hz) and you set subsampling to
@@ -224,7 +238,7 @@
                     same, the more energy will be emitted at that frequency,
                     potentially defeating the purpose of spread spectrum.
                     Something between 1 and 8 is a good start.
-                  </q-tooltip>
+                  </InfoTooltip>
                 </q-input>
               </div>
             </div>
@@ -264,7 +278,7 @@
                   emit-value
                   map-options
                 />
-                <q-tooltip class="custom-tooltip">
+                <InfoTooltip class="custom-tooltip">
                   Phase shifting delays the phase between the three, four or
                   five LED channels and thus helps distribute switching noise
                   across different time intervals, reducing peak EMI. If you
@@ -275,7 +289,7 @@
                   distributes the switching time for the configured channels
                   equally along the PWM cycle type (1/freq) without impacting
                   the color quality.
-                </q-tooltip>
+                </InfoTooltip>
               </div>
             </div>
           </div>
@@ -300,7 +314,7 @@
           <q-btn
             color="primary"
             label="Apply and Restart"
-            :disable="!hasAnyChanges"
+            :disable="!hasAnyChanges || !pwmConfigValid"
             @click="applyAllAndRestart"
           >
             <svgIcon name="restart_alt" />
@@ -319,6 +333,7 @@ import { infoDataStore } from "src/stores/infoDataStore";
 import MyCard from "src/components/myCard.vue";
 import DataTable from "src/components/dataTable.vue";
 import PinConfigDialog from "src/components/Dialogs/pinConfigDialog.vue";
+import InfoTooltip from "src/components/InfoTooltip.vue";
 import systemCommand from "src/services/systemCommands.js";
 
 export default {
@@ -326,6 +341,7 @@ export default {
   components: {
     MyCard,
     DataTable,
+    InfoTooltip,
   },
   props: {
     pwmOnly: { type: Boolean, default: false },
@@ -436,6 +452,77 @@ export default {
       return options;
     });
 
+    // LEDC hardware limits per SoC (IDF soc_caps.h: SOC_LEDC_TIMER_BIT_WIDTH).
+    // clkHz is the LEDC source clock the firmware ends up with: it uses
+    // LEDC_AUTO_CLK, which selects the APB/PLL clock of the variant.
+    // Unknown variants fall back to the most restrictive combination.
+    const LEDC_SOC_CAPS = {
+      esp32: { maxBits: 20, clkHz: 80000000 },
+      esp32s2: { maxBits: 14, clkHz: 80000000 },
+      esp32s3: { maxBits: 14, clkHz: 80000000 },
+      esp32c2: { maxBits: 14, clkHz: 60000000 },
+      esp32c3: { maxBits: 14, clkHz: 80000000 },
+      esp32c6: { maxBits: 20, clkHz: 80000000 },
+      esp32h2: { maxBits: 20, clkHz: 96000000 },
+    };
+
+    const pwmCaps = computed(() => {
+      const soc = infoData.data.device.soc?.toLowerCase();
+      return LEDC_SOC_CAPS[soc] || { maxBits: 14, clkHz: 80000000 };
+    });
+
+    const pwmResolutionValid = computed(
+      () =>
+        Number.isInteger(pwmResolution.value) &&
+        pwmResolution.value >= 1 &&
+        pwmResolution.value <= pwmCaps.value.maxBits,
+    );
+
+    // The LEDC timer needs at least one clock tick per duty step
+    // (freq <= clk / 2^bits) and its integer clock divider is capped at
+    // 1024 (freq >= clk / (2^bits * 1024)).
+    const pwmFrequencyLimits = computed(() => {
+      const bits = Math.min(
+        Math.max(1, Math.round(pwmResolution.value) || 1),
+        pwmCaps.value.maxBits,
+      );
+      const period = 2 ** bits;
+      return {
+        min: Math.max(1, Math.ceil(pwmCaps.value.clkHz / (period * 1024))),
+        max: Math.floor(pwmCaps.value.clkHz / period),
+      };
+    });
+
+    const pwmFrequencyValid = computed(
+      () =>
+        Number.isFinite(pwmFrequency.value) &&
+        pwmFrequency.value >= pwmFrequencyLimits.value.min &&
+        pwmFrequency.value <= pwmFrequencyLimits.value.max,
+    );
+
+    const pwmConfigValid = computed(() => {
+      const isPwmSupported =
+        infoData.data.device.soc &&
+        infoData.data.device.soc.toLowerCase() !== "esp8266";
+      return (
+        !isPwmSupported || (pwmResolutionValid.value && pwmFrequencyValid.value)
+      );
+    });
+
+    // When the resolution changes, the achievable frequency range changes
+    // with it; pull the frequency back into the legal range automatically.
+    watch(pwmResolution, () => {
+      if (!pwmResolutionValid.value || !Number.isFinite(pwmFrequency.value)) {
+        return;
+      }
+      const { min, max } = pwmFrequencyLimits.value;
+      if (pwmFrequency.value > max) {
+        pwmFrequency.value = max;
+      } else if (pwmFrequency.value < min) {
+        pwmFrequency.value = min;
+      }
+    });
+
     const timerNumberOptions = [
       { label: "Timer 0", value: 0 },
       { label: "Timer 1", value: 1 },
@@ -471,6 +558,15 @@ export default {
     // Apply all changes and restart
     // Apply all changes and restart - ATOMIC VERSION
     const applyAllAndRestart = async () => {
+      if (!pwmConfigValid.value) {
+        showNotification(
+          "negative",
+          "error",
+          "Invalid PWM configuration for this SoC - check frequency and resolution",
+        );
+        return;
+      }
+
       const updates = {};
 
       // Prepare pin configuration changes
@@ -877,6 +973,11 @@ export default {
       pwmPhaseShiftMode,
       // Computed
       hasAnyChanges,
+      pwmCaps,
+      pwmFrequencyLimits,
+      pwmResolutionValid,
+      pwmFrequencyValid,
+      pwmConfigValid,
       // Options
       speedModeOptions,
       timerNumberOptions,
