@@ -408,4 +408,33 @@ describe("Profile-specific color controls", () => {
     expect(mocks.restart).toHaveBeenCalledOnce();
     wrapper.unmount();
   });
+
+  it("enforces legal PWM frequency/resolution combinations for the SoC", async () => {
+    const wrapper = mount(ControllerConfigCard, { global, props: { pwmOnly: true } });
+    // mocked SoC is esp32c3: 14 bits max, 80 MHz LEDC clock
+    expect(wrapper.vm.pwmCaps).toEqual({ maxBits: 14, clkHz: 80000000 });
+
+    // a resolution beyond the SoC limit blocks applying
+    wrapper.vm.pwmResolution = 16;
+    await flushPromises();
+    expect(wrapper.vm.pwmResolutionValid).toBe(false);
+    expect(wrapper.vm.pwmConfigValid).toBe(false);
+    await wrapper.vm.applyAllAndRestart();
+    expect(mocks.config.updateMultipleData).not.toHaveBeenCalled();
+    expect(mocks.restart).not.toHaveBeenCalled();
+
+    // a frequency above clk / 2^bits is flagged as invalid
+    wrapper.vm.pwmResolution = 10;
+    await flushPromises();
+    wrapper.vm.pwmFrequency = 100000; // max at 10 bits is 78125 Hz
+    await flushPromises();
+    expect(wrapper.vm.pwmFrequencyValid).toBe(false);
+
+    // raising the resolution clamps the frequency into the legal range
+    wrapper.vm.pwmResolution = 14;
+    await flushPromises();
+    expect(wrapper.vm.pwmFrequency).toBe(Math.floor(80000000 / 2 ** 14));
+    expect(wrapper.vm.pwmConfigValid).toBe(true);
+    wrapper.unmount();
+  });
 });
