@@ -1,13 +1,49 @@
-# To get started with Dependabot version updates, you'll need to specify which
-# package ecosystems to update and where the package manifests are located.
-# Please see the documentation for all configuration options:
-# https://docs.github.com/github/administering-a-repository/configuration-options-for-dependency-updates
+# Dependabot configuration (read from the default branch only).
+# One grouped weekly PR per release line keeps dependency noise low:
+#   develop      -> webapp 5.0 line
+#   experimental -> webapp 5.1 line
+# Minor/patch bumps are grouped and auto-merged once CI passes
+# (see .github/workflows/dependabot-auto-merge.yml); major bumps get
+# their own group and require a manual review.
 
 version: 2
 updates:
-  - package-ecosystem: "npm" # See documentation for possible values
-    directory: "/" # Location of package manifests
+  - package-ecosystem: "npm"
+    directory: "/"
     schedule:
       interval: "weekly"
     rebase-strategy: "auto"
     target-branch: "develop"
+    labels:
+      - "dependencies"
+      - "5.0"
+    groups:
+      npm-minor-patch:
+        applies-to: version-updates
+        update-types:
+          - "minor"
+          - "patch"
+      npm-major:
+        applies-to: version-updates
+        update-types:
+          - "major"
+
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    rebase-strategy: "auto"
+    target-branch: "experimental"
+    labels:
+      - "dependencies"
+      - "5.1"
+    groups:
+      npm-minor-patch:
+        applies-to: version-updates
+        update-types:
+          - "minor"
+          - "patch"
+      npm-major:
+        applies-to: version-updates
+        update-types:
+          - "major"

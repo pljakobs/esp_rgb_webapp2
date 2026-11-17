@@ -1,0 +1,95 @@
+name: Dependabot Failure Issues
+
+# When "Frontend Tests" fails for a Dependabot branch, this files (or updates)
+# an issue so incompatible dependency updates are flagged for manual fixing.
+# workflow_run workflows always execute from the default branch, so this file
+# only needs to exist on master.
+
+on:
+  workflow_run:
+    workflows: ["Frontend Tests"]
+    types: [completed]
+
+permissions:
+  issues: write
+  pull-requests: read
+
+jobs:
+  file-issue:
+    name: File issue for failing Dependabot update
+    if: >-
+      contains(fromJSON('["failure", "timed_out"]'), github.event.workflow_run.conclusion) &&
+      startsWith(github.event.workflow_run.head_branch, 'dependabot/')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Create or update issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
+          RUN_URL: ${{ github.event.workflow_run.html_url }}
+          CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+        run: |
+          pr_json=$(gh pr list --repo "$REPO" --head "$HEAD_BRANCH" --state open \
+            --json number,title,url,baseRefName --limit 1)
+          if [[ "$(echo "$pr_json" | jq 'length')" -eq 0 ]]; then
+            echo "No open PR for $HEAD_BRANCH - nothing to report."
+            exit 0
+          fi
+          pr_number=$(echo "$pr_json" | jq -r '.[0].number')
+          pr_title=$(echo "$pr_json" | jq -r '.[0].title')
+          pr_url=$(echo "$pr_json" | jq -r '.[0].url')
+          pr_base=$(echo "$pr_json" | jq -r '.[0].baseRefName')
+
+          issue_title="Incompatible dependency update: PR #${pr_number} fails CI (${pr_base})"
+          existing=$(gh issue list --repo "$REPO" --state open \
+            --label dependabot-ci-failure \
+            --search "\"PR #${pr_number}\" in:title" \
+            --json number --jq '.[0].number // empty')
+
+          body="Dependabot PR ${pr_url} (**${pr_title}**, base \`${pr_base}\`) failed CI with conclusion \`${CONCLUSION}\`.
+
+          The update appears to be incompatible with the application and will not be auto-merged.
+
+          - Failing run: ${RUN_URL}
+          - Next steps: inspect the failure, fix the incompatibility on the PR branch, or close the PR and pin/ignore the dependency in \`.github/dependabot.yml\`."
+
+          if [[ -n "$existing" ]]; then
+            gh issue comment "$existing" --repo "$REPO" --body "CI failed again: ${RUN_URL} (conclusion: ${CONCLUSION})"
+            echo "Updated existing issue #$existing"
+          else
+            gh issue create --repo "$REPO" \
+              --title "$issue_title" \
+              --label dependabot-ci-failure --label dependencies \
+              --body "$body"
+          fi
+
+  close-issue:
+    name: Close issue when CI recovers
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      startsWith(github.event.workflow_run.head_branch, 'dependabot/')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Close matching failure issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
+          RUN_URL: ${{ github.event.workflow_run.html_url }}
+        run: |
+          pr_number=$(gh pr list --repo "$REPO" --head "$HEAD_BRANCH" --state open \
+            --json number --jq '.[0].number // empty')
+          if [[ -z "$pr_number" ]]; then
+            exit 0
+          fi
+          existing=$(gh issue list --repo "$REPO" --state open \
+            --label dependabot-ci-failure \
+            --search "\"PR #${pr_number}\" in:title" \
+            --json number --jq '.[0].number // empty')
+          if [[ -n "$existing" ]]; then
+            gh issue close "$existing" --repo "$REPO" \
+              --comment "CI now passes for PR #${pr_number}: ${RUN_URL} - closing."
+          fi

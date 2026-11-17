@@ -1,0 +1,38 @@
+name: Dependabot Auto-Merge
+
+# Enables GitHub's native auto-merge on Dependabot PRs that only contain
+# minor or patch updates. The PR still merges only after all required
+# status checks (frontend tests) pass on the target branch.
+# Major updates are left for manual review.
+
+on: pull_request
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  auto-merge:
+    name: Enable auto-merge for Dependabot
+    if: github.event.pull_request.user.login == 'dependabot[bot]' && github.repository == 'pljakobs/esp_rgb_webapp2'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Fetch Dependabot metadata
+        id: metadata
+        uses: dependabot/fetch-metadata@v2
+        with:
+          github-token: "${{ secrets.GITHUB_TOKEN }}"
+
+      - name: Enable auto-merge for minor and patch updates
+        if: contains(fromJSON('["version-update:semver-patch", "version-update:semver-minor"]'), steps.metadata.outputs.update-type)
+        run: gh pr merge --auto --squash "$PR_URL"
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Report major updates for manual review
+        if: steps.metadata.outputs.update-type == 'version-update:semver-major'
+        run: echo "Major update detected (${UPDATE_TYPE}) - leaving PR for manual review." >> "$GITHUB_STEP_SUMMARY"
+        env:
+          UPDATE_TYPE: ${{ steps.metadata.outputs.update-type }}
