@@ -36,6 +36,7 @@
     "@vue/test-utils": "^2.5.1",
     "autoprefixer": "^10.6.2",
     "baseline-browser-mapping": "^2.9.10",
+    "esbuild": "^0.28.2",
     "eslint": "^10.15.0",
     "eslint-config-prettier": "^10.0.1",
     "eslint-plugin-quasar": "^1.1.0",
