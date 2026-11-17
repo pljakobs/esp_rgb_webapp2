@@ -69,7 +69,8 @@ jobs:
           node-version: "24"
 
       - name: Install dependencies
-        run: npm ci --legacy-peer-deps
+        # master has no package-lock.json, so npm ci is not available here
+        run: npm install --legacy-peer-deps
 
       - name: Build Quasar app
         run: npx quasar build
