@@ -35,13 +35,11 @@ jobs:
       - name: Install dependencies
         run: npm ci --legacy-peer-deps
 
+      - name: Lint
+        run: npm run lint
+
       - name: Run frontend unit tests
-        run: npm test -- src/services/__tests__/api.spec.js
-          src/stores/__tests__/appDataStore.spec.js
-          src/services/__tests__/syncService.spec.js
-          src/services/__tests__/firmwareApi.spec.js
-          src/components/Dialogs/firmwareSelectDialog.spec.js
-          src/composables/useLocale.spec.js
+        run: npm test
 
       - name: Build production frontend
         run: npm run build
@@ -66,17 +64,12 @@ jobs:
       - name: Test summary
         if: always()
         run: |
-          echo "## Frontend Unit Test Results" >> $GITHUB_STEP_SUMMARY
-          echo "✅ All frontend unit tests completed" >> $GITHUB_STEP_SUMMARY
+          echo "## Frontend Checks" >> $GITHUB_STEP_SUMMARY
+          echo "- ESLint (flat config) over all .js/.vue sources" >> $GITHUB_STEP_SUMMARY
+          echo "- Full vitest unit test suite" >> $GITHUB_STEP_SUMMARY
+          echo "- Production build with four-file OTA bundle verification" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Tests Executed" >> $GITHUB_STEP_SUMMARY
-          echo "- **API Service**: 27 tests (request handling, errors, retries, type safety)" >> $GITHUB_STEP_SUMMARY
-          echo "- **Data Store**: 31 tests (state management, CRUD operations, error recovery)" >> $GITHUB_STEP_SUMMARY
-          echo "- **Sync Service**: 35 tests (multi-controller sync, data collection, version resolution)" >> $GITHUB_STEP_SUMMARY
-          echo "- **Firmware Selection**: release lines, SoC checks, upgrades, downgrade guard, and automatic update policy" >> $GITHUB_STEP_SUMMARY
-          echo "- **Bundling**: all locales bundled, exactly four OTA files" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Unit tests and production build are required gates.**" >> $GITHUB_STEP_SUMMARY
+          echo "**Lint, unit tests and production build are required gates.**" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "_Note: Integration tests require running firmware and are executed manually_" >> $GITHUB_STEP_SUMMARY
 
