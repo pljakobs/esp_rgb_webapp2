@@ -45,8 +45,15 @@
                 size="32px"
               />
             </div>
-
-            <div class="col-auto">
+            <div v-if="demoMode" class="col-auto">
+              <q-select
+                v-model="selectedIcon"
+                :options="demoIcons"
+                :label="$t('cards.hostname.changeIcon')"
+                @update:model-value="updateIcon"
+              />
+            </div>
+            <div v-else class="col-auto">
               <q-btn
                 color="primary"
                 @click="showMaterialBrowser = true"
@@ -91,6 +98,7 @@ import MyCard from "src/components/myCard.vue";
 import MaterialIconBrowser from "src/components/MaterialIconBrowser.vue";
 import svgIcon from "src/components/svgIcon.vue";
 import InfoTooltip from "src/components/InfoTooltip.vue";
+import { isDemoMode } from "src/services/demoMode";
 
 export default {
   components: {
@@ -106,10 +114,13 @@ export default {
 
     const selectedIcon = ref("");
     const showMaterialBrowser = ref(false);
+    const demoMode = isDemoMode();
+    const demoIcons = ["lightbulb_outlined", "light_group", "home", "scene", "palette"];
 
     // Default web icon fallback
-    const defaultWebIcon =
-      "https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsoutlined/lightbulb/default/24px.svg";
+    const defaultWebIcon = demoMode
+      ? "lightbulb_outlined"
+      : "https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsoutlined/lightbulb/default/24px.svg";
 
     const getCurrentController = () => {
       return controllersStore.currentController;
@@ -145,7 +156,7 @@ export default {
           }
 
           // Check if it's a web icon URL or local icon
-          if (isWebIcon(controllerMetadata.icon)) {
+          if (demoMode || isWebIcon(controllerMetadata.icon)) {
             // Use web icon URL directly
             selectedIcon.value = controllerMetadata.icon;
             console.log(
@@ -431,6 +442,8 @@ export default {
       selectedIcon,
       showMaterialBrowser,
       defaultWebIcon,
+      demoMode,
+      demoIcons,
       updateConfig,
       updateHostname,
       updateIcon,

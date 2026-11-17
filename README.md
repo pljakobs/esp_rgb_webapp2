@@ -1,5 +1,25 @@
 ## esp rgb web frontent rewrite
 
+### Demo and home controller URL parameters
+
+Open the WebUI with `?demo=1` to use an in-memory simulated controller. Lights,
+presets, scenes, settings, sensors and the setup wizard use simulated data,
+independent for each page and reset on reload. Firmware and WebUI update actions
+are simulations; no device is contacted and no update is downloaded. Demo mode
+is explicit; a failed real controller connection does not automatically enter it.
+The demo has one simulated controller and a representative board profile; it
+does not discover other controllers or download external icon catalogues.
+
+To load the WebUI from a different controller while connecting to the original
+controller, use `?home=192.168.1.15` or `?home=lamp.local` before the hash
+route, for example `http://ui-controller/?home=lamp.local#/ColorPage`.
+The value is an IPv4 address or hostname, not a URL or port. Invalid values
+stop startup instead of selecting the UI host. The original controller must be
+reachable by the browser and permit cross-origin API access; existing
+HTTP/WebSocket and browser mixed-content restrictions still apply. The
+parameter selects the initial home controller; it does not implement a
+firmware redirect. `demo=1` always takes precedence over `home`.
+
 <img align="right" width="96" height="96" src="icons-src/lightinator_controller_dark.svg" alt="Lightinator controller icon">
 
 ### Reason
@@ -185,4 +205,3 @@ What I'm imagining is a way to tell the controller
 
 and from then on, you could use those defined lights as if they were separate controllers (albeit they will need to be handled differently on the API as they will live on the same IP address).
 All that I have described so far as Phase 3 is, of course, something that has to be implemented on the firmware first, but once that has been done, it will need the corresponding UI extensions as well, hence why I'm describing it here.
-

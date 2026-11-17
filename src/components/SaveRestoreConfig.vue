@@ -49,6 +49,9 @@
 import { ref } from "vue";
 import { useControllersStore } from "src/stores/controllersStore";
 import { configDataStore } from "src/stores/configDataStore";
+import { useVirtualLightsStore } from "src/stores/virtualLightsStore";
+import { isDemoMode } from "src/services/demoMode";
+import { Notify } from "quasar";
 import MyCard from "src/components/myCard.vue";
 
 export default {
@@ -144,9 +147,15 @@ export default {
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
+        if (isDemoMode()) {
+          await configData.fetchData();
+          await useVirtualLightsStore().load();
+          Notify.create({ type: "positive", message: "Simulated configuration restored." });
+        }
         console.log("Configuration uploaded successfully!");
       } catch (error) {
         console.error("Error uploading configuration:", error);
+        if (isDemoMode()) Notify.create({ type: "negative", message: error.message });
       }
     };
 

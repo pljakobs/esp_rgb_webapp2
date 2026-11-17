@@ -1,4 +1,15 @@
 {
+  "demo": {
+    "banner": "Demomodus: Alle Änderungen werden simuliert und beim Neuladen zurückgesetzt. Kein echtes Gerät wird verändert.",
+    "reset": "Demo zurücksetzen",
+    "simulated": "Simulierter Controller",
+    "firmwareDescription": "Simuliertes Firmware-Update. Es wird keine Firmware heruntergeladen oder installiert.",
+    "checkFirmware": "Firmware prüfen",
+    "firmwareAvailable": "Ein simuliertes Update auf V5.1-2-develop ist verfügbar.",
+    "installFirmware": "Simuliertes Update installieren",
+    "firmwareInstalled": "Simuliertes Update abgeschlossen.",
+    "firmwareCurrent": "Simulierte Firmware: {version}"
+  },
   "sensors": {
     "title": "Sensoren",
     "current": "Strom (INA219)",
