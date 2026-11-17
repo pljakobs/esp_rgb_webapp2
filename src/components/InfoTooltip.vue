@@ -15,7 +15,7 @@ import { useQuasar } from "quasar";
 // mobile click-outside handling stays active because no v-model is bound).
 
 const $q = useQuasar();
-const isTouch = $q.platform.is.mobile === true;
+const isTouch = $q?.platform?.is?.mobile === true;
 const tooltipRef = ref(null);
 let anchorEl = null;
 
