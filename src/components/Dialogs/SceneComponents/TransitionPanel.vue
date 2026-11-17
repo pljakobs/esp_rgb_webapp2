@@ -101,9 +101,9 @@
         <div class="row q-col-gutter-sm q-mt-sm">
           <div class="col-12">
             <q-checkbox v-model="transitionObject.r" label="Requeue" dense>
-              <q-tooltip
+              <InfoTooltip
                 >requeue this transition to the end of the queue once
-                finished</q-tooltip
+                finished</InfoTooltip
               >
             </q-checkbox>
           </div>
@@ -116,11 +116,13 @@
 <script>
 import { computed, watch } from "vue";
 import mySelect from "src/components/mySelect.vue";
+import InfoTooltip from "src/components/InfoTooltip.vue";
 
 export default {
   name: "TransitionPanel",
   components: {
     mySelect,
+    InfoTooltip,
   },
   props: {
     modelValue: {
