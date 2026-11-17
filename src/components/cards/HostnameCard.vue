@@ -24,7 +24,9 @@
         "
         class="q-mb-md"
       >
-        <q-tooltip>{{ $t("cards.hostname.allowWebIconsTooltip") }}</q-tooltip>
+        <InfoTooltip>{{
+          $t("cards.hostname.allowWebIconsTooltip")
+        }}</InfoTooltip>
       </q-toggle>
 
       <div class="icon-selector-section">
@@ -95,6 +97,7 @@ import { useAppDataStore } from "src/stores/appDataStore";
 import MyCard from "src/components/myCard.vue";
 import MaterialIconBrowser from "src/components/MaterialIconBrowser.vue";
 import svgIcon from "src/components/svgIcon.vue";
+import InfoTooltip from "src/components/InfoTooltip.vue";
 import { isDemoMode } from "src/services/demoMode";
 
 export default {
@@ -102,6 +105,7 @@ export default {
     MyCard,
     MaterialIconBrowser,
     svgIcon,
+    InfoTooltip,
   },
   setup() {
     const configData = configDataStore();

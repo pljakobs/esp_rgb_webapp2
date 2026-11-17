@@ -56,9 +56,9 @@
             <div class="row items-center justify-between q-mb-xs">
               <div class="row items-center">
                 <div class="text-subtitle2">Default Transition</div>
-                <q-tooltip>
+                <InfoTooltip>
                   This transition will be used as the default for new settings
-                </q-tooltip>
+                </InfoTooltip>
               </div>
 
               <q-btn
@@ -166,6 +166,7 @@ import mySelect from "src/components/mySelect.vue";
 import { getControllersInGroup } from "src/services/tools.js";
 import ControllerItem from "./SceneComponents/ControllerItem.vue";
 import TransitionPanel from "./SceneComponents/TransitionPanel.vue";
+import InfoTooltip from "src/components/InfoTooltip.vue";
 
 // Define queue options as a constant to ensure it's always available
 const QUEUE_OPTIONS = [
@@ -180,6 +181,7 @@ export default {
     mySelect,
     ControllerItem,
     TransitionPanel,
+    InfoTooltip,
   },
   props: {
     scene: {
