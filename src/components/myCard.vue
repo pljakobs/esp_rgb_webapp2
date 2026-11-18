@@ -1,12 +1,11 @@
 <template>
   <q-card class="my-card full-width no-gutter">
-    <q-card-section class="row items-center">
+    <q-card-section class="row items-center" @click="toggleCollapse">
       <svgIcon :name="icon" />
       <div class="text-h6">{{ title }}</div>
       <div
         class="q-ml-auto rotate-icon"
         :class="{ 'rotate-up': !isCollapsed, 'rotate-down': isCollapsed }"
-        @click="toggleCollapse"
       >
         <svgIcon name="arrow_drop_down" />
       </div>
