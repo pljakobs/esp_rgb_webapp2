@@ -46,7 +46,7 @@
               />
             </div>
             <div v-if="demoMode" class="col-auto">
-              <q-select
+              <MySelect
                 v-model="selectedIcon"
                 :options="demoIcons"
                 :label="$t('cards.hostname.changeIcon')"
@@ -99,6 +99,7 @@ import MaterialIconBrowser from "src/components/MaterialIconBrowser.vue";
 import svgIcon from "src/components/svgIcon.vue";
 import InfoTooltip from "src/components/InfoTooltip.vue";
 import { isDemoMode } from "src/services/demoMode";
+import MySelect from "../mySelect.vue";
 
 export default {
   components: {
@@ -115,7 +116,13 @@ export default {
     const selectedIcon = ref("");
     const showMaterialBrowser = ref(false);
     const demoMode = isDemoMode();
-    const demoIcons = ["lightbulb_outlined", "light_group", "home", "scene", "palette"];
+    const demoIcons = [
+      "lightbulb_outlined",
+      "light_group",
+      "home",
+      "scene",
+      "palette",
+    ];
 
     // Default web icon fallback
     const defaultWebIcon = demoMode
