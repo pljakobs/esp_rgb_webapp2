@@ -322,7 +322,10 @@
         </q-item>
       </q-drawer>
       <q-page-container class="page-container">
-        <div id="q-app" class="full-width full-height no-gutter relative-position">
+        <div
+          id="q-app"
+          class="full-width full-height no-gutter relative-position"
+        >
           <div
             id="parent"
             class="fit row wrap justify-center items-start content-start no-gutter with-bottom-padding"
@@ -345,7 +348,12 @@
       </q-page-container>
       <q-footer class="bg-primary text-white">
         <q-toolbar>
-          <q-btn v-if="!demoMode" round class="ws-status-btn" :color="buttonColor">
+          <q-btn
+            v-if="!demoMode"
+            round
+            class="ws-status-btn"
+            :color="buttonColor"
+          >
             <svgIcon :name="buttonIconName" size="20px" />
             <q-tooltip>{{ wsTooltipText }}</q-tooltip>
           </q-btn>
@@ -513,14 +521,14 @@ export default defineComponent({
       const wsTooltipText = computed(() => {
         switch (ws.status.value) {
           case wsStatus.CONNECTED:
-            return t("layout.wsStatusConnected");
+            return "Connected";
           case wsStatus.CONNECTING:
-            return t("layout.wsStatusConnecting");
+            return "Connecting";
           case wsStatus.FAILED:
-            return t("layout.wsStatusFailed");
+            return "Failed";
           case wsStatus.DISCONNECTED:
           default:
-            return t("layout.wsStatusDisconnected");
+            return "Disconnected";
         }
       });
 

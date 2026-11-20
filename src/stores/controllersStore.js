@@ -78,7 +78,9 @@ export const useControllersStore = defineStore("controllersStore", {
           this.data = hostsResponse.hosts;
           // 1. If ip_address is numeric, match and update hostname, set controllers
           const exactMatch = this.data.find(
-            (c) => String(c.ip_address).toLowerCase() === String(localhost.ip_address).toLowerCase(),
+            (c) =>
+              String(c.ip_address).toLowerCase() ===
+              String(localhost.ip_address).toLowerCase(),
           );
           if (exactMatch) {
             localhost.hostname = exactMatch.hostname;
@@ -1791,13 +1793,11 @@ export const useControllersStore = defineStore("controllersStore", {
         // Ensure timestamp is updated to current Unix time (milliseconds)
         metadata.ts = Date.now();
 
-        // Save controller metadata to the backend in the controllers section
         console.log(
           `DEBUG: Updating metadata for controller ${controller.hostname}:`,
           JSON.stringify(metadata, null, 2),
         );
 
-        // Check if controller metadata already exists
         console.log(
           `DEBUG: Fetching existing data from http://${controller.ip_address}/data`,
         );
@@ -1819,14 +1819,12 @@ export const useControllersStore = defineStore("controllersStore", {
           );
 
           if (existingController) {
-            // Update existing controller metadata
             payload = { [`controllers[id=${metadata.id}]`]: metadata };
             console.log(
               "DEBUG: Updating existing controller metadata with payload:",
               JSON.stringify(payload, null, 2),
             );
           } else {
-            // Add new controller metadata
             payload = { "controllers[]": [metadata] };
             console.log(
               "DEBUG: Adding new controller metadata with payload:",
@@ -1834,7 +1832,6 @@ export const useControllersStore = defineStore("controllersStore", {
             );
           }
         } else {
-          // Add new controller metadata if we can't check existing
           payload = { "controllers[]": [metadata] };
           console.log(
             "DEBUG: Adding new controller metadata (couldn't check existing) with payload:",
@@ -1852,19 +1849,7 @@ export const useControllersStore = defineStore("controllersStore", {
           throw new Error(`API error: ${error.message}`);
         }
 
-        console.log(`DEBUG: POST response successful:`, jsonData);
-
-        if (!response.ok) {
-          const responseText = await response.text();
-          console.error(`DEBUG: POST response error text:`, responseText);
-          throw new Error(
-            `HTTP error! status: ${response.status}, response: ${responseText}`,
-          );
-        }
-
-        const responseData = await response.text();
-        console.log(`DEBUG: POST response data:`, responseData);
-
+        console.log("DEBUG: POST response data:", jsonData);
         console.log(
           `Successfully saved metadata for controller ${controller.hostname}`,
         );
