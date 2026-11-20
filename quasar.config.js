@@ -22,7 +22,7 @@ const runGzipSpa = () => {
   });
 };
 
-export default configure((/* ctx */) => {
+export default configure((ctx) => {
   const generateIconSpriteServePlugin = {
     name: "generate-icon-sprite-serve",
     apply: "serve",
@@ -56,6 +56,7 @@ export default configure((/* ctx */) => {
       vueOptionsAPI: false,
       cssMinify: "esbuild",
       minify: "esbuild",
+      minify: ctx.prod ? "oxc" : false,
       target: {
         browser: ["es2022"],
         node: "node24",
@@ -93,13 +94,24 @@ export default configure((/* ctx */) => {
         viteConf.build.modulePreload = { polyfill: true };
         viteConf.build.assetsCrossOrigin = "anonymous";
 
-        // Rollup chunking configuration
-        viteConf.build.rolldownOptions = {
-          ...viteConf.build.rolldownOptions,
-          output: {
-            ...viteConf.build.rolldownOptions?.output,
-            codeSplitting: false,
-          },
+        // Rollup / Rolldown chunking & minification configuration
+        viteConf.build.rolldownOptions ??= {};
+        viteConf.build.rolldownOptions.output = {
+          ...viteConf.build.rolldownOptions.output,
+          codeSplitting: false,
+          ...(ctx.prod
+            ? {
+                minify: {
+                  ...(typeof viteConf.build.rolldownOptions.output?.minify ===
+                  "object"
+                    ? viteConf.build.rolldownOptions.output.minify
+                    : {}),
+                  compress: {
+                    dropConsole: true,
+                  },
+                },
+              }
+            : {}),
         };
       },
       useFilenameHashes: true,
