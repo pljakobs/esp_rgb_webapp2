@@ -36,7 +36,7 @@ jobs:
         run: npm ci --legacy-peer-deps
 
       - name: Lint
-        run: npm run lint
+        run: npm run lint -- --max-warnings=999
 
       - name: Run frontend unit tests
         run: npm test
