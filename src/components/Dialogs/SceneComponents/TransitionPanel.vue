@@ -114,6 +114,7 @@
 </template>
 
 <script>
+/* eslint-disable vue/no-mutating-props, no-unused-vars */
 import { computed, watch } from "vue";
 import mySelect from "src/components/mySelect.vue";
 import InfoTooltip from "src/components/InfoTooltip.vue";
@@ -170,6 +171,9 @@ export default {
       },
       set: (value) => {
         // This is handled by onFadeTypeChange
+        value === "time"
+          ? (transitionObject.value.t = 0)
+          : (transitionObject.value.s = 10);
       },
     });
 
